@@ -8,6 +8,8 @@ export type {
   SourceConfig, PublisherType, EnrichmentType,
   JiraConfig, LinearConfig,
 } from './types';
+export { VERSION, DEFAULT_CATEGORIES, DEFAULT_MODELS } from './constants';
+import { DEFAULT_MODELS } from './constants';
 
 export { GitCollector, getRecentTags, getLatestTag } from './collectors/git';
 export { JiraCollector } from './collectors/jira';
@@ -92,11 +94,9 @@ export async function runPipeline(
   const providerNames: Record<string, string> = {
     anthropic: 'Claude', openai: 'OpenAI', gemini: 'Gemini', ollama: 'Ollama', openclaw: 'OpenClaw', none: 'Template',
   };
-  const defaultModels: Record<string, string> = {
-    anthropic: 'claude-sonnet-4-20250514', openai: 'gpt-4o', gemini: 'gemini-2.0-flash', ollama: 'llama3.1', openclaw: 'claude-sonnet-4-6',
-  };
+
   const providerName = providerNames[config.ai.provider] || config.ai.provider;
-  const modelName = config.ai.provider === 'none' ? 'template' : (config.ai.model || defaultModels[config.ai.provider] || 'default');
+  const modelName = config.ai.provider === 'none' ? 'template' : (config.ai.model || DEFAULT_MODELS[config.ai.provider] || 'default');
   console.log(`» Generating with ${providerName} (${modelName})...`);
 
   let notes;

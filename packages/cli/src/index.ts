@@ -12,7 +12,7 @@
  * https://cullit.io
  */
 
-import { runPipeline } from '@cull/core';
+import { runPipeline, VERSION } from '@cull/core';
 import { loadConfig } from '@cull/config';
 import { getLatestTag, getRecentTags } from '@cull/core';
 import type { OutputFormat } from '@cull/core';
@@ -37,8 +37,6 @@ function loadEnv() {
   }
 }
 loadEnv();
-
-const VERSION = '0.1.0';
 
 const HELP = `
   ╔═══════════════════════════════════════════╗

@@ -14,7 +14,7 @@
  */
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
-import { runPipeline } from '@cull/core';
+import { runPipeline, VERSION, DEFAULT_CATEGORIES } from '@cull/core';
 import { loadConfig } from '@cull/config';
 import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget } from '@cull/core';
 import { openApiSpec } from './openapi.js';
@@ -63,7 +63,7 @@ async function readBody(req: IncomingMessage): Promise<string> {
 async function handleHealth(_req: IncomingMessage, res: ServerResponse): Promise<void> {
   json(res, 200, {
     status: 'ok',
-    version: '0.1.0',
+    version: VERSION,
     uptime: process.uptime(),
   });
 }
@@ -125,7 +125,7 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
         model: body.model,
         audience: body.audience || 'developer',
         tone: body.tone || 'professional',
-        categories: body.categories || ['features', 'fixes', 'breaking', 'improvements', 'chores'],
+        categories: body.categories || DEFAULT_CATEGORIES,
       },
       source: {
         type: body.source?.type || 'local',
