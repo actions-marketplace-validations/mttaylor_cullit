@@ -1,0 +1,111 @@
+# =====================================================
+#  Cullit — Publish to npm on version tag
+# =====================================================
+#
+# Triggered when you push a version tag:
+#   git tag v0.2.0
+#   git push origin v0.2.0
+#
+# Setup:
+#   1. Create an npm access token (Automation type)
+#   2. Add it as NPM_TOKEN in GitHub repo secrets
+#   3. If using @cull/* scoped packages, create the org on npm first
+#
+# This publishes:
+#   - cullit        (CLI — `npx cullit generate`)
+#   - @cull/core    (library)
+#   - @cull/config  (library)
+
+name: Publish
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write  # For GitHub Release
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test
+
+      # Extract version from tag (v0.2.0 → 0.2.0)
+      - name: Set version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      # Bump all package versions to match the tag
+      - name: Update package versions
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          for pkg in packages/config packages/core packages/cli; do
+            jq --arg v "$VERSION" '.version = $v' "$pkg/package.json" > tmp.json && mv tmp.json "$pkg/package.json"
+          done
+
+      # Publish packages in dependency order
+      - name: Publish @cull/config
+        run: pnpm --filter @cull/config publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @cull/core
+        run: pnpm --filter @cull/core publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish cullit (CLI)
+        run: pnpm --filter cullit publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # Self-dogfood: generate release notes with cullit
+      - name: Generate release notes
+        id: notes
+        run: |
+          PREV_TAG=$(git tag --sort=-v:refname | head -2 | tail -1)
+          if [ -z "$PREV_TAG" ]; then
+            PREV_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+          node packages/cli/dist/index.js generate \
+            --from "$PREV_TAG" \
+            --to "$GITHUB_REF_NAME" \
+            --provider none \
+            --format markdown \
+            --dry-run > release-notes.md 2>&1 || true
+        continue-on-error: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body_path: release-notes.md
+          generate_release_notes: true  # fallback if cullit output is empty
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

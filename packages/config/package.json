@@ -1,8 +1,15 @@
 {
   "name": "@cull/config",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
+  "description": "Config loader for Cullit — YAML config parsing with env var resolution.",
+  "license": "MIT",
+  "author": "Deploy or Die <matt@deployordie.io>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/deployordie/cullit",
+    "directory": "packages/config"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -11,6 +18,7 @@
       "types": "./dist/index.d.ts"
     }
   },
+  "files": ["dist"],
   "scripts": {
     "build": "tsup src/index.ts --format esm --clean",
     "dev": "tsup src/index.ts --format esm --watch"
