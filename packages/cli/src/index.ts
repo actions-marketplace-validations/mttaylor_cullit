@@ -16,7 +16,27 @@ import { runPipeline } from '@cull/core';
 import { loadConfig } from '@cull/config';
 import { getLatestTag, getRecentTags } from '@cull/core';
 import type { OutputFormat } from '@cull/core';
-import { writeFileSync } from 'fs';
+import { writeFileSync, readFileSync, existsSync } from 'fs';
+import { resolve } from 'path';
+
+// Load .env file if present (no dependency needed)
+function loadEnv() {
+  const envPath = resolve(process.cwd(), '.env');
+  if (!existsSync(envPath)) return;
+  const content = readFileSync(envPath, 'utf-8');
+  for (const line of content.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eqIndex = trimmed.indexOf('=');
+    if (eqIndex === -1) continue;
+    const key = trimmed.slice(0, eqIndex).trim();
+    const val = trimmed.slice(eqIndex + 1).trim().replace(/^["']|["']$/g, '');
+    if (key && val && !process.env[key]) {
+      process.env[key] = val;
+    }
+  }
+}
+loadEnv();
 
 const VERSION = '0.1.0';
 
@@ -156,10 +176,9 @@ async function runGenerate(from: string, to: string, opts: Record<string, string
 
   try {
     const result = await runPipeline(from, to, config, { format, dryRun });
-    process.exit(0);
   } catch (err) {
     console.error(`\n✗ Error: ${(err as Error).message}`);
-    process.exit(1);
+    process.exitCode = 1;
   }
 }
 
@@ -192,5 +211,5 @@ function parseArgs(args: string[]): Record<string, string> {
 
 main().catch(err => {
   console.error(`Fatal: ${err.message}`);
-  process.exit(1);
+  process.exitCode = 1;
 });

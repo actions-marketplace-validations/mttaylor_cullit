@@ -8,3 +8,6 @@ coverage/
 .turbo/
 .cache/
 *.tgz
+*.code-workspace
+cullit_setup_guide.md
+RELEASE_NOTES.md

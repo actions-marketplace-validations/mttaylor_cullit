@@ -78,6 +78,8 @@ function parseSimpleYaml(raw: string): Record<string, any> {
           currentArray = [];
           if (currentSection && currentArrayKey) {
             (result[currentSection] as any)[currentArrayKey] = currentArray;
+          } else if (currentSection) {
+            result[currentSection] = currentArray;
           }
         }
         const obj: Record<string, any> = {};
@@ -86,12 +88,17 @@ function parseSimpleYaml(raw: string): Record<string, any> {
         currentArray.push(obj);
       } else {
         // Simple array value
-        if (!Array.isArray(result[currentSection]?.[currentArrayKey])) {
-          if (currentSection) {
+        if (currentSection && currentArrayKey) {
+          if (!Array.isArray((result[currentSection] as any)?.[currentArrayKey])) {
             (result[currentSection] as any)[currentArrayKey] = [];
           }
+          (result[currentSection] as any)[currentArrayKey].push(parseValue(content));
+        } else if (currentSection) {
+          if (!Array.isArray(result[currentSection])) {
+            result[currentSection] = [];
+          }
+          (result[currentSection] as any).push(parseValue(content));
         }
-        (result[currentSection] as any)[currentArrayKey]?.push(parseValue(content));
       }
       continue;
     }
@@ -101,16 +108,24 @@ function parseSimpleYaml(raw: string): Record<string, any> {
       const [key, ...valParts] = trimmed.split(':');
       const val = valParts.join(':').trim();
       if (val) {
+        // If we're inside an array, add to the last object in the array
+        if (currentArray && currentArray.length > 0) {
+          const lastObj = currentArray[currentArray.length - 1];
+          if (typeof lastObj === 'object') {
+            lastObj[key.trim()] = parseValue(val);
+            continue;
+          }
+        }
         if (currentSection) {
           (result[currentSection] as any)[key.trim()] = parseValue(val);
         }
       } else {
         currentArrayKey = key.trim();
+        currentArray = null;
         if (currentSection) {
           (result[currentSection] as any)[currentArrayKey] = {};
         }
       }
-      currentArray = null;
     }
   }
 
