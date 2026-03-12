@@ -3,26 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cullit — Cull the noise from your releases</title>
-<meta name="description" content="Cullit — AI-powered release notes generated from your git history. Cull the noise.. Works as a CLI, GitHub Action, or API. Multi-provider AI with BYOK support.">
+<title>Cullit — Release Notes in no time, anytime.</title>
+<meta name="description" content="Cullit — AI-powered release notes generated from your git history. Release notes in no time, anytime. Works as a CLI, GitHub Action, or API. Multi-provider AI with BYOK support.">
 <meta name="keywords" content="cullit, cull, ai release notes, release notes generator, github action release notes, automated changelog, ai changelog generator, cullit.io">
-<meta property="og:title" content="Cullit — Cull the noise from your releases">
-<meta property="og:description" content="Cullit — AI release notes from git commits. Cull the noise. CLI + GitHub Action. & more.">
+<meta property="og:title" content="Cullit — Release Notes in no time, anytime.">
+<meta property="og:description" content="Cullit — AI release notes from git commits. Release notes in no time, anytime. CLI + GitHub Action. & more.">
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0a0f;
-    --bg-card: #12121a;
-    --bg-card-hover: #1a1a28;
-    --accent: #e8ff47;
-    --accent-dim: #c4d93c;
-    --text: #e0e0e8;
-    --text-dim: #8888a0;
-    --text-bright: #ffffff;
-    --border: #2a2a3a;
+    --bg: #0f1117;
+    --bg-card: #161822;
+    --bg-card-hover: #1e2030;
+    --accent: #5eead4;
+    --accent-dim: #2dd4bf;
+    --text: #d4d4e0;
+    --text-dim: #7e819a;
+    --text-bright: #f0f0f5;
+    --border: #282a3a;
     --terminal-green: #4ade80;
     --terminal-blue: #60a5fa;
     --terminal-red: #f87171;
@@ -47,7 +47,7 @@
     content: '';
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
-    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
     pointer-events: none;
     z-index: 9999;
   }
@@ -61,7 +61,7 @@
     justify-content: space-between;
     align-items: center;
     z-index: 100;
-    background: rgba(10,10,15,0.85);
+    background: rgba(15,17,23,0.85);
     backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border);
   }
@@ -98,7 +98,7 @@
   }
   .nav-cta:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 20px rgba(232,255,71,0.3);
+    box-shadow: 0 4px 20px rgba(94,234,212,0.25);
   }
 
   /* HERO */
@@ -118,8 +118,8 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.4rem 1rem;
-    background: rgba(232,255,71,0.08);
-    border: 1px solid rgba(232,255,71,0.2);
+    background: rgba(94,234,212,0.08);
+    border: 1px solid rgba(94,234,212,0.2);
     border-radius: 100px;
     font-family: 'Space Mono', monospace;
     font-size: 0.75rem;
@@ -146,7 +146,8 @@
     font-family: 'Syne', sans-serif;
     font-size: clamp(3rem, 7vw, 5.5rem);
     font-weight: 800;
-    line-height: 1.05;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
     color: var(--text-bright);
     margin-bottom: 1.5rem;
     animation: fadeInUp 0.6s ease-out 0.1s both;
@@ -186,7 +187,7 @@
   }
   .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 30px rgba(232,255,71,0.25);
+    box-shadow: 0 6px 30px rgba(94,234,212,0.2);
   }
 
   .btn-secondary {
@@ -310,7 +311,7 @@
     transition: border-color 0.3s, background 0.3s, transform 0.3s;
   }
   .feature-card:hover {
-    border-color: rgba(232,255,71,0.3);
+    border-color: rgba(94,234,212,0.3);
     background: var(--bg-card-hover);
     transform: translateY(-2px);
   }
@@ -353,8 +354,8 @@
   .step-number {
     flex-shrink: 0;
     width: 48px; height: 48px;
-    background: rgba(232,255,71,0.1);
-    border: 1px solid rgba(232,255,71,0.3);
+    background: rgba(94,234,212,0.1);
+    border: 1px solid rgba(94,234,212,0.3);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -416,7 +417,7 @@
     transition: border-color 0.3s, transform 0.3s;
   }
   .integration-chip:hover {
-    border-color: rgba(232,255,71,0.3);
+    border-color: rgba(94,234,212,0.3);
     transform: translateY(-2px);
   }
 
@@ -449,7 +450,7 @@
     top: 0; left: 50%;
     transform: translateX(-50%);
     width: 600px; height: 600px;
-    background: radial-gradient(circle, rgba(232,255,71,0.06) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(94,234,212,0.06) 0%, transparent 70%);
     border-radius: 50%;
     pointer-events: none;
   }
@@ -511,7 +512,7 @@
   }
   .email-form button:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 20px rgba(232,255,71,0.3);
+    box-shadow: 0 4px 20px rgba(94,234,212,0.25);
   }
 
   .email-note {
@@ -573,7 +574,7 @@
     <a href="#features">Features</a>
     <a href="#how-it-works">How It Works</a>
     <a href="#integrations">Integrations</a>
-    <a href="https://github.com/deployordie/cullit" target="_blank">GitHub</a>
+    <a href="https://github.com/mttaylor/cullit" target="_blank">GitHub</a>
     <a href="#cta" class="nav-cta">Get Early Access</a>
   </div>
 </nav>
@@ -581,11 +582,11 @@
 <!-- HERO -->
 <section class="hero">
   <div class="hero-badge">Building in public</div>
-  <h1>Cullit. <span class="accent">Release notes,</span><br>noise removed.</h1>
+  <h1>Cullit. <span class="accent">Release Notes</span><br>in no time, anytime.</h1>
   <p class="hero-sub">Cullit reads your git history, enriches from Jira & Linear, and uses AI to generate categorized, human-readable release notes. Ship to Slack, Discord, GitHub Releases, and more.</p>
   <div class="hero-actions">
-    <a href="#cta" class="btn-primary">&#9889; Get Early Access#9889; Get Early Access</a>
-    <a href="https://github.com/deployordie/cullit" class="btn-secondary" target="_blank">&#9733; Star on GitHub#9733; Star on GitHub</a>
+    <a href="#cta" class="btn-primary">&#9889; Get Early Access</a>
+    <a href="https://github.com/mttaylor/cullit" class="btn-secondary" target="_blank">&#9733; Star on GitHub</a>
   </div>
 </section>
 
@@ -740,7 +741,7 @@
 
 <!-- CTA -->
 <section class="cta-section" id="cta">
-  <h2>Stop writing release notes.<br>Start <span style="color:var(--accent)">culling</span> them.</h2>
+  <h2>Stop writing release notes.<br>Start <span style="color: var(--accent)">culling</span> them.</h2>
   <p>Join the waitlist. Get early access when Cullit ships.</p>
   <div class="email-form">
     <input type="email" placeholder="you@company.com" aria-label="Email address">
@@ -753,7 +754,7 @@
 <footer>
   <p class="footer-brand">A <a href="https://deployordie.io" target="_blank">Deploy or Die</a> product</p>
   <div class="footer-links">
-    <a href="https://github.com/deployordie/cullit" target="_blank">GitHub</a>
+    <a href="https://github.com/mttaylor/cullit" target="_blank">GitHub</a>
     <a href="https://deployordie.io" target="_blank">Blog</a>
     <a href="https://x.com/deployordie" target="_blank">X / Twitter</a>
     <a href="https://linkedin.com" target="_blank">LinkedIn</a>
