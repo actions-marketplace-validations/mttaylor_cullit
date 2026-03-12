@@ -4,9 +4,12 @@ export type {
   EnrichedTicket, EnrichedContext,
   Collector, Enricher, Generator, Publisher,
   PipelineResult, OutputFormat, PublishTarget,
+  OpenClawConfig,
 } from './types';
 
 export { GitCollector, getRecentTags, getLatestTag } from './collectors/git';
+export { JiraCollector } from './collectors/jira';
+export { LinearCollector } from './collectors/linear';
 export { AIGenerator } from './generators/ai';
 export { formatNotes } from './formatter';
 export { StdoutPublisher, FilePublisher, SlackPublisher, DiscordPublisher } from './publishers/index';
@@ -15,6 +18,8 @@ export { LinearEnricher } from './enrichers/linear';
 
 import type { CullConfig, EnrichedContext, PipelineResult, OutputFormat, EnrichedTicket } from './types';
 import { GitCollector } from './collectors/git';
+import { JiraCollector } from './collectors/jira';
+import { LinearCollector } from './collectors/linear';
 import { AIGenerator } from './generators/ai';
 import { formatNotes } from './formatter';
 import { StdoutPublisher, FilePublisher, SlackPublisher, DiscordPublisher } from './publishers/index';
@@ -34,13 +39,25 @@ export async function runPipeline(
   const format = options.format || 'markdown';
 
   // 1. COLLECT
-  console.log(`» Collecting commits between ${from}..${to}`);
-  const collector = new GitCollector();
+  let collector;
+  if (config.source.type === 'jira') {
+    if (!config.jira) throw new Error('Jira source requires jira config in .cullit.yml');
+    console.log(`» Collecting issues from Jira...`);
+    collector = new JiraCollector(config.jira);
+  } else if (config.source.type === 'linear') {
+    console.log(`» Collecting issues from Linear...`);
+    collector = new LinearCollector(config.linear?.apiKey);
+  } else {
+    console.log(`» Collecting commits between ${from}..${to}`);
+    collector = new GitCollector();
+  }
   const diff = await collector.collect(from, to);
-  console.log(`» Found ${diff.commits.length} commits, ${diff.filesChanged || 0} files changed`);
+  const itemLabel = config.source.type === 'jira' || config.source.type === 'linear' ? 'issues' : 'commits';
+  console.log(`» Found ${diff.commits.length} ${itemLabel}${diff.filesChanged ? `, ${diff.filesChanged} files changed` : ''}`);
 
   if (diff.commits.length === 0) {
-    throw new Error(`No commits found between ${from} and ${to}`);
+    const source = config.source.type === 'jira' ? 'Jira' : config.source.type === 'linear' ? 'Linear' : `${from} and ${to}`;
+    throw new Error(`No ${itemLabel} found from ${source}`);
   }
 
   // 2. ENRICH
@@ -68,11 +85,17 @@ export async function runPipeline(
   const context: EnrichedContext = { diff, tickets };
 
   // 3. GENERATE
-  const providerName = config.ai.provider === 'anthropic' ? 'Claude' : 'OpenAI';
-  const modelName = config.ai.model || (config.ai.provider === 'anthropic' ? 'sonnet-4' : 'gpt-4o');
+  const providerNames: Record<string, string> = {
+    anthropic: 'Claude', openai: 'OpenAI', gemini: 'Gemini', ollama: 'Ollama', openclaw: 'OpenClaw',
+  };
+  const defaultModels: Record<string, string> = {
+    anthropic: 'sonnet-4', openai: 'gpt-4o', gemini: 'gemini-2.0-flash', ollama: 'llama3.1', openclaw: 'claude-sonnet-4-6',
+  };
+  const providerName = providerNames[config.ai.provider] || config.ai.provider;
+  const modelName = config.ai.model || defaultModels[config.ai.provider] || 'default';
   console.log(`» Generating with ${providerName} (${modelName})...`);
 
-  const generator = new AIGenerator();
+  const generator = new AIGenerator(config.openclaw);
   const notes = await generator.generate(context, config.ai);
   console.log(`» Generated ${notes.changes.length} change entries`);
 

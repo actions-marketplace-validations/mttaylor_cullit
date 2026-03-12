@@ -602,7 +602,7 @@
 <section class="hero">
   <div class="hero-badge">Building in public</div>
   <h1>Cullit. <span class="accent">Release Notes</span><br>in no time, anytime.</h1>
-  <p class="hero-sub">Cullit reads your git history, enriches from Jira & Linear, and uses AI to generate categorized, human-readable release notes. Ship to Slack, Discord, GitHub Releases, and more.</p>
+  <p class="hero-sub">Cullit reads your git history, Jira sprints, or Linear cycles, enriches with ticket context, and uses AI to generate categorized, human-readable release notes. Ship to Slack, Discord, GitHub Releases, and more.</p>
   <div class="hero-actions">
     <a href="#cta" class="btn-primary">&#9889; Get Early Access</a>
     <a href="https://github.com/mttaylor/cullit" class="btn-secondary" target="_blank">&#9733; Star on GitHub</a>
@@ -652,12 +652,12 @@
     <div class="feature-card">
       <span class="feature-icon">&#x1f9e0;</span>
       <h3>AI-Powered Generation</h3>
-      <p>Not a commit log dump. Cullit uses Claude or OpenAI to write categorized, human-readable notes your team and users actually want to read.</p>
+      <p>Not a commit log dump. Cullit uses Claude, OpenAI, Gemini, Ollama, or OpenClaw to write categorized, human-readable notes your team and users actually want to read.</p>
     </div>
     <div class="feature-card">
       <span class="feature-icon">&#x1f511;</span>
       <h3>Bring Your Own Key</h3>
-      <p>Use your own Claude or OpenAI API key. Zero vendor lock-in. Zero surprise AI costs. You control the model, the cost, and the data.</p>
+      <p>Use your own API key &mdash; Claude, OpenAI, Gemini, or run local with Ollama. Zero vendor lock-in. Zero surprise AI costs. You control the model, the cost, and the data.</p>
     </div>
     <div class="feature-card">
       <span class="feature-icon">&#x26a1;</span>
@@ -667,7 +667,7 @@
     <div class="feature-card">
       <span class="feature-icon">&#x1f50d;</span>
       <h3>Jira &amp; Linear Enrichment</h3>
-      <p>Cullit extracts ticket keys from your commits and pulls in real context &mdash; titles, descriptions, labels &mdash; so the AI has the full picture.</p>
+      <p>Cullit extracts ticket keys from commits, or queries Jira and Linear directly as the primary source &mdash; titles, descriptions, labels &mdash; so the AI has the full picture.</p>
     </div>
     <div class="feature-card">
       <span class="feature-icon">&#x1f4e4;</span>
@@ -722,6 +722,7 @@
 <section class="integrations" id="integrations">
   <p class="section-label">// integrations</p>
   <h2 class="section-title">Plugs in where your team works.</h2>
+  <p style="color: var(--text-dim); margin-bottom: 1.5rem; font-size: 0.9rem;">Sources &amp; publishers</p>
   <div class="integration-grid">
     <div class="integration-chip">
       <span class="icon">&#x1f4bb;</span>
@@ -762,6 +763,34 @@
       <span class="icon">&#x1f4da;</span>
       <span class="name">GitBook</span>
       <span class="badge badge-soon">soon</span>
+    </div>
+  </div>
+  <p style="color: var(--text-dim); margin: 1.5rem 0 1rem; font-size: 0.9rem;">AI providers (BYOK)</p>
+  <div class="integration-grid" style="grid-template-columns: repeat(5, 1fr);">
+    <div class="integration-chip">
+      <span class="icon">&#x1f9e0;</span>
+      <span class="name">Anthropic</span>
+      <span class="badge badge-live">v1</span>
+    </div>
+    <div class="integration-chip">
+      <span class="icon">&#x2728;</span>
+      <span class="name">OpenAI</span>
+      <span class="badge badge-live">v1</span>
+    </div>
+    <div class="integration-chip">
+      <span class="icon">&#x1f48e;</span>
+      <span class="name">Gemini</span>
+      <span class="badge badge-live">v1</span>
+    </div>
+    <div class="integration-chip">
+      <span class="icon">&#x1f999;</span>
+      <span class="name">Ollama</span>
+      <span class="badge badge-live">v1</span>
+    </div>
+    <div class="integration-chip">
+      <span class="icon">&#x1f99e;</span>
+      <span class="name">OpenClaw</span>
+      <span class="badge badge-live">v1</span>
     </div>
   </div>
 </section>

@@ -4,7 +4,7 @@
 
 // --- Config ---
 
-export type AIProvider = 'anthropic' | 'openai';
+export type AIProvider = 'anthropic' | 'openai' | 'gemini' | 'ollama' | 'openclaw';
 export type Audience = 'developer' | 'end-user' | 'executive';
 export type Tone = 'professional' | 'casual' | 'terse';
 export type OutputFormat = 'markdown' | 'html' | 'json';
@@ -22,7 +22,7 @@ export interface AIConfig {
 }
 
 export interface SourceConfig {
-  type: 'github' | 'local';
+  type: 'github' | 'local' | 'jira' | 'linear';
   owner?: string;
   repo?: string;
   enrichment?: EnrichmentType[];
@@ -45,12 +45,18 @@ export interface LinearConfig {
   apiKey?: string;      // resolved from env
 }
 
+export interface OpenClawConfig {
+  baseUrl?: string;     // gateway URL, default http://localhost:18789
+  token?: string;       // gateway auth token
+}
+
 export interface CullConfig {
   ai: AIConfig;
   source: SourceConfig;
   publish: PublishTarget[];
   jira?: JiraConfig;
   linear?: LinearConfig;
+  openclaw?: OpenClawConfig;
 }
 
 // --- Git Data ---

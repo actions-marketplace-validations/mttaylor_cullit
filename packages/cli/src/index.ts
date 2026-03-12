@@ -50,23 +50,26 @@ const HELP = `
     $ cullit <command> [options]
 
   COMMANDS
-    generate    Generate release notes between two git refs
+    generate    Generate release notes from git, Jira, or Linear
     init        Create a .cullit.yml config file
     tags        List recent tags in the current repo
 
   OPTIONS (generate)
-    --from, -f    Start ref (tag, branch, or commit SHA)
+    --from, -f    Start ref, JQL query, or Linear filter
     --to, -t      End ref (defaults to HEAD)
     --config, -c  Path to config file (default: .cullit.yml)
     --format      Output format: markdown, html, json (default: markdown)
     --dry-run     Generate but don't publish
-    --provider    Override AI provider (anthropic, openai)
+    --provider    Override AI provider (anthropic, openai, gemini, ollama, openclaw)
+    --source      Override source type (local, jira, linear)
     --audience    Override audience (developer, end-user, executive)
 
   EXAMPLES
     $ cullit generate --from v1.0.0 --to v1.1.0
-    $ cullit generate --from v1.0.0 --dry-run
-    $ cullit generate --from HEAD~10 --audience end-user
+    $ cullit generate --from HEAD~10 --provider gemini
+    $ cullit generate --from HEAD~5 --provider ollama --model llama3.1
+    $ cullit generate --source jira --from "project = PROJ" --provider anthropic
+    $ cullit generate --source linear --from "team:ENG" --provider openai
     $ cullit init
 `;
 
@@ -74,14 +77,14 @@ const DEFAULT_YML = `# Cullit Configuration
 # https://cullit.io/docs/config
 
 ai:
-  provider: anthropic          # anthropic | openai
+  provider: anthropic          # anthropic | openai | gemini | ollama | openclaw
   # model: claude-sonnet-4-20250514  # optional: override default model
   audience: developer          # developer | end-user | executive
   tone: professional           # professional | casual | terse
   categories: [features, fixes, breaking, improvements, chores]
 
 source:
-  type: local
+  type: local                  # local | jira | linear
   # enrichment: [jira, linear] # uncomment to enable enrichment
 
 publish:
@@ -99,6 +102,10 @@ publish:
 
 # linear:
 #   # Set LINEAR_API_KEY in your environment
+
+# openclaw:
+#   baseUrl: http://localhost:18789  # OpenClaw gateway URL
+#   # Set OPENCLAW_TOKEN in your environment
 `;
 
 async function main() {
@@ -170,6 +177,7 @@ async function runGenerate(from: string, to: string, opts: Record<string, string
   if (opts.provider) config.ai.provider = opts.provider as any;
   if (opts.audience) config.ai.audience = opts.audience as any;
   if (opts.model) config.ai.model = opts.model;
+  if (opts.source) config.source.type = opts.source as any;
 
   const format = (opts.format || 'markdown') as OutputFormat;
   const dryRun = 'dry-run' in opts || 'dryRun' in opts;

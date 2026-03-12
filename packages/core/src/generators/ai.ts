@@ -1,6 +1,6 @@
 import type {
   Generator, EnrichedContext, AIConfig, ReleaseNotes,
-  ChangeEntry, ChangeCategory
+  ChangeEntry, ChangeCategory, OpenClawConfig
 } from '../types';
 
 /**
@@ -8,6 +8,11 @@ import type {
  * Supports BYOK (Bring Your Own Key).
  */
 export class AIGenerator implements Generator {
+  private openclawConfig?: OpenClawConfig;
+
+  constructor(openclawConfig?: OpenClawConfig) {
+    this.openclawConfig = openclawConfig;
+  }
 
   async generate(context: EnrichedContext, config: AIConfig): Promise<ReleaseNotes> {
     const prompt = this.buildPrompt(context, config);
@@ -19,6 +24,12 @@ export class AIGenerator implements Generator {
       rawResponse = await this.callAnthropic(prompt, apiKey, config.model);
     } else if (config.provider === 'openai') {
       rawResponse = await this.callOpenAI(prompt, apiKey, config.model);
+    } else if (config.provider === 'gemini') {
+      rawResponse = await this.callGemini(prompt, apiKey, config.model);
+    } else if (config.provider === 'ollama') {
+      rawResponse = await this.callOllama(prompt, config.model);
+    } else if (config.provider === 'openclaw') {
+      rawResponse = await this.callOpenClaw(prompt, config.model);
     } else {
       throw new Error(`Unsupported AI provider: ${config.provider}`);
     }
@@ -29,9 +40,17 @@ export class AIGenerator implements Generator {
   private resolveApiKey(config: AIConfig): string {
     if (config.apiKey) return config.apiKey;
 
-    const envVar = config.provider === 'anthropic'
-      ? 'ANTHROPIC_API_KEY'
-      : 'OPENAI_API_KEY';
+    // Ollama and OpenClaw don't require API keys
+    if (config.provider === 'ollama' || config.provider === 'openclaw') return '';
+
+    const envVarMap: Record<string, string> = {
+      anthropic: 'ANTHROPIC_API_KEY',
+      openai: 'OPENAI_API_KEY',
+      gemini: 'GOOGLE_API_KEY',
+    };
+
+    const envVar = envVarMap[config.provider];
+    if (!envVar) throw new Error(`Unknown provider: ${config.provider}`);
 
     const key = process.env[envVar];
     if (!key) {
@@ -161,6 +180,78 @@ Rules:
 
     const data = await response.json() as any;
     return data.choices[0]?.message?.content || '';
+  }
+
+  private async callGemini(prompt: string, apiKey: string, model?: string): Promise<string> {
+    const modelId = model || 'gemini-2.0-flash';
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 4096 },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Gemini API error (${response.status}): ${error}`);
+    }
+
+    const data = await response.json() as any;
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  }
+
+  private async callOllama(prompt: string, model?: string): Promise<string> {
+    const baseUrl = process.env.OLLAMA_HOST || 'http://localhost:11434';
+    const response = await fetch(`${baseUrl}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: model || 'llama3.1',
+        messages: [{ role: 'user', content: prompt }],
+        stream: false,
+        options: { temperature: 0.3 },
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Ollama API error (${response.status}): ${error}`);
+    }
+
+    const data = await response.json() as any;
+    return data.message?.content || '';
+  }
+
+  private async callOpenClaw(prompt: string, model?: string): Promise<string> {
+    const baseUrl = this.openclawConfig?.baseUrl || process.env.OPENCLAW_URL || 'http://localhost:18789';
+    const token = this.openclawConfig?.token || process.env.OPENCLAW_TOKEN || '';
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch(`${baseUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        model: model || 'anthropic/claude-sonnet-4-6',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 4096,
+        temperature: 0.3,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`OpenClaw API error (${response.status}): ${error}`);
+    }
+
+    const data = await response.json() as any;
+    return data.choices?.[0]?.message?.content || '';
   }
 
   private parseResponse(raw: string, context: EnrichedContext): ReleaseNotes {

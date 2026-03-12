@@ -180,5 +180,6 @@ function mergeWithDefaults(parsed: Record<string, any>): CullConfig {
     publish: parsed.publish || DEFAULT_CONFIG.publish,
     jira: parsed.jira,
     linear: parsed.linear,
+    openclaw: parsed.openclaw,
   };
 }
