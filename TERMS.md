@@ -34,7 +34,7 @@ IN NO EVENT SHALL THE AUTHORS, COPYRIGHT HOLDERS, OR DEPLOY OR DIE BE LIABLE FOR
 
 ## 7. Enterprise Licensing
 
-For enterprise licensing, SLAs, or custom agreements, contact **matt@deployordie.io**.
+For enterprise licensing, SLAs, or custom agreements, contact **matt@cullit.io**.
 
 ## 8. Changes
 
@@ -43,5 +43,5 @@ We reserve the right to modify these terms. Changes will be reflected in this do
 ## Contact
 
 **Deploy or Die**
-matt@deployordie.io
-https://deployordie.io
+matt@cullit.io
+https://cullit.io

@@ -55,7 +55,7 @@ Cullit is fully open source under the MIT license. You can audit the entire code
 
 ## Contact
 
-For privacy questions: **matt@deployordie.io**
+For privacy questions: **matt@cullit.io**
 
 ## Changes
 

@@ -46,7 +46,7 @@ an individual is officially representing the community in public spaces.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the project team at **matt@deployordie.io**.
+reported to the project team at **matt@cullit.io**.
 
 All complaints will be reviewed and investigated promptly and fairly.
 

@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Cull the noise from your releases. AI-powered release notes from the CLI.",
   "license": "MIT",
-  "author": "Deploy or Die <matt@deployordie.io>",
+  "author": "Deploy or Die <matt@cullit.io>",
   "repository": {
     "type": "git",
     "url": "https://github.com/deployordie/cullit",
