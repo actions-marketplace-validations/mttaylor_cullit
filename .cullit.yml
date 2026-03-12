@@ -1,0 +1,45 @@
+# Cullit Configuration
+# Docs: https://cullit.io/docs/config
+# 
+# This file configures how Cull generates your release notes.
+# Place it in the root of your repository.
+
+# ── AI Configuration ──────────────────────────────────
+ai:
+  provider: anthropic            # anthropic | openai
+  # model: claude-sonnet-4-20250514    # optional override
+  audience: developer            # developer | end-user | executive
+  tone: professional             # professional | casual | terse
+  categories: [features, fixes, breaking, improvements, chores]
+
+# ── Source Configuration ──────────────────────────────
+source:
+  type: local                    # local (git CLI) | github (API)
+  # owner: deployordie           # required if type: github
+  # repo: cull              # required if type: github
+  enrichment: [jira]             # optional: [jira, linear]
+
+# ── Publish Targets ───────────────────────────────────
+# Notes are published to all configured targets.
+publish:
+  - type: stdout                 # print to terminal
+  - type: file
+    path: RELEASE_NOTES.md
+  # - type: slack
+  #   webhook_url: $SLACK_WEBHOOK_URL
+  # - type: discord
+  #   webhook_url: $DISCORD_WEBHOOK_URL
+  # - type: github-release       # creates/updates GitHub Release
+
+# ── Jira Integration ─────────────────────────────────
+# Extracts PROJ-123 style keys from commits and pulls ticket details.
+jira:
+  domain: yourcompany.atlassian.net
+  # Auth via environment variables:
+  #   JIRA_EMAIL=you@company.com
+  #   JIRA_API_TOKEN=your-token
+
+# ── Linear Integration ───────────────────────────────
+# linear:
+#   Auth via environment variable:
+#     LINEAR_API_KEY=your-key

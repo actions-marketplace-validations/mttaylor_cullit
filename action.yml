@@ -1,0 +1,63 @@
+name: 'Cullit — AI Release Notes'
+description: 'Generate intelligent, categorized release notes from your git history using AI. Supports Claude & OpenAI with BYOK.'
+author: 'Deploy or Die'
+
+branding:
+  icon: 'file-text'
+  color: 'yellow'
+
+inputs:
+  from:
+    description: 'Start ref (tag, branch, or commit SHA). If omitted, uses previous tag.'
+    required: false
+  to:
+    description: 'End ref (tag, branch, or commit SHA). Defaults to HEAD.'
+    required: false
+    default: 'HEAD'
+  provider:
+    description: 'AI provider: anthropic or openai'
+    required: false
+    default: 'anthropic'
+  model:
+    description: 'AI model to use (e.g., claude-sonnet-4-20250514, gpt-4o)'
+    required: false
+  audience:
+    description: 'Target audience: developer, end-user, or executive'
+    required: false
+    default: 'developer'
+  tone:
+    description: 'Writing tone: professional, casual, or terse'
+    required: false
+    default: 'professional'
+  format:
+    description: 'Output format: markdown, html, or json'
+    required: false
+    default: 'markdown'
+  publish-slack-webhook:
+    description: 'Slack webhook URL to publish release notes'
+    required: false
+  publish-discord-webhook:
+    description: 'Discord webhook URL to publish release notes'
+    required: false
+  publish-github-release:
+    description: 'Set to "true" to create/update GitHub Release'
+    required: false
+    default: 'false'
+  jira-domain:
+    description: 'Jira domain (e.g., yourcompany.atlassian.net) for ticket enrichment'
+    required: false
+  config:
+    description: 'Path to .cullit.yml config file'
+    required: false
+
+outputs:
+  release-notes:
+    description: 'Generated release notes content'
+  version:
+    description: 'Version string (to ref)'
+  change-count:
+    description: 'Number of changes in the release'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

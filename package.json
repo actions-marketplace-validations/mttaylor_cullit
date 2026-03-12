@@ -1,0 +1,33 @@
+{
+  "name": "cullit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cull the noise from your releases. AI-powered release notes.",
+  "author": "Deploy or Die <matt@deployordie.io>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/deployordie/cullit"
+  },
+  "keywords": [
+    "release-notes",
+    "changelog",
+    "ai",
+    "github-action",
+    "automation",
+    "devops"
+  ],
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "vitest run",
+    "dev": "pnpm --filter @cull/cli dev",
+    "lint": "eslint packages/",
+    "cullit": "node packages/cli/dist/index.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "tsup": "^8.0.0",
+    "vitest": "^1.3.0",
+    "eslint": "^8.57.0"
+  }
+}

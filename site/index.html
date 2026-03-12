@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cullit — Cull the noise from your releases</title>
+<meta name="description" content="Cullit — AI-powered release notes generated from your git history. Cull the noise.. Works as a CLI, GitHub Action, or API. Multi-provider AI with BYOK support.">
+<meta name="keywords" content="cullit, cull, ai release notes, release notes generator, github action release notes, automated changelog, ai changelog generator, cullit.io">
+<meta property="og:title" content="Cullit — Cull the noise from your releases">
+<meta property="og:description" content="Cullit — AI release notes from git commits. Cull the noise. CLI + GitHub Action. & more.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg-card: #12121a;
+    --bg-card-hover: #1a1a28;
+    --accent: #e8ff47;
+    --accent-dim: #c4d93c;
+    --text: #e0e0e8;
+    --text-dim: #8888a0;
+    --text-bright: #ffffff;
+    --border: #2a2a3a;
+    --terminal-green: #4ade80;
+    --terminal-blue: #60a5fa;
+    --terminal-red: #f87171;
+    --terminal-yellow: #fbbf24;
+    --terminal-purple: #c084fc;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* NOISE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 100;
+    background: rgba(10,10,15,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-decoration: none;
+    letter-spacing: -0.5px;
+  }
+
+  .logo span { color: var(--text-dim); font-weight: 400; }
+
+  .nav-links { display: flex; gap: 2rem; align-items: center; }
+  .nav-links a {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-family: 'Space Mono', monospace;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+
+  .nav-cta {
+    background: var(--accent) !important;
+    color: var(--bg) !important;
+    padding: 0.5rem 1.2rem;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.85rem !important;
+    transition: transform 0.2s, box-shadow 0.2s !important;
+  }
+  .nav-cta:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(232,255,71,0.3);
+  }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8rem 2rem 4rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    background: rgba(232,255,71,0.08);
+    border: 1px solid rgba(232,255,71,0.2);
+    border-radius: 100px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent);
+    width: fit-content;
+    margin-bottom: 2rem;
+    animation: fadeInUp 0.6s ease-out;
+  }
+
+  .hero-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse-dot 2s infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(3rem, 7vw, 5.5rem);
+    font-weight: 800;
+    line-height: 1.05;
+    color: var(--text-bright);
+    margin-bottom: 1.5rem;
+    animation: fadeInUp 0.6s ease-out 0.1s both;
+  }
+
+  .hero h1 .accent { color: var(--accent); }
+
+  .hero-sub {
+    font-size: 1.25rem;
+    color: var(--text-dim);
+    max-width: 600px;
+    line-height: 1.7;
+    margin-bottom: 2.5rem;
+    animation: fadeInUp 0.6s ease-out 0.2s both;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    animation: fadeInUp 0.6s ease-out 0.3s both;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.9rem 2rem;
+    background: var(--accent);
+    color: var(--bg);
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 30px rgba(232,255,71,0.25);
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.9rem 2rem;
+    background: transparent;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-weight: 400;
+    font-size: 0.95rem;
+    text-decoration: none;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .btn-secondary:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* TERMINAL DEMO */
+  .terminal-section {
+    padding: 4rem 2rem 6rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .terminal {
+    background: #0d0d14;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+
+  .terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #161620;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .terminal-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+  }
+  .terminal-dot.red { background: #ff5f57; }
+  .terminal-dot.yellow { background: #febc2e; }
+  .terminal-dot.green { background: #28c840; }
+
+  .terminal-title {
+    flex: 1;
+    text-align: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  .terminal-body {
+    padding: 1.5rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+
+  .t-prompt { color: var(--terminal-green); }
+  .t-cmd { color: var(--text-bright); }
+  .t-flag { color: var(--terminal-blue); }
+  .t-val { color: var(--terminal-yellow); }
+  .t-comment { color: var(--text-dim); font-style: italic; }
+  .t-output { color: var(--text-dim); }
+  .t-cat { color: var(--terminal-purple); font-weight: 700; }
+  .t-accent { color: var(--accent); }
+
+  /* FEATURES */
+  .features {
+    padding: 6rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 1rem;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 3rem;
+    max-width: 600px;
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .feature-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2rem;
+    transition: border-color 0.3s, background 0.3s, transform 0.3s;
+  }
+  .feature-card:hover {
+    border-color: rgba(232,255,71,0.3);
+    background: var(--bg-card-hover);
+    transform: translateY(-2px);
+  }
+
+  .feature-icon {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  .feature-card h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 0.75rem;
+  }
+
+  .feature-card p {
+    color: var(--text-dim);
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  /* HOW IT WORKS */
+  .how-it-works {
+    padding: 6rem 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .step {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+    margin-bottom: 3rem;
+    position: relative;
+  }
+
+  .step-number {
+    flex-shrink: 0;
+    width: 48px; height: 48px;
+    background: rgba(232,255,71,0.1);
+    border: 1px solid rgba(232,255,71,0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 1.1rem;
+  }
+
+  .step h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 0.5rem;
+  }
+
+  .step p {
+    color: var(--text-dim);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .step code {
+    display: inline-block;
+    margin-top: 0.75rem;
+    padding: 0.5rem 1rem;
+    background: #0d0d14;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--terminal-green);
+  }
+
+  /* INTEGRATIONS */
+  .integrations {
+    padding: 6rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .integration-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+  }
+
+  .integration-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.5rem 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+  .integration-chip:hover {
+    border-color: rgba(232,255,71,0.3);
+    transform: translateY(-2px);
+  }
+
+  .integration-chip .icon { font-size: 2rem; }
+  .integration-chip .name {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-align: center;
+  }
+  .integration-chip .badge {
+    font-size: 0.6rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 100px;
+    font-family: 'Space Mono', monospace;
+  }
+  .badge-live { background: rgba(74,222,128,0.15); color: var(--terminal-green); }
+  .badge-soon { background: rgba(251,191,36,0.15); color: var(--terminal-yellow); }
+
+  /* CTA */
+  .cta-section {
+    padding: 8rem 2rem;
+    text-align: center;
+    position: relative;
+  }
+
+  .cta-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(232,255,71,0.06) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .cta-section h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: 800;
+    color: var(--text-bright);
+    margin-bottom: 1rem;
+    position: relative;
+  }
+
+  .cta-section p {
+    color: var(--text-dim);
+    font-size: 1.1rem;
+    margin-bottom: 2.5rem;
+    position: relative;
+  }
+
+  .cta-section .hero-actions { justify-content: center; position: relative; }
+
+  /* EMAIL FORM */
+  .email-form {
+    display: flex;
+    gap: 0.5rem;
+    max-width: 460px;
+    margin: 0 auto 1rem;
+    position: relative;
+  }
+
+  .email-form input {
+    flex: 1;
+    padding: 0.9rem 1.2rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-bright);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .email-form input::placeholder { color: var(--text-dim); }
+  .email-form input:focus { border-color: var(--accent); }
+
+  .email-form button {
+    padding: 0.9rem 1.5rem;
+    background: var(--accent);
+    color: var(--bg);
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    font-size: 0.85rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .email-form button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(232,255,71,0.3);
+  }
+
+  .email-note {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* FOOTER */
+  footer {
+    padding: 3rem 2rem;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+
+  .footer-brand {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+  .footer-brand a { color: var(--accent); text-decoration: none; }
+
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+  }
+  .footer-links a {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--accent); }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    nav { padding: 0.75rem 1rem; }
+    .nav-links { gap: 1rem; }
+    .hero { padding: 6rem 1.5rem 3rem; }
+    .terminal-body { font-size: 0.72rem; padding: 1rem; }
+    .step { flex-direction: column; gap: 1rem; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .email-form { flex-direction: column; }
+  }
+
+  @media (max-width: 480px) {
+    .nav-links a:not(.nav-cta) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="logo">cullit<span>.io</span></a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#how-it-works">How It Works</a>
+    <a href="#integrations">Integrations</a>
+    <a href="https://github.com/deployordie/cullit" target="_blank">GitHub</a>
+    <a href="#cta" class="nav-cta">Get Early Access</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">Building in public</div>
+  <h1>Cullit. <span class="accent">Release notes,</span><br>noise removed.</h1>
+  <p class="hero-sub">Cullit reads your git history, enriches from Jira & Linear, and uses AI to generate categorized, human-readable release notes. Ship to Slack, Discord, GitHub Releases, and more.</p>
+  <div class="hero-actions">
+    <a href="#cta" class="btn-primary">&#9889; Get Early Access#9889; Get Early Access</a>
+    <a href="https://github.com/deployordie/cullit" class="btn-secondary" target="_blank">&#9733; Star on GitHub#9733; Star on GitHub</a>
+  </div>
+</section>
+
+<!-- TERMINAL DEMO -->
+<section class="terminal-section">
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="terminal-dot red"></div>
+      <div class="terminal-dot yellow"></div>
+      <div class="terminal-dot green"></div>
+      <span class="terminal-title">cull &mdash; terminal</span>
+    </div>
+    <div class="terminal-body">
+      <span class="t-prompt">$</span> <span class="t-cmd">cullit generate</span> <span class="t-flag">--from</span> <span class="t-val">v2.3.0</span> <span class="t-flag">--to</span> <span class="t-val">v2.4.0</span><br><br>
+      <span class="t-comment"># Collecting commits between v2.3.0..v2.4.0</span><br>
+      <span class="t-output">&raquo; Found 23 commits, 8 PRs, 14 Jira tickets</span><br>
+      <span class="t-output">&raquo; Enriching from Jira... done (14/14)</span><br>
+      <span class="t-output">&raquo; Generating with Claude (sonnet-4)...</span><br><br>
+      <span class="t-accent">## Release v2.4.0 &mdash; March 10, 2026</span><br><br>
+      <span class="t-cat">&#x2728; Features</span><br>
+      <span class="t-output">- Added real-time collaboration for shared dashboards (PROJ-142)</span><br>
+      <span class="t-output">- New export API supporting CSV and PDF formats (PROJ-156)</span><br>
+      <span class="t-output">- Webhook configuration UI with test-send capability (PROJ-161)</span><br><br>
+      <span class="t-cat">&#x1f41b; Bug Fixes</span><br>
+      <span class="t-output">- Fixed timezone rendering in scheduled reports (PROJ-149)</span><br>
+      <span class="t-output">- Resolved memory leak in WebSocket connection pool (PROJ-155)</span><br><br>
+      <span class="t-cat">&#x26a0;&#xfe0f; Breaking Changes</span><br>
+      <span class="t-output">- /api/v1/export endpoint deprecated, use /api/v2/export (PROJ-160)</span><br><br>
+      <span class="t-output">&raquo; Published to: GitHub Release, #releases (Slack)</span><br>
+      <span class="t-accent">&check; Done in 4.2s</span>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <p class="section-label">// capabilities</p>
+  <h2 class="section-title">Cull the noise. Ship the signal.</h2>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <span class="feature-icon">&#x1f9e0;</span>
+      <h3>AI-Powered Generation</h3>
+      <p>Not a commit log dump. Cullit uses Claude or OpenAI to write categorized, human-readable notes your team and users actually want to read.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">&#x1f511;</span>
+      <h3>Bring Your Own Key</h3>
+      <p>Use your own Claude or OpenAI API key. Zero vendor lock-in. Zero surprise AI costs. You control the model, the cost, and the data.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">&#x26a1;</span>
+      <h3>Flexible Triggers</h3>
+      <p>Run from CLI, GitHub Actions, or (soon) API. Trigger on tag push, release creation, manual dispatch, or any two commits you choose.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">&#x1f50d;</span>
+      <h3>Jira &amp; Linear Enrichment</h3>
+      <p>Cullit extracts ticket keys from your commits and pulls in real context &mdash; titles, descriptions, labels &mdash; so the AI has the full picture.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">&#x1f4e4;</span>
+      <h3>Publish Everywhere</h3>
+      <p>Push generated notes to GitHub Releases, Slack, Discord, and more. Confluence, Notion, and GitBook coming soon.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">&#x1f3af;</span>
+      <h3>Audience Modes</h3>
+      <p>Generate developer-focused technical notes, plain-language end-user updates, or executive summaries &mdash; all from the same commit range.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-it-works" id="how-it-works">
+  <p class="section-label">// workflow</p>
+  <h2 class="section-title">Three commands. Zero grunt work.</h2>
+
+  <div class="step">
+    <div class="step-number">1</div>
+    <div>
+      <h3>Configure once</h3>
+      <p>Drop a <strong>.cull.yml</strong> in your repo. Pick your AI provider, audience mode, integrations, and publish targets.</p>
+      <code>cullit init</code>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">2</div>
+    <div>
+      <h3>Trigger anywhere</h3>
+      <p>Run it from your terminal, wire it into GitHub Actions, or call it between any two commits. Works however your team ships.</p>
+      <code>cullit generate --from v2.3.0 --to v2.4.0</code>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">3</div>
+    <div>
+      <h3>Ship the notes</h3>
+      <p>AI generates smart, categorized notes. They hit Slack, GitHub Releases, Discord &mdash; wherever your team looks. Done before your coffee cools.</p>
+    </div>
+  </div>
+</section>
+
+<!-- INTEGRATIONS -->
+<section class="integrations" id="integrations">
+  <p class="section-label">// integrations</p>
+  <h2 class="section-title">Plugs in where your team works.</h2>
+  <div class="integration-grid">
+    <div class="integration-chip">
+      <span class="icon">&#x1f4bb;</span>
+      <span class="name">GitHub</span>
+      <span class="badge badge-live">v1</span>
+    </div>
+    <div class="integration-chip">
+      <span class="icon">&#x1f4cb;</span>
+      <span class="name">Jira</span>
+      <span class="badge badge-live">v1</span>
+    </div>
+    <div class="integration-chip">
+      <span class="icon">&#x1f4d0;</span>
+      <span class="name">Linear</span>
+      <span class="badge badge-live">v1</span>
+    </div>
+    <div class="integration-chip">
+      <span class="icon">&#x1f4ac;</span>
+      <span class="name">Slack</span>
+      <span class="badge badge-live">v1</span>
+    </div>
+    <div class="integration-chip">
+      <span class="icon">&#x1f3ae;</span>
+      <span class="name">Discord</span>
+      <span class="badge badge-live">v1</span>
+    </div>
+    <div class="integration-chip">
+      <span class="icon">&#x1f4d6;</span>
+      <span class="name">Confluence</span>
+      <span class="badge badge-soon">soon</span>
+    </div>
+    <div class="integration-chip">
+      <span class="icon">&#x1f4dd;</span>
+      <span class="name">Notion</span>
+      <span class="badge badge-soon">soon</span>
+    </div>
+    <div class="integration-chip">
+      <span class="icon">&#x1f4da;</span>
+      <span class="name">GitBook</span>
+      <span class="badge badge-soon">soon</span>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section" id="cta">
+  <h2>Stop writing release notes.<br>Start <span style="color:var(--accent)">culling</span> them.</h2>
+  <p>Join the waitlist. Get early access when Cullit ships.</p>
+  <div class="email-form">
+    <input type="email" placeholder="you@company.com" aria-label="Email address">
+    <button type="button" onclick="handleSignup()">Get Early Access</button>
+  </div>
+  <p class="email-note">Free &amp; open source. No spam. Just launch updates.</p>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p class="footer-brand">A <a href="https://deployordie.io" target="_blank">Deploy or Die</a> product</p>
+  <div class="footer-links">
+    <a href="https://github.com/deployordie/cullit" target="_blank">GitHub</a>
+    <a href="https://deployordie.io" target="_blank">Blog</a>
+    <a href="https://x.com/deployordie" target="_blank">X / Twitter</a>
+    <a href="https://linkedin.com" target="_blank">LinkedIn</a>
+  </div>
+</footer>
+
+<script>
+function handleSignup() {
+  const input = document.querySelector('.email-form input');
+  const email = input.value.trim();
+  if (!email || !email.includes('@')) {
+    input.style.borderColor = '#f87171';
+    setTimeout(() => input.style.borderColor = '', 2000);
+    return;
+  }
+  // Replace with Beehiiv or your email provider endpoint
+  const btn = document.querySelector('.email-form button');
+  btn.textContent = '✓ You\'re in!';
+  btn.style.background = '#4ade80';
+  input.value = '';
+  setTimeout(() => {
+    btn.textContent = 'Get Early Access';
+    btn.style.background = '';
+  }, 3000);
+}
+
+// Smooth reveal on scroll
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.style.opacity = '1';
+      entry.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.feature-card, .step, .integration-chip').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(20px)';
+  el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+  observer.observe(el);
+});
+</script>
+
+</body>
+</html>
