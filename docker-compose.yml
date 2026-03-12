@@ -1,0 +1,35 @@
+# =============================================
+#  Cullit — Docker Compose
+# =============================================
+# Usage:
+#   docker compose up api        # Start the API server
+#   docker compose run cli generate --from v1.0.0 --to v1.1.0
+
+services:
+  # API server — POST /generate, GET /health, GET /openapi.json
+  api:
+    build: .
+    entrypoint: ["node", "packages/api/dist/index.js"]
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - PORT=3000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # CLI — one-off runs
+  cli:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - .:/repo:ro
+    working_dir: /repo
+    profiles:
+      - cli

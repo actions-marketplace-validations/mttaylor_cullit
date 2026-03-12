@@ -1,0 +1,15 @@
+{
+  "name": "@cull/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --clean",
+    "dev": "tsup src/index.ts --format esm --watch --onSuccess 'node dist/index.js'"
+  },
+  "dependencies": {
+    "@cull/core": "workspace:*",
+    "@cull/config": "workspace:*"
+  }
+}

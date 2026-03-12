@@ -24,6 +24,15 @@ importers:
         specifier: ^1.3.0
         version: 1.6.1(@types/node@25.4.0)
 
+  packages/api:
+    dependencies:
+      '@cull/config':
+        specifier: workspace:*
+        version: link:../config
+      '@cull/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/cli:
     dependencies:
       '@cull/config':

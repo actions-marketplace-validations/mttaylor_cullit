@@ -12,7 +12,7 @@ export { JiraCollector } from './collectors/jira';
 export { LinearCollector } from './collectors/linear';
 export { AIGenerator } from './generators/ai';
 export { formatNotes } from './formatter';
-export { StdoutPublisher, FilePublisher, SlackPublisher, DiscordPublisher } from './publishers/index';
+export { StdoutPublisher, FilePublisher, SlackPublisher, DiscordPublisher, GitHubReleasePublisher } from './publishers/index';
 export { JiraEnricher } from './enrichers/jira';
 export { LinearEnricher } from './enrichers/linear';
 
@@ -22,7 +22,7 @@ import { JiraCollector } from './collectors/jira';
 import { LinearCollector } from './collectors/linear';
 import { AIGenerator } from './generators/ai';
 import { formatNotes } from './formatter';
-import { StdoutPublisher, FilePublisher, SlackPublisher, DiscordPublisher } from './publishers/index';
+import { StdoutPublisher, FilePublisher, SlackPublisher, DiscordPublisher, GitHubReleasePublisher } from './publishers/index';
 import { JiraEnricher } from './enrichers/jira';
 import { LinearEnricher } from './enrichers/linear';
 
@@ -132,8 +132,8 @@ export async function runPipeline(
             }
             break;
           case 'github-release':
-            // TODO: Implement GitHub Release publisher
-            console.log('» GitHub Release publisher coming in v1.1');
+            await new GitHubReleasePublisher().publish(notes, format);
+            publishedTo.push('github-release');
             break;
         }
       } catch (err) {

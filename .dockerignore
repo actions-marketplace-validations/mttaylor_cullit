@@ -1,0 +1,13 @@
+# Docker
+.env
+.env.local
+.git
+node_modules
+dist
+coverage
+*.log
+*.code-workspace
+cullit_setup_guide.md
+RELEASE_NOTES.md
+site/
+.github/
