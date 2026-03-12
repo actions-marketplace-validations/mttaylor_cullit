@@ -35,9 +35,14 @@ export class GitCollector implements Collector {
         { cwd: this.cwd, encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 }
       );
     } catch (error) {
+      const stderr = (error as any)?.stderr?.toString?.() || '';
+      const hint = stderr.includes('unknown revision')
+        ? 'Check that both refs exist (run "cullit tags" to see tags).'
+        : stderr.includes('not a git repository')
+        ? 'Run this command inside a git repository.'
+        : `Make sure both refs exist and you're in a git repository.`;
       throw new Error(
-        `Failed to read git log between ${from} and ${to}. ` +
-        `Make sure both refs exist and you're in a git repository.`
+        `Failed to read git log between ${from} and ${to}. ${hint}`
       );
     }
   }

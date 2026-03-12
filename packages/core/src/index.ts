@@ -4,13 +4,16 @@ export type {
   EnrichedTicket, EnrichedContext,
   Collector, Enricher, Generator, Publisher,
   PipelineResult, OutputFormat, PublishTarget,
-  OpenClawConfig,
+  OpenClawConfig, AIProvider, Audience, Tone,
+  SourceConfig, PublisherType, EnrichmentType,
+  JiraConfig, LinearConfig,
 } from './types';
 
 export { GitCollector, getRecentTags, getLatestTag } from './collectors/git';
 export { JiraCollector } from './collectors/jira';
 export { LinearCollector } from './collectors/linear';
 export { AIGenerator } from './generators/ai';
+export { TemplateGenerator } from './generators/template';
 export { formatNotes } from './formatter';
 export { StdoutPublisher, FilePublisher, SlackPublisher, DiscordPublisher, GitHubReleasePublisher } from './publishers/index';
 export { JiraEnricher } from './enrichers/jira';
@@ -21,6 +24,7 @@ import { GitCollector } from './collectors/git';
 import { JiraCollector } from './collectors/jira';
 import { LinearCollector } from './collectors/linear';
 import { AIGenerator } from './generators/ai';
+import { TemplateGenerator } from './generators/template';
 import { formatNotes } from './formatter';
 import { StdoutPublisher, FilePublisher, SlackPublisher, DiscordPublisher, GitHubReleasePublisher } from './publishers/index';
 import { JiraEnricher } from './enrichers/jira';
@@ -86,17 +90,23 @@ export async function runPipeline(
 
   // 3. GENERATE
   const providerNames: Record<string, string> = {
-    anthropic: 'Claude', openai: 'OpenAI', gemini: 'Gemini', ollama: 'Ollama', openclaw: 'OpenClaw',
+    anthropic: 'Claude', openai: 'OpenAI', gemini: 'Gemini', ollama: 'Ollama', openclaw: 'OpenClaw', none: 'Template',
   };
   const defaultModels: Record<string, string> = {
-    anthropic: 'sonnet-4', openai: 'gpt-4o', gemini: 'gemini-2.0-flash', ollama: 'llama3.1', openclaw: 'claude-sonnet-4-6',
+    anthropic: 'claude-sonnet-4-20250514', openai: 'gpt-4o', gemini: 'gemini-2.0-flash', ollama: 'llama3.1', openclaw: 'claude-sonnet-4-6',
   };
   const providerName = providerNames[config.ai.provider] || config.ai.provider;
-  const modelName = config.ai.model || defaultModels[config.ai.provider] || 'default';
+  const modelName = config.ai.provider === 'none' ? 'template' : (config.ai.model || defaultModels[config.ai.provider] || 'default');
   console.log(`» Generating with ${providerName} (${modelName})...`);
 
-  const generator = new AIGenerator(config.openclaw);
-  const notes = await generator.generate(context, config.ai);
+  let notes;
+  if (config.ai.provider === 'none') {
+    const generator = new TemplateGenerator();
+    notes = await generator.generate(context, config.ai);
+  } else {
+    const generator = new AIGenerator(config.openclaw);
+    notes = await generator.generate(context, config.ai);
+  }
   console.log(`» Generated ${notes.changes.length} change entries`);
 
   // 4. FORMAT

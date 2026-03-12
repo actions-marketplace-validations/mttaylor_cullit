@@ -30,14 +30,18 @@ FROM node:20-alpine AS production
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
-# Install git (needed for local source collector)
-RUN apk add --no-cache git
+# Install git (needed for local source collector) and curl (healthcheck)
+RUN apk add --no-cache git curl
 
 COPY --from=build /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
-COPY --from=build /app/packages/core/package.json /app/packages/core/dist/ packages/core/
-COPY --from=build /app/packages/config/package.json /app/packages/config/dist/ packages/config/
-COPY --from=build /app/packages/cli/package.json /app/packages/cli/dist/ packages/cli/
-COPY --from=build /app/packages/api/package.json /app/packages/api/dist/ packages/api/
+COPY --from=build /app/packages/core/package.json packages/core/package.json
+COPY --from=build /app/packages/core/dist/ packages/core/dist/
+COPY --from=build /app/packages/config/package.json packages/config/package.json
+COPY --from=build /app/packages/config/dist/ packages/config/dist/
+COPY --from=build /app/packages/cli/package.json packages/cli/package.json
+COPY --from=build /app/packages/cli/dist/ packages/cli/dist/
+COPY --from=build /app/packages/api/package.json packages/api/package.json
+COPY --from=build /app/packages/api/dist/ packages/api/dist/
 
 RUN pnpm install --prod --frozen-lockfile
 

@@ -60,7 +60,7 @@ const HELP = `
     --config, -c  Path to config file (default: .cullit.yml)
     --format      Output format: markdown, html, json (default: markdown)
     --dry-run     Generate but don't publish
-    --provider    Override AI provider (anthropic, openai, gemini, ollama, openclaw)
+    --provider    Override AI provider (anthropic, openai, gemini, ollama, openclaw, none)
     --source      Override source type (local, jira, linear)
     --audience    Override audience (developer, end-user, executive)
 
@@ -68,6 +68,7 @@ const HELP = `
     $ cullit generate --from v1.0.0 --to v1.1.0
     $ cullit generate --from HEAD~10 --provider gemini
     $ cullit generate --from HEAD~5 --provider ollama --model llama3.1
+    $ cullit generate --from HEAD~5 --provider none         # no AI key needed
     $ cullit generate --source jira --from "project = PROJ" --provider anthropic
     $ cullit generate --source linear --from "team:ENG" --provider openai
     $ cullit init
@@ -77,7 +78,7 @@ const DEFAULT_YML = `# Cullit Configuration
 # https://cullit.io/docs/config
 
 ai:
-  provider: anthropic          # anthropic | openai | gemini | ollama | openclaw
+  provider: anthropic          # anthropic | openai | gemini | ollama | openclaw | none
   # model: claude-sonnet-4-20250514  # optional: override default model
   audience: developer          # developer | end-user | executive
   tone: professional           # professional | casual | terse
@@ -92,9 +93,9 @@ publish:
   # - type: file
   #   path: RELEASE_NOTES.md
   # - type: slack
-  #   webhook_url: \$SLACK_WEBHOOK_URL
+  #   webhook_url: $SLACK_WEBHOOK_URL
   # - type: discord
-  #   webhook_url: \$DISCORD_WEBHOOK_URL
+  #   webhook_url: $DISCORD_WEBHOOK_URL
 
 # jira:
 #   domain: yourcompany.atlassian.net

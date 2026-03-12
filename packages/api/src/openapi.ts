@@ -6,7 +6,7 @@ export const openApiSpec = {
   info: {
     title: 'Cullit API',
     version: '0.1.0',
-    description: 'AI-powered release notes generation. Supports Anthropic Claude, OpenAI, Gemini, Ollama, and OpenClaw.',
+    description: 'AI-powered release notes generation. Supports Anthropic Claude, OpenAI, Gemini, Ollama, OpenClaw, and a template-based non-AI mode.',
     contact: {
       name: 'Deploy or Die',
       url: 'https://cullit.io',
@@ -152,7 +152,7 @@ export const openApiSpec = {
           },
           provider: {
             type: 'string',
-            enum: ['anthropic', 'openai', 'gemini', 'ollama', 'openclaw'],
+            enum: ['anthropic', 'openai', 'gemini', 'ollama', 'openclaw', 'none'],
             default: 'anthropic',
           },
           model: {

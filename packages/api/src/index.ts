@@ -20,6 +20,8 @@ import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarge
 import { openApiSpec } from './openapi.js';
 
 const PORT = parseInt(process.env['PORT'] || '3000', 10);
+const API_TOKEN = process.env['CULLIT_API_TOKEN'] || ''; // optional bearer auth
+const ALLOWED_ORIGINS = process.env['ALLOWED_ORIGINS'] || '*';
 
 // --- Helpers ---
 
@@ -28,9 +30,17 @@ function json(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, {
     'Content-Type': 'application/json',
     'Content-Length': Buffer.byteLength(payload),
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': ALLOWED_ORIGINS,
   });
   res.end(payload);
+}
+
+function checkAuth(req: IncomingMessage, res: ServerResponse): boolean {
+  if (!API_TOKEN) return true; // no auth configured
+  const header = req.headers['authorization'] || '';
+  if (header === `Bearer ${API_TOKEN}`) return true;
+  json(res, 401, { error: 'Unauthorized — set Authorization: Bearer <token>' });
+  return false;
 }
 
 async function readBody(req: IncomingMessage): Promise<string> {
@@ -149,7 +159,8 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
       duration: result.duration,
     });
   } catch (err) {
-    json(res, 500, { error: (err as Error).message });
+    console.error('Pipeline error:', (err as Error).message);
+    json(res, 500, { error: 'Generation failed. Check server logs for details.' });
   }
 }
 
@@ -159,7 +170,7 @@ const server = createServer(async (req, res) => {
   // CORS preflight
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': ALLOWED_ORIGINS,
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Max-Age': '86400',
@@ -177,6 +188,7 @@ const server = createServer(async (req, res) => {
     } else if (path === '/openapi.json' && req.method === 'GET') {
       await handleOpenAPI(req, res);
     } else if (path === '/generate' && req.method === 'POST') {
+      if (!checkAuth(req, res)) return;
       await handleGenerate(req, res);
     } else {
       json(res, 404, { error: 'Not found', docs: '/openapi.json' });

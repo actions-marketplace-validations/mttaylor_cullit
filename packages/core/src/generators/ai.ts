@@ -4,14 +4,31 @@ import type {
 } from '../types';
 
 /**
- * Generates release notes using AI (Claude or OpenAI).
- * Supports BYOK (Bring Your Own Key).
+ * Generates release notes using AI.
+ * Supports Anthropic, OpenAI, Gemini, Ollama, OpenClaw — BYOK.
  */
 export class AIGenerator implements Generator {
   private openclawConfig?: OpenClawConfig;
+  private timeoutMs: number;
 
-  constructor(openclawConfig?: OpenClawConfig) {
+  constructor(openclawConfig?: OpenClawConfig, timeoutMs: number = 60_000) {
     this.openclawConfig = openclawConfig;
+    this.timeoutMs = timeoutMs;
+  }
+
+  private async fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+    try {
+      return await fetch(url, { ...init, signal: controller.signal });
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') {
+        throw new Error(`Request to ${new URL(url).hostname} timed out after ${this.timeoutMs / 1000}s`);
+      }
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   async generate(context: EnrichedContext, config: AIConfig): Promise<ReleaseNotes> {
@@ -135,7 +152,7 @@ Rules:
   }
 
   private async callAnthropic(prompt: string, apiKey: string, model?: string): Promise<string> {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await this.fetchWithTimeout('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -159,7 +176,7 @@ Rules:
   }
 
   private async callOpenAI(prompt: string, apiKey: string, model?: string): Promise<string> {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await this.fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -184,7 +201,7 @@ Rules:
 
   private async callGemini(prompt: string, apiKey: string, model?: string): Promise<string> {
     const modelId = model || 'gemini-2.0-flash';
-    const response = await fetch(
+    const response = await this.fetchWithTimeout(
       `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${encodeURIComponent(apiKey)}`,
       {
         method: 'POST',
@@ -207,7 +224,7 @@ Rules:
 
   private async callOllama(prompt: string, model?: string): Promise<string> {
     const baseUrl = process.env.OLLAMA_HOST || 'http://localhost:11434';
-    const response = await fetch(`${baseUrl}/api/chat`, {
+    const response = await this.fetchWithTimeout(`${baseUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -234,7 +251,7 @@ Rules:
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const response = await fetch(`${baseUrl}/v1/chat/completions`, {
+    const response = await this.fetchWithTimeout(`${baseUrl}/v1/chat/completions`, {
       method: 'POST',
       headers,
       body: JSON.stringify({

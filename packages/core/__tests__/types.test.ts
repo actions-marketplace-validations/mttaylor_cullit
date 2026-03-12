@@ -17,8 +17,8 @@ describe('types', () => {
   });
 
   it('SourceConfig supports all source types', () => {
-    const sources: SourceConfig['type'][] = ['local', 'github', 'jira', 'linear'];
-    expect(sources).toHaveLength(4);
+    const sources: SourceConfig['type'][] = ['local', 'jira', 'linear'];
+    expect(sources).toHaveLength(3);
   });
 
   it('CullConfig composes correctly', () => {

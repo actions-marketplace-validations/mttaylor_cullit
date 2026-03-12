@@ -4,7 +4,7 @@
 
 // --- Config ---
 
-export type AIProvider = 'anthropic' | 'openai' | 'gemini' | 'ollama' | 'openclaw';
+export type AIProvider = 'anthropic' | 'openai' | 'gemini' | 'ollama' | 'openclaw' | 'none';
 export type Audience = 'developer' | 'end-user' | 'executive';
 export type Tone = 'professional' | 'casual' | 'terse';
 export type OutputFormat = 'markdown' | 'html' | 'json';
@@ -22,7 +22,7 @@ export interface AIConfig {
 }
 
 export interface SourceConfig {
-  type: 'github' | 'local' | 'jira' | 'linear';
+  type: 'local' | 'jira' | 'linear';
   owner?: string;
   repo?: string;
   enrichment?: EnrichmentType[];
