@@ -34,7 +34,7 @@ jobs:
 
       - name: Generate Release Notes
         id: cullit
-        uses: deployordie/cullit@v1
+        uses: mttaylor/cullit@v1
         with:
           provider: anthropic
           audience: developer

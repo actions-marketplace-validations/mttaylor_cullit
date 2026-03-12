@@ -14,7 +14,7 @@ We take security seriously. If you discover a vulnerability, please report it re
 
 ### How to Report
 
-1. **Email:** Send details to **security@deployordie.io**
+1. **Email:** Send details to **security@cullit.io**
 2. **Subject line:** `[SECURITY] Cullit — <brief description>`
 3. **Include:**
    - Description of the vulnerability
@@ -76,4 +76,4 @@ The following are **out of scope:**
 
 ## PGP Key
 
-For encrypted communications, request our PGP key at security@deployordie.io.
+For encrypted communications, request our PGP key at security@cullit.io.

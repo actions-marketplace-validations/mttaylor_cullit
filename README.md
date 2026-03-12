@@ -4,7 +4,7 @@
 
 Cullit reads your git history, enriches from Jira & Linear, and uses AI to generate categorized, human-readable release notes. Ships to Slack, Discord, GitHub Releases, and more.
 
-> A [Deploy or Die](https://deployordie.io) product.
+> Built by [Matt](https://cullit.io).
 
 ---
 
@@ -50,7 +50,7 @@ jobs:
         with:
           fetch-depth: 0  # Full history needed for git log
 
-      - uses: deployordie/cullit@v1
+      - uses: mttaylor/cullit@v1
         with:
           provider: anthropic
           audience: developer
@@ -190,4 +190,4 @@ MIT — see [LICENSE](LICENSE)
 
 ---
 
-Built by [Matt](https://deployordie.io) • [Newsletter](https://deployordie.io) • [YouTube](https://youtube.com/@deployordie)
+Built by [Matt](https://cullit.io) • [GitHub](https://github.com/mttaylor/cullit)

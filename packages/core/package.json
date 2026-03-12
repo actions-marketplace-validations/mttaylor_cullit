@@ -4,10 +4,10 @@
   "type": "module",
   "description": "Core engine for Cullit — AI-powered release note generation.",
   "license": "MIT",
-  "author": "Deploy or Die <matt@cullit.io>",
+  "author": "Cullit <matt@cullit.io>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/deployordie/cullit",
+    "url": "https://github.com/mttaylor/cullit",
     "directory": "packages/core"
   },
   "keywords": ["release-notes", "changelog", "ai", "automation"],

@@ -8,13 +8,13 @@ export const openApiSpec = {
     version: '0.1.0',
     description: 'AI-powered release notes generation. Supports Anthropic Claude, OpenAI, Gemini, Ollama, OpenClaw, and a template-based non-AI mode.',
     contact: {
-      name: 'Deploy or Die',
+      name: 'Cullit',
       url: 'https://cullit.io',
       email: 'matt@cullit.io',
     },
     license: {
       name: 'MIT',
-      url: 'https://github.com/deployordie/cullit/blob/main/LICENSE',
+      url: 'https://github.com/mttaylor/cullit/blob/main/LICENSE',
     },
   },
   servers: [

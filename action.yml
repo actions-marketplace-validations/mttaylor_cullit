@@ -1,6 +1,6 @@
 name: 'Cullit — AI Release Notes'
 description: 'Generate intelligent, categorized release notes from your git history using AI. Supports Claude & OpenAI with BYOK.'
-author: 'Deploy or Die'
+author: 'Cullit'
 
 branding:
   icon: 'file-text'

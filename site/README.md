@@ -9,7 +9,7 @@ This is deployed automatically via Cloudflare Pages connected to the `site/` dir
 ### Cloudflare Pages Setup
 
 1. Go to Cloudflare Dashboard → Pages → Create a project
-2. Connect to GitHub repo `deployordie/cullit`
+2. Connect to GitHub repo `mttaylor/cullit`
 3. Set build settings:
    - **Build command:** (leave blank — static HTML)
    - **Build output directory:** `site`

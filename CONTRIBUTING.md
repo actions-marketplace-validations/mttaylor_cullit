@@ -6,7 +6,7 @@ Thanks for your interest in contributing. Cullit is open source and PRs are welc
 
 ```bash
 # Clone
-git clone https://github.com/deployordie/cullit.git
+git clone https://github.com/mttaylor/cullit.git
 cd cullit
 
 # Install dependencies

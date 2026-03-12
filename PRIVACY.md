@@ -47,11 +47,11 @@ If you deploy the Cullit API server:
 
 - You are responsible for securing the server and any data it processes
 - The API server does not include authentication by default — add it via a reverse proxy or middleware for production use
-- No data is sent to Cullit or Deploy or Die from your self-hosted instance
+- No data is sent to Cullit from your self-hosted instance
 
 ## Open Source
 
-Cullit is fully open source under the MIT license. You can audit the entire codebase at [github.com/deployordie/cullit](https://github.com/deployordie/cullit).
+Cullit is fully open source under the MIT license. You can audit the entire codebase at [github.com/mttaylor/cullit](https://github.com/mttaylor/cullit).
 
 ## Contact
 
