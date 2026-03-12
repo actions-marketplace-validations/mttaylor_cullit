@@ -98,7 +98,7 @@ export class GitCollector implements Collector {
   private getFilesChanged(from: string, to: string): number {
     try {
       const output = execSync(
-        `git diff --stat ${from}..${to} | tail -1`,
+        `git diff --shortstat ${from}..${to}`,
         { cwd: this.cwd, encoding: 'utf-8' }
       );
       const match = output.match(/(\d+) files? changed/);
@@ -115,10 +115,10 @@ export class GitCollector implements Collector {
 export function getRecentTags(cwd: string = process.cwd(), count: number = 10): string[] {
   try {
     const output = execSync(
-      `git tag --sort=-v:refname | head -${count}`,
+      `git tag --sort=-v:refname`,
       { cwd, encoding: 'utf-8' }
     );
-    return output.trim().split('\n').filter(Boolean);
+    return output.trim().split('\n').filter(Boolean).slice(0, count);
   } catch {
     return [];
   }

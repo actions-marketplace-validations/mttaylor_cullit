@@ -12,7 +12,6 @@ export { formatNotes } from './formatter';
 export { StdoutPublisher, FilePublisher, SlackPublisher, DiscordPublisher } from './publishers/index';
 export { JiraEnricher } from './enrichers/jira';
 export { LinearEnricher } from './enrichers/linear';
-export { loadConfig } from '../../../packages/config/src/index';
 
 import type { CullConfig, EnrichedContext, PipelineResult, OutputFormat, EnrichedTicket } from './types';
 import { GitCollector } from './collectors/git';

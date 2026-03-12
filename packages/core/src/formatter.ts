@@ -1,4 +1,4 @@
-import type { ReleaseNotes, OutputFormat, ChangeCategory } from '../types';
+import type { ReleaseNotes, OutputFormat, ChangeCategory } from './types';
 
 const CATEGORY_LABELS: Record<ChangeCategory, string> = {
   features: '✨ Features',

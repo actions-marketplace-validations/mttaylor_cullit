@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import type { CullConfig } from '../types';
+import type { CullConfig } from '../../core/src/types';
 
 const DEFAULT_CONFIG: CullConfig = {
   ai: {
