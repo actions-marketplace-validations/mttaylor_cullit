@@ -23,6 +23,8 @@ export { formatNotes } from './formatter';
 export { StdoutPublisher, FilePublisher, SlackPublisher, DiscordPublisher, GitHubReleasePublisher } from './publishers/index';
 export { JiraEnricher } from './enrichers/jira';
 export { LinearEnricher } from './enrichers/linear';
+export { analyzeReleaseReadiness } from './advisor';
+export type { ReleaseAdvisory, SemverBump } from './advisor';
 
 import type { CullConfig, EnrichedContext, PipelineResult, OutputFormat, EnrichedTicket } from './types';
 import { GitCollector } from './collectors/git';

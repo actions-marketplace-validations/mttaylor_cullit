@@ -12,7 +12,7 @@
  * https://cullit.io
  */
 
-import { runPipeline, VERSION, createLogger } from '@cullit/core';
+import { runPipeline, VERSION, createLogger, analyzeReleaseReadiness } from '@cullit/core';
 import { loadConfig } from '@cullit/config';
 import { getLatestTag, getRecentTags } from '@cullit/core';
 import type { OutputFormat, LogLevel } from '@cullit/core';
@@ -50,6 +50,7 @@ const HELP = `
 
   COMMANDS
     generate    Generate release notes from git, Jira, or Linear
+    status      Release readiness check — should you release?
     init        Create a .cullit.yml config file
     tags        List recent tags in the current repo
 
@@ -133,6 +134,11 @@ async function main() {
     process.exit(0);
   }
 
+  if (command === 'status') {
+    printReleaseStatus();
+    process.exit(0);
+  }
+
   if (command === 'tags') {
     const tags = getRecentTags(process.cwd(), 20);
     if (tags.length === 0) {
@@ -202,6 +208,67 @@ async function runGenerate(from: string, to: string, opts: Record<string, string
     console.error(`\n✗ Error: ${(err as Error).message}`);
     process.exitCode = 1;
   }
+}
+
+function printReleaseStatus(): void {
+  const advisory = analyzeReleaseReadiness();
+
+  const bar = (count: number, max: number, char = '█') => {
+    const width = Math.min(Math.round((count / Math.max(max, 1)) * 20), 20);
+    return char.repeat(width) || '·';
+  };
+
+  console.log(`
+  ╔═══════════════════════════════════════════╗
+  ║  Cullit — Release Readiness               ║
+  ╚═══════════════════════════════════════════╝
+  `);
+
+  if (!advisory.currentVersion) {
+    console.log('  No tags found. Create your first release with:');
+    console.log('    git tag v0.1.0 && git push --tags\n');
+    return;
+  }
+
+  const { breakdown, commitCount } = advisory;
+  const verdict = advisory.shouldRelease ? '🟢 Yes — time to release' : '🟡 Not yet — keep going';
+
+  console.log(`  Current version:   ${advisory.currentVersion}`);
+  if (advisory.nextVersion) {
+    console.log(`  Suggested next:    ${advisory.nextVersion} (${advisory.suggestedBump})`);
+  }
+  if (advisory.daysSinceRelease !== null) {
+    console.log(`  Last release:      ${advisory.daysSinceRelease} day(s) ago`);
+  }
+  console.log(`  Unreleased commits: ${commitCount}`);
+  console.log(`  Contributors:      ${advisory.contributorCount}`);
+
+  if (commitCount > 0) {
+    console.log('\n  Commit breakdown:');
+    const maxCount = Math.max(breakdown.features, breakdown.fixes, breakdown.breaking, breakdown.chores, breakdown.other, 1);
+    if (breakdown.features > 0)  console.log(`    ✨ Features:  ${bar(breakdown.features, maxCount)} ${breakdown.features}`);
+    if (breakdown.fixes > 0)     console.log(`    🐛 Fixes:     ${bar(breakdown.fixes, maxCount)} ${breakdown.fixes}`);
+    if (breakdown.breaking > 0)  console.log(`    ⚠️  Breaking:  ${bar(breakdown.breaking, maxCount)} ${breakdown.breaking}`);
+    if (breakdown.chores > 0)    console.log(`    🧹 Chores:    ${bar(breakdown.chores, maxCount)} ${breakdown.chores}`);
+    if (breakdown.other > 0)     console.log(`    📝 Other:     ${bar(breakdown.other, maxCount)} ${breakdown.other}`);
+  }
+
+  console.log(`\n  Should you release? ${verdict}`);
+
+  if (advisory.reasons.length > 0) {
+    console.log('\n  Why:');
+    for (const reason of advisory.reasons) {
+      console.log(`    → ${reason}`);
+    }
+  }
+
+  if (advisory.shouldRelease && advisory.nextVersion) {
+    console.log(`\n  Quick release:`);
+    console.log(`    cullit generate --from ${advisory.currentVersion} --to HEAD`);
+    console.log(`    git tag ${advisory.nextVersion} && git push --tags`);
+  }
+
+  console.log('');
 }
 
 function ask(rl: ReturnType<typeof createInterface>, question: string): Promise<string> {
