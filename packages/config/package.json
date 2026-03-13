@@ -1,5 +1,5 @@
 {
-  "name": "@cull/config",
+  "name": "@cullit/config",
   "version": "0.1.0",
   "type": "module",
   "description": "Config loader for Cullit — YAML config parsing with env var resolution.",

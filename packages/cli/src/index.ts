@@ -12,10 +12,10 @@
  * https://cullit.io
  */
 
-import { runPipeline, VERSION } from '@cull/core';
-import { loadConfig } from '@cull/config';
-import { getLatestTag, getRecentTags } from '@cull/core';
-import type { OutputFormat } from '@cull/core';
+import { runPipeline, VERSION } from '@cullit/core';
+import { loadConfig } from '@cullit/config';
+import { getLatestTag, getRecentTags } from '@cullit/core';
+import type { OutputFormat } from '@cullit/core';
 import { writeFileSync, readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 

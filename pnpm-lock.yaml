@@ -26,19 +26,19 @@ importers:
 
   packages/api:
     dependencies:
-      '@cull/config':
+      '@cullit/config':
         specifier: workspace:*
         version: link:../config
-      '@cull/core':
+      '@cullit/core':
         specifier: workspace:*
         version: link:../core
 
   packages/cli:
     dependencies:
-      '@cull/config':
+      '@cullit/config':
         specifier: workspace:*
         version: link:../config
-      '@cull/core':
+      '@cullit/core':
         specifier: workspace:*
         version: link:../core
 
@@ -46,7 +46,7 @@ importers:
 
   packages/core:
     dependencies:
-      '@cull/config':
+      '@cullit/config':
         specifier: workspace:*
         version: link:../config
 

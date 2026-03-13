@@ -1,5 +1,5 @@
 {
-  "name": "@cull/core",
+  "name": "@cullit/core",
   "version": "0.1.0",
   "type": "module",
   "description": "Core engine for Cullit — AI-powered release note generation.",
@@ -25,6 +25,6 @@
     "dev": "tsup src/index.ts --format esm --dts --watch"
   },
   "dependencies": {
-    "@cull/config": "workspace:*"
+    "@cullit/config": "workspace:*"
   }
 }

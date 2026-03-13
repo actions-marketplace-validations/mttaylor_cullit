@@ -9,12 +9,12 @@
 # Setup:
 #   1. Create an npm access token (Automation type)
 #   2. Add it as NPM_TOKEN in GitHub repo secrets
-#   3. If using @cull/* scoped packages, create the org on npm first
+#   3. If using @cullit/* scoped packages, create the org on npm first
 #
 # This publishes:
 #   - cullit        (CLI — `npx cullit generate`)
-#   - @cull/core    (library)
-#   - @cull/config  (library)
+#   - @cullit/core    (library)
+#   - @cullit/config  (library)
 
 name: Publish
 
@@ -69,13 +69,13 @@ jobs:
           done
 
       # Publish packages in dependency order
-      - name: Publish @cull/config
-        run: pnpm --filter @cull/config publish --access public --no-git-checks
+      - name: Publish @cullit/config
+        run: pnpm --filter @cullit/config publish --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish @cull/core
-        run: pnpm --filter @cull/core publish --access public --no-git-checks
+      - name: Publish @cullit/core
+        run: pnpm --filter @cullit/core publish --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

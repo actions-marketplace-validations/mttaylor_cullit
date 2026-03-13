@@ -1,5 +1,5 @@
 {
-  "name": "@cull/api",
+  "name": "@cullit/api",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,7 @@
     "dev": "tsup src/index.ts --format esm --watch --onSuccess 'node dist/index.js'"
   },
   "dependencies": {
-    "@cull/core": "workspace:*",
-    "@cull/config": "workspace:*"
+    "@cullit/core": "workspace:*",
+    "@cullit/config": "workspace:*"
   }
 }

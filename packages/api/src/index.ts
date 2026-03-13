@@ -14,9 +14,9 @@
  */
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
-import { runPipeline, VERSION, DEFAULT_CATEGORIES } from '@cull/core';
-import { loadConfig } from '@cull/config';
-import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget } from '@cull/core';
+import { runPipeline, VERSION, DEFAULT_CATEGORIES } from '@cullit/core';
+import { loadConfig } from '@cullit/config';
+import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget } from '@cullit/core';
 import { openApiSpec } from './openapi.js';
 
 const PORT = parseInt(process.env['PORT'] || '3000', 10);
