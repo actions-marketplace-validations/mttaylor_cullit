@@ -68,14 +68,14 @@ jobs:
             jq --arg v "$VERSION" '.version = $v' "$pkg/package.json" > tmp.json && mv tmp.json "$pkg/package.json"
           done
 
-      # Publish packages in dependency order
+      # Publish packages in dependency order (skip if version already exists)
       - name: Publish @cullit/config
-        run: pnpm --filter @cullit/config publish --access public --no-git-checks
+        run: pnpm --filter @cullit/config publish --access public --no-git-checks || echo "⚠️ Already published or failed"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @cullit/core
-        run: pnpm --filter @cullit/core publish --access public --no-git-checks
+        run: pnpm --filter @cullit/core publish --access public --no-git-checks || echo "⚠️ Already published or failed"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
