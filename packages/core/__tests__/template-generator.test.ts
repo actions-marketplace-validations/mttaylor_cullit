@@ -122,11 +122,11 @@ describe('TemplateGenerator', () => {
     expect(notes.summary).toContain('3 commits');
   });
 
-  it('sets metadata.generatedBy to cull-template', async () => {
+  it('sets metadata.generatedBy to cullit-template', async () => {
     const ctx = makeContext(['feat: x']);
     const gen = new TemplateGenerator();
     const notes = await gen.generate(ctx, baseConfig);
-    expect(notes.metadata?.generatedBy).toBe('cull-template');
+    expect(notes.metadata?.generatedBy).toBe('cullit-template');
   });
 
   it('caps output at 20 entries', async () => {

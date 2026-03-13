@@ -1,4 +1,5 @@
 import type { Collector, GitDiff, GitCommit, JiraConfig } from '../types';
+import { fetchWithTimeout } from '../fetch';
 
 /**
  * Collects release data directly from Jira (no git required).
@@ -75,7 +76,7 @@ export class JiraCollector implements Collector {
       url.searchParams.set('maxResults', String(maxResults));
       url.searchParams.set('fields', 'summary,issuetype,assignee,status,resolution,resolutiondate,updated,labels,priority,description,fixVersions');
 
-      const response = await fetch(url.toString(), {
+      const response = await fetchWithTimeout(url.toString(), {
         headers: {
           'Authorization': `Basic ${auth}`,
           'Accept': 'application/json',

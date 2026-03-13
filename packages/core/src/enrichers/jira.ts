@@ -1,4 +1,5 @@
 import type { Enricher, GitDiff, EnrichedTicket, JiraConfig } from '../types';
+import { fetchWithTimeout } from '../fetch';
 
 /**
  * Enriches git diff with Jira ticket details.
@@ -48,7 +49,7 @@ export class JiraEnricher implements Enricher {
 
     const auth = Buffer.from(`${resolvedEmail}:${resolvedToken}`).toString('base64');
 
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `https://${domain}/rest/api/3/issue/${key}?fields=summary,issuetype,labels,priority,status,description`,
       {
         headers: {

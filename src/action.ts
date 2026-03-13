@@ -9,6 +9,7 @@
 import { runPipeline } from '../packages/core/src/index';
 import { loadConfig } from '../packages/config/src/index';
 import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget } from '../packages/core/src/types';
+import { DEFAULT_CATEGORIES } from '../packages/core/src/constants';
 import { appendFileSync } from 'fs';
 
 // --- GitHub Actions helpers (no @actions/core dependency) ---
@@ -76,7 +77,7 @@ async function run(): Promise<void> {
           model: model || undefined,
           audience,
           tone,
-          categories: ['features', 'fixes', 'breaking', 'improvements', 'chores'],
+          categories: DEFAULT_CATEGORIES,
         },
         source: {
           type: 'local',

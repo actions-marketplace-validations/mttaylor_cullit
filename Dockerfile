@@ -6,7 +6,7 @@
 #   docker run --env-file .env cullit generate --from v1.0.0 --to v1.1.0
 #   docker run --env-file .env -p 3000:3000 cullit serve
 
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
@@ -26,7 +26,7 @@ COPY packages/ packages/
 RUN pnpm build
 
 # --- Production ---
-FROM node:20-alpine AS production
+FROM node:22-alpine AS production
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 

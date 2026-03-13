@@ -1,3 +1,5 @@
+import { VERSION } from '@cullit/core';
+
 /**
  * OpenAPI 3.1 specification for the Cullit API.
  */
@@ -5,7 +7,7 @@ export const openApiSpec = {
   openapi: '3.1.0',
   info: {
     title: 'Cullit API',
-    version: '0.1.0',
+    version: VERSION,
     description: 'AI-powered release notes generation. Supports Anthropic Claude, OpenAI, Gemini, Ollama, OpenClaw, and a template-based non-AI mode.',
     contact: {
       name: 'Cullit',

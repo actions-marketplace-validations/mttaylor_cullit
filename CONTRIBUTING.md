@@ -28,8 +28,10 @@ node packages/cli/dist/index.js generate --from <tag1> --to <tag2>
 packages/
   core/     — Shared logic (git, AI, integrations, formatting)
   cli/      — CLI entry point
-  action/   — GitHub Action wrapper
   config/   — Config loading + validation
+  api/      — REST API server
+src/
+  action.ts — GitHub Action wrapper (bundled to dist/)
 ```
 
 ## Pull Requests

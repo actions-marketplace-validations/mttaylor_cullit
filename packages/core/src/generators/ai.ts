@@ -2,6 +2,7 @@ import type {
   Generator, EnrichedContext, AIConfig, ReleaseNotes,
   ChangeEntry, ChangeCategory, OpenClawConfig
 } from '../types';
+import { fetchWithTimeout } from '../fetch';
 
 /**
  * Generates release notes using AI.
@@ -16,19 +17,8 @@ export class AIGenerator implements Generator {
     this.timeoutMs = timeoutMs;
   }
 
-  private async fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
-    try {
-      return await fetch(url, { ...init, signal: controller.signal });
-    } catch (err) {
-      if ((err as Error).name === 'AbortError') {
-        throw new Error(`Request to ${new URL(url).hostname} timed out after ${this.timeoutMs / 1000}s`);
-      }
-      throw err;
-    } finally {
-      clearTimeout(timer);
-    }
+  private async fetch(url: string, init: RequestInit): Promise<Response> {
+    return fetchWithTimeout(url, init, this.timeoutMs);
   }
 
   async generate(context: EnrichedContext, config: AIConfig): Promise<ReleaseNotes> {
@@ -152,7 +142,7 @@ Rules:
   }
 
   private async callAnthropic(prompt: string, apiKey: string, model?: string): Promise<string> {
-    const response = await this.fetchWithTimeout('https://api.anthropic.com/v1/messages', {
+    const response = await this.fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -176,7 +166,7 @@ Rules:
   }
 
   private async callOpenAI(prompt: string, apiKey: string, model?: string): Promise<string> {
-    const response = await this.fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
+    const response = await this.fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -201,7 +191,7 @@ Rules:
 
   private async callGemini(prompt: string, apiKey: string, model?: string): Promise<string> {
     const modelId = model || 'gemini-2.0-flash';
-    const response = await this.fetchWithTimeout(
+    const response = await this.fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${encodeURIComponent(apiKey)}`,
       {
         method: 'POST',
@@ -224,7 +214,7 @@ Rules:
 
   private async callOllama(prompt: string, model?: string): Promise<string> {
     const baseUrl = process.env.OLLAMA_HOST || 'http://localhost:11434';
-    const response = await this.fetchWithTimeout(`${baseUrl}/api/chat`, {
+    const response = await this.fetch(`${baseUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -251,7 +241,7 @@ Rules:
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const response = await this.fetchWithTimeout(`${baseUrl}/v1/chat/completions`, {
+    const response = await this.fetch(`${baseUrl}/v1/chat/completions`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -303,7 +293,7 @@ Rules:
         commitCount: context.diff.commits.length,
         prCount: context.diff.commits.filter(c => c.prNumber).length,
         ticketCount: context.tickets.length,
-        generatedBy: 'cull',
+        generatedBy: 'cullit',
         generatedAt: new Date().toISOString(),
       },
     };

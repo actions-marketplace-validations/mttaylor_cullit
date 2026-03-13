@@ -47,7 +47,7 @@ export class TemplateGenerator implements Generator {
         commitCount: diff.commits.length,
         prCount: diff.commits.filter(c => c.prNumber).length,
         ticketCount: tickets.length,
-        generatedBy: 'cull-template',
+        generatedBy: 'cullit-template',
         generatedAt: new Date().toISOString(),
       },
     };

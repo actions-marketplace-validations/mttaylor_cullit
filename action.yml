@@ -60,4 +60,4 @@ outputs:
 
 runs:
   using: 'node22'
-  main: 'dist/index.js'
+  main: 'dist/action.js'

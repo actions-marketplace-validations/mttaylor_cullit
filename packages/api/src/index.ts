@@ -21,6 +21,8 @@ import { openApiSpec } from './openapi.js';
 
 const PORT = parseInt(process.env['PORT'] || '3000', 10);
 const API_TOKEN = process.env['CULLIT_API_TOKEN'] || ''; // optional bearer auth
+// SECURITY: Defaults to '*' for local dev. In production, restrict to specific origins:
+//   ALLOWED_ORIGINS=https://yourdomain.com
 const ALLOWED_ORIGINS = process.env['ALLOWED_ORIGINS'] || '*';
 
 // --- Helpers ---
@@ -202,7 +204,7 @@ const server = createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`
   ╔═══════════════════════════════════════════╗
-  ║  Cullit API v0.1.0                      ║
+  ║  Cullit API v${VERSION}                      ║
   ║  http://localhost:${PORT}                    ║
   ║                                           ║
   ║  GET  /health         Health check        ║

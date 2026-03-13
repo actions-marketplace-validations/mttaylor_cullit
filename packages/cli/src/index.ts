@@ -120,7 +120,7 @@ async function main() {
   }
 
   if (command === '--version' || command === '-v') {
-    console.log(`cull v${VERSION}`);
+    console.log(`cullit v${VERSION}`);
     process.exit(0);
   }
 

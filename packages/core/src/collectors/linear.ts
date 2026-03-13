@@ -1,4 +1,5 @@
 import type { Collector, GitDiff, GitCommit } from '../types';
+import { fetchWithTimeout } from '../fetch';
 
 /**
  * Collects release data directly from Linear (no git required).
@@ -64,8 +65,35 @@ export class LinearCollector implements Collector {
 
   private async fetchIssues(filter: LinearFilter): Promise<LinearIssue[]> {
     const filterClause = this.buildFilterClause(filter);
+    const needsVariable = filter.type !== 'cycle' || filter.value !== 'current';
 
-    const query = `
+    const query = needsVariable
+      ? `
+      query CompletedIssues($filterValue: String!) {
+        issues(
+          filter: {
+            state: { type: { in: ["completed", "canceled"] } }
+            ${filterClause}
+          }
+          first: 100
+          orderBy: completedAt
+        ) {
+          nodes {
+            identifier
+            title
+            description
+            priority
+            completedAt
+            updatedAt
+            assignee { displayName }
+            state { name type }
+            labels { nodes { name } }
+            project { name }
+          }
+        }
+      }
+    `
+      : `
       query CompletedIssues {
         issues(
           filter: {
@@ -91,13 +119,15 @@ export class LinearCollector implements Collector {
       }
     `;
 
-    const response = await fetch('https://api.linear.app/graphql', {
+    const variables = needsVariable ? { filterValue: filter.value } : undefined;
+
+    const response = await fetchWithTimeout('https://api.linear.app/graphql', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': this.apiKey,
       },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({ query, variables }),
     });
 
     if (!response.ok) {
@@ -127,18 +157,19 @@ export class LinearCollector implements Collector {
   }
 
   private buildFilterClause(filter: LinearFilter): string {
+    // Return GraphQL variable references — actual values are passed via variables
     switch (filter.type) {
       case 'team':
-        return `team: { key: { eq: "${filter.value}" } }`;
+        return `team: { key: { eq: $filterValue } }`;
       case 'project':
-        return `project: { name: { containsIgnoreCase: "${filter.value}" } }`;
+        return `project: { name: { containsIgnoreCase: $filterValue } }`;
       case 'cycle':
         if (filter.value === 'current') {
           return `cycle: { isActive: { eq: true } }`;
         }
-        return `cycle: { name: { containsIgnoreCase: "${filter.value}" } }`;
+        return `cycle: { name: { containsIgnoreCase: $filterValue } }`;
       case 'label':
-        return `labels: { name: { eq: "${filter.value}" } }`;
+        return `labels: { name: { eq: $filterValue } }`;
       default:
         return '';
     }

@@ -1,13 +1,15 @@
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import type { CullConfig } from '../../core/src/types';
+import type { CullConfig, PublishTarget } from '@cullit/core';
+
+const DEFAULT_CATEGORIES = ['features', 'fixes', 'breaking', 'improvements', 'chores'];
 
 const DEFAULT_CONFIG: CullConfig = {
   ai: {
     provider: 'anthropic',
     audience: 'developer',
     tone: 'professional',
-    categories: ['features', 'fixes', 'breaking', 'improvements', 'chores'],
+    categories: DEFAULT_CATEGORIES,
   },
   source: {
     type: 'local',
@@ -20,8 +22,11 @@ const DEFAULT_CONFIG: CullConfig = {
  * Falls back to sensible defaults.
  * Resolves environment variable references ($ENV_VAR syntax).
  */
-export function loadConfig(cwd: string = process.cwd()): CullConfig {
-  const configPath = join(cwd, '.cullit.yml');
+export function loadConfig(cwdOrPath: string = process.cwd()): CullConfig {
+  // Support both directory paths and direct file paths
+  const configPath = cwdOrPath.endsWith('.yml') || cwdOrPath.endsWith('.yaml')
+    ? cwdOrPath
+    : join(cwdOrPath, '.cullit.yml');
 
   if (!existsSync(configPath)) {
     return DEFAULT_CONFIG;
@@ -177,9 +182,23 @@ function mergeWithDefaults(parsed: Record<string, any>): CullConfig {
       ...DEFAULT_CONFIG.source,
       ...(parsed.source || {}),
     },
-    publish: parsed.publish || DEFAULT_CONFIG.publish,
+    publish: normalizePublishTargets(parsed.publish || DEFAULT_CONFIG.publish),
     jira: parsed.jira,
     linear: parsed.linear,
     openclaw: parsed.openclaw,
   };
+}
+
+/**
+ * Converts snake_case YAML keys to camelCase TypeScript properties.
+ * Handles webhook_url → webhookUrl mapping.
+ */
+function normalizePublishTargets(targets: any[]): PublishTarget[] {
+  return targets.map(t => {
+    const normalized: PublishTarget = { type: t.type };
+    if (t.webhookUrl || t.webhook_url) normalized.webhookUrl = t.webhookUrl || t.webhook_url;
+    if (t.channel) normalized.channel = t.channel;
+    if (t.path) normalized.path = t.path;
+    return normalized;
+  });
 }

@@ -1,4 +1,5 @@
 import type { Enricher, GitDiff, EnrichedTicket } from '../types';
+import { fetchWithTimeout } from '../fetch';
 
 /**
  * Enriches git diff with Linear issue details.
@@ -65,7 +66,7 @@ export class LinearEnricher implements Enricher {
       }
     `;
 
-    const response = await fetch('https://api.linear.app/graphql', {
+    const response = await fetchWithTimeout('https://api.linear.app/graphql', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -117,7 +118,7 @@ export class LinearEnricher implements Enricher {
       }
     `;
 
-    const response = await fetch('https://api.linear.app/graphql', {
+    const response = await fetchWithTimeout('https://api.linear.app/graphql', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
