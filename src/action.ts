@@ -53,6 +53,12 @@ async function run(): Promise<void> {
       return;
     }
 
+    // Set API key from input if provided (env var takes precedence)
+    const apiKey = getInput('api-key');
+    if (apiKey && !process.env.CULLIT_API_KEY) {
+      process.env.CULLIT_API_KEY = apiKey;
+    }
+
     // Build config
     let config: CullConfig;
 

@@ -12,7 +12,7 @@
  * https://cullit.io
  */
 
-import { runPipeline, VERSION, createLogger, analyzeReleaseReadiness } from '@cullit/core';
+import { runPipeline, VERSION, createLogger, analyzeReleaseReadiness, resolveLicense } from '@cullit/core';
 import { loadConfig } from '@cullit/config';
 import { getLatestTag, getRecentTags } from '@cullit/core';
 import type { OutputFormat, LogLevel } from '@cullit/core';
@@ -201,6 +201,13 @@ async function runGenerate(from: string, to: string, opts: Record<string, string
   const dryRun = 'dry-run' in opts || 'dryRun' in opts;
   const logLevel: LogLevel = 'verbose' in opts ? 'verbose' : 'quiet' in opts ? 'quiet' : 'normal';
   const logger = createLogger(logLevel);
+
+  // Show license tier
+  const license = resolveLicense();
+  if (logLevel !== 'quiet') {
+    const tierLabel = license.tier === 'pro' ? '🔑 Pro' : '🆓 Free';
+    logger.info(`» License: ${tierLabel}`);
+  }
 
   try {
     const result = await runPipeline(from, to, config, { format, dryRun, logger });

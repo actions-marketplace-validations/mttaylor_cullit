@@ -183,6 +183,7 @@
   <a href="#quick-start">Quick Start</a>
   <a href="#installation">Installation</a>
   <a href="#first-run">Your First Run</a>
+  <a href="#pricing">Pricing &amp; Tiers</a>
 
   <h4>Configuration</h4>
   <a href="#config-file">Config File</a>
@@ -244,6 +245,30 @@
 <span class="cmt"># Auto-detect: uses the two most recent tags</span>
 <span class="cmd">cullit</span> generate</code></pre>
 <p>Cullit collects commits, enriches with ticket context (if configured), runs them through AI, and outputs categorized release notes.</p>
+
+<h3 id="pricing">Pricing &amp; Tiers</h3>
+<p>Cullit uses a <code>CULLIT_API_KEY</code> to unlock Pro features. Without a key, the free tier is fully functional for template-based notes.</p>
+
+<table>
+  <thead><tr><th>Feature</th><th>Free</th><th>Pro ($29/mo)</th></tr></thead>
+  <tbody>
+    <tr><td>Template engine (<code>--provider none</code>)</td><td>&#x2705;</td><td>&#x2705;</td></tr>
+    <tr><td>Publish to stdout &amp; file</td><td>&#x2705;</td><td>&#x2705;</td></tr>
+    <tr><td><code>cullit status</code> &amp; <code>cullit tags</code></td><td>&#x2705;</td><td>&#x2705;</td></tr>
+    <tr><td>AI providers (Anthropic, OpenAI, Gemini, Ollama)</td><td>&mdash;</td><td>&#x2705;</td></tr>
+    <tr><td>Jira &amp; Linear enrichment</td><td>&mdash;</td><td>&#x2705;</td></tr>
+    <tr><td>Slack, Discord &amp; GitHub Release publishing</td><td>&mdash;</td><td>&#x2705;</td></tr>
+    <tr><td>GitHub Action with AI</td><td>&mdash;</td><td>&#x2705;</td></tr>
+  </tbody>
+</table>
+
+<p>To activate Pro, set your API key:</p>
+<pre><code><span class="cmt"># In your shell or .env file</span>
+<span class="key">CULLIT_API_KEY</span>=<span class="val">clt_your_key_here</span></code></pre>
+
+<p>Get your key at <a href="mailto:sales@cullit.io">sales@cullit.io</a> or visit <strong>cullit.io/pricing</strong>.</p>
+
+<div class="tip">Enterprise plans with team seats, SSO, and SLAs are available. Contact <a href="mailto:sales@cullit.io">sales@cullit.io</a>.</div>
 
 <!-- ============================================ -->
 <h2 id="config-file">Configuration</h2>
@@ -311,6 +336,7 @@
 <table>
   <thead><tr><th>Variable</th><th>Purpose</th></tr></thead>
   <tbody>
+    <tr><td><code>CULLIT_API_KEY</code></td><td>Cullit Pro license key (enables AI, integrations, advanced publishing)</td></tr>
     <tr><td><code>ANTHROPIC_API_KEY</code></td><td>Anthropic API key</td></tr>
     <tr><td><code>OPENAI_API_KEY</code></td><td>OpenAI API key</td></tr>
     <tr><td><code>GEMINI_API_KEY</code></td><td>Gemini API key</td></tr>

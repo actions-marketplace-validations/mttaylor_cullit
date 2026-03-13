@@ -25,8 +25,11 @@ export { JiraEnricher } from './enrichers/jira';
 export { LinearEnricher } from './enrichers/linear';
 export { analyzeReleaseReadiness } from './advisor';
 export type { ReleaseAdvisory, SemverBump } from './advisor';
+export { resolveLicense, isProviderAllowed, isPublisherAllowed, isEnrichmentAllowed, upgradeMessage } from './gate';
+export type { LicenseTier, LicenseStatus } from './gate';
 
 import type { CullConfig, EnrichedContext, PipelineResult, OutputFormat, EnrichedTicket } from './types';
+import { resolveLicense, isProviderAllowed, isPublisherAllowed, isEnrichmentAllowed, upgradeMessage } from './gate';
 import { GitCollector } from './collectors/git';
 import { JiraCollector } from './collectors/jira';
 import { LinearCollector } from './collectors/linear';
@@ -49,6 +52,17 @@ export async function runPipeline(
   const startTime = Date.now();
   const format = options.format || 'markdown';
   const log = options.logger || createLogger('normal');
+
+  // LICENSE CHECK
+  const license = resolveLicense();
+
+  if (!license.valid) {
+    throw new Error(license.message || 'Invalid CULLIT_API_KEY');
+  }
+
+  if (!isProviderAllowed(config.ai.provider, license)) {
+    throw new Error(upgradeMessage(`AI provider "${config.ai.provider}"`));
+  }
 
   // 1. COLLECT
   let collector;
@@ -78,6 +92,10 @@ export async function runPipeline(
 
   for (const source of enrichmentSources) {
     if (source === 'jira' && config.jira) {
+      if (!isEnrichmentAllowed(license)) {
+        log.info(`» Skipping Jira enrichment — ${upgradeMessage('Jira enrichment')}`);
+        continue;
+      }
       log.info('» Enriching from Jira...');
       const enricher = new JiraEnricher(config.jira);
       const jiraTickets = await enricher.enrich(diff);
@@ -86,6 +104,10 @@ export async function runPipeline(
     }
 
     if (source === 'linear') {
+      if (!isEnrichmentAllowed(license)) {
+        log.info(`» Skipping Linear enrichment — ${upgradeMessage('Linear enrichment')}`);
+        continue;
+      }
       log.info('» Enriching from Linear...');
       const enricher = new LinearEnricher(config.linear?.apiKey);
       const linearTickets = await enricher.enrich(diff);
@@ -124,6 +146,10 @@ export async function runPipeline(
   if (!options.dryRun) {
     for (const target of config.publish) {
       try {
+        if (!isPublisherAllowed(target.type, license)) {
+          log.info(`» Skipping ${target.type} — ${upgradeMessage(`${target.type} publishing`)}`);
+          continue;
+        }
         switch (target.type) {
           case 'stdout':
             await new StdoutPublisher().publish(notes, format);

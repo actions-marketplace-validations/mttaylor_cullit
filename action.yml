@@ -49,6 +49,9 @@ inputs:
   config:
     description: 'Path to .cullit.yml config file'
     required: false
+  api-key:
+    description: 'Cullit API key for Pro features. Set as CULLIT_API_KEY env var or pass here.'
+    required: false
 
 outputs:
   release-notes:
