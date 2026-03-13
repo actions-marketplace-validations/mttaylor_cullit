@@ -204,6 +204,22 @@ async function runGenerate(from: string, to: string, opts: Record<string, string
 
   try {
     const result = await runPipeline(from, to, config, { format, dryRun, logger });
+
+    // Active release advisory — nudge after generating notes
+    if (logLevel !== 'quiet') {
+      try {
+        const advisory = analyzeReleaseReadiness();
+        if (advisory.shouldRelease && advisory.nextVersion) {
+          console.log(`\n  💡 Release advisory: ${advisory.reasons[0]}`);
+          console.log(`     Suggested: ${advisory.nextVersion} (${advisory.suggestedBump}) — ${advisory.commitCount} unreleased commit(s)`);
+          console.log(`     Run "cullit status" for full breakdown.\n`);
+        } else if (advisory.commitCount > 0 && advisory.daysSinceRelease !== null && advisory.daysSinceRelease > 7) {
+          console.log(`\n  💡 ${advisory.commitCount} unreleased commit(s), ${advisory.daysSinceRelease} days since last release. Run "cullit status" to check readiness.\n`);
+        }
+      } catch {
+        // Advisory is best-effort — never block generate
+      }
+    }
   } catch (err) {
     console.error(`\n✗ Error: ${(err as Error).message}`);
     process.exitCode = 1;
