@@ -9,7 +9,10 @@ export type {
   JiraConfig, LinearConfig,
 } from './types';
 export { VERSION, DEFAULT_CATEGORIES, DEFAULT_MODELS } from './constants';
+export { createLogger } from './logger';
+export type { Logger, LogLevel } from './logger';
 import { DEFAULT_MODELS } from './constants';
+import { createLogger, type Logger } from './logger';
 
 export { GitCollector, getRecentTags, getLatestTag } from './collectors/git';
 export { JiraCollector } from './collectors/jira';
@@ -39,27 +42,28 @@ export async function runPipeline(
   from: string,
   to: string,
   config: CullConfig,
-  options: { format?: OutputFormat; dryRun?: boolean } = {}
+  options: { format?: OutputFormat; dryRun?: boolean; logger?: Logger } = {}
 ): Promise<PipelineResult> {
   const startTime = Date.now();
   const format = options.format || 'markdown';
+  const log = options.logger || createLogger('normal');
 
   // 1. COLLECT
   let collector;
   if (config.source.type === 'jira') {
     if (!config.jira) throw new Error('Jira source requires jira config in .cullit.yml');
-    console.log(`» Collecting issues from Jira...`);
+    log.info(`» Collecting issues from Jira...`);
     collector = new JiraCollector(config.jira);
   } else if (config.source.type === 'linear') {
-    console.log(`» Collecting issues from Linear...`);
+    log.info(`» Collecting issues from Linear...`);
     collector = new LinearCollector(config.linear?.apiKey);
   } else {
-    console.log(`» Collecting commits between ${from}..${to}`);
+    log.info(`» Collecting commits between ${from}..${to}`);
     collector = new GitCollector();
   }
   const diff = await collector.collect(from, to);
   const itemLabel = config.source.type === 'jira' || config.source.type === 'linear' ? 'issues' : 'commits';
-  console.log(`» Found ${diff.commits.length} ${itemLabel}${diff.filesChanged ? `, ${diff.filesChanged} files changed` : ''}`);
+  log.info(`» Found ${diff.commits.length} ${itemLabel}${diff.filesChanged ? `, ${diff.filesChanged} files changed` : ''}`);
 
   if (diff.commits.length === 0) {
     const source = config.source.type === 'jira' ? 'Jira' : config.source.type === 'linear' ? 'Linear' : `${from} and ${to}`;
@@ -72,19 +76,19 @@ export async function runPipeline(
 
   for (const source of enrichmentSources) {
     if (source === 'jira' && config.jira) {
-      console.log('» Enriching from Jira...');
+      log.info('» Enriching from Jira...');
       const enricher = new JiraEnricher(config.jira);
       const jiraTickets = await enricher.enrich(diff);
       tickets.push(...jiraTickets);
-      console.log(`» Jira: found ${jiraTickets.length} tickets`);
+      log.info(`» Jira: found ${jiraTickets.length} tickets`);
     }
 
     if (source === 'linear') {
-      console.log('» Enriching from Linear...');
+      log.info('» Enriching from Linear...');
       const enricher = new LinearEnricher(config.linear?.apiKey);
       const linearTickets = await enricher.enrich(diff);
       tickets.push(...linearTickets);
-      console.log(`» Linear: found ${linearTickets.length} issues`);
+      log.info(`» Linear: found ${linearTickets.length} issues`);
     }
   }
 
@@ -97,7 +101,7 @@ export async function runPipeline(
 
   const providerName = providerNames[config.ai.provider] || config.ai.provider;
   const modelName = config.ai.provider === 'none' ? 'template' : (config.ai.model || DEFAULT_MODELS[config.ai.provider] || 'default');
-  console.log(`» Generating with ${providerName} (${modelName})...`);
+  log.info(`» Generating with ${providerName} (${modelName})...`);
 
   let notes;
   if (config.ai.provider === 'none') {
@@ -107,7 +111,7 @@ export async function runPipeline(
     const generator = new AIGenerator(config.openclaw);
     notes = await generator.generate(context, config.ai);
   }
-  console.log(`» Generated ${notes.changes.length} change entries`);
+  log.info(`» Generated ${notes.changes.length} change entries`);
 
   // 4. FORMAT
   const formatted = formatNotes(notes, format);
@@ -147,17 +151,17 @@ export async function runPipeline(
             break;
         }
       } catch (err) {
-        console.error(`✗ Failed to publish to ${target.type}: ${(err as Error).message}`);
+        log.error(`✗ Failed to publish to ${target.type}: ${(err as Error).message}`);
       }
     }
   } else {
-    console.log('\n[DRY RUN — Not publishing]\n');
-    console.log(formatted);
+    log.info('\n[DRY RUN — Not publishing]\n');
+    log.info(formatted);
     publishedTo.push('dry-run');
   }
 
   const duration = Date.now() - startTime;
-  console.log(`\n✓ Done in ${(duration / 1000).toFixed(1)}s`);
+  log.info(`\n✓ Done in ${(duration / 1000).toFixed(1)}s`);
 
   return { notes, formatted, publishedTo, duration };
 }

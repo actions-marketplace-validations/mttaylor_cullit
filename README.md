@@ -1,5 +1,9 @@
 # Cullit ⚡
 
+[![npm version](https://img.shields.io/npm/v/cullit.svg)](https://www.npmjs.com/package/cullit)
+[![CI](https://github.com/mttaylor/cullit/actions/workflows/ci.yml/badge.svg)](https://github.com/mttaylor/cullit/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 **AI release notes that write themselves.**
 
 Cullit reads your git history, enriches from Jira & Linear, and uses AI to generate categorized, human-readable release notes. Ships to Slack, Discord, GitHub Releases, and more.
@@ -8,15 +12,23 @@ Cullit reads your git history, enriches from Jira & Linear, and uses AI to gener
 
 ---
 
-## Quick Start
-
-### CLI
+## Install
 
 ```bash
-# Install
+# Use directly with npx (no install needed)
+npx cullit generate --from v1.0.0 --to v1.1.0
+
+# Or install globally
 npm install -g cullit
 
-# Initialize config
+# Or as a dev dependency
+npm install -D cullit
+```
+
+## Quick Start
+
+```bash
+# Interactive setup — creates .cullit.yml
 cullit init
 
 # Generate release notes between two tags
@@ -29,12 +41,38 @@ cullit generate
 cullit generate --from HEAD~10 --provider gemini
 cullit generate --from HEAD~5 --provider ollama --model llama3.1
 
+# No AI key? Use the template generator
+cullit generate --from HEAD~10 --provider none
+
 # From Jira or Linear
 cullit generate --source jira --from "project = PROJ" --provider anthropic
 cullit generate --source linear --from "team:ENG" --provider openai
+
+# Control output verbosity
+cullit generate --from v1.0.0 --verbose
+cullit generate --from v1.0.0 --quiet
 ```
 
-### GitHub Action
+## Use as a Library
+
+```typescript
+import { runPipeline, createLogger } from '@cullit/core';
+import { loadConfig } from '@cullit/config';
+
+const config = loadConfig();
+const logger = createLogger('verbose'); // 'quiet' | 'normal' | 'verbose'
+
+const result = await runPipeline('v1.0.0', 'v1.1.0', config, {
+  format: 'markdown',
+  dryRun: false,
+  logger,
+});
+
+console.log(result.formatted);
+console.log(`Published to: ${result.publishedTo.join(', ')}`);
+```
+
+## GitHub Action
 
 ```yaml
 name: Release Notes
@@ -46,7 +84,7 @@ jobs:
   release-notes:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0  # Full history needed for git log
 
@@ -61,7 +99,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-### API Server
+## API Server
 
 ```bash
 # Start the API server
@@ -81,7 +119,7 @@ curl -X POST http://localhost:3000/generate \
 curl http://localhost:3000/openapi.json
 ```
 
-### Docker
+## Docker
 
 ```bash
 # Build
@@ -98,16 +136,25 @@ docker compose up api
 
 | Feature | Description |
 |---------|-------------|
-| 🧠 **5 AI Providers** | Anthropic Claude, OpenAI, Gemini, Ollama, OpenClaw |
+| 🧠 **6 AI Providers** | Anthropic Claude, OpenAI, Gemini, Ollama, OpenClaw, or none (template) |
 | 🔑 **BYOK** | Bring your own API key. Zero vendor lock-in. |
 | ⚡ **Flexible Sources** | Git, Jira, or Linear as primary data source |
 | 🔍 **Enrichment** | Cross-reference Jira & Linear tickets from commits |
 | 📤 **Multi-Publish** | Slack, Discord, GitHub Release, file, stdout |
 | 🎯 **Audience Modes** | Developer, end-user, or executive summaries |
 | 📋 **Smart Categories** | Features, fixes, breaking changes, improvements, chores |
+| 🔇 **Structured Logging** | `--verbose` and `--quiet` flags for CI-friendly output |
 | 🐳 **Docker Ready** | Multi-stage build, docker-compose for API & CLI |
 | 🌐 **REST API** | OpenAPI 3.1 spec, health checks, CORS |
 | 🔒 **Enterprise** | SECURITY.md, PRIVACY.md, TERMS.md, CODE_OF_CONDUCT.md |
+
+## Packages
+
+| Package | Description |
+|---------|-------------|
+| [`cullit`](https://www.npmjs.com/package/cullit) | CLI — `npx cullit generate` |
+| [`@cullit/core`](https://www.npmjs.com/package/@cullit/core) | Core engine — pipeline, generators, publishers |
+| [`@cullit/config`](https://www.npmjs.com/package/@cullit/config) | Config loader — YAML parsing with env var resolution |
 
 ## Configuration
 
@@ -115,7 +162,7 @@ Create `.cullit.yml` in your repo root (or run `cullit init`):
 
 ```yaml
 ai:
-  provider: anthropic         # anthropic | openai | gemini | ollama | openclaw
+  provider: anthropic         # anthropic | openai | gemini | ollama | openclaw | none
   audience: developer
   tone: professional
   categories: [features, fixes, breaking, improvements, chores]
@@ -161,15 +208,16 @@ jira:
 
 ## Roadmap
 
-- [x] Core CLI
-- [x] Claude, OpenAI, Gemini, Ollama, OpenClaw
+- [x] Core CLI with interactive init
+- [x] Claude, OpenAI, Gemini, Ollama, OpenClaw + template generator
 - [x] Jira & Linear as primary sources
-- [x] Jira & Linear enrichment
+- [x] Jira & Linear enrichment (batched)
 - [x] Slack, Discord, GitHub Release publishers
 - [x] REST API with OpenAPI 3.1
 - [x] Docker & docker-compose
-- [x] GitHub Action with sample workflow
-- [x] Test infrastructure
+- [x] GitHub Action (node22)
+- [x] Structured logging (--verbose / --quiet)
+- [x] 80+ unit tests + integration tests
 - [ ] Confluence publisher
 - [ ] Notion publisher
 - [ ] GitLab & Bitbucket support

@@ -12,12 +12,13 @@
  * https://cullit.io
  */
 
-import { runPipeline, VERSION } from '@cullit/core';
+import { runPipeline, VERSION, createLogger } from '@cullit/core';
 import { loadConfig } from '@cullit/config';
 import { getLatestTag, getRecentTags } from '@cullit/core';
-import type { OutputFormat } from '@cullit/core';
+import type { OutputFormat, LogLevel } from '@cullit/core';
 import { writeFileSync, readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
+import { createInterface } from 'readline';
 
 // Load .env file if present (no dependency needed)
 function loadEnv() {
@@ -61,6 +62,8 @@ const HELP = `
     --provider    Override AI provider (anthropic, openai, gemini, ollama, openclaw, none)
     --source      Override source type (local, jira, linear)
     --audience    Override audience (developer, end-user, executive)
+    --verbose     Show detailed output
+    --quiet       Suppress all output except errors
 
   EXAMPLES
     $ cullit generate --from v1.0.0 --to v1.1.0
@@ -122,9 +125,11 @@ async function main() {
   }
 
   if (command === 'init') {
-    writeFileSync('.cullit.yml', DEFAULT_YML, 'utf-8');
-    console.log('✓ Created .cullit.yml');
-    console.log('  Edit it to configure your AI provider, integrations, and publish targets.');
+    if (existsSync('.cullit.yml')) {
+      console.log('⚠ .cullit.yml already exists. Delete it first to re-initialize.');
+      process.exit(1);
+    }
+    await interactiveInit();
     process.exit(0);
   }
 
@@ -180,13 +185,79 @@ async function runGenerate(from: string, to: string, opts: Record<string, string
 
   const format = (opts.format || 'markdown') as OutputFormat;
   const dryRun = 'dry-run' in opts || 'dryRun' in opts;
+  const logLevel: LogLevel = 'verbose' in opts ? 'verbose' : 'quiet' in opts ? 'quiet' : 'normal';
+  const logger = createLogger(logLevel);
 
   try {
-    const result = await runPipeline(from, to, config, { format, dryRun });
+    const result = await runPipeline(from, to, config, { format, dryRun, logger });
   } catch (err) {
     console.error(`\n✗ Error: ${(err as Error).message}`);
     process.exitCode = 1;
   }
+}
+
+function ask(rl: ReturnType<typeof createInterface>, question: string): Promise<string> {
+  return new Promise(resolve => rl.question(question, resolve));
+}
+
+async function interactiveInit() {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+
+  console.log('\n  Cullit — Project Setup\n');
+
+  const provider = await ask(rl, '  AI provider (anthropic/openai/gemini/ollama/openclaw/none) [anthropic]: ') || 'anthropic';
+  const source = await ask(rl, '  Source type (local/jira/linear) [local]: ') || 'local';
+  const audience = await ask(rl, '  Audience (developer/end-user/executive) [developer]: ') || 'developer';
+  const tone = await ask(rl, '  Tone (professional/casual/terse) [professional]: ') || 'professional';
+
+  let enrichment = '';
+  if (source === 'local') {
+    enrichment = await ask(rl, '  Enrich from (jira/linear/both/none) [none]: ') || 'none';
+  }
+
+  rl.close();
+
+  const enrichmentLine = enrichment === 'both'
+    ? '\n  enrichment: [jira, linear]'
+    : enrichment === 'jira' || enrichment === 'linear'
+    ? `\n  enrichment: [${enrichment}]`
+    : '';
+
+  const sections: string[] = [];
+
+  if (enrichment === 'jira' || enrichment === 'both' || source === 'jira') {
+    sections.push(`\njira:\n  domain: yourcompany.atlassian.net\n  # Set JIRA_EMAIL and JIRA_API_TOKEN in your environment`);
+  }
+  if (enrichment === 'linear' || enrichment === 'both' || source === 'linear') {
+    sections.push(`\nlinear:\n  # Set LINEAR_API_KEY in your environment`);
+  }
+
+  const yml = `# Cullit Configuration
+# https://cullit.io
+
+ai:
+  provider: ${provider}
+  audience: ${audience}
+  tone: ${tone}
+  categories: [features, fixes, breaking, improvements, chores]
+
+source:
+  type: ${source}${enrichmentLine}
+
+publish:
+  - type: stdout
+  # - type: file
+  #   path: RELEASE_NOTES.md
+  # - type: slack
+  #   webhook_url: \$SLACK_WEBHOOK_URL
+  # - type: discord
+  #   webhook_url: \$DISCORD_WEBHOOK_URL
+${sections.join('\n')}
+`;
+
+  writeFileSync('.cullit.yml', yml, 'utf-8');
+  console.log('\n  ✓ Created .cullit.yml');
+  console.log('  Run "cullit generate --from <tag>" to generate release notes.\n');
 }
 
 function parseArgs(args: string[]): Record<string, string> {
