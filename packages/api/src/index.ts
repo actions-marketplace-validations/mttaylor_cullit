@@ -15,7 +15,6 @@
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
 import { runPipeline, VERSION, DEFAULT_CATEGORIES } from '@cullit/core';
-import { loadConfig } from '@cullit/config';
 import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget } from '@cullit/core';
 import { openApiSpec } from './openapi.js';
 
@@ -31,6 +30,16 @@ const RATE_WINDOW = 60_000; // 1 minute
 
 const rateBuckets = new Map<string, number[]>();
 
+// Prune stale rate limiter entries every 2 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, times] of rateBuckets) {
+    const active = times.filter(t => now - t < RATE_WINDOW);
+    if (active.length === 0) rateBuckets.delete(key);
+    else rateBuckets.set(key, active);
+  }
+}, 120_000).unref();
+
 function checkRateLimit(req: IncomingMessage, res: ServerResponse): boolean {
   const ip = req.socket.remoteAddress || 'unknown';
   const now = Date.now();
@@ -44,16 +53,6 @@ function checkRateLimit(req: IncomingMessage, res: ServerResponse): boolean {
 
   recent.push(now);
   rateBuckets.set(ip, recent);
-
-  // Periodically clean old entries (every 100 requests)
-  if (rateBuckets.size > 100) {
-    for (const [key, times] of rateBuckets) {
-      const active = times.filter(t => now - t < RATE_WINDOW);
-      if (active.length === 0) rateBuckets.delete(key);
-      else rateBuckets.set(key, active);
-    }
-  }
-
   return true;
 }
 
@@ -121,7 +120,6 @@ interface GenerateRequest {
   };
   jira?: { domain: string };
   linear?: { apiKey?: string };
-  configPath?: string;
 }
 
 async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -157,36 +155,32 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
     return;
   }
 
-  // Build config from request body or load from file
-  let config: CullConfig;
+  // Build config from request body (configPath intentionally unsupported
+  // in the API to prevent path traversal / arbitrary file read)
+  const publishers: PublishTarget[] = [{ type: 'stdout' }];
 
-  if (body.configPath) {
-    try {
-      config = loadConfig(body.configPath);
-    } catch {
-      json(res, 400, { error: 'Failed to load config file' });
-      return;
-    }
-  } else {
-    const publishers: PublishTarget[] = [{ type: 'stdout' }];
-
-    config = {
-      ai: {
-        provider: body.provider || 'anthropic',
-        model: body.model,
-        audience: body.audience || 'developer',
-        tone: body.tone || 'professional',
-        categories: body.categories || DEFAULT_CATEGORIES,
-      },
-      source: {
-        type: body.source?.type || 'local',
-        enrichment: body.source?.enrichment || [],
-      },
-      publish: publishers,
-      ...(body.jira ? { jira: body.jira } : {}),
-      ...(body.linear ? { linear: body.linear } : {}),
-    };
+  // Validate Jira domain if provided
+  if (body.jira?.domain && !/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(body.jira.domain)) {
+    json(res, 400, { error: 'Invalid Jira domain format' });
+    return;
   }
+
+  const config: CullConfig = {
+    ai: {
+      provider: body.provider || 'anthropic',
+      model: body.model,
+      audience: body.audience || 'developer',
+      tone: body.tone || 'professional',
+      categories: body.categories || DEFAULT_CATEGORIES,
+    },
+    source: {
+      type: body.source?.type || 'local',
+      enrichment: body.source?.enrichment || [],
+    },
+    publish: publishers,
+    ...(body.jira ? { jira: body.jira } : {}),
+    ...(body.linear ? { linear: body.linear } : {}),
+  };
 
   // Apply overrides 
   if (body.provider) config.ai.provider = body.provider;

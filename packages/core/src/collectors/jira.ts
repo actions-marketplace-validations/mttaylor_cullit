@@ -47,16 +47,29 @@ export class JiraCollector implements Collector {
       return from.includes('status') ? from : from + statusFilter;
     }
 
-    // Otherwise treat "from" as a project key and "to" as a date/version
+    // Validate project key format to prevent JQL injection
+    if (!/^[A-Z][A-Z0-9_]{0,30}$/.test(from)) {
+      throw new Error(`Invalid Jira project key: "${from}". Must be uppercase letters, digits, or underscores (e.g., PROJ, MY_PROJ).`);
+    }
+
+    // Sanitize "to" — strip quotes to prevent injection in fixVersion clause
+    const safeVersion = to.replace(/["'\\]/g, '');
+
     if (to === 'HEAD') {
       return `project = ${from} AND status in (Done, Closed, Resolved) AND resolved >= -30d ORDER BY resolved DESC`;
     }
 
-    return `project = ${from} AND fixVersion = "${to}" AND status in (Done, Closed, Resolved) ORDER BY resolved DESC`;
+    return `project = ${from} AND fixVersion = "${safeVersion}" AND status in (Done, Closed, Resolved) ORDER BY resolved DESC`;
   }
 
   private async fetchIssues(jql: string): Promise<JiraIssue[]> {
     const { domain, email, apiToken } = this.config;
+
+    // Validate domain format
+    if (!/^[a-zA-Z0-9.-]+\.atlassian\.net$/.test(domain)) {
+      throw new Error(`Invalid Jira domain: "${domain}". Expected format: yourcompany.atlassian.net`);
+    }
+
     const resolvedEmail = email || process.env.JIRA_EMAIL;
     const resolvedToken = apiToken || process.env.JIRA_API_TOKEN;
 

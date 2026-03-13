@@ -16,6 +16,7 @@
   },
   "main": "./dist/index.js",
   "files": ["dist"],
+  "engines": { "node": ">=18" },
   "scripts": {
     "build": "tsup src/index.ts --format esm --clean",
     "dev": "tsup src/index.ts --format esm --watch"

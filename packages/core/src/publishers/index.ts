@@ -30,7 +30,11 @@ export class FilePublisher implements Publisher {
  * Posts release notes to a Slack channel via webhook.
  */
 export class SlackPublisher implements Publisher {
-  constructor(private webhookUrl: string) {}
+  constructor(private webhookUrl: string) {
+    if (!webhookUrl.startsWith('https://hooks.slack.com/')) {
+      throw new Error('Invalid Slack webhook URL — must start with https://hooks.slack.com/');
+    }
+  }
 
   async publish(notes: ReleaseNotes, _format: OutputFormat): Promise<void> {
     const text = this.buildSlackMessage(notes);
@@ -71,7 +75,11 @@ export class SlackPublisher implements Publisher {
  * Posts release notes to Discord via webhook.
  */
 export class DiscordPublisher implements Publisher {
-  constructor(private webhookUrl: string) {}
+  constructor(private webhookUrl: string) {
+    if (!webhookUrl.startsWith('https://discord.com/api/webhooks/') && !webhookUrl.startsWith('https://discordapp.com/api/webhooks/')) {
+      throw new Error('Invalid Discord webhook URL — must start with https://discord.com/api/webhooks/');
+    }
+  }
 
   async publish(notes: ReleaseNotes, _format: OutputFormat): Promise<void> {
     const content = this.buildDiscordMessage(notes);

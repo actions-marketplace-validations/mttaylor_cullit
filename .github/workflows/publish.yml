@@ -70,17 +70,35 @@ jobs:
 
       # Publish packages in dependency order (skip if version already exists)
       - name: Publish @cullit/config
-        run: pnpm --filter @cullit/config publish --access public --no-git-checks || echo "⚠️ Already published or failed"
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          if npm view @cullit/config@$VERSION version 2>/dev/null; then
+            echo "@cullit/config@$VERSION already published, skipping"
+          else
+            pnpm --filter @cullit/config publish --access public --no-git-checks
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @cullit/core
-        run: pnpm --filter @cullit/core publish --access public --no-git-checks || echo "⚠️ Already published or failed"
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          if npm view @cullit/core@$VERSION version 2>/dev/null; then
+            echo "@cullit/core@$VERSION already published, skipping"
+          else
+            pnpm --filter @cullit/core publish --access public --no-git-checks
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish cullit (CLI)
-        run: pnpm --filter cullit publish --access public --no-git-checks
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          if npm view cullit@$VERSION version 2>/dev/null; then
+            echo "cullit@$VERSION already published, skipping"
+          else
+            pnpm --filter cullit publish --access public --no-git-checks
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

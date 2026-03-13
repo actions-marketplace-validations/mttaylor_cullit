@@ -70,7 +70,7 @@ export class LinearEnricher implements Enricher {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': this.apiKey,
+        'Authorization': `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
         query,
@@ -122,7 +122,7 @@ export class LinearEnricher implements Enricher {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': this.apiKey,
+        'Authorization': `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({ query, variables: { id: identifier } }),
     });

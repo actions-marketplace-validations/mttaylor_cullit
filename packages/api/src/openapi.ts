@@ -38,7 +38,7 @@ export const openApiSpec = {
                   type: 'object',
                   properties: {
                     status: { type: 'string', example: 'ok' },
-                    version: { type: 'string', example: '0.1.0' },
+                    version: { type: 'string', example: VERSION },
                     uptime: { type: 'number', description: 'Uptime in seconds' },
                   },
                 },
