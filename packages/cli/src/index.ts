@@ -175,7 +175,15 @@ async function main() {
 }
 
 async function runGenerate(from: string, to: string, opts: Record<string, string>) {
-  const config = loadConfig(opts.config || opts.c || process.cwd());
+  let config;
+  try {
+    config = loadConfig(opts.config || opts.c || process.cwd());
+  } catch (err) {
+    console.error(`\n✗ Config error: ${(err as Error).message}`);
+    console.error('  Fix your .cullit.yml or delete it to use defaults.');
+    process.exitCode = 1;
+    return;
+  }
 
   // CLI overrides
   if (opts.provider) config.ai.provider = opts.provider as any;

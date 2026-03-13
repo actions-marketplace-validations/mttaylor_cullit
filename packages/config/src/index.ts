@@ -32,16 +32,10 @@ export function loadConfig(cwdOrPath: string = process.cwd()): CullConfig {
     return DEFAULT_CONFIG;
   }
 
-  try {
-    const raw = readFileSync(configPath, 'utf-8');
-    const parsed = parseSimpleYaml(raw);
-    const resolved = resolveEnvVars(parsed);
-    return mergeWithDefaults(resolved);
-  } catch (err) {
-    console.warn(`⚠ Could not parse .cullit.yml: ${(err as Error).message}`);
-    console.warn('Using default configuration.');
-    return DEFAULT_CONFIG;
-  }
+  const raw = readFileSync(configPath, 'utf-8');
+  const parsed = parseSimpleYaml(raw);
+  const resolved = resolveEnvVars(parsed);
+  return mergeWithDefaults(resolved);
 }
 
 /**

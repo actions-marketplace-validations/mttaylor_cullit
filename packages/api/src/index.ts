@@ -24,6 +24,38 @@ const API_TOKEN = process.env['CULLIT_API_TOKEN'] || ''; // optional bearer auth
 // SECURITY: Defaults to '*' for local dev. In production, restrict to specific origins:
 //   ALLOWED_ORIGINS=https://yourdomain.com
 const ALLOWED_ORIGINS = process.env['ALLOWED_ORIGINS'] || '*';
+const RATE_LIMIT = parseInt(process.env['RATE_LIMIT'] || '30', 10); // requests per window
+const RATE_WINDOW = 60_000; // 1 minute
+
+// --- Rate limiter (per-IP sliding window) ---
+
+const rateBuckets = new Map<string, number[]>();
+
+function checkRateLimit(req: IncomingMessage, res: ServerResponse): boolean {
+  const ip = req.socket.remoteAddress || 'unknown';
+  const now = Date.now();
+  const timestamps = rateBuckets.get(ip) || [];
+  const recent = timestamps.filter(t => now - t < RATE_WINDOW);
+
+  if (recent.length >= RATE_LIMIT) {
+    json(res, 429, { error: 'Too many requests. Try again later.' });
+    return false;
+  }
+
+  recent.push(now);
+  rateBuckets.set(ip, recent);
+
+  // Periodically clean old entries (every 100 requests)
+  if (rateBuckets.size > 100) {
+    for (const [key, times] of rateBuckets) {
+      const active = times.filter(t => now - t < RATE_WINDOW);
+      if (active.length === 0) rateBuckets.delete(key);
+      else rateBuckets.set(key, active);
+    }
+  }
+
+  return true;
+}
 
 // --- Helpers ---
 
@@ -108,14 +140,31 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
     return;
   }
 
+  if (typeof body.from !== 'string' || body.from.length > 1000) {
+    json(res, 400, { error: '"from" must be a string under 1000 characters' });
+    return;
+  }
+
+  const VALID_PROVIDERS = ['anthropic', 'openai', 'gemini', 'ollama', 'openclaw', 'none'];
+  if (body.provider && !VALID_PROVIDERS.includes(body.provider)) {
+    json(res, 400, { error: `Invalid provider. Must be one of: ${VALID_PROVIDERS.join(', ')}` });
+    return;
+  }
+
+  const VALID_FORMATS = ['markdown', 'html', 'json'];
+  if (body.format && !VALID_FORMATS.includes(body.format)) {
+    json(res, 400, { error: `Invalid format. Must be one of: ${VALID_FORMATS.join(', ')}` });
+    return;
+  }
+
   // Build config from request body or load from file
   let config: CullConfig;
 
   if (body.configPath) {
     try {
       config = loadConfig(body.configPath);
-    } catch (err) {
-      json(res, 400, { error: `Config load failed: ${(err as Error).message}` });
+    } catch {
+      json(res, 400, { error: 'Failed to load config file' });
       return;
     }
   } else {
@@ -191,6 +240,7 @@ const server = createServer(async (req, res) => {
       await handleOpenAPI(req, res);
     } else if (path === '/generate' && req.method === 'POST') {
       if (!checkAuth(req, res)) return;
+      if (!checkRateLimit(req, res)) return;
       await handleGenerate(req, res);
     } else {
       json(res, 404, { error: 'Not found', docs: '/openapi.json' });

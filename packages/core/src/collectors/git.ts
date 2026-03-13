@@ -2,6 +2,20 @@ import { execSync } from 'child_process';
 import type { Collector, GitCommit, GitDiff } from '../types';
 
 /**
+ * Validates a git ref to prevent command injection.
+ * Allows: tags (v1.0.0), branches, SHAs, HEAD, HEAD~N
+ */
+function validateRef(ref: string): void {
+  if (!ref || ref.length > 256) {
+    throw new Error(`Invalid git ref: too ${ref ? 'long' : 'short'}`);
+  }
+  // Allow alphanumeric, dots, dashes, underscores, slashes, tildes, carets
+  if (!/^[a-zA-Z0-9._\-/~^]+$/.test(ref)) {
+    throw new Error(`Invalid git ref "${ref}" — only alphanumeric, dots, dashes, underscores, slashes, tildes, and carets are allowed`);
+  }
+}
+
+/**
  * Collects git log data between two refs (tags, branches, or commit SHAs).
  * Extracts commits, PR numbers, and issue keys from commit messages.
  */
@@ -13,6 +27,8 @@ export class GitCollector implements Collector {
   }
 
   async collect(from: string, to: string): Promise<GitDiff> {
+    validateRef(from);
+    validateRef(to);
     const log = this.getLog(from, to);
     const commits = this.parseLog(log);
 
