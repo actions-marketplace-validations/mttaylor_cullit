@@ -42,11 +42,7 @@ importers:
         specifier: workspace:*
         version: link:../core
 
-  packages/config:
-    devDependencies:
-      '@cullit/core':
-        specifier: workspace:*
-        version: link:../core
+  packages/config: {}
 
   packages/core:
     dependencies:
