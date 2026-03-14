@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terms of Service — Cullit</title>
+<meta name="description" content="Terms of Service for Cullit — AI-powered release notes generator. Read our terms covering usage, subscriptions, BYOK, and more.">
+<meta property="og:title" content="Terms of Service — Cullit">
+<meta property="og:description" content="Terms of Service for Cullit, the AI-powered release notes generator.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Chakra+Petch:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg-card: #161822;
+    --bg-card-hover: #1e2030;
+    --accent: #5eead4;
+    --accent-dim: #2dd4bf;
+    --text: #d4d4e0;
+    --text-dim: #7e819a;
+    --text-bright: #f0f0f5;
+    --border: #282a3a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(15, 17, 23, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-bright);
+    text-decoration: none;
+  }
+  .logo span { color: var(--accent); }
+  .nav-links { display: flex; gap: 2rem; align-items: center; }
+  .nav-links a {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+  .nav-cta {
+    background: var(--accent) !important;
+    color: var(--bg) !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 6px;
+    font-weight: 600 !important;
+  }
+
+  /* LEGAL CONTENT */
+  .legal-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 8rem 2rem 4rem;
+  }
+
+  .legal-header {
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .legal-header h1 {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 0.5rem;
+  }
+
+  .legal-header .meta {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+
+  .legal-header .meta span {
+    color: var(--accent);
+  }
+
+  .legal-nav {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .legal-nav h3 {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+
+  .legal-nav ol {
+    columns: 2;
+    column-gap: 2rem;
+    padding-left: 1.25rem;
+  }
+
+  .legal-nav li {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-bottom: 0.4rem;
+    break-inside: avoid;
+  }
+
+  .legal-nav a {
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .legal-nav a:hover {
+    color: var(--accent);
+  }
+
+  .legal-section {
+    margin-bottom: 2.5rem;
+  }
+
+  .legal-section h2 {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text-bright);
+    margin-bottom: 1rem;
+    padding-top: 1rem;
+  }
+
+  .legal-section p {
+    margin-bottom: 1rem;
+    color: var(--text);
+    font-size: 0.95rem;
+  }
+
+  .legal-section ul {
+    margin: 0.5rem 0 1rem 1.5rem;
+  }
+
+  .legal-section li {
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+    color: var(--text);
+  }
+
+  .legal-section li::marker {
+    color: var(--accent);
+  }
+
+  .legal-section strong {
+    color: var(--text-bright);
+  }
+
+  .legal-caps {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    line-height: 1.8;
+  }
+
+  .contact-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem 2rem;
+    margin-top: 1rem;
+  }
+
+  .contact-card p {
+    margin-bottom: 0.3rem;
+  }
+
+  .contact-card a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .contact-card a:hover {
+    text-decoration: underline;
+  }
+
+  .related-link {
+    display: inline-block;
+    margin-top: 2rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    text-decoration: none;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .related-link:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* FOOTER */
+  footer {
+    padding: 3rem 2rem;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+  .footer-brand {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+  .footer-brand a { color: var(--accent); text-decoration: none; }
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .footer-links a {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--accent); }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .legal-container { padding: 6rem 1.25rem 3rem; }
+    .legal-header h1 { font-size: 1.8rem; }
+    .legal-nav ol { columns: 1; }
+    .nav-links a:not(.nav-cta) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo">cullit<span>.io</span></a>
+  <div class="nav-links">
+    <a href="docs.html">Docs</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="https://github.com/mttaylor/cullit" target="_blank">GitHub</a>
+    <a href="index.html#cta" class="nav-cta">Get Started Free</a>
+  </div>
+</nav>
+
+<main class="legal-container">
+  <header class="legal-header">
+    <h1>Terms of Service</h1>
+    <p class="meta"><span>cullit.io</span> &mdash; Last Updated: March 2026</p>
+  </header>
+
+  <nav class="legal-nav">
+    <h3>Contents</h3>
+    <ol>
+      <li><a href="#agreement">Agreement to Terms</a></li>
+      <li><a href="#description">Description of Service</a></li>
+      <li><a href="#accounts">Accounts</a></li>
+      <li><a href="#byok">Bring Your Own Key</a></li>
+      <li><a href="#paid">Paid Services</a></li>
+      <li><a href="#cancellation">Cancellation</a></li>
+      <li><a href="#acceptable-use">Acceptable Use</a></li>
+      <li><a href="#ip">Intellectual Property</a></li>
+      <li><a href="#third-party">Third-Party Services</a></li>
+      <li><a href="#warranty">Disclaimer of Warranties</a></li>
+      <li><a href="#liability">Limitation of Liability</a></li>
+      <li><a href="#indemnification">Indemnification</a></li>
+      <li><a href="#changes">Changes to Terms</a></li>
+      <li><a href="#law">Governing Law</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ol>
+  </nav>
+
+  <section id="agreement" class="legal-section">
+    <h2>1. Agreement to Terms</h2>
+    <p>By accessing or using Cullit (&ldquo;Service&rdquo;), operated by Cullit LLC (&ldquo;Company,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;), you agree to be bound by these Terms of Service (&ldquo;Terms&rdquo;). If you do not agree to these Terms, do not use the Service.</p>
+  </section>
+
+  <section id="description" class="legal-section">
+    <h2>2. Description of Service</h2>
+    <p>Cullit is an AI-powered release notes generation tool. The Service includes a command-line interface (CLI), GitHub Action, and related integrations that analyze git commit history and generate release notes using third-party AI providers. The Service is offered as both a free open-source tool and a paid hosted service.</p>
+  </section>
+
+  <section id="accounts" class="legal-section">
+    <h2>3. Accounts</h2>
+    <p>To use certain features of the Service, you may need to provide configuration details including API keys for third-party services. You are responsible for maintaining the confidentiality of your API keys and account credentials. You are responsible for all activity that occurs under your account.</p>
+  </section>
+
+  <section id="byok" class="legal-section">
+    <h2>4. Bring Your Own Key (BYOK)</h2>
+    <p>Cullit supports a &ldquo;Bring Your Own Key&rdquo; model where you provide your own API keys for third-party AI providers (such as Anthropic or OpenAI). When using BYOK:</p>
+    <ul>
+      <li>You are responsible for all costs incurred with your third-party AI provider.</li>
+      <li>Your use of third-party services is governed by their respective terms of service.</li>
+      <li>We do not store, log, or transmit your API keys beyond what is necessary to process your request in the current session.</li>
+    </ul>
+  </section>
+
+  <section id="paid" class="legal-section">
+    <h2>5. Paid Services</h2>
+    <p>Certain features of the Service may require a paid subscription (&ldquo;Pro,&rdquo; &ldquo;Team,&rdquo; or &ldquo;Enterprise&rdquo; plans). By subscribing to a paid plan:</p>
+    <ul>
+      <li>You agree to pay the applicable fees as described on our pricing page.</li>
+      <li>Fees are billed in advance on a monthly or annual basis, depending on the plan selected.</li>
+      <li>All fees are non-refundable except as required by applicable law or as expressly stated in these Terms.</li>
+      <li>We reserve the right to change pricing with 30 days&rsquo; written notice to current subscribers.</li>
+    </ul>
+  </section>
+
+  <section id="cancellation" class="legal-section">
+    <h2>6. Cancellation</h2>
+    <p>You may cancel your subscription at any time. Upon cancellation:</p>
+    <ul>
+      <li>You will retain access to paid features until the end of your current billing period.</li>
+      <li>No refunds will be issued for partial billing periods.</li>
+      <li>Your data and configuration will remain accessible for 30 days after cancellation.</li>
+    </ul>
+  </section>
+
+  <section id="acceptable-use" class="legal-section">
+    <h2>7. Acceptable Use</h2>
+    <p>You agree not to:</p>
+    <ul>
+      <li>Use the Service for any unlawful purpose or in violation of any applicable law.</li>
+      <li>Attempt to reverse engineer, decompile, or disassemble any part of the Service.</li>
+      <li>Use the Service to generate content that is harmful, abusive, or violates the rights of others.</li>
+      <li>Exceed reasonable usage limits or attempt to circumvent rate limiting.</li>
+      <li>Share, resell, or redistribute access to paid features without authorization.</li>
+    </ul>
+  </section>
+
+  <section id="ip" class="legal-section">
+    <h2>8. Intellectual Property</h2>
+    <p><strong>Your Content:</strong> You retain all ownership rights to your git repositories, commit messages, and any content you provide to the Service. Release notes generated by the Service from your content belong to you.</p>
+    <p><strong>Our Service:</strong> The Service, including its original code (except open-source components), design, and documentation, is owned by Cullit LLC. The open-source CLI and GitHub Action are licensed under the MIT License.</p>
+  </section>
+
+  <section id="third-party" class="legal-section">
+    <h2>9. Third-Party Services</h2>
+    <p>The Service integrates with third-party services including but not limited to GitHub, Jira, Linear, Slack, Discord, Anthropic, and OpenAI. Your use of these integrations is subject to the terms and policies of those third-party providers. We are not responsible for the availability, accuracy, or practices of any third-party service.</p>
+  </section>
+
+  <section id="warranty" class="legal-section">
+    <h2>10. Disclaimer of Warranties</h2>
+    <p class="legal-caps">THE SERVICE IS PROVIDED &ldquo;AS IS&rdquo; AND &ldquo;AS AVAILABLE&rdquo; WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED, ERROR-FREE, OR SECURE.</p>
+    <p>AI-generated release notes may contain inaccuracies. You are responsible for reviewing all generated content before publishing or distributing it.</p>
+  </section>
+
+  <section id="liability" class="legal-section">
+    <h2>11. Limitation of Liability</h2>
+    <p class="legal-caps">TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL CULLIT LLC, ITS OFFICERS, DIRECTORS, EMPLOYEES, OR AGENTS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR REVENUE, WHETHER INCURRED DIRECTLY OR INDIRECTLY, OR ANY LOSS OF DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES, RESULTING FROM:</p>
+    <ul>
+      <li class="legal-caps">YOUR USE OR INABILITY TO USE THE SERVICE;</li>
+      <li class="legal-caps">ANY UNAUTHORIZED ACCESS TO OR USE OF YOUR DATA;</li>
+      <li class="legal-caps">ANY CONTENT GENERATED BY THE SERVICE;</li>
+      <li class="legal-caps">ANY INTERRUPTION OR CESSATION OF THE SERVICE.</li>
+    </ul>
+    <p class="legal-caps">OUR TOTAL LIABILITY SHALL NOT EXCEED THE AMOUNT YOU PAID US IN THE TWELVE (12) MONTHS PRECEDING THE CLAIM.</p>
+  </section>
+
+  <section id="indemnification" class="legal-section">
+    <h2>12. Indemnification</h2>
+    <p>You agree to indemnify and hold harmless Cullit LLC and its officers, directors, employees, and agents from any claims, damages, losses, or expenses (including reasonable attorneys&rsquo; fees) arising from your use of the Service or your violation of these Terms.</p>
+  </section>
+
+  <section id="changes" class="legal-section">
+    <h2>13. Changes to Terms</h2>
+    <p>We may update these Terms from time to time. We will notify you of material changes by posting the updated Terms on our website and updating the &ldquo;Last Updated&rdquo; date. Your continued use of the Service after such changes constitutes acceptance of the updated Terms.</p>
+  </section>
+
+  <section id="law" class="legal-section">
+    <h2>14. Governing Law</h2>
+    <p>These Terms shall be governed by and construed in accordance with the laws of the State of Idaho, without regard to its conflict of law provisions.</p>
+  </section>
+
+  <section id="contact" class="legal-section">
+    <h2>15. Contact</h2>
+    <p>If you have questions about these Terms, contact us at:</p>
+    <div class="contact-card">
+      <p><strong>Cullit LLC</strong></p>
+      <p>Email: <a href="mailto:matt@cullit.io">matt@cullit.io</a></p>
+      <p>Website: <a href="https://cullit.io">cullit.io</a></p>
+    </div>
+  </section>
+
+  <a href="privacy.html" class="related-link">&rarr; Privacy Policy</a>
+</main>
+
+<footer>
+  <p class="footer-brand">Built by <a href="https://cullit.io" target="_blank">Cullit</a></p>
+  <div class="footer-links">
+    <a href="https://github.com/mttaylor/cullit" target="_blank">GitHub</a>
+    <a href="https://cullit.io" target="_blank">Blog</a>
+    <a href="https://x.com/Cullit_io" target="_blank">X / Twitter</a>
+    <a href="https://www.linkedin.com/company/cullit/" target="_blank">LinkedIn</a>
+    <a href="terms.html">Terms</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="mailto:sales@cullit.io">sales@cullit.io</a>
+  </div>
+</footer>
+
+</body>
+</html>

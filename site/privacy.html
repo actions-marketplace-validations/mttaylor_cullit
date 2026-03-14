@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — Cullit</title>
+<meta name="description" content="Privacy Policy for Cullit — AI-powered release notes generator. Learn how we handle your data, API keys, and commit information.">
+<meta property="og:title" content="Privacy Policy — Cullit">
+<meta property="og:description" content="Privacy Policy for Cullit. We believe in transparency about how your data is handled.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Chakra+Petch:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg-card: #161822;
+    --bg-card-hover: #1e2030;
+    --accent: #5eead4;
+    --accent-dim: #2dd4bf;
+    --text: #d4d4e0;
+    --text-dim: #7e819a;
+    --text-bright: #f0f0f5;
+    --border: #282a3a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(15, 17, 23, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-bright);
+    text-decoration: none;
+  }
+  .logo span { color: var(--accent); }
+  .nav-links { display: flex; gap: 2rem; align-items: center; }
+  .nav-links a {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+  .nav-cta {
+    background: var(--accent) !important;
+    color: var(--bg) !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 6px;
+    font-weight: 600 !important;
+  }
+
+  /* LEGAL CONTENT */
+  .legal-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 8rem 2rem 4rem;
+  }
+
+  .legal-header {
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .legal-header h1 {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 0.5rem;
+  }
+
+  .legal-header .meta {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+
+  .legal-header .meta span {
+    color: var(--accent);
+  }
+
+  .legal-nav {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .legal-nav h3 {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+
+  .legal-nav ol {
+    columns: 2;
+    column-gap: 2rem;
+    padding-left: 1.25rem;
+  }
+
+  .legal-nav li {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-bottom: 0.4rem;
+    break-inside: avoid;
+  }
+
+  .legal-nav a {
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .legal-nav a:hover {
+    color: var(--accent);
+  }
+
+  .legal-section {
+    margin-bottom: 2.5rem;
+  }
+
+  .legal-section h2 {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text-bright);
+    margin-bottom: 1rem;
+    padding-top: 1rem;
+  }
+
+  .legal-section h3 {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: var(--text-bright);
+    margin: 1.25rem 0 0.75rem;
+  }
+
+  .legal-section p {
+    margin-bottom: 1rem;
+    color: var(--text);
+    font-size: 0.95rem;
+  }
+
+  .legal-section ul {
+    margin: 0.5rem 0 1rem 1.5rem;
+  }
+
+  .legal-section li {
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+    color: var(--text);
+  }
+
+  .legal-section li::marker {
+    color: var(--accent);
+  }
+
+  .legal-section strong {
+    color: var(--text-bright);
+  }
+
+  .data-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1rem 0 1.5rem;
+  }
+
+  .data-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+  }
+
+  .data-card h4 {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .data-card p {
+    font-size: 0.85rem;
+    margin-bottom: 0;
+    color: var(--text-dim);
+  }
+
+  .contact-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem 2rem;
+    margin-top: 1rem;
+  }
+
+  .contact-card p {
+    margin-bottom: 0.3rem;
+  }
+
+  .contact-card a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .contact-card a:hover {
+    text-decoration: underline;
+  }
+
+  .related-link {
+    display: inline-block;
+    margin-top: 2rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    text-decoration: none;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .related-link:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* FOOTER */
+  footer {
+    padding: 3rem 2rem;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+  .footer-brand {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+  .footer-brand a { color: var(--accent); text-decoration: none; }
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .footer-links a {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--accent); }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .legal-container { padding: 6rem 1.25rem 3rem; }
+    .legal-header h1 { font-size: 1.8rem; }
+    .legal-nav ol { columns: 1; }
+    .data-grid { grid-template-columns: 1fr; }
+    .nav-links a:not(.nav-cta) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo">cullit<span>.io</span></a>
+  <div class="nav-links">
+    <a href="docs.html">Docs</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="https://github.com/mttaylor/cullit" target="_blank">GitHub</a>
+    <a href="index.html#cta" class="nav-cta">Get Started Free</a>
+  </div>
+</nav>
+
+<main class="legal-container">
+  <header class="legal-header">
+    <h1>Privacy Policy</h1>
+    <p class="meta"><span>cullit.io</span> &mdash; Last Updated: March 2026</p>
+  </header>
+
+  <nav class="legal-nav">
+    <h3>Contents</h3>
+    <ol>
+      <li><a href="#intro">Introduction</a></li>
+      <li><a href="#collect">Information We Collect</a></li>
+      <li><a href="#use">How We Use Information</a></li>
+      <li><a href="#sharing">Information Sharing</a></li>
+      <li><a href="#retention">Data Retention</a></li>
+      <li><a href="#security">Data Security</a></li>
+      <li><a href="#rights">Your Rights</a></li>
+      <li><a href="#children">Children&rsquo;s Privacy</a></li>
+      <li><a href="#international">International Users</a></li>
+      <li><a href="#opensource">Open Source Components</a></li>
+      <li><a href="#changes">Changes to This Policy</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ol>
+  </nav>
+
+  <section id="intro" class="legal-section">
+    <h2>1. Introduction</h2>
+    <p>Cullit LLC (&ldquo;Company,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) operates cullit.io and the Cullit CLI and GitHub Action (collectively, the &ldquo;Service&rdquo;). This Privacy Policy explains how we collect, use, and protect information when you use our Service.</p>
+  </section>
+
+  <section id="collect" class="legal-section">
+    <h2>2. Information We Collect</h2>
+
+    <h3>Information You Provide</h3>
+    <ul>
+      <li><strong>Account information:</strong> Email address when you sign up for our waitlist or create an account.</li>
+      <li><strong>Payment information:</strong> If you subscribe to a paid plan, payment is processed by Stripe. We do not store your credit card information directly. See <a href="https://stripe.com/privacy" target="_blank" rel="noopener" style="color: var(--accent);">Stripe&rsquo;s privacy policy</a>.</li>
+      <li><strong>Configuration data:</strong> Settings you provide in your <code style="background: var(--bg-card); padding: 0.15em 0.4em; border-radius: 4px; font-family: 'Space Mono', monospace; font-size: 0.85em;">.cullit.yml</code> configuration file, including AI provider preferences and integration settings.</li>
+    </ul>
+
+    <h3>Information Processed Temporarily</h3>
+    <p>When you use the Service to generate release notes, the following data is processed in-memory and is <strong>not stored</strong> after your session:</p>
+    <div class="data-grid">
+      <div class="data-card">
+        <h4>Git Commit Data</h4>
+        <p>Commit messages, author names, dates, and PR references between the refs you specify.</p>
+      </div>
+      <div class="data-card">
+        <h4>Enrichment Data</h4>
+        <p>Ticket information retrieved from Jira or Linear using your credentials.</p>
+      </div>
+      <div class="data-card">
+        <h4>API Keys</h4>
+        <p>Your third-party API keys are used only for the current request and are never logged or stored by us.</p>
+      </div>
+      <div class="data-card">
+        <h4>Generated Content</h4>
+        <p>Release notes generated during your session are not retained on our servers.</p>
+      </div>
+    </div>
+
+    <h3>Information Collected Automatically</h3>
+    <ul>
+      <li><strong>Usage analytics:</strong> We may collect anonymous usage data such as command frequency, feature usage, and error rates to improve the Service. This data does not include your code, commit messages, or generated content.</li>
+      <li><strong>Website analytics:</strong> When you visit cullit.io, we may collect standard web analytics data including IP address, browser type, and pages visited.</li>
+    </ul>
+  </section>
+
+  <section id="use" class="legal-section">
+    <h2>3. How We Use Information</h2>
+    <p>We use the information we collect to:</p>
+    <ul>
+      <li>Provide, maintain, and improve the Service.</li>
+      <li>Process payments for paid subscriptions.</li>
+      <li>Send you updates about the Service (you can opt out at any time).</li>
+      <li>Respond to your requests and support inquiries.</li>
+      <li>Monitor and analyze usage trends to improve user experience.</li>
+      <li>Comply with legal obligations.</li>
+    </ul>
+  </section>
+
+  <section id="sharing" class="legal-section">
+    <h2>4. Information Sharing</h2>
+    <p>We do not sell your personal information. We may share information only in the following circumstances:</p>
+    <ul>
+      <li><strong>Third-party AI providers:</strong> When you use the Service, your git commit data is sent to the AI provider you selected (Anthropic or OpenAI) to generate release notes. This data is subject to the AI provider&rsquo;s terms and privacy policies.</li>
+      <li><strong>Payment processing:</strong> Payment information is processed by Stripe.</li>
+      <li><strong>Legal requirements:</strong> We may disclose information if required by law, regulation, or legal process.</li>
+      <li><strong>Business transfers:</strong> In the event of a merger, acquisition, or sale of assets, your information may be transferred as part of that transaction.</li>
+    </ul>
+  </section>
+
+  <section id="retention" class="legal-section">
+    <h2>5. Data Retention</h2>
+    <div class="data-grid">
+      <div class="data-card">
+        <h4>Account Data</h4>
+        <p>Retained while your account is active. Deleted within 30 days of deletion request.</p>
+      </div>
+      <div class="data-card">
+        <h4>Session Data</h4>
+        <p>Commits &amp; generated notes are not retained. Processed in-memory only.</p>
+      </div>
+      <div class="data-card">
+        <h4>API Keys</h4>
+        <p>Never stored. Used only for the duration of the request.</p>
+      </div>
+      <div class="data-card">
+        <h4>Payment Records</h4>
+        <p>Retained as required for accounting and tax purposes.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="security" class="legal-section">
+    <h2>6. Data Security</h2>
+    <p>We implement reasonable technical and organizational measures to protect your information, including:</p>
+    <ul>
+      <li>HTTPS encryption for all web traffic.</li>
+      <li>No storage of third-party API keys.</li>
+      <li>No logging of your git commit content or generated release notes.</li>
+      <li>Secure payment processing through Stripe (PCI-compliant).</li>
+    </ul>
+    <p>However, no method of transmission over the Internet or electronic storage is completely secure, and we cannot guarantee absolute security.</p>
+  </section>
+
+  <section id="rights" class="legal-section">
+    <h2>7. Your Rights</h2>
+    <p>Depending on your jurisdiction, you may have the right to:</p>
+    <ul>
+      <li>Access the personal information we hold about you.</li>
+      <li>Request correction of inaccurate information.</li>
+      <li>Request deletion of your information.</li>
+      <li>Opt out of marketing communications.</li>
+      <li>Object to or restrict certain processing of your information.</li>
+    </ul>
+    <p>To exercise any of these rights, contact us at <a href="mailto:matt@cullit.io" style="color: var(--accent);">matt@cullit.io</a>.</p>
+  </section>
+
+  <section id="children" class="legal-section">
+    <h2>8. Children&rsquo;s Privacy</h2>
+    <p>The Service is not intended for use by anyone under the age of 16. We do not knowingly collect personal information from children under 16.</p>
+  </section>
+
+  <section id="international" class="legal-section">
+    <h2>9. International Users</h2>
+    <p>The Service is operated from the United States. If you access the Service from outside the United States, your information may be transferred to and processed in the United States.</p>
+  </section>
+
+  <section id="opensource" class="legal-section">
+    <h2>10. Open Source Components</h2>
+    <p>The Cullit CLI and GitHub Action are open-source software licensed under the MIT License. When you use the open-source components locally, no data is transmitted to us. Data is only sent to the third-party AI provider you configure.</p>
+  </section>
+
+  <section id="changes" class="legal-section">
+    <h2>11. Changes to This Policy</h2>
+    <p>We may update this Privacy Policy from time to time. We will notify you of material changes by posting the updated policy on our website and updating the &ldquo;Last Updated&rdquo; date.</p>
+  </section>
+
+  <section id="contact" class="legal-section">
+    <h2>12. Contact</h2>
+    <p>If you have questions about this Privacy Policy, contact us at:</p>
+    <div class="contact-card">
+      <p><strong>Cullit LLC</strong></p>
+      <p>Email: <a href="mailto:matt@cullit.io">matt@cullit.io</a></p>
+      <p>Website: <a href="https://cullit.io">cullit.io</a></p>
+    </div>
+  </section>
+
+  <a href="terms.html" class="related-link">&rarr; Terms of Service</a>
+</main>
+
+<footer>
+  <p class="footer-brand">Built by <a href="https://cullit.io" target="_blank">Cullit</a></p>
+  <div class="footer-links">
+    <a href="https://github.com/mttaylor/cullit" target="_blank">GitHub</a>
+    <a href="https://cullit.io" target="_blank">Blog</a>
+    <a href="https://x.com/Cullit_io" target="_blank">X / Twitter</a>
+    <a href="https://www.linkedin.com/company/cullit/" target="_blank">LinkedIn</a>
+    <a href="terms.html">Terms</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="mailto:sales@cullit.io">sales@cullit.io</a>
+  </div>
+</footer>
+
+</body>
+</html>
