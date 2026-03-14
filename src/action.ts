@@ -6,10 +6,10 @@
  *   pnpm build:action
  */
 
-import { runPipeline } from '../packages/core/src/index';
-import { loadConfig } from '../packages/config/src/index';
-import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget } from '../packages/core/src/types';
-import { DEFAULT_CATEGORIES } from '../packages/core/src/constants';
+import { runPipeline } from '@cullit/core';
+import { loadConfig } from '@cullit/config';
+import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget } from '@cullit/core';
+import { DEFAULT_CATEGORIES } from '@cullit/core';
 import { appendFileSync } from 'fs';
 
 // --- GitHub Actions helpers (no @actions/core dependency) ---

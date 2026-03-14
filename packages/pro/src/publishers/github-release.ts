@@ -18,7 +18,7 @@ export class GitHubReleasePublisher implements Publisher {
     this.repo = parts[1] || '';
   }
 
-  async publish(notes: ReleaseNotes, format: OutputFormat): Promise<void> {
+  async publish(notes: ReleaseNotes, format: OutputFormat, preformatted?: string): Promise<void> {
     if (!this.token) {
       throw new Error('GITHUB_TOKEN is required for GitHub Release publishing');
     }
@@ -29,7 +29,7 @@ export class GitHubReleasePublisher implements Publisher {
       );
     }
 
-    const formatted = formatNotes(notes, format);
+    const formatted = preformatted || formatNotes(notes, format);
     const tagName = notes.version.startsWith('v') ? notes.version : `v${notes.version}`;
 
     const existing = await this.getRelease(tagName);

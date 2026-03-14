@@ -209,7 +209,7 @@ export async function runPipeline(
             continue;
         }
 
-        await publisher.publish(notes, format);
+        await publisher.publish(notes, format, formatted);
         publishedTo.push(target.type === 'file' ? `file:${target.path}` : target.type);
       } catch (err) {
         log.error(`✗ Failed to publish to ${target.type}: ${(err as Error).message}`);

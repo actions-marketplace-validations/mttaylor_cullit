@@ -9,5 +9,5 @@ export const DEFAULT_MODELS: Record<string, string> = {
   openai: 'gpt-4o',
   gemini: 'gemini-2.0-flash',
   ollama: 'llama3.1',
-  openclaw: 'claude-sonnet-4-6',
+  openclaw: 'anthropic/claude-sonnet-4-6',
 };

@@ -24,19 +24,20 @@ export class AIGenerator implements Generator {
   async generate(context: EnrichedContext, config: AIConfig): Promise<ReleaseNotes> {
     const prompt = this.buildPrompt(context, config);
     const apiKey = this.resolveApiKey(config);
+    const maxTokens = config.maxTokens || 4096;
 
     let rawResponse: string;
 
     if (config.provider === 'anthropic') {
-      rawResponse = await this.callAnthropic(prompt, apiKey, config.model);
+      rawResponse = await this.callAnthropic(prompt, apiKey, config.model, maxTokens);
     } else if (config.provider === 'openai') {
-      rawResponse = await this.callOpenAI(prompt, apiKey, config.model);
+      rawResponse = await this.callOpenAI(prompt, apiKey, config.model, maxTokens);
     } else if (config.provider === 'gemini') {
-      rawResponse = await this.callGemini(prompt, apiKey, config.model);
+      rawResponse = await this.callGemini(prompt, apiKey, config.model, maxTokens);
     } else if (config.provider === 'ollama') {
       rawResponse = await this.callOllama(prompt, config.model);
     } else if (config.provider === 'openclaw') {
-      rawResponse = await this.callOpenClaw(prompt, config.model);
+      rawResponse = await this.callOpenClaw(prompt, config.model, maxTokens);
     } else {
       throw new Error(`Unsupported AI provider: ${config.provider}`);
     }
@@ -141,7 +142,7 @@ Rules:
 - If a commit message mentions a breaking change, categorize it as "breaking"`;
   }
 
-  private async callAnthropic(prompt: string, apiKey: string, model?: string): Promise<string> {
+  private async callAnthropic(prompt: string, apiKey: string, model?: string, maxTokens: number = 4096): Promise<string> {
     const response = await this.fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -151,7 +152,7 @@ Rules:
       },
       body: JSON.stringify({
         model: model || 'claude-sonnet-4-20250514',
-        max_tokens: 4096,
+        max_tokens: maxTokens,
         messages: [{ role: 'user', content: prompt }],
       }),
     });
@@ -165,7 +166,7 @@ Rules:
     return data.content[0]?.text || '';
   }
 
-  private async callOpenAI(prompt: string, apiKey: string, model?: string): Promise<string> {
+  private async callOpenAI(prompt: string, apiKey: string, model?: string, maxTokens: number = 4096): Promise<string> {
     const response = await this.fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -175,7 +176,7 @@ Rules:
       body: JSON.stringify({
         model: model || 'gpt-4o',
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 4096,
+        max_tokens: maxTokens,
         temperature: 0.3,
       }),
     });
@@ -189,7 +190,7 @@ Rules:
     return data.choices[0]?.message?.content || '';
   }
 
-  private async callGemini(prompt: string, apiKey: string, model?: string): Promise<string> {
+  private async callGemini(prompt: string, apiKey: string, model?: string, maxTokens: number = 4096): Promise<string> {
     const modelId = model || 'gemini-2.0-flash';
     const response = await this.fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${encodeURIComponent(apiKey)}`,
@@ -198,7 +199,7 @@ Rules:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 4096 },
+          generationConfig: { temperature: 0.3, maxOutputTokens: maxTokens },
         }),
       }
     );
@@ -234,7 +235,7 @@ Rules:
     return data.message?.content || '';
   }
 
-  private async callOpenClaw(prompt: string, model?: string): Promise<string> {
+  private async callOpenClaw(prompt: string, model?: string, maxTokens: number = 4096): Promise<string> {
     const baseUrl = this.openclawConfig?.baseUrl || process.env.OPENCLAW_URL || 'http://localhost:18789';
     const token = this.openclawConfig?.token || process.env.OPENCLAW_TOKEN || '';
 
@@ -247,7 +248,7 @@ Rules:
       body: JSON.stringify({
         model: model || 'anthropic/claude-sonnet-4-6',
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 4096,
+        max_tokens: maxTokens,
         temperature: 0.3,
       }),
     });

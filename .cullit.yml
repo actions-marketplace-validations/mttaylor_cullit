@@ -2,7 +2,7 @@
 # https://cullit.io/docs/config
 
 ai:
-  provider: anthropic          # anthropic | openai
+  provider: anthropic          # anthropic | openai | gemini | ollama | openclaw | none
   # model: claude-sonnet-4-20250514  # optional: override default model
   audience: developer          # developer | end-user | executive
   tone: professional           # professional | casual | terse

@@ -107,6 +107,22 @@ export const openApiSpec = {
               },
             },
           },
+          '401': {
+            description: 'Unauthorized — missing or invalid Bearer token',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+              },
+            },
+          },
+          '429': {
+            description: 'Rate limit exceeded',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Error' },
+              },
+            },
+          },
           '500': {
             description: 'Generation failed',
             content: {

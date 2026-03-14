@@ -3,13 +3,15 @@
   "version": "0.3.0",
   "private": true,
   "type": "module",
+  "description": "Cullit REST API server for AI-powered release note generation.",
+  "license": "UNLICENSED",
+  "author": "Cullit <matt@cullit.io>",
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsup src/index.ts src/openapi.ts --format esm --clean",
     "dev": "tsup src/index.ts --format esm --watch --onSuccess 'node dist/index.js'"
   },
   "dependencies": {
-    "@cullit/core": "workspace:*",
-    "@cullit/config": "workspace:*"
+    "@cullit/core": "workspace:*"
   }
 }

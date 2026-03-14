@@ -17,6 +17,7 @@ COPY packages/core/package.json packages/core/
 COPY packages/config/package.json packages/config/
 COPY packages/cli/package.json packages/cli/
 COPY packages/api/package.json packages/api/
+COPY packages/pro/package.json packages/pro/
 RUN pnpm install --frozen-lockfile
 
 # --- Build ---
@@ -42,6 +43,8 @@ COPY --from=build /app/packages/cli/package.json packages/cli/package.json
 COPY --from=build /app/packages/cli/dist/ packages/cli/dist/
 COPY --from=build /app/packages/api/package.json packages/api/package.json
 COPY --from=build /app/packages/api/dist/ packages/api/dist/
+COPY --from=build /app/packages/pro/package.json packages/pro/package.json
+COPY --from=build /app/packages/pro/dist/ packages/pro/dist/
 
 RUN pnpm install --prod --frozen-lockfile
 

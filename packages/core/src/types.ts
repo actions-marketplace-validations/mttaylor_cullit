@@ -107,7 +107,7 @@ export interface Generator {
 }
 
 export interface Publisher {
-  publish(notes: ReleaseNotes, format: OutputFormat): Promise<void>;
+  publish(notes: ReleaseNotes, format: OutputFormat, preformatted?: string): Promise<void>;
 }
 
 // --- Pipeline ---
