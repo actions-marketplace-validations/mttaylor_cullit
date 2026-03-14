@@ -134,6 +134,11 @@ function parseSimpleYaml(raw: string): Record<string, any> {
 }
 
 function parseValue(val: string): any {
+  // Strip inline comments (# ...) unless inside quotes
+  if (!val.startsWith('"') && !val.startsWith("'") && !val.startsWith('[')) {
+    const commentIdx = val.indexOf(' #');
+    if (commentIdx > 0) val = val.substring(0, commentIdx).trim();
+  }
   if (val === 'true') return true;
   if (val === 'false') return false;
   if (val === 'null') return null;
