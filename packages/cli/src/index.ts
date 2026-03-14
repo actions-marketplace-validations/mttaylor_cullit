@@ -191,11 +191,39 @@ async function runGenerate(from: string, to: string, opts: Record<string, string
     return;
   }
 
-  // CLI overrides
-  if (opts.provider) config.ai.provider = opts.provider as any;
-  if (opts.audience) config.ai.audience = opts.audience as any;
+  // CLI overrides with validation
+  const VALID_PROVIDERS = ['anthropic', 'openai', 'gemini', 'ollama', 'openclaw', 'none'];
+  const VALID_AUDIENCES = ['developer', 'end-user', 'executive'];
+  const VALID_SOURCES = ['local', 'jira', 'linear'];
+
+  if (opts.provider) {
+    if (!VALID_PROVIDERS.includes(opts.provider)) {
+      console.error(`\n✗ Invalid provider: ${opts.provider}`);
+      console.error(`  Valid providers: ${VALID_PROVIDERS.join(', ')}`);
+      process.exitCode = 1;
+      return;
+    }
+    config.ai.provider = opts.provider as any;
+  }
+  if (opts.audience) {
+    if (!VALID_AUDIENCES.includes(opts.audience)) {
+      console.error(`\n✗ Invalid audience: ${opts.audience}`);
+      console.error(`  Valid audiences: ${VALID_AUDIENCES.join(', ')}`);
+      process.exitCode = 1;
+      return;
+    }
+    config.ai.audience = opts.audience as any;
+  }
   if (opts.model) config.ai.model = opts.model;
-  if (opts.source) config.source.type = opts.source as any;
+  if (opts.source) {
+    if (!VALID_SOURCES.includes(opts.source)) {
+      console.error(`\n✗ Invalid source: ${opts.source}`);
+      console.error(`  Valid sources: ${VALID_SOURCES.join(', ')}`);
+      process.exitCode = 1;
+      return;
+    }
+    config.source.type = opts.source as any;
+  }
 
   const format = (opts.format || 'markdown') as OutputFormat;
   const dryRun = 'dry-run' in opts || 'dryRun' in opts;

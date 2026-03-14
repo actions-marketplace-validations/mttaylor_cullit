@@ -28,6 +28,7 @@ const RATE_WINDOW = 60_000; // 1 minute
 
 // --- Rate limiter (per-IP sliding window) ---
 
+const MAX_RATE_BUCKETS = 10_000;
 const rateBuckets = new Map<string, number[]>();
 
 // Prune stale rate limiter entries every 2 minutes
@@ -48,6 +49,12 @@ function checkRateLimit(req: IncomingMessage, res: ServerResponse): boolean {
 
   if (recent.length >= RATE_LIMIT) {
     json(res, 429, { error: 'Too many requests. Try again later.' });
+    return false;
+  }
+
+  // Cap total tracked IPs to prevent memory exhaustion from IP rotation attacks
+  if (!rateBuckets.has(ip) && rateBuckets.size >= MAX_RATE_BUCKETS) {
+    json(res, 503, { error: 'Server is busy. Try again later.' });
     return false;
   }
 
@@ -140,6 +147,11 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
 
   if (typeof body.from !== 'string' || body.from.length > 1000) {
     json(res, 400, { error: '"from" must be a string under 1000 characters' });
+    return;
+  }
+
+  if (body.to !== undefined && (typeof body.to !== 'string' || body.to.length > 256)) {
+    json(res, 400, { error: '"to" must be a string under 256 characters' });
     return;
   }
 

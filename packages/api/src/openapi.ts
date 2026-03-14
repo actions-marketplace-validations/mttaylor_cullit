@@ -208,10 +208,7 @@ export const openApiSpec = {
               apiKey: { type: 'string', description: 'Linear API key (or use LINEAR_API_KEY env var)' },
             },
           },
-          configPath: {
-            type: 'string',
-            description: 'Path to .cullit.yml config file (overrides other fields)',
-          },
+
         },
       },
       GenerateResponse: {

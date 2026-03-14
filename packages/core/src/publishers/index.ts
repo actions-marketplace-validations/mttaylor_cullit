@@ -31,8 +31,8 @@ export class FilePublisher implements Publisher {
  */
 export class SlackPublisher implements Publisher {
   constructor(private webhookUrl: string) {
-    if (!webhookUrl.startsWith('https://hooks.slack.com/')) {
-      throw new Error('Invalid Slack webhook URL — must start with https://hooks.slack.com/');
+    if (!webhookUrl.startsWith('https://hooks.slack.com/') && !webhookUrl.startsWith('https://hooks.slack-gov.com/')) {
+      throw new Error('Invalid Slack webhook URL — must start with https://hooks.slack.com/ or https://hooks.slack-gov.com/');
     }
   }
 

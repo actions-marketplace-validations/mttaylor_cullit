@@ -31,7 +31,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
 # Install git (needed for local source collector) and curl (healthcheck)
-RUN apk add --no-cache git curl
+RUN apk add --no-cache git curl tini
 
 COPY --from=build /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
 COPY --from=build /app/packages/core/package.json packages/core/package.json
@@ -46,5 +46,5 @@ COPY --from=build /app/packages/api/dist/ packages/api/dist/
 RUN pnpm install --prod --frozen-lockfile
 
 # Default: CLI mode
-ENTRYPOINT ["node", "packages/cli/dist/index.js"]
+ENTRYPOINT ["tini", "--", "node", "packages/cli/dist/index.js"]
 CMD ["--help"]
