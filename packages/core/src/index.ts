@@ -15,30 +15,37 @@ import { DEFAULT_MODELS } from './constants';
 import { createLogger, type Logger } from './logger';
 
 export { GitCollector, getRecentTags, getLatestTag } from './collectors/git';
-export { JiraCollector } from './collectors/jira';
-export { LinearCollector } from './collectors/linear';
-export { AIGenerator } from './generators/ai';
 export { TemplateGenerator } from './generators/template';
 export { formatNotes } from './formatter';
-export { StdoutPublisher, FilePublisher, SlackPublisher, DiscordPublisher, GitHubReleasePublisher } from './publishers/index';
-export { JiraEnricher } from './enrichers/jira';
-export { LinearEnricher } from './enrichers/linear';
+export { StdoutPublisher, FilePublisher } from './publishers/index';
 export { analyzeReleaseReadiness } from './advisor';
 export type { ReleaseAdvisory, SemverBump } from './advisor';
 export { resolveLicense, isProviderAllowed, isPublisherAllowed, isEnrichmentAllowed, upgradeMessage } from './gate';
 export type { LicenseTier, LicenseStatus } from './gate';
+export {
+  registerCollector, registerEnricher, registerGenerator, registerPublisher,
+  getCollector, getEnricher, getGenerator, getPublisher,
+  hasCollector, hasEnricher, hasGenerator, hasPublisher,
+} from './registry';
+export type { CollectorFactory, EnricherFactory, GeneratorFactory, PublisherFactory } from './registry';
+export { fetchWithTimeout } from './fetch';
 
 import type { CullConfig, EnrichedContext, PipelineResult, OutputFormat, EnrichedTicket } from './types';
 import { resolveLicense, isProviderAllowed, isPublisherAllowed, isEnrichmentAllowed, upgradeMessage } from './gate';
 import { GitCollector } from './collectors/git';
-import { JiraCollector } from './collectors/jira';
-import { LinearCollector } from './collectors/linear';
-import { AIGenerator } from './generators/ai';
 import { TemplateGenerator } from './generators/template';
 import { formatNotes } from './formatter';
-import { StdoutPublisher, FilePublisher, SlackPublisher, DiscordPublisher, GitHubReleasePublisher } from './publishers/index';
-import { JiraEnricher } from './enrichers/jira';
-import { LinearEnricher } from './enrichers/linear';
+import { StdoutPublisher, FilePublisher } from './publishers/index';
+import {
+  registerCollector, registerGenerator, registerPublisher,
+  getCollector, getEnricher, getGenerator, getPublisher,
+} from './registry';
+
+// --- Register free (core) plugins ---
+registerCollector('local', () => new GitCollector());
+registerGenerator('none', () => new TemplateGenerator());
+registerPublisher('stdout', () => new StdoutPublisher());
+registerPublisher('file', (path: string) => new FilePublisher(path));
 
 /**
  * Main pipeline: Collect → Enrich → Generate → Format → Publish
@@ -65,18 +72,31 @@ export async function runPipeline(
   }
 
   // 1. COLLECT
+  const collectorFactory = getCollector(config.source.type);
+  if (!collectorFactory) {
+    throw new Error(
+      `Source type "${config.source.type}" is not available. ` +
+      (config.source.type === 'jira' || config.source.type === 'linear'
+        ? 'Install @cullit/pro to use this source.'
+        : 'Valid sources: local')
+    );
+  }
+
+  const sourceLabel = config.source.type === 'jira' ? 'issues from Jira'
+    : config.source.type === 'linear' ? 'issues from Linear'
+    : `commits between ${from}..${to}`;
+  log.info(`» Collecting ${sourceLabel}`);
+
   let collector;
   if (config.source.type === 'jira') {
     if (!config.jira) throw new Error('Jira source requires jira config in .cullit.yml');
-    log.info(`» Collecting issues from Jira...`);
-    collector = new JiraCollector(config.jira);
+    collector = collectorFactory(config.jira);
   } else if (config.source.type === 'linear') {
-    log.info(`» Collecting issues from Linear...`);
-    collector = new LinearCollector(config.linear?.apiKey);
+    collector = collectorFactory(config.linear?.apiKey);
   } else {
-    log.info(`» Collecting commits between ${from}..${to}`);
-    collector = new GitCollector();
+    collector = collectorFactory();
   }
+
   const diff = await collector.collect(from, to);
   const itemLabel = config.source.type === 'jira' || config.source.type === 'linear' ? 'issues' : 'commits';
   log.info(`» Found ${diff.commits.length} ${itemLabel}${diff.filesChanged ? `, ${diff.filesChanged} files changed` : ''}`);
@@ -91,29 +111,30 @@ export async function runPipeline(
   const enrichmentSources = config.source.enrichment || [];
 
   for (const source of enrichmentSources) {
-    if (source === 'jira' && config.jira) {
-      if (!isEnrichmentAllowed(license)) {
-        log.info(`» Skipping Jira enrichment — ${upgradeMessage('Jira enrichment')}`);
-        continue;
-      }
-      log.info('» Enriching from Jira...');
-      const enricher = new JiraEnricher(config.jira);
-      const jiraTickets = await enricher.enrich(diff);
-      tickets.push(...jiraTickets);
-      log.info(`» Jira: found ${jiraTickets.length} tickets`);
+    if (!isEnrichmentAllowed(license)) {
+      log.info(`» Skipping ${source} enrichment — ${upgradeMessage(`${source} enrichment`)}`);
+      continue;
     }
 
-    if (source === 'linear') {
-      if (!isEnrichmentAllowed(license)) {
-        log.info(`» Skipping Linear enrichment — ${upgradeMessage('Linear enrichment')}`);
-        continue;
-      }
-      log.info('» Enriching from Linear...');
-      const enricher = new LinearEnricher(config.linear?.apiKey);
-      const linearTickets = await enricher.enrich(diff);
-      tickets.push(...linearTickets);
-      log.info(`» Linear: found ${linearTickets.length} issues`);
+    const enricherFactory = getEnricher(source);
+    if (!enricherFactory) {
+      log.info(`» Skipping ${source} enrichment — install @cullit/pro to enable`);
+      continue;
     }
+
+    log.info(`» Enriching from ${source}...`);
+    let enricher;
+    if (source === 'jira' && config.jira) {
+      enricher = enricherFactory(config.jira);
+    } else if (source === 'linear') {
+      enricher = enricherFactory(config.linear?.apiKey);
+    } else {
+      continue;
+    }
+
+    const enrichedTickets = await enricher.enrich(diff);
+    tickets.push(...enrichedTickets);
+    log.info(`» ${source}: found ${enrichedTickets.length} ${source === 'jira' ? 'tickets' : 'issues'}`);
   }
 
   const context: EnrichedContext = { diff, tickets };
@@ -127,14 +148,24 @@ export async function runPipeline(
   const modelName = config.ai.provider === 'none' ? 'template' : (config.ai.model || DEFAULT_MODELS[config.ai.provider] || 'default');
   log.info(`» Generating with ${providerName} (${modelName})...`);
 
-  let notes;
-  if (config.ai.provider === 'none') {
-    const generator = new TemplateGenerator();
-    notes = await generator.generate(context, config.ai);
-  } else {
-    const generator = new AIGenerator(config.openclaw);
-    notes = await generator.generate(context, config.ai);
+  const generatorFactory = getGenerator(config.ai.provider);
+  if (!generatorFactory) {
+    throw new Error(
+      `AI provider "${config.ai.provider}" is not available. ` +
+      (config.ai.provider !== 'none'
+        ? 'Install @cullit/pro to use AI providers.'
+        : '')
+    );
   }
+
+  let generator;
+  if (config.ai.provider === 'none') {
+    generator = generatorFactory();
+  } else {
+    generator = generatorFactory(config.openclaw);
+  }
+
+  const notes = await generator.generate(context, config.ai);
   log.info(`» Generated ${notes.changes.length} change entries`);
 
   // 4. FORMAT
@@ -150,34 +181,36 @@ export async function runPipeline(
           log.info(`» Skipping ${target.type} — ${upgradeMessage(`${target.type} publishing`)}`);
           continue;
         }
+
+        const publisherFactory = getPublisher(target.type);
+        if (!publisherFactory) {
+          log.info(`» Skipping ${target.type} — install @cullit/pro to enable`);
+          continue;
+        }
+
+        let publisher;
         switch (target.type) {
           case 'stdout':
-            await new StdoutPublisher().publish(notes, format);
-            publishedTo.push('stdout');
+            publisher = publisherFactory();
             break;
           case 'file':
-            if (target.path) {
-              await new FilePublisher(target.path).publish(notes, format);
-              publishedTo.push(`file:${target.path}`);
-            }
+            if (!target.path) continue;
+            publisher = publisherFactory(target.path);
             break;
           case 'slack':
-            if (target.webhookUrl) {
-              await new SlackPublisher(target.webhookUrl).publish(notes, format);
-              publishedTo.push('slack');
-            }
-            break;
           case 'discord':
-            if (target.webhookUrl) {
-              await new DiscordPublisher(target.webhookUrl).publish(notes, format);
-              publishedTo.push('discord');
-            }
+            if (!target.webhookUrl) continue;
+            publisher = publisherFactory(target.webhookUrl);
             break;
           case 'github-release':
-            await new GitHubReleasePublisher().publish(notes, format);
-            publishedTo.push('github-release');
+            publisher = publisherFactory();
             break;
+          default:
+            continue;
         }
+
+        await publisher.publish(notes, format);
+        publishedTo.push(target.type === 'file' ? `file:${target.path}` : target.type);
       } catch (err) {
         log.error(`✗ Failed to publish to ${target.type}: ${(err as Error).message}`);
       }

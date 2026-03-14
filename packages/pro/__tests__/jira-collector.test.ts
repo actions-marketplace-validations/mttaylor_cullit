@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { JiraCollector } from '../src/collectors/jira';
 
-vi.mock('../src/fetch', () => ({
-  fetchWithTimeout: vi.fn(),
-}));
+vi.mock('@cullit/core', async (importOriginal) => {
+  const actual = await importOriginal() as any;
+  return { ...actual, fetchWithTimeout: vi.fn() };
+});
 
-import { fetchWithTimeout } from '../src/fetch';
+import { fetchWithTimeout } from '@cullit/core';
 const mockedFetch = vi.mocked(fetchWithTimeout);
 
 describe('JiraCollector', () => {

@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { JiraEnricher } from '../src/enrichers/jira';
-import type { GitDiff } from '../src/types';
+import type { GitDiff } from '@cullit/core';
 
-vi.mock('../src/fetch', () => ({
-  fetchWithTimeout: vi.fn(),
-}));
+vi.mock('@cullit/core', async (importOriginal) => {
+  const actual = await importOriginal() as any;
+  return { ...actual, fetchWithTimeout: vi.fn() };
+});
 
-import { fetchWithTimeout } from '../src/fetch';
+import { fetchWithTimeout } from '@cullit/core';
 const mockedFetch = vi.mocked(fetchWithTimeout);
 
 const makeDiff = (issueKeys: string[][] = [['PROJ-1']]): GitDiff => ({
@@ -85,17 +86,12 @@ describe('JiraEnricher', () => {
     const enricher = new JiraEnricher(config);
     const tickets = await enricher.enrich(diff);
 
-    // Should only fetch once despite two commits referencing same key
     expect(mockedFetch).toHaveBeenCalledTimes(1);
     expect(tickets).toHaveLength(1);
   });
 
   it('skips 404 tickets gracefully', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
-    mockedFetch.mockResolvedValueOnce({ ok: true, status: 404, json: async () => null } as any);
-
-    // Fix: the code checks response.status === 404 before response.ok
-    mockedFetch.mockReset();
     mockedFetch.mockResolvedValueOnce({ ok: false, status: 404 } as any);
 
     const enricher = new JiraEnricher(config);
@@ -108,7 +104,6 @@ describe('JiraEnricher', () => {
     delete process.env.JIRA_API_TOKEN;
 
     const enricher = new JiraEnricher(config);
-    // The warn should fire since the error is caught
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const tickets = await enricher.enrich(makeDiff());
     expect(tickets).toHaveLength(0);

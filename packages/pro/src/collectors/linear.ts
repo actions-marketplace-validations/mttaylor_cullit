@@ -1,15 +1,9 @@
-import type { Collector, GitDiff, GitCommit } from '../types';
-import { fetchWithTimeout } from '../fetch';
+import type { Collector, GitDiff, GitCommit } from '@cullit/core';
+import { fetchWithTimeout } from '@cullit/core';
 
 /**
  * Collects release data directly from Linear (no git required).
  * Queries completed issues by project, cycle, or team.
- *
- * Usage:
- *   --from "team:ENG"              (completed issues from team ENG, last 30 days)
- *   --from "project:Project Name"  (completed issues from a project)
- *   --from "cycle:current"         (current cycle's completed issues)
- *   --from "label:release-v2"      (issues with a specific label)
  */
 export class LinearCollector implements Collector {
   private apiKey: string;
@@ -46,7 +40,7 @@ export class LinearCollector implements Collector {
 
   private parseFilter(from: string): LinearFilter {
     const [type, ...valueParts] = from.split(':');
-    const value = valueParts.join(':') || type; // handle "team:ENG" or bare "ENG"
+    const value = valueParts.join(':') || type;
 
     switch (type.toLowerCase()) {
       case 'team':
@@ -58,7 +52,6 @@ export class LinearCollector implements Collector {
       case 'label':
         return { type: 'label', value };
       default:
-        // Assume it's a team key
         return { type: 'team', value: from };
     }
   }
@@ -157,7 +150,6 @@ export class LinearCollector implements Collector {
   }
 
   private buildFilterClause(filter: LinearFilter): string {
-    // Return GraphQL variable references — actual values are passed via variables
     switch (filter.type) {
       case 'team':
         return `team: { key: { eq: $filterValue } }`;

@@ -1,5 +1,5 @@
-import type { Enricher, GitDiff, EnrichedTicket } from '../types';
-import { fetchWithTimeout } from '../fetch';
+import type { Enricher, GitDiff, EnrichedTicket } from '@cullit/core';
+import { fetchWithTimeout } from '@cullit/core';
 
 /**
  * Enriches git diff with Linear issue details.
@@ -20,7 +20,6 @@ export class LinearEnricher implements Enricher {
     const keys = this.extractUniqueKeys(diff);
     if (keys.length === 0) return [];
 
-    // Batch fetch all issues in a single GraphQL query
     try {
       return await this.fetchIssuesBatch(keys);
     } catch (err) {

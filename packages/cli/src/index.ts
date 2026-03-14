@@ -20,6 +20,9 @@ import { writeFileSync, readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { createInterface } from 'readline';
 
+// Load pro plugins if installed (registers AI generators, Jira/Linear, Slack/Discord/GitHub)
+try { await import('@cullit/pro'); } catch { /* pro not installed — free tier only */ }
+
 // Load .env file if present (no dependency needed)
 function loadEnv() {
   const envPath = resolve(process.cwd(), '.env');

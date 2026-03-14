@@ -1,5 +1,5 @@
-import type { Enricher, GitDiff, EnrichedTicket, JiraConfig } from '../types';
-import { fetchWithTimeout } from '../fetch';
+import type { Enricher, GitDiff, EnrichedTicket, JiraConfig } from '@cullit/core';
+import { fetchWithTimeout } from '@cullit/core';
 
 /**
  * Enriches git diff with Jira ticket details.

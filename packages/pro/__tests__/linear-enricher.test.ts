@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { LinearEnricher } from '../src/enrichers/linear';
-import type { GitDiff } from '../src/types';
+import type { GitDiff } from '@cullit/core';
 
-vi.mock('../src/fetch', () => ({
-  fetchWithTimeout: vi.fn(),
-}));
+vi.mock('@cullit/core', async (importOriginal) => {
+  const actual = await importOriginal() as any;
+  return { ...actual, fetchWithTimeout: vi.fn() };
+});
 
-import { fetchWithTimeout } from '../src/fetch';
+import { fetchWithTimeout } from '@cullit/core';
 const mockedFetch = vi.mocked(fetchWithTimeout);
 
 const makeDiff = (issueKeys: string[][] = [['ENG-10']]): GitDiff => ({
@@ -82,14 +83,12 @@ describe('LinearEnricher', () => {
   it('falls back to individual queries on batch failure', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    // Batch fails
     mockedFetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
       text: async () => 'Internal error',
     } as any);
 
-    // Individual query succeeds
     mockedFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({

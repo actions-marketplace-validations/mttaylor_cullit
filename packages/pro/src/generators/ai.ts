@@ -1,8 +1,8 @@
 import type {
   Generator, EnrichedContext, AIConfig, ReleaseNotes,
   ChangeEntry, ChangeCategory, OpenClawConfig
-} from '../types';
-import { fetchWithTimeout } from '../fetch';
+} from '@cullit/core';
+import { fetchWithTimeout } from '@cullit/core';
 
 /**
  * Generates release notes using AI.

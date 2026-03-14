@@ -1,15 +1,9 @@
-import type { Collector, GitDiff, GitCommit, JiraConfig } from '../types';
-import { fetchWithTimeout } from '../fetch';
+import type { Collector, GitDiff, GitCommit, JiraConfig } from '@cullit/core';
+import { fetchWithTimeout } from '@cullit/core';
 
 /**
  * Collects release data directly from Jira (no git required).
  * Queries completed issues by JQL (project, sprint, date range, etc.)
- * and converts them into the GitDiff format for the pipeline.
- *
- * Usage:
- *   --from "project = PROJ AND sprint = 'Sprint 42'"
- *   --from "project = PROJ AND resolved >= '2025-03-01'"
- *   --from "project = PROJ AND fixVersion = 'v2.0'"
  */
 export class JiraCollector implements Collector {
   private config: JiraConfig;
@@ -41,18 +35,15 @@ export class JiraCollector implements Collector {
   }
 
   private buildJQL(from: string, to: string): string {
-    // If "from" already looks like JQL, use it directly
     if (from.includes('=') || from.includes('AND') || from.includes('OR')) {
       const statusFilter = ' AND status in (Done, Closed, Resolved)';
       return from.includes('status') ? from : from + statusFilter;
     }
 
-    // Validate project key format to prevent JQL injection
     if (!/^[A-Z][A-Z0-9_]{0,30}$/.test(from)) {
       throw new Error(`Invalid Jira project key: "${from}". Must be uppercase letters, digits, or underscores (e.g., PROJ, MY_PROJ).`);
     }
 
-    // Sanitize "to" — strip quotes to prevent injection in fixVersion clause
     const safeVersion = to.replace(/["'\\]/g, '');
 
     if (to === 'HEAD') {
@@ -65,7 +56,6 @@ export class JiraCollector implements Collector {
   private async fetchIssues(jql: string): Promise<JiraIssue[]> {
     const { domain, email, apiToken } = this.config;
 
-    // Validate domain format
     if (!/^[a-zA-Z0-9.-]+\.atlassian\.net$/.test(domain)) {
       throw new Error(`Invalid Jira domain: "${domain}". Expected format: yourcompany.atlassian.net`);
     }

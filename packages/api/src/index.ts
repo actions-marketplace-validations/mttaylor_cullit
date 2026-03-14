@@ -18,6 +18,9 @@ import { runPipeline, VERSION, DEFAULT_CATEGORIES } from '@cullit/core';
 import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget } from '@cullit/core';
 import { openApiSpec } from './openapi.js';
 
+// Load pro plugins if installed
+try { await import('@cullit/pro'); } catch { /* pro not installed */ }
+
 const PORT = parseInt(process.env['PORT'] || '3000', 10);
 const API_TOKEN = process.env['CULLIT_API_TOKEN'] || ''; // optional bearer auth
 // SECURITY: Defaults to '*' for local dev. In production, restrict to specific origins:

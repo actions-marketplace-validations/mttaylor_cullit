@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { AIGenerator } from '../src/generators/ai';
-import type { EnrichedContext, AIConfig } from '../src/types';
+import type { EnrichedContext, AIConfig } from '@cullit/core';
 
 const mockContext: EnrichedContext = {
   diff: {
@@ -53,14 +53,12 @@ describe('AIGenerator', () => {
   });
 
   it('throws on missing API key', async () => {
-    // Save and clear env
     const savedKey = process.env['ANTHROPIC_API_KEY'];
     delete process.env['ANTHROPIC_API_KEY'];
 
     const gen = new AIGenerator();
     await expect(gen.generate(mockContext, baseConfig)).rejects.toThrow('No API key found');
 
-    // Restore
     if (savedKey) process.env['ANTHROPIC_API_KEY'] = savedKey;
   });
 
