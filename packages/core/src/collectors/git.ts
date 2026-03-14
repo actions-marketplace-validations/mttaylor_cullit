@@ -155,3 +155,33 @@ export function getLatestTag(cwd: string = process.cwd()): string | null {
     return null;
   }
 }
+
+/**
+ * Synchronously gets commits between two refs.
+ * Shared utility used by both GitCollector and advisor.
+ */
+export function getCommitsSince(from: string, to: string, cwd: string = process.cwd()): GitCommit[] {
+  validateRef(from);
+  validateRef(to);
+
+  const format = '%H|%h|%an|%aI|%s';
+  const separator = '---CULLIT_COMMIT---';
+
+  const log = execSync(
+    `git log ${from}..${to} --format="${format}${separator}" --no-merges`,
+    { cwd, encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 }
+  );
+
+  if (!log.trim()) return [];
+
+  return log.split(separator).filter(e => e.trim()).map(entry => {
+    const [hash, shortHash, author, date, ...msgParts] = entry.trim().split('|');
+    return {
+      hash: hash.trim(),
+      shortHash: shortHash.trim(),
+      author: author.trim(),
+      date: date.trim(),
+      message: msgParts.join('|').trim(),
+    };
+  });
+}

@@ -1,6 +1,6 @@
 import { execSync } from 'child_process';
 import type { GitCommit } from './types';
-import { getLatestTag, getRecentTags } from './collectors/git';
+import { getCommitsSince, getLatestTag, getRecentTags } from './collectors/git';
 
 export type SemverBump = 'patch' | 'minor' | 'major';
 
@@ -62,27 +62,8 @@ function bumpVersion(version: string, bump: SemverBump): string {
 }
 
 function getCommitsSinceTag(tag: string, cwd: string): GitCommit[] {
-  const format = '%H|%h|%an|%aI|%s';
-  const separator = '---CULLIT_COMMIT---';
-
   try {
-    const log = execSync(
-      `git log ${tag}..HEAD --format="${format}${separator}" --no-merges`,
-      { cwd, encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 }
-    );
-
-    if (!log.trim()) return [];
-
-    return log.split(separator).filter(e => e.trim()).map(entry => {
-      const [hash, shortHash, author, date, ...msgParts] = entry.trim().split('|');
-      return {
-        hash: hash.trim(),
-        shortHash: shortHash.trim(),
-        author: author.trim(),
-        date: date.trim(),
-        message: msgParts.join('|').trim(),
-      };
-    });
+    return getCommitsSince(tag, 'HEAD', cwd);
   } catch {
     return [];
   }

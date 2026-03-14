@@ -30,6 +30,8 @@ const RATE_LIMIT = parseInt(process.env['RATE_LIMIT'] || '30', 10); // requests 
 const RATE_WINDOW = 60_000; // 1 minute
 
 // --- Rate limiter (per-IP sliding window) ---
+// NOTE: In-memory, per-process only. Not shared across instances.
+// For multi-instance deployments, replace with Redis or similar.
 
 const MAX_RATE_BUCKETS = 10_000;
 const rateBuckets = new Map<string, number[]>();

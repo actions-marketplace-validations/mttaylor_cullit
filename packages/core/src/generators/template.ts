@@ -40,7 +40,7 @@ export class TemplateGenerator implements Generator {
     return {
       version: diff.to,
       date: new Date().toISOString().split('T')[0],
-      summary: this.buildSummary(deduped, diff.commits.length),
+      summary: this.buildSummary(deduped, diff.commits.length, config.tone),
       changes: deduped.slice(0, 20),
       contributors,
       metadata: {
@@ -132,7 +132,7 @@ export class TemplateGenerator implements Generator {
     return result;
   }
 
-  private buildSummary(changes: ChangeEntry[], commitCount: number): string {
+  private buildSummary(changes: ChangeEntry[], commitCount: number, tone?: string): string {
     const counts: Record<string, number> = {};
     for (const c of changes) {
       counts[c.category] = (counts[c.category] || 0) + 1;
@@ -144,10 +144,18 @@ export class TemplateGenerator implements Generator {
     if (counts['fixes']) parts.push(`${counts['fixes']} fix${counts['fixes'] > 1 ? 'es' : ''}`);
     if (counts['improvements']) parts.push(`${counts['improvements']} improvement${counts['improvements'] > 1 ? 's' : ''}`);
 
-    const summary = parts.length > 0
+    if (tone === 'terse') {
+      return parts.length > 0 ? parts.join(', ') : `${commitCount} commits`;
+    }
+
+    if (tone === 'casual') {
+      if (parts.length === 0) return `A quick update with ${commitCount} commits — nothing too wild.`;
+      return `We've got ${parts.join(', ')} packed into ${commitCount} commits. Let's go!`;
+    }
+
+    // Default: professional
+    return parts.length > 0
       ? `This release includes ${parts.join(', ')} across ${commitCount} commits.`
       : `This release includes ${commitCount} commits.`;
-
-    return summary;
   }
 }

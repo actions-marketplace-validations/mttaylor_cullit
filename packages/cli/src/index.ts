@@ -332,16 +332,50 @@ function ask(rl: ReturnType<typeof createInterface>, question: string): Promise<
 async function interactiveInit() {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
 
+  const VALID_PROVIDERS = ['anthropic', 'openai', 'gemini', 'ollama', 'openclaw', 'none'];
+  const VALID_SOURCES = ['local', 'jira', 'linear'];
+  const VALID_AUDIENCES = ['developer', 'end-user', 'executive'];
+  const VALID_TONES = ['professional', 'casual', 'terse'];
+  const VALID_ENRICHMENTS = ['jira', 'linear', 'both', 'none'];
+
   console.log('\n  Cullit — Project Setup\n');
 
   const provider = await ask(rl, '  AI provider (anthropic/openai/gemini/ollama/openclaw/none) [anthropic]: ') || 'anthropic';
+  if (!VALID_PROVIDERS.includes(provider)) {
+    console.error(`\n  ✗ Invalid provider: ${provider}. Must be one of: ${VALID_PROVIDERS.join(', ')}`);
+    rl.close();
+    process.exit(1);
+  }
+
   const source = await ask(rl, '  Source type (local/jira/linear) [local]: ') || 'local';
+  if (!VALID_SOURCES.includes(source)) {
+    console.error(`\n  ✗ Invalid source: ${source}. Must be one of: ${VALID_SOURCES.join(', ')}`);
+    rl.close();
+    process.exit(1);
+  }
+
   const audience = await ask(rl, '  Audience (developer/end-user/executive) [developer]: ') || 'developer';
+  if (!VALID_AUDIENCES.includes(audience)) {
+    console.error(`\n  ✗ Invalid audience: ${audience}. Must be one of: ${VALID_AUDIENCES.join(', ')}`);
+    rl.close();
+    process.exit(1);
+  }
+
   const tone = await ask(rl, '  Tone (professional/casual/terse) [professional]: ') || 'professional';
+  if (!VALID_TONES.includes(tone)) {
+    console.error(`\n  ✗ Invalid tone: ${tone}. Must be one of: ${VALID_TONES.join(', ')}`);
+    rl.close();
+    process.exit(1);
+  }
 
   let enrichment = '';
   if (source === 'local') {
     enrichment = await ask(rl, '  Enrich from (jira/linear/both/none) [none]: ') || 'none';
+    if (!VALID_ENRICHMENTS.includes(enrichment)) {
+      console.error(`\n  ✗ Invalid enrichment: ${enrichment}. Must be one of: ${VALID_ENRICHMENTS.join(', ')}`);
+      rl.close();
+      process.exit(1);
+    }
   }
 
   rl.close();
