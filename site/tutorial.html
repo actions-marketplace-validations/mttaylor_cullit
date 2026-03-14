@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cullit — Interactive Tutorial</title>
+<meta name="description" content="Step-by-step tutorial for Cullit — AI-powered release notes. Learn to install, configure, generate, and publish release notes in under 10 minutes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Chakra+Petch:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg-card: #161822;
+    --bg-card-hover: #1e2030;
+    --accent: #5eead4;
+    --accent-dim: #2dd4bf;
+    --text: #d4d4e0;
+    --text-dim: #7e819a;
+    --text-bright: #f0f0f5;
+    --border: #282a3a;
+    --terminal-green: #4ade80;
+    --terminal-blue: #60a5fa;
+    --terminal-red: #f87171;
+    --terminal-yellow: #fbbf24;
+    --terminal-purple: #c084fc;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 100;
+    background: rgba(15,17,23,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-decoration: none;
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--text-dim); font-weight: 400; }
+
+  .nav-links { display: flex; gap: 2rem; align-items: center; }
+  .nav-links a {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-family: 'Space Mono', monospace;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+
+  .nav-cta {
+    background: var(--accent) !important;
+    color: var(--bg) !important;
+    padding: 0.5rem 1.2rem;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.85rem !important;
+    transition: transform 0.2s, box-shadow 0.2s !important;
+  }
+  .nav-cta:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(94,234,212,0.25);
+  }
+
+  /* LAYOUT */
+  .tutorial-container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 7rem 2rem 4rem;
+  }
+
+  /* HERO */
+  .tutorial-hero {
+    text-align: center;
+    margin-bottom: 4rem;
+  }
+
+  .tutorial-hero .breadcrumb {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 1.5rem;
+  }
+
+  .tutorial-hero .breadcrumb a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .tutorial-hero h1 {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 700;
+    color: var(--text-bright);
+    line-height: 1.2;
+    margin-bottom: 1rem;
+  }
+
+  .tutorial-hero h1 .accent { color: var(--accent); }
+
+  .tutorial-hero .subtitle {
+    font-size: 1.15rem;
+    color: var(--text-dim);
+    max-width: 600px;
+    margin: 0 auto 2rem;
+  }
+
+  .tutorial-meta {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .tutorial-meta .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+
+  .tutorial-meta .meta-item .icon {
+    font-size: 1rem;
+  }
+
+  /* PROGRESS BAR */
+  .progress-bar {
+    position: fixed;
+    top: 57px;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--terminal-blue));
+    z-index: 101;
+    transition: width 0.2s;
+  }
+
+  /* TABLE OF CONTENTS */
+  .toc {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .toc-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 1rem;
+  }
+
+  .toc ol {
+    list-style: none;
+    counter-reset: toc;
+    padding: 0;
+  }
+
+  .toc ol li {
+    counter-increment: toc;
+    margin-bottom: 0.5rem;
+  }
+
+  .toc ol li a {
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.3rem 0;
+    transition: color 0.2s;
+  }
+
+  .toc ol li a:hover { color: var(--accent); }
+
+  .toc ol li a::before {
+    content: counter(toc);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(94,234,212,0.1);
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .toc ol li .est {
+    margin-left: auto;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+  }
+
+  /* TUTORIAL STEPS */
+  .tutorial-step {
+    margin-bottom: 4rem;
+    padding-top: 1rem;
+  }
+
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .step-number {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(94,234,212,0.15), rgba(94,234,212,0.05));
+    border: 2px solid var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .step-header h2 {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-bright);
+  }
+
+  .step-header h2 .dim { color: var(--text-dim); font-weight: 400; }
+
+  .step-body p {
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    line-height: 1.8;
+  }
+
+  .step-body h3 {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.1rem;
+    color: var(--text-bright);
+    margin: 2rem 0 0.75rem;
+  }
+
+  /* TERMINAL BLOCKS */
+  .terminal {
+    background: #0d0f14;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 1.25rem 0;
+  }
+
+  .terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.6rem 1rem;
+    background: #1a1c28;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .terminal-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .terminal-dot.red { background: #f87171; }
+  .terminal-dot.yellow { background: #fbbf24; }
+  .terminal-dot.green { background: #4ade80; }
+
+  .terminal-title {
+    margin-left: 0.5rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+  }
+
+  .terminal-body {
+    padding: 1rem 1.25rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+
+  .t-prompt { color: var(--terminal-green); font-weight: 700; }
+  .t-cmd { color: var(--text-bright); }
+  .t-flag { color: var(--terminal-blue); }
+  .t-val { color: var(--terminal-yellow); }
+  .t-comment { color: var(--text-dim); }
+  .t-output { color: var(--text); }
+  .t-accent { color: var(--accent); font-weight: 700; }
+  .t-error { color: var(--terminal-red); }
+  .t-cat { color: var(--terminal-purple); font-weight: 700; }
+
+  /* CODE BLOCKS */
+  .code-block {
+    background: #0d0f14;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 1.25rem 0;
+  }
+
+  .code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    background: #1a1c28;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+  }
+
+  .copy-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .copy-btn:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .code-body {
+    padding: 1rem 1.25rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  /* NOTE / TIP / WARNING CALLOUTS */
+  .callout {
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin: 1.25rem 0;
+    display: flex;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  .callout-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+  }
+
+  .callout-tip {
+    background: rgba(94,234,212,0.06);
+    border: 1px solid rgba(94,234,212,0.2);
+  }
+
+  .callout-tip .callout-icon { color: var(--accent); }
+
+  .callout-warn {
+    background: rgba(251,191,36,0.06);
+    border: 1px solid rgba(251,191,36,0.2);
+  }
+
+  .callout-warn .callout-icon { color: var(--terminal-yellow); }
+
+  .callout-info {
+    background: rgba(96,165,250,0.06);
+    border: 1px solid rgba(96,165,250,0.2);
+  }
+
+  .callout-info .callout-icon { color: var(--terminal-blue); }
+
+  /* VISUAL FLOW DIAGRAMS */
+  .flow-diagram {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+  }
+
+  .flow-node {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    text-align: center;
+    min-width: 120px;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+
+  .flow-node:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  .flow-node .flow-icon {
+    font-size: 1.5rem;
+    display: block;
+    margin-bottom: 0.4rem;
+  }
+
+  .flow-node .flow-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-bright);
+    font-weight: 600;
+  }
+
+  .flow-node .flow-sub {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    margin-top: 0.2rem;
+  }
+
+  .flow-arrow {
+    color: var(--accent);
+    font-size: 1.2rem;
+    padding: 0 0.5rem;
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* DECISION TREE */
+  .decision-tree {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem 2rem;
+    margin: 1.5rem 0;
+  }
+
+  .decision-tree h4 {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 1rem;
+  }
+
+  .decision-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid rgba(40,42,58,0.5);
+  }
+
+  .decision-row:last-child { border-bottom: none; }
+
+  .decision-q {
+    font-size: 0.9rem;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .decision-a {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--accent);
+    background: rgba(94,234,212,0.08);
+    padding: 0.3rem 0.8rem;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  /* COMPARISON TABLE */
+  .comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.9rem;
+  }
+
+  .comparison-table th {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--accent);
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .comparison-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(40,42,58,0.5);
+    color: var(--text);
+  }
+
+  .comparison-table tr:hover td {
+    background: rgba(94,234,212,0.03);
+  }
+
+  .comparison-table code {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    background: rgba(94,234,212,0.08);
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    color: var(--accent);
+  }
+
+  /* OUTPUT PREVIEW */
+  .output-preview {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 1.5rem 0;
+  }
+
+  .output-tab-bar {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: #1a1c28;
+  }
+
+  .output-tab {
+    padding: 0.6rem 1.25rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+  }
+
+  .output-tab:hover { color: var(--text-bright); }
+  .output-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .output-panel {
+    display: none;
+    padding: 1.25rem 1.5rem;
+    font-size: 0.88rem;
+    line-height: 1.8;
+  }
+
+  .output-panel.active { display: block; }
+
+  .output-panel h4 {
+    font-family: 'Chakra Petch', sans-serif;
+    color: var(--text-bright);
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .output-panel .date {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+  }
+
+  .output-panel .cat-label {
+    color: var(--terminal-purple);
+    font-weight: 600;
+    margin-top: 1rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .output-panel ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .output-panel ul li {
+    padding: 0.2rem 0;
+    padding-left: 1rem;
+    position: relative;
+  }
+
+  .output-panel ul li::before {
+    content: '\2022';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+  }
+
+  .output-panel .json-key { color: var(--terminal-blue); }
+  .output-panel .json-str { color: var(--terminal-green); }
+  .output-panel .json-num { color: var(--terminal-yellow); }
+
+  /* SECTION DIVIDERS */
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 3rem 0;
+  }
+
+  /* INLINE CODE */
+  code {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85em;
+    background: rgba(94,234,212,0.08);
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    color: var(--accent);
+  }
+
+  /* FOOTER */
+  footer {
+    text-align: center;
+    padding: 2rem;
+    border-top: 1px solid var(--border);
+    margin-top: 4rem;
+  }
+
+  .footer-brand {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+
+  .footer-brand a { color: var(--accent); text-decoration: none; }
+
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .footer-links a {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    font-family: 'Space Mono', monospace;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover { color: var(--accent); }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .tutorial-container { padding: 5rem 1.25rem 2rem; }
+    .nav-links a:not(.nav-cta) { display: none; }
+    .flow-diagram { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+    .step-header h2 { font-size: 1.2rem; }
+    .tutorial-meta { gap: 1rem; }
+    .decision-row { flex-direction: column; gap: 0.4rem; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PROGRESS BAR -->
+<div class="progress-bar" id="progress"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="logo">cullit<span>.io</span></a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="docs.html">Docs</a>
+    <a href="https://github.com/mttaylor/cullit" target="_blank">GitHub</a>
+    <a href="index.html#cta" class="nav-cta">Get Started Free</a>
+  </div>
+</nav>
+
+<div class="tutorial-container">
+
+  <!-- HERO -->
+  <div class="tutorial-hero">
+    <div class="breadcrumb">
+      <a href="index.html">Home</a> / <a href="docs.html">Docs</a> / Tutorial
+    </div>
+    <h1>From zero to <span class="accent">release notes</span> in 10 minutes</h1>
+    <p class="subtitle">A hands-on guide to installing Cullit, configuring it for your project, and generating your first set of production release notes.</p>
+    <div class="tutorial-meta">
+      <div class="meta-item"><span class="icon">&#x23f1;</span> 10 min read</div>
+      <div class="meta-item"><span class="icon">&#x1f4cb;</span> 7 steps</div>
+      <div class="meta-item"><span class="icon">&#x1f527;</span> Beginner</div>
+    </div>
+  </div>
+
+  <!-- TABLE OF CONTENTS -->
+  <div class="toc">
+    <div class="toc-title">In this tutorial</div>
+    <ol>
+      <li><a href="#step-prereqs">Prerequisites &amp; what you&rsquo;ll build <span class="est">1 min</span></a></li>
+      <li><a href="#step-install">Install Cullit <span class="est">1 min</span></a></li>
+      <li><a href="#step-init">Initialize your config <span class="est">2 min</span></a></li>
+      <li><a href="#step-first-run">Generate your first release notes <span class="est">1 min</span></a></li>
+      <li><a href="#step-ai">Add AI-powered generation <span class="est">2 min</span></a></li>
+      <li><a href="#step-publish">Publish to Slack, Discord &amp; GitHub <span class="est">2 min</span></a></li>
+      <li><a href="#step-ci">Automate with GitHub Actions <span class="est">2 min</span></a></li>
+    </ol>
+  </div>
+
+  <!-- HOW CULLIT WORKS — VISUAL -->
+  <div class="tutorial-step">
+    <div class="flow-diagram">
+      <div class="flow-node">
+        <span class="flow-icon">&#x1f4bb;</span>
+        <span class="flow-label">Collect</span>
+        <span class="flow-sub">Git / Jira / Linear</span>
+      </div>
+      <span class="flow-arrow">&#x2192;</span>
+      <div class="flow-node">
+        <span class="flow-icon">&#x1f50d;</span>
+        <span class="flow-label">Enrich</span>
+        <span class="flow-sub">Ticket context</span>
+      </div>
+      <span class="flow-arrow">&#x2192;</span>
+      <div class="flow-node">
+        <span class="flow-icon">&#x1f9e0;</span>
+        <span class="flow-label">Generate</span>
+        <span class="flow-sub">AI or template</span>
+      </div>
+      <span class="flow-arrow">&#x2192;</span>
+      <div class="flow-node">
+        <span class="flow-icon">&#x1f4e4;</span>
+        <span class="flow-label">Publish</span>
+        <span class="flow-sub">Slack / Discord / GH</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- STEP 1: PREREQUISITES -->
+  <div class="tutorial-step" id="step-prereqs">
+    <div class="step-header">
+      <div class="step-number">1</div>
+      <h2>Prerequisites <span class="dim">&amp; what you&rsquo;ll build</span></h2>
+    </div>
+    <div class="step-body">
+      <p>By the end of this tutorial, you&rsquo;ll have Cullit generating categorized release notes from your git history, with optional AI enhancement and automated publishing.</p>
+
+      <h3>What you need</h3>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Requirement</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Node.js</td>
+            <td>v22 or later &mdash; <code>node --version</code></td>
+          </tr>
+          <tr>
+            <td>Git repository</td>
+            <td>Any repo with commits and at least one tag</td>
+          </tr>
+          <tr>
+            <td>AI API key <em>(optional)</em></td>
+            <td>Anthropic, OpenAI, or Gemini key for AI-powered notes</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-tip">
+        <span class="callout-icon">&#x1f4a1;</span>
+        <div><strong>No AI key?</strong> Cullit works without one! The free tier uses template-based generation &mdash; still categorized and structured, just without AI writing. You can add AI later.</div>
+      </div>
+
+      <h3>Which provider should I use?</h3>
+      <div class="decision-tree">
+        <h4>Pick your provider</h4>
+        <div class="decision-row">
+          <span class="decision-q">I want the best quality notes with minimal setup</span>
+          <span class="decision-a">anthropic</span>
+        </div>
+        <div class="decision-row">
+          <span class="decision-q">I already have an OpenAI key</span>
+          <span class="decision-a">openai</span>
+        </div>
+        <div class="decision-row">
+          <span class="decision-q">I want free AI via Google</span>
+          <span class="decision-a">gemini</span>
+        </div>
+        <div class="decision-row">
+          <span class="decision-q">I want to run everything locally, no cloud</span>
+          <span class="decision-a">ollama</span>
+        </div>
+        <div class="decision-row">
+          <span class="decision-q">I don&rsquo;t want AI at all &mdash; just structured templates</span>
+          <span class="decision-a">none</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- STEP 2: INSTALL -->
+  <div class="tutorial-step" id="step-install">
+    <div class="step-header">
+      <div class="step-number">2</div>
+      <h2>Install Cullit</h2>
+    </div>
+    <div class="step-body">
+      <p>Install globally so you can run <code>cullit</code> from any repo.</p>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <span class="terminal-title">terminal</span>
+        </div>
+        <div class="terminal-body">
+<span class="t-prompt">$</span> <span class="t-cmd">npm install -g cullit</span><br>
+<br>
+<span class="t-output">added 1 package in 2s</span><br>
+<br>
+<span class="t-prompt">$</span> <span class="t-cmd">cullit --version</span><br>
+<span class="t-accent">cullit v0.2.1</span>
+        </div>
+      </div>
+
+      <p>Or use it without installing via <code>npx</code>:</p>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <span class="terminal-title">terminal</span>
+        </div>
+        <div class="terminal-body">
+<span class="t-prompt">$</span> <span class="t-cmd">npx cullit generate</span> <span class="t-flag">--from</span> <span class="t-val">v1.0.0</span>
+        </div>
+      </div>
+
+      <div class="callout callout-info">
+        <span class="callout-icon">&#x1f4e6;</span>
+        <div><strong>Package managers:</strong> Also works with <code>pnpm add -g cullit</code> or <code>yarn global add cullit</code></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- STEP 3: INITIALIZE -->
+  <div class="tutorial-step" id="step-init">
+    <div class="step-header">
+      <div class="step-number">3</div>
+      <h2>Initialize your config</h2>
+    </div>
+    <div class="step-body">
+      <p>Navigate to your project and run the interactive setup. Cullit will ask a few questions and create a <code>.cullit.yml</code> config file.</p>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <span class="terminal-title">~/your-project</span>
+        </div>
+        <div class="terminal-body">
+<span class="t-prompt">$</span> <span class="t-cmd">cd my-project</span><br>
+<span class="t-prompt">$</span> <span class="t-cmd">cullit init</span><br>
+<br>
+<span class="t-output">  Cullit &mdash; Project Setup</span><br>
+<br>
+<span class="t-output">  AI provider (anthropic/openai/gemini/ollama/openclaw/none) [anthropic]:</span> <span class="t-val">none</span><br>
+<span class="t-output">  Source type (local/jira/linear) [local]:</span> <span class="t-val">local</span><br>
+<span class="t-output">  Audience (developer/end-user/executive) [developer]:</span> <span class="t-val">developer</span><br>
+<span class="t-output">  Tone (professional/casual/terse) [professional]:</span> <span class="t-val">professional</span><br>
+<span class="t-output">  Enrich from (jira/linear/both/none) [none]:</span> <span class="t-val">none</span><br>
+<br>
+<span class="t-accent">  &#x2713; Created .cullit.yml</span><br>
+<span class="t-output">  Run "cullit generate --from &lt;tag&gt;" to generate release notes.</span>
+        </div>
+      </div>
+
+      <p>Here&rsquo;s what <code>.cullit.yml</code> looks like:</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span>.cullit.yml</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="code-body"><span style="color:var(--text-dim)"># Cullit Configuration</span>
+<span style="color:var(--text-dim)"># https://cullit.io</span>
+
+<span style="color:var(--terminal-blue)">ai</span>:
+  <span style="color:var(--terminal-blue)">provider</span>: <span style="color:var(--terminal-green)">none</span>          <span style="color:var(--text-dim)"># start free, upgrade anytime</span>
+  <span style="color:var(--terminal-blue)">audience</span>: <span style="color:var(--terminal-green)">developer</span>
+  <span style="color:var(--terminal-blue)">tone</span>: <span style="color:var(--terminal-green)">professional</span>
+  <span style="color:var(--terminal-blue)">categories</span>: <span style="color:var(--terminal-green)">[features, fixes, breaking, improvements, chores]</span>
+
+<span style="color:var(--terminal-blue)">source</span>:
+  <span style="color:var(--terminal-blue)">type</span>: <span style="color:var(--terminal-green)">local</span>
+
+<span style="color:var(--terminal-blue)">publish</span>:
+  - <span style="color:var(--terminal-blue)">type</span>: <span style="color:var(--terminal-green)">stdout</span></div>
+      </div>
+
+      <div class="callout callout-tip">
+        <span class="callout-icon">&#x1f4a1;</span>
+        <div><strong>Pro tip:</strong> You can skip <code>cullit init</code> entirely. Cullit uses sensible defaults if no config file exists.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- STEP 4: FIRST RUN -->
+  <div class="tutorial-step" id="step-first-run">
+    <div class="step-header">
+      <div class="step-number">4</div>
+      <h2>Generate your first release notes</h2>
+    </div>
+    <div class="step-body">
+      <p>First, check what tags you have:</p>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <span class="terminal-title">~/your-project</span>
+        </div>
+        <div class="terminal-body">
+<span class="t-prompt">$</span> <span class="t-cmd">cullit tags</span><br>
+<span class="t-output">Recent tags:</span><br>
+<span class="t-output">  &#x2192; v1.2.0</span><br>
+<span class="t-output">    v1.1.0</span><br>
+<span class="t-output">    v1.0.0</span>
+        </div>
+      </div>
+
+      <p>Now generate notes between two tags:</p>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <span class="terminal-title">~/your-project</span>
+        </div>
+        <div class="terminal-body">
+<span class="t-prompt">$</span> <span class="t-cmd">cullit generate</span> <span class="t-flag">--from</span> <span class="t-val">v1.1.0</span> <span class="t-flag">--to</span> <span class="t-val">v1.2.0</span><br>
+<br>
+<span class="t-output">&raquo; License: &#x1f193; Free</span><br>
+<span class="t-comment"># Collecting commits between v1.1.0..v1.2.0</span><br>
+<span class="t-output">&raquo; Found 12 commits, 4 PRs</span><br>
+<span class="t-output">&raquo; Generating with template...</span><br>
+<br>
+<span class="t-accent">## Release v1.2.0 &mdash; March 13, 2026</span><br>
+<br>
+<span class="t-cat">&#x2728; Features</span><br>
+<span class="t-output">- feat: add user profile page</span><br>
+<span class="t-output">- feat: implement dark mode toggle</span><br>
+<br>
+<span class="t-cat">&#x1f41b; Bug Fixes</span><br>
+<span class="t-output">- fix: resolve login redirect loop</span><br>
+<span class="t-output">- fix: correct date formatting in reports</span><br>
+<br>
+<span class="t-cat">&#x1f527; Improvements</span><br>
+<span class="t-output">- perf: optimize database queries for dashboard</span><br>
+<br>
+<span class="t-accent">&#x2713; Done in 0.8s</span>
+        </div>
+      </div>
+
+      <p>You just generated categorized release notes from your commit history, with zero AI cost. The template engine parses conventional commits (<code>feat:</code>, <code>fix:</code>, <code>chore:</code>, etc.) and groups them automatically.</p>
+
+      <div class="callout callout-tip">
+        <span class="callout-icon">&#x1f4a1;</span>
+        <div><strong>Shortcut:</strong> If you omit <code>--from</code> and <code>--to</code>, Cullit auto-detects by using the two most recent tags.</div>
+      </div>
+
+      <h3>Save to a file</h3>
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <span class="terminal-title">terminal</span>
+        </div>
+        <div class="terminal-body">
+<span class="t-prompt">$</span> <span class="t-cmd">cullit generate</span> <span class="t-flag">--from</span> <span class="t-val">v1.1.0</span> <span class="t-flag">--format</span> <span class="t-val">html</span> <span class="t-flag">--dry-run</span> <span class="t-output">&gt; release-notes.html</span>
+        </div>
+      </div>
+
+      <h3>Output format comparison</h3>
+
+      <div class="output-preview">
+        <div class="output-tab-bar">
+          <button class="output-tab active" onclick="switchTab(event, 'md-output')">Markdown</button>
+          <button class="output-tab" onclick="switchTab(event, 'html-output')">HTML</button>
+          <button class="output-tab" onclick="switchTab(event, 'json-output')">JSON</button>
+        </div>
+        <div class="output-panel active" id="md-output">
+          <h4>## Release v1.2.0 &mdash; March 13, 2026</h4>
+          <p class="cat-label">### &#x2728; Features</p>
+          <ul>
+            <li>Add user profile page</li>
+            <li>Implement dark mode toggle</li>
+          </ul>
+          <p class="cat-label">### &#x1f41b; Bug Fixes</p>
+          <ul>
+            <li>Resolve login redirect loop</li>
+            <li>Correct date formatting in reports</li>
+          </ul>
+        </div>
+        <div class="output-panel" id="html-output">
+          <h4>&lt;h1&gt;Release v1.2.0&lt;/h1&gt;</h4>
+          <p>Semantic HTML with <code>&lt;h2&gt;</code> categories, <code>&lt;ul&gt;</code> lists, and a metadata footer. Ready to embed in your docs site or email template.</p>
+          <p class="cat-label">XSS-safe: all content is escaped</p>
+        </div>
+        <div class="output-panel" id="json-output">
+          <div style="font-family: 'Space Mono', monospace; font-size: 0.8rem; line-height: 1.6;">
+{<br>
+&nbsp;&nbsp;<span class="json-key">"version"</span>: <span class="json-str">"v1.2.0"</span>,<br>
+&nbsp;&nbsp;<span class="json-key">"date"</span>: <span class="json-str">"2026-03-13"</span>,<br>
+&nbsp;&nbsp;<span class="json-key">"changes"</span>: [<br>
+&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="json-key">"description"</span>: <span class="json-str">"Add user profile page"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="json-key">"category"</span>: <span class="json-str">"features"</span> },<br>
+&nbsp;&nbsp;&nbsp;&nbsp;...<br>
+&nbsp;&nbsp;],<br>
+&nbsp;&nbsp;<span class="json-key">"changeCount"</span>: <span class="json-num">5</span>,<br>
+&nbsp;&nbsp;<span class="json-key">"contributors"</span>: [<span class="json-str">"alice"</span>, <span class="json-str">"bob"</span>]<br>
+}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- STEP 5: AI -->
+  <div class="tutorial-step" id="step-ai">
+    <div class="step-header">
+      <div class="step-number">5</div>
+      <h2>Add AI-powered generation</h2>
+    </div>
+    <div class="step-body">
+      <p>Template-based notes are structured, but AI makes them <em>readable</em>. The AI rewrites your commit messages into polished, audience-appropriate descriptions.</p>
+
+      <h3>Set your API key</h3>
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <span class="terminal-title">terminal</span>
+        </div>
+        <div class="terminal-body">
+<span class="t-comment"># Pick ONE provider and set its key:</span><br>
+<span class="t-prompt">$</span> <span class="t-cmd">export</span> <span class="t-val">ANTHROPIC_API_KEY</span>=sk-ant-...<br>
+<span class="t-comment"># or</span><br>
+<span class="t-prompt">$</span> <span class="t-cmd">export</span> <span class="t-val">OPENAI_API_KEY</span>=sk-...<br>
+<span class="t-comment"># or</span><br>
+<span class="t-prompt">$</span> <span class="t-cmd">export</span> <span class="t-val">GOOGLE_AI_API_KEY</span>=AIza...
+        </div>
+      </div>
+
+      <h3>Update your config</h3>
+      <div class="code-block">
+        <div class="code-header">
+          <span>.cullit.yml</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="code-body"><span style="color:var(--terminal-blue)">ai</span>:
+  <span style="color:var(--terminal-blue)">provider</span>: <span style="color:var(--terminal-green)">anthropic</span>     <span style="color:var(--text-dim)"># or openai, gemini, ollama</span>
+  <span style="color:var(--terminal-blue)">audience</span>: <span style="color:var(--terminal-green)">developer</span>
+  <span style="color:var(--terminal-blue)">tone</span>: <span style="color:var(--terminal-green)">professional</span></div>
+      </div>
+
+      <div class="callout callout-info">
+        <span class="callout-icon">&#x1f511;</span>
+        <div><strong>Pro license required</strong> for AI providers. Set your <code>CULLIT_API_KEY</code> (format: <code>clt_...</code>) to unlock AI, Jira enrichment, Linear enrichment, and all publishers. <a href="index.html#cta" style="color: var(--accent)">Get your key &rarr;</a></div>
+      </div>
+
+      <p>Now generate with AI:</p>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <span class="terminal-title">~/your-project</span>
+        </div>
+        <div class="terminal-body">
+<span class="t-prompt">$</span> <span class="t-cmd">cullit generate</span> <span class="t-flag">--from</span> <span class="t-val">v1.1.0</span> <span class="t-flag">--to</span> <span class="t-val">v1.2.0</span><br>
+<br>
+<span class="t-output">&raquo; License: &#x1f511; Pro</span><br>
+<span class="t-comment"># Collecting commits between v1.1.0..v1.2.0</span><br>
+<span class="t-output">&raquo; Found 12 commits, 4 PRs</span><br>
+<span class="t-output">&raquo; Generating with Claude (claude-sonnet-4-20250514)...</span><br>
+<br>
+<span class="t-accent">## Release v1.2.0 &mdash; March 13, 2026</span><br>
+<br>
+<span class="t-output">A focused release that introduces user profiles and dark mode,</span><br>
+<span class="t-output">fixes critical auth and date formatting issues, and optimizes</span><br>
+<span class="t-output">core dashboard performance.</span><br>
+<br>
+<span class="t-cat">&#x2728; Features</span><br>
+<span class="t-output">- Introduced user profile pages with avatar, bio, and activity history</span><br>
+<span class="t-output">- Added system-wide dark mode toggle with persistent preference storage</span><br>
+<br>
+<span class="t-cat">&#x1f41b; Bug Fixes</span><br>
+<span class="t-output">- Fixed an infinite redirect loop during OAuth login flow that</span><br>
+<span class="t-output">  affected users with expired sessions</span><br>
+<span class="t-output">- Corrected date formatting in generated reports to respect</span><br>
+<span class="t-output">  the user's locale settings</span><br>
+<br>
+<span class="t-cat">&#x1f527; Improvements</span><br>
+<span class="t-output">- Optimized dashboard database queries, reducing p95 load time by 40%</span><br>
+<br>
+<span class="t-accent">&#x2713; Done in 3.8s</span>
+        </div>
+      </div>
+
+      <p>Notice the difference? The AI version has a summary, human-readable descriptions, and context that commit messages alone don&rsquo;t provide.</p>
+
+      <h3>Audience modes &mdash; same data, different output</h3>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Audience</th>
+            <th>Best for</th>
+            <th>Style</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>developer</code></td>
+            <td>Engineering team, internal changelog</td>
+            <td>Technical, references PRs and commits</td>
+          </tr>
+          <tr>
+            <td><code>end-user</code></td>
+            <td>Product updates, customer-facing</td>
+            <td>Plain language, benefit-focused</td>
+          </tr>
+          <tr>
+            <td><code>executive</code></td>
+            <td>Leadership updates, board reports</td>
+            <td>High-level impact, metrics-oriented</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <span class="terminal-title">terminal</span>
+        </div>
+        <div class="terminal-body">
+<span class="t-comment"># Generate customer-facing notes</span><br>
+<span class="t-prompt">$</span> <span class="t-cmd">cullit generate</span> <span class="t-flag">--from</span> <span class="t-val">v1.1.0</span> <span class="t-flag">--audience</span> <span class="t-val">end-user</span><br>
+<br>
+<span class="t-comment"># Generate executive summary</span><br>
+<span class="t-prompt">$</span> <span class="t-cmd">cullit generate</span> <span class="t-flag">--from</span> <span class="t-val">v1.1.0</span> <span class="t-flag">--audience</span> <span class="t-val">executive</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- STEP 6: PUBLISH -->
+  <div class="tutorial-step" id="step-publish">
+    <div class="step-header">
+      <div class="step-number">6</div>
+      <h2>Publish to Slack, Discord <span class="dim">&amp; GitHub</span></h2>
+    </div>
+    <div class="step-body">
+      <p>Add publish targets to your config and Cullit will push release notes to multiple destinations simultaneously.</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span>.cullit.yml</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="code-body"><span style="color:var(--terminal-blue)">publish</span>:
+  - <span style="color:var(--terminal-blue)">type</span>: <span style="color:var(--terminal-green)">stdout</span>
+  - <span style="color:var(--terminal-blue)">type</span>: <span style="color:var(--terminal-green)">file</span>
+    <span style="color:var(--terminal-blue)">path</span>: <span style="color:var(--terminal-green)">RELEASE_NOTES.md</span>
+  - <span style="color:var(--terminal-blue)">type</span>: <span style="color:var(--terminal-green)">slack</span>
+    <span style="color:var(--terminal-blue)">webhook_url</span>: <span style="color:var(--terminal-green)">$SLACK_WEBHOOK_URL</span>
+  - <span style="color:var(--terminal-blue)">type</span>: <span style="color:var(--terminal-green)">discord</span>
+    <span style="color:var(--terminal-blue)">webhook_url</span>: <span style="color:var(--terminal-green)">$DISCORD_WEBHOOK_URL</span>
+  - <span style="color:var(--terminal-blue)">type</span>: <span style="color:var(--terminal-green)">github-release</span></div>
+      </div>
+
+      <div class="callout callout-warn">
+        <span class="callout-icon">&#x26a0;&#xfe0f;</span>
+        <div><strong>Environment variables:</strong> The <code>$SLACK_WEBHOOK_URL</code> syntax tells Cullit to read from your environment. Never commit webhook URLs directly in config files.</div>
+      </div>
+
+      <!-- Visual: Where notes get published -->
+      <div class="flow-diagram" style="margin-top: 2rem;">
+        <div class="flow-node">
+          <span class="flow-icon">&#x1f4bb;</span>
+          <span class="flow-label">Terminal</span>
+          <span class="flow-sub">stdout</span>
+        </div>
+        <div class="flow-node">
+          <span class="flow-icon">&#x1f4c4;</span>
+          <span class="flow-label">File</span>
+          <span class="flow-sub">RELEASE_NOTES.md</span>
+        </div>
+        <div class="flow-node">
+          <span class="flow-icon">&#x1f4ac;</span>
+          <span class="flow-label">Slack</span>
+          <span class="flow-sub">#releases channel</span>
+        </div>
+        <div class="flow-node">
+          <span class="flow-icon">&#x1f3ae;</span>
+          <span class="flow-label">Discord</span>
+          <span class="flow-sub">webhook embed</span>
+        </div>
+        <div class="flow-node">
+          <span class="flow-icon">&#x1f4e6;</span>
+          <span class="flow-label">GitHub</span>
+          <span class="flow-sub">Release page</span>
+        </div>
+      </div>
+
+      <h3>Setting up Slack webhooks</h3>
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <span class="terminal-title">terminal</span>
+        </div>
+        <div class="terminal-body">
+<span class="t-comment"># 1. Create a Slack Incoming Webhook at:</span><br>
+<span class="t-comment">#    https://api.slack.com/messaging/webhooks</span><br>
+<span class="t-comment"># 2. Set the env var:</span><br>
+<span class="t-prompt">$</span> <span class="t-cmd">export</span> <span class="t-val">SLACK_WEBHOOK_URL</span>=https://hooks.slack.com/services/T.../B.../xxx<br>
+<br>
+<span class="t-comment"># Now publish:</span><br>
+<span class="t-prompt">$</span> <span class="t-cmd">cullit generate</span> <span class="t-flag">--from</span> <span class="t-val">v1.1.0</span><br>
+<span class="t-output">&raquo; Published to: stdout, RELEASE_NOTES.md, Slack</span><br>
+<span class="t-accent">&#x2713; Done in 4.1s</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- STEP 7: CI/CD -->
+  <div class="tutorial-step" id="step-ci">
+    <div class="step-header">
+      <div class="step-number">7</div>
+      <h2>Automate with GitHub Actions</h2>
+    </div>
+    <div class="step-body">
+      <p>The real power of Cullit is running it automatically on every release. Add the GitHub Action to generate and publish notes when you push a tag.</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span>.github/workflows/release-notes.yml</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="code-body"><span style="color:var(--terminal-blue)">name</span>: <span style="color:var(--terminal-green)">Release Notes</span>
+
+<span style="color:var(--terminal-blue)">on</span>:
+  <span style="color:var(--terminal-blue)">push</span>:
+    <span style="color:var(--terminal-blue)">tags</span>: [<span style="color:var(--terminal-green)">'v*'</span>]
+
+<span style="color:var(--terminal-blue)">jobs</span>:
+  <span style="color:var(--terminal-blue)">release-notes</span>:
+    <span style="color:var(--terminal-blue)">runs-on</span>: <span style="color:var(--terminal-green)">ubuntu-latest</span>
+    <span style="color:var(--terminal-blue)">permissions</span>:
+      <span style="color:var(--terminal-blue)">contents</span>: <span style="color:var(--terminal-green)">write</span>
+    <span style="color:var(--terminal-blue)">steps</span>:
+      - <span style="color:var(--terminal-blue)">uses</span>: <span style="color:var(--terminal-green)">actions/checkout@v4</span>
+        <span style="color:var(--terminal-blue)">with</span>:
+          <span style="color:var(--terminal-blue)">fetch-depth</span>: <span style="color:var(--terminal-yellow)">0</span>    <span style="color:var(--text-dim)"># full history for commit range</span>
+
+      - <span style="color:var(--terminal-blue)">uses</span>: <span style="color:var(--terminal-green)">mttaylor/cullit@main</span>
+        <span style="color:var(--terminal-blue)">with</span>:
+          <span style="color:var(--terminal-blue)">provider</span>: <span style="color:var(--terminal-green)">anthropic</span>
+          <span style="color:var(--terminal-blue)">publish</span>: <span style="color:var(--terminal-green)">github-release,slack</span>
+          <span style="color:var(--terminal-blue)">api-key</span>: <span style="color:var(--terminal-green)">${{ secrets.CULLIT_API_KEY }}</span>
+        <span style="color:var(--terminal-blue)">env</span>:
+          <span style="color:var(--terminal-blue)">ANTHROPIC_API_KEY</span>: <span style="color:var(--terminal-green)">${{ secrets.ANTHROPIC_API_KEY }}</span>
+          <span style="color:var(--terminal-blue)">GITHUB_TOKEN</span>: <span style="color:var(--terminal-green)">${{ secrets.GITHUB_TOKEN }}</span>
+          <span style="color:var(--terminal-blue)">SLACK_WEBHOOK_URL</span>: <span style="color:var(--terminal-green)">${{ secrets.SLACK_WEBHOOK_URL }}</span></div>
+      </div>
+
+      <div class="callout callout-info">
+        <span class="callout-icon">&#x2699;&#xfe0f;</span>
+        <div><strong><code>fetch-depth: 0</code></strong> is required so Cullit can access the full git history to find commits between tags. Without it, only the triggering commit is available.</div>
+      </div>
+
+      <h3>What happens when you push a tag</h3>
+      <div class="flow-diagram">
+        <div class="flow-node">
+          <span class="flow-icon">&#x1f3f7;&#xfe0f;</span>
+          <span class="flow-label">git push tag</span>
+          <span class="flow-sub">v1.2.0</span>
+        </div>
+        <span class="flow-arrow">&#x2192;</span>
+        <div class="flow-node">
+          <span class="flow-icon">&#x2699;&#xfe0f;</span>
+          <span class="flow-label">Action runs</span>
+          <span class="flow-sub">collects &amp; generates</span>
+        </div>
+        <span class="flow-arrow">&#x2192;</span>
+        <div class="flow-node">
+          <span class="flow-icon">&#x2728;</span>
+          <span class="flow-label">AI writes notes</span>
+          <span class="flow-sub">Claude / GPT / etc</span>
+        </div>
+        <span class="flow-arrow">&#x2192;</span>
+        <div class="flow-node">
+          <span class="flow-icon">&#x1f680;</span>
+          <span class="flow-label">Published</span>
+          <span class="flow-sub">GH Release + Slack</span>
+        </div>
+      </div>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <span class="terminal-title">terminal</span>
+        </div>
+        <div class="terminal-body">
+<span class="t-comment"># Tag and push &mdash; release notes generate automatically</span><br>
+<span class="t-prompt">$</span> <span class="t-cmd">git tag</span> <span class="t-val">v1.2.0</span><br>
+<span class="t-prompt">$</span> <span class="t-cmd">git push origin</span> <span class="t-val">v1.2.0</span><br>
+<br>
+<span class="t-comment"># &#x2713; GitHub Release created</span><br>
+<span class="t-comment"># &#x2713; Slack notification sent to #releases</span><br>
+<span class="t-comment"># Zero manual effort</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- BONUS: RELEASE ADVISOR -->
+  <div class="tutorial-step" id="step-bonus">
+    <div class="step-header">
+      <div class="step-number">&#x2b50;</div>
+      <h2>Bonus: Release Advisor</h2>
+    </div>
+    <div class="step-body">
+      <p>Not sure if you should release? Cullit analyzes your unreleased commits and tells you.</p>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <span class="terminal-title">~/your-project</span>
+        </div>
+        <div class="terminal-body">
+<span class="t-prompt">$</span> <span class="t-cmd">cullit status</span><br>
+<br>
+<span class="t-output">  &#x2554;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2557;</span><br>
+<span class="t-output">  &#x2551;  Cullit &mdash; Release Readiness               &#x2551;</span><br>
+<span class="t-output">  &#x255a;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x255d;</span><br>
+<br>
+<span class="t-output">  Current version:   v1.2.0</span><br>
+<span class="t-output">  Suggested next:    v1.3.0 (minor)</span><br>
+<span class="t-output">  Last release:      5 day(s) ago</span><br>
+<span class="t-output">  Unreleased commits: 8</span><br>
+<br>
+<span class="t-output">  Commit breakdown:</span><br>
+<span class="t-output">    &#x2728; Features:  &#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588; 3</span><br>
+<span class="t-output">    &#x1f41b; Fixes:     &#x2588;&#x2588;&#x2588;&#x2588; 2</span><br>
+<span class="t-output">    &#x1f9f9; Chores:    &#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588; 3</span><br>
+<br>
+<span class="t-accent">  Should you release? &#x1f7e2; Yes &mdash; time to release</span><br>
+<br>
+<span class="t-output">  Why:</span><br>
+<span class="t-output">    &#x2192; 3 new features ready to ship</span><br>
+<span class="t-output">    &#x2192; 2 bug fixes waiting for release</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- WHAT'S NEXT -->
+  <div class="tutorial-step">
+    <div class="step-header">
+      <div class="step-number">&#x2192;</div>
+      <h2>What&rsquo;s next</h2>
+    </div>
+    <div class="step-body">
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Topic</th>
+            <th>Link</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Full configuration reference</td>
+            <td><a href="docs.html#config-file" style="color:var(--accent)">Configuration docs &rarr;</a></td>
+          </tr>
+          <tr>
+            <td>Jira &amp; Linear as primary source</td>
+            <td><a href="docs.html#jira" style="color:var(--accent)">Integration docs &rarr;</a></td>
+          </tr>
+          <tr>
+            <td>Using as a TypeScript library</td>
+            <td><a href="docs.html#library-usage" style="color:var(--accent)">Library usage &rarr;</a></td>
+          </tr>
+          <tr>
+            <td>REST API server</td>
+            <td><a href="docs.html#api-server" style="color:var(--accent)">API docs &rarr;</a></td>
+          </tr>
+          <tr>
+            <td>Docker deployment</td>
+            <td><a href="docs.html#api-server" style="color:var(--accent)">Docker docs &rarr;</a></td>
+          </tr>
+          <tr>
+            <td>Report issues or contribute</td>
+            <td><a href="https://github.com/mttaylor/cullit" style="color:var(--accent)" target="_blank">GitHub &rarr;</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p class="footer-brand">Built by <a href="https://cullit.io">Cullit</a></p>
+  <div class="footer-links">
+    <a href="https://github.com/mttaylor/cullit" target="_blank">GitHub</a>
+    <a href="docs.html">Docs</a>
+    <a href="https://x.com/cullit" target="_blank">X / Twitter</a>
+    <a href="https://www.linkedin.com/company/cullit/" target="_blank">LinkedIn</a>
+    <a href="mailto:sales@cullit.io">sales@cullit.io</a>
+  </div>
+</footer>
+
+<script>
+// Reading progress bar
+window.addEventListener('scroll', () => {
+  const doc = document.documentElement;
+  const scrollTop = doc.scrollTop;
+  const scrollHeight = doc.scrollHeight - doc.clientHeight;
+  const progress = (scrollTop / scrollHeight) * 100;
+  document.getElementById('progress').style.width = progress + '%';
+});
+
+// Tab switching for output preview
+function switchTab(e, panelId) {
+  // Deactivate all tabs and panels in the same container
+  const container = e.target.closest('.output-preview');
+  container.querySelectorAll('.output-tab').forEach(t => t.classList.remove('active'));
+  container.querySelectorAll('.output-panel').forEach(p => p.classList.remove('active'));
+  // Activate selected
+  e.target.classList.add('active');
+  document.getElementById(panelId).classList.add('active');
+}
+
+// Copy code blocks
+function copyCode(btn) {
+  const code = btn.closest('.code-block').querySelector('.code-body').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+
+// Smooth reveal on scroll
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.style.opacity = '1';
+      entry.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.tutorial-step, .flow-node, .callout').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(20px)';
+  el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+  observer.observe(el);
+});
+</script>
+
+</body>
+</html>
