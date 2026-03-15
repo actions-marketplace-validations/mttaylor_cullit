@@ -9,9 +9,15 @@
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsup src/index.ts src/openapi.ts --format esm --clean",
-    "dev": "tsup src/index.ts --format esm --watch --onSuccess 'node dist/index.js'"
+    "dev": "tsup src/index.ts --format esm --watch --onSuccess 'node dist/index.js'",
+    "test": "vitest run"
   },
   "dependencies": {
     "@cullit/core": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^1.6.1"
   }
 }

@@ -46,6 +46,11 @@ async function run(): Promise<void> {
     const slackWebhook = getInput('publish-slack-webhook');
     const discordWebhook = getInput('publish-discord-webhook');
     const githubRelease = getInput('publish-github-release') === 'true';
+    const teamsWebhook = getInput('publish-teams-webhook');
+    const publishConfluence = getInput('publish-confluence') === 'true';
+    const publishNotion = getInput('publish-notion') === 'true';
+    const publishGitlabRelease = getInput('publish-gitlab-release') === 'true';
+    const publishChangelog = getInput('publish-changelog') === 'true';
     const jiraDomain = getInput('jira-domain');
 
     if (!from) {
@@ -75,6 +80,21 @@ async function run(): Promise<void> {
       }
       if (githubRelease) {
         publishers.push({ type: 'github-release' });
+      }
+      if (teamsWebhook) {
+        publishers.push({ type: 'teams', webhookUrl: teamsWebhook });
+      }
+      if (publishConfluence) {
+        publishers.push({ type: 'confluence' });
+      }
+      if (publishNotion) {
+        publishers.push({ type: 'notion' });
+      }
+      if (publishGitlabRelease) {
+        publishers.push({ type: 'gitlab-release' });
+      }
+      if (publishChangelog) {
+        publishers.push({ type: 'changelog' });
       }
 
       config = {

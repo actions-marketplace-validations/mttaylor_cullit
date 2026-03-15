@@ -161,3 +161,72 @@ describe('config error handling', () => {
     });
   });
 });
+
+describe('v1.0.0 config fields', () => {
+  it('parses gitlab configuration', () => {
+    withConfigFile(`
+gitlab:
+  domain: gitlab.example.com
+  projectId: "42"
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.gitlab?.domain).toBe('gitlab.example.com');
+      expect(config.gitlab?.projectId).toBe('42');
+    });
+  });
+
+  it('parses bitbucket configuration', () => {
+    withConfigFile(`
+bitbucket:
+  workspace: my-team
+  repoSlug: my-repo
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.bitbucket?.workspace).toBe('my-team');
+      expect(config.bitbucket?.repoSlug).toBe('my-repo');
+    });
+  });
+
+  it('parses confluence configuration', () => {
+    withConfigFile(`
+confluence:
+  domain: myco.atlassian.net
+  spaceKey: ENG
+  parentPageId: "12345"
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.confluence?.domain).toBe('myco.atlassian.net');
+      expect(config.confluence?.spaceKey).toBe('ENG');
+      expect(config.confluence?.parentPageId).toBe('12345');
+    });
+  });
+
+  it('parses notion configuration', () => {
+    withConfigFile(`
+notion:
+  databaseId: abc123
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.notion?.databaseId).toBe('abc123');
+    });
+  });
+
+  it('normalizes snake_case publish target keys', () => {
+    withConfigFile(`
+publish:
+  - type: teams
+    webhook_url: https://example.com/webhook
+  - type: confluence
+    space_key: DEV
+    parent_page_id: "999"
+  - type: notion
+    database_id: abc-def
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.publish[0].webhookUrl).toBe('https://example.com/webhook');
+      expect(config.publish[1].spaceKey).toBe('DEV');
+      expect(config.publish[1].parentPageId).toBe('999');
+      expect(config.publish[2].databaseId).toBe('abc-def');
+    });
+  });
+});

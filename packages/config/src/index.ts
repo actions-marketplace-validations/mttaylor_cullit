@@ -187,19 +187,37 @@ function mergeWithDefaults(parsed: Record<string, any>): CullConfig {
     jira: parsed.jira,
     linear: parsed.linear,
     openclaw: parsed.openclaw,
+    gitlab: parsed.gitlab,
+    bitbucket: parsed.bitbucket,
+    confluence: parsed.confluence,
+    notion: parsed.notion,
   };
 }
 
 /**
  * Converts snake_case YAML keys to camelCase TypeScript properties.
- * Handles webhook_url → webhookUrl mapping.
+ * Preserves all extra keys for extensibility (e.g. spaceKey, parentPageId, databaseId).
  */
 function normalizePublishTargets(targets: any[]): PublishTarget[] {
   return targets.map(t => {
-    const normalized: PublishTarget = { type: t.type };
-    if (t.webhookUrl || t.webhook_url) normalized.webhookUrl = t.webhookUrl || t.webhook_url;
-    if (t.channel) normalized.channel = t.channel;
-    if (t.path) normalized.path = t.path;
+    const normalized: PublishTarget = { ...t };
+    // Normalize snake_case to camelCase
+    if (t.webhook_url && !t.webhookUrl) {
+      normalized.webhookUrl = t.webhook_url;
+      delete normalized['webhook_url'];
+    }
+    if (t.parent_page_id && !t.parentPageId) {
+      normalized.parentPageId = t.parent_page_id;
+      delete normalized['parent_page_id'];
+    }
+    if (t.space_key && !t.spaceKey) {
+      normalized.spaceKey = t.space_key;
+      delete normalized['space_key'];
+    }
+    if (t.database_id && !t.databaseId) {
+      normalized.databaseId = t.database_id;
+      delete normalized['database_id'];
+    }
     return normalized;
   });
 }

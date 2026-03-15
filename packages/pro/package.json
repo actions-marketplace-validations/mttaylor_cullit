@@ -6,6 +6,11 @@
   "description": "Cullit Pro — AI generators, Jira/Linear integrations, Slack/Discord/GitHub publishers.",
   "license": "UNLICENSED",
   "author": "Cullit <matt@cullit.io>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mttaylor/cullit",
+    "directory": "packages/pro"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

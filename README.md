@@ -6,7 +6,7 @@
 
 **AI release notes that write themselves.**
 
-Cullit reads your git history, enriches from Jira & Linear, and uses AI to generate categorized, human-readable release notes. Ships to Slack, Discord, GitHub Releases, and more.
+Cullit reads your git history, enriches from Jira & Linear, and uses AI to generate categorized, human-readable release notes. Ships to Slack, Discord, Teams, GitHub & GitLab Releases, Confluence, Notion, and more.
 
 > Built by [Matt](https://cullit.io).
 
@@ -94,6 +94,11 @@ jobs:
           audience: developer
           publish-github-release: 'true'
           publish-slack-webhook: ${{ secrets.SLACK_WEBHOOK }}
+          # publish-teams-webhook: ${{ secrets.TEAMS_WEBHOOK }}
+          # publish-confluence: 'true'
+          # publish-notion: 'true'
+          # publish-gitlab-release: 'true'
+          # publish-changelog: 'true'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -138,9 +143,9 @@ docker compose up api
 |---------|-------------|
 | 🧠 **6 AI Providers** | Anthropic Claude, OpenAI, Gemini, Ollama, OpenClaw, or none (template) |
 | 🔑 **BYOK** | Bring your own API key. Zero vendor lock-in. |
-| ⚡ **Flexible Sources** | Git, Jira, or Linear as primary data source |
+| ⚡ **Flexible Sources** | Git, Jira, Linear, GitLab, or Bitbucket as primary data source |
 | 🔍 **Enrichment** | Cross-reference Jira & Linear tickets from commits |
-| 📤 **Multi-Publish** | Slack, Discord, GitHub Release, file, stdout |
+| 📤 **Multi-Publish** | Slack, Discord, Teams, GitHub Release, GitLab Release, Confluence, Notion, Hosted Changelog, Embed Widget, file, stdout |
 | 🎯 **Audience Modes** | Developer, end-user, or executive summaries |
 | 📋 **Smart Categories** | Features, fixes, breaking changes, improvements, chores |
 | 🔇 **Structured Logging** | `--verbose` and `--quiet` flags for CI-friendly output |
@@ -155,6 +160,8 @@ docker compose up api
 | [`cullit`](https://www.npmjs.com/package/cullit) | CLI — `npx cullit generate` |
 | [`@cullit/core`](https://www.npmjs.com/package/@cullit/core) | Core engine — pipeline, generators, publishers |
 | [`@cullit/config`](https://www.npmjs.com/package/@cullit/config) | Config loader — YAML parsing with env var resolution |
+| [`@cullit/pro`](https://www.npmjs.com/package/@cullit/pro) | Pro integrations — GitLab, Bitbucket, Teams, Confluence, Notion, AI generators |
+| [`@cullit/api`](https://www.npmjs.com/package/@cullit/api) | REST API server — OpenAPI 3.1, rate limiting, pipeline cache |
 
 ## Configuration
 
@@ -168,7 +175,7 @@ ai:
   categories: [features, fixes, breaking, improvements, chores]
 
 source:
-  type: local                 # local | jira | linear
+  type: local                 # local | jira | linear | gitlab | bitbucket
   enrichment: [jira]
 
 publish:
@@ -176,9 +183,28 @@ publish:
   - type: github-release
   - type: slack
     webhook_url: $SLACK_WEBHOOK_URL
+  # - type: discord
+  #   webhook_url: $DISCORD_WEBHOOK_URL
+  # - type: teams
+  #   webhook_url: $TEAMS_WEBHOOK_URL
+  # - type: confluence
+  # - type: notion
+  # - type: gitlab-release
+  # - type: changelog
 
 jira:
   domain: yourcompany.atlassian.net
+
+# gitlab:
+#   projectId: "12345"
+# bitbucket:
+#   workspace: your-workspace
+#   repoSlug: your-repo
+# confluence:
+#   domain: yourcompany.atlassian.net
+#   spaceKey: ENG
+# notion:
+#   databaseId: your-database-id
 ```
 
 ### Environment Variables
@@ -197,6 +223,14 @@ jira:
 | `GITHUB_TOKEN` | GitHub Release publishing |
 | `SLACK_WEBHOOK_URL` | Slack publishing |
 | `DISCORD_WEBHOOK_URL` | Discord publishing |
+| `TEAMS_WEBHOOK_URL` | Teams publishing |
+| `GITLAB_TOKEN` | GitLab collector & release publishing |
+| `GITLAB_PROJECT_ID` | GitLab project (numeric ID or URL-encoded path) |
+| `BITBUCKET_USERNAME` | Bitbucket collector |
+| `BITBUCKET_APP_PASSWORD` | Bitbucket collector |
+| `CONFLUENCE_EMAIL` | Confluence publishing |
+| `CONFLUENCE_API_TOKEN` | Confluence publishing |
+| `NOTION_API_KEY` | Notion publishing |
 
 ## API Endpoints
 
@@ -217,12 +251,17 @@ jira:
 - [x] Docker & docker-compose
 - [x] GitHub Action (node22)
 - [x] Structured logging (--verbose / --quiet)
-- [x] 80+ unit tests + integration tests
-- [ ] Confluence publisher
-- [ ] Notion publisher
-- [ ] GitLab & Bitbucket support
-- [ ] Hosted changelog pages
+- [x] 200+ unit tests + integration tests
+- [x] Microsoft Teams publisher
+- [x] Confluence publisher
+- [x] Notion publisher
+- [x] GitLab collector & release publisher
+- [x] Bitbucket collector
+- [x] Hosted changelog pages
+- [x] Embeddable changelog widget
+- [ ] GitHub App (Marketplace)
 - [ ] Web dashboard
+- [ ] Multi-repo aggregation
 
 ## Contributing
 

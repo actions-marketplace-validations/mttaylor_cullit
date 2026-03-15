@@ -102,6 +102,13 @@ publish:
   #   webhook_url: $SLACK_WEBHOOK_URL
   # - type: discord
   #   webhook_url: $DISCORD_WEBHOOK_URL
+  # - type: github-release
+  # - type: teams
+  #   webhook_url: $TEAMS_WEBHOOK_URL
+  # - type: confluence
+  # - type: notion
+  # - type: gitlab-release
+  # - type: changelog
 
 # jira:
 #   domain: yourcompany.atlassian.net
@@ -109,6 +116,22 @@ publish:
 
 # linear:
 #   # Set LINEAR_API_KEY in your environment
+
+# gitlab:
+#   domain: gitlab.com            # or your self-hosted domain
+#   projectId: "12345"            # numeric project ID
+
+# bitbucket:
+#   workspace: your-workspace
+#   repoSlug: your-repo
+
+# confluence:
+#   domain: yourcompany.atlassian.net
+#   spaceKey: ENG
+#   # parentPageId: "123456"      # optional: nest under a page
+
+# notion:
+#   databaseId: your-database-id
 
 # openclaw:
 #   baseUrl: http://localhost:18789  # OpenClaw gateway URL
