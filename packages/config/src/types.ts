@@ -70,10 +70,19 @@ export interface NotionConfig {
   databaseId: string;   // Notion database ID
 }
 
+export interface RepoSource {
+  url?: string;         // git remote URL (cloned to temp dir)
+  path?: string;        // local filesystem path
+  name?: string;        // display name (defaults to repo basename)
+  from?: string;        // override from ref for this repo
+  to?: string;          // override to ref for this repo
+}
+
 export interface CullConfig {
   ai: AIConfig;
   source: SourceConfig;
   publish: PublishTarget[];
+  repos?: RepoSource[];  // multi-repo aggregation
   jira?: JiraConfig;
   linear?: LinearConfig;
   openclaw?: OpenClawConfig;

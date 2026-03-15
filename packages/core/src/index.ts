@@ -6,7 +6,7 @@ export type {
   PipelineResult, OutputFormat, PublishTarget,
   OpenClawConfig, AIProvider, Audience, Tone,
   SourceConfig, PublisherType, EnrichmentType,
-  JiraConfig, LinearConfig,
+  JiraConfig, LinearConfig, RepoSource,
   GitLabConfig, BitbucketConfig, ConfluenceConfig, NotionConfig,
 } from './types';
 export {
@@ -20,6 +20,7 @@ import { DEFAULT_MODELS } from './constants';
 import { createLogger, type Logger } from './logger';
 
 export { GitCollector, getRecentTags, getLatestTag } from './collectors/git';
+export { MultiRepoCollector } from './collectors/multi-repo';
 export { TemplateGenerator } from './generators/template';
 export { formatNotes, registerFormatter, getFormatter, listFormatters } from './formatter';
 export { StdoutPublisher, FilePublisher } from './publishers/index';
@@ -39,6 +40,7 @@ export { fetchWithTimeout } from './fetch';
 import type { CullConfig, EnrichedContext, PipelineResult, OutputFormat, EnrichedTicket } from './types';
 import { validateLicense, isProviderAllowed, isPublisherAllowed, isEnrichmentAllowed, upgradeMessage } from './gate';
 import { GitCollector } from './collectors/git';
+import { MultiRepoCollector } from './collectors/multi-repo';
 import { TemplateGenerator } from './generators/template';
 import { formatNotes } from './formatter';
 import { StdoutPublisher, FilePublisher } from './publishers/index';
@@ -50,6 +52,10 @@ import {
 // --- Register free (core) plugins ---
 import type { PublishTarget, CullConfig as CullConfigType } from './types';
 registerCollector('local', () => new GitCollector());
+registerCollector('multi-repo', (config: CullConfigType) => {
+  if (!config.repos?.length) throw new Error('Multi-repo source requires "repos" array in config');
+  return new MultiRepoCollector(config.repos);
+});
 registerGenerator('none', () => new TemplateGenerator());
 registerPublisher('stdout', (_target: PublishTarget) => new StdoutPublisher());
 registerPublisher('file', (target: PublishTarget) => new FilePublisher(target.path!));

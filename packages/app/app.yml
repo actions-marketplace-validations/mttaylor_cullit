@@ -1,0 +1,25 @@
+# GitHub App Manifest
+# Register at https://github.com/settings/apps/new
+# or use this manifest for automated creation:
+# https://docs.github.com/en/apps/sharing-github-apps/registering-a-github-app-from-a-manifest
+
+name: Cullit
+description: Auto-generate AI-powered release notes when you push a tag or publish a release.
+url: https://cullit.io
+hook_attributes:
+  url: https://app.cullit.io/webhook
+  active: true
+setup_url: https://cullit.io/setup
+redirect_url: https://cullit.io/callback
+public: true
+
+default_events:
+  - push
+  - release
+  - installation
+  - installation_repositories
+
+default_permissions:
+  contents: read
+  metadata: read
+  pull_requests: read

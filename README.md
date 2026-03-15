@@ -162,6 +162,7 @@ docker compose up api
 | [`@cullit/config`](https://www.npmjs.com/package/@cullit/config) | Config loader — YAML parsing with env var resolution |
 | [`@cullit/pro`](https://www.npmjs.com/package/@cullit/pro) | Pro integrations — GitLab, Bitbucket, Teams, Confluence, Notion, AI generators |
 | [`@cullit/api`](https://www.npmjs.com/package/@cullit/api) | REST API server — OpenAPI 3.1, rate limiting, pipeline cache |
+| [`@cullit/app`](https://www.npmjs.com/package/@cullit/app) | GitHub App — auto-generate release notes on tag push or release publish |
 
 ## Configuration
 
@@ -259,9 +260,9 @@ jira:
 - [x] Bitbucket collector
 - [x] Hosted changelog pages
 - [x] Embeddable changelog widget
-- [ ] GitHub App (Marketplace)
-- [ ] Web dashboard
-- [ ] Multi-repo aggregation
+- [x] GitHub App (Marketplace)
+- [x] Web dashboard
+- [x] Multi-repo aggregation
 
 ## Contributing
 

@@ -1,0 +1,24 @@
+{
+  "name": "@cullit/app",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cullit GitHub App — auto-generate release notes on tag push or release publish.",
+  "license": "UNLICENSED",
+  "author": "Cullit <matt@cullit.io>",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --clean",
+    "dev": "tsup src/index.ts --format esm --watch --onSuccess 'node dist/index.js'",
+    "start": "node dist/index.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@cullit/core": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^1.6.1"
+  }
+}
