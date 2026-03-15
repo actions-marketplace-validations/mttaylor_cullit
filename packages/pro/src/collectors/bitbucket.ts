@@ -70,7 +70,10 @@ export class BitbucketCollector implements Collector {
       commits.push(...(data.values || []));
 
       // Safety cap: don't fetch more than 500 commits
-      if (commits.length >= 500) break;
+      if (commits.length >= 500) {
+        console.warn(`⚠ Bitbucket: ${commits.length} commits fetched — capped at 500. Release notes may be incomplete. Use a narrower range.`);
+        break;
+      }
       url = data.next || null;
     }
 

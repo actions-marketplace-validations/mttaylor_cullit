@@ -20,6 +20,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "build:action": "tsup src/action.ts --format cjs --out-dir dist --no-splitting --target node22",
+    "build:widget": "esbuild site/widget.ts --bundle --minify --format=iife --outfile=site/widget.js --target=es2020",
     "test": "vitest run",
     "dev": "pnpm --filter @cullit/cli dev",
     "dev:api": "pnpm --filter @cullit/api dev",
