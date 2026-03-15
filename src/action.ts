@@ -52,6 +52,7 @@ async function run(): Promise<void> {
     const publishGitlabRelease = getInput('publish-gitlab-release') === 'true';
     const publishChangelog = getInput('publish-changelog') === 'true';
     const jiraDomain = getInput('jira-domain');
+    const source = getInput('source') || 'local';
 
     if (!from) {
       setFailed('Input "from" is required. Specify a tag, branch, or commit SHA.');
@@ -106,7 +107,7 @@ async function run(): Promise<void> {
           categories: DEFAULT_CATEGORIES,
         },
         source: {
-          type: 'local',
+          type: source,
           enrichment: jiraDomain ? ['jira'] : [],
         },
         publish: publishers,

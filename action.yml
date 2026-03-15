@@ -29,6 +29,10 @@ inputs:
     description: 'Writing tone: professional, casual, or terse'
     required: false
     default: 'professional'
+  source:
+    description: 'Source type: local, jira, linear, gitlab, bitbucket, or multi-repo'
+    required: false
+    default: 'local'
   format:
     description: 'Output format: markdown, html, or json'
     required: false

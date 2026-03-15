@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cullit — Setup Complete</title>
+<meta name="description" content="Cullit GitHub App setup complete. Your repositories are now connected.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Chakra+Petch:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg-card: #161822;
+    --accent: #5eead4;
+    --text: #d4d4e0;
+    --text-dim: #7e819a;
+    --text-bright: #f0f0f5;
+    --border: #282a3a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-decoration: none;
+    margin-bottom: 2rem;
+  }
+  .logo span { color: var(--text-dim); font-weight: 400; }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 3rem;
+    max-width: 560px;
+    width: 100%;
+    text-align: center;
+  }
+  .check {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+  h1 {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.8rem;
+    color: var(--text-bright);
+    margin-bottom: 0.5rem;
+  }
+  .subtitle {
+    color: var(--text-dim);
+    margin-bottom: 2rem;
+    line-height: 1.6;
+  }
+  .steps {
+    text-align: left;
+    margin: 1.5rem 0;
+  }
+  .step {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .step:last-child { border-bottom: none; }
+  .step-icon {
+    color: var(--accent);
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+  }
+  .step-text { line-height: 1.5; }
+  .step-text strong { color: var(--text-bright); }
+  .btn {
+    display: inline-block;
+    margin-top: 1.5rem;
+    padding: 0.75rem 2rem;
+    background: var(--accent);
+    color: var(--bg);
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    font-size: 0.9rem;
+    border: none;
+    border-radius: 6px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.9; }
+  .links {
+    margin-top: 2rem;
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .links a {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-family: 'Space Mono', monospace;
+    transition: color 0.2s;
+  }
+  .links a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<a href="/" class="logo">cullit<span>.io</span></a>
+
+<div class="card">
+  <div class="check">&#x2705;</div>
+  <h1>Setup Complete</h1>
+  <p class="subtitle">The Cullit GitHub App is now installed on your repositories. Release notes will be generated automatically.</p>
+
+  <div class="steps">
+    <div class="step">
+      <span class="step-icon">&#x2192;</span>
+      <div class="step-text"><strong>Push a tag</strong> to any connected repository to trigger release notes generation.</div>
+    </div>
+    <div class="step">
+      <span class="step-icon">&#x2192;</span>
+      <div class="step-text"><strong>Publish a release</strong> on GitHub and Cullit will automatically fill in the release notes.</div>
+    </div>
+    <div class="step">
+      <span class="step-icon">&#x2192;</span>
+      <div class="step-text"><strong>That&rsquo;s it.</strong> No config files, no CI changes, no API keys needed for template-based notes.</div>
+    </div>
+  </div>
+
+  <a href="docs.html#github-app" class="btn">View Documentation &rarr;</a>
+
+  <div class="links">
+    <a href="/">Home</a>
+    <a href="docs.html">Docs</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="https://github.com/mttaylor/cullit" target="_blank">GitHub</a>
+  </div>
+</div>
+
+</body>
+</html>

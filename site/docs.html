@@ -199,6 +199,8 @@
 
   <h4>Integrations</h4>
   <a href="#github-action">GitHub Action</a>
+  <a href="#github-app">GitHub App</a>
+  <a href="#multi-repo">Multi-Repo</a>
   <a href="#jira">Jira</a>
   <a href="#linear">Linear</a>
 
@@ -212,6 +214,7 @@
   <a href="#library-usage">Library Usage</a>
   <a href="#release-advisor">Release Advisor</a>
   <a href="#api-server">API Server</a>
+  <a href="#web-dashboard">Web Dashboard</a>
   <a href="#real-world">Real-World Walkthrough</a>
 </aside>
 
@@ -485,6 +488,69 @@
   </tbody>
 </table>
 
+<h3 id="github-app">GitHub App</h3>
+<p>The <strong>Cullit GitHub App</strong> auto-generates release notes when you push a tag or publish a release &mdash; no CI config needed. Install it from the GitHub Marketplace and it just works.</p>
+
+<p><strong>How it works:</strong></p>
+<ol style="color:var(--text); margin:0.5rem 0 1rem 1.5rem;">
+  <li>You push a tag or publish a GitHub Release</li>
+  <li>The App receives a webhook, clones your repo, and runs the Cullit pipeline</li>
+  <li>Release notes are created or updated on your GitHub Release</li>
+</ol>
+
+<p><strong>Self-hosting:</strong></p>
+<pre><code><span class="cmt"># docker-compose.yml</span>
+<span class="key">services</span>:
+  <span class="key">app</span>:
+    <span class="key">build</span>:
+      <span class="key">context</span>: <span class="str">.</span>
+      <span class="key">dockerfile</span>: <span class="str">packages/app/Dockerfile</span>
+    <span class="key">ports</span>: [<span class="str">"3001:3001"</span>]
+    <span class="key">environment</span>:
+      <span class="key">GITHUB_APP_ID</span>: <span class="val">${GITHUB_APP_ID}</span>
+      <span class="key">GITHUB_APP_PRIVATE_KEY</span>: <span class="val">${GITHUB_APP_PRIVATE_KEY}</span>
+      <span class="key">GITHUB_WEBHOOK_SECRET</span>: <span class="val">${GITHUB_WEBHOOK_SECRET}</span></code></pre>
+
+<p><strong>Environment variables:</strong></p>
+<table>
+  <thead><tr><th>Variable</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>GITHUB_APP_ID</code></td><td>GitHub App ID from settings</td></tr>
+    <tr><td><code>GITHUB_APP_PRIVATE_KEY</code></td><td>PEM private key (base64 or raw with \n)</td></tr>
+    <tr><td><code>GITHUB_WEBHOOK_SECRET</code></td><td>Webhook signature secret</td></tr>
+    <tr><td><code>CULLIT_APP_PORT</code></td><td>Port (default: 3001)</td></tr>
+  </tbody>
+</table>
+
+<div class="tip">The GitHub App uses template-based generation by default (no AI key required). To enable AI-powered notes, install <code>@cullit/pro</code> and provide an AI provider API key.</div>
+
+<h3 id="multi-repo">Multi-Repo Aggregation</h3>
+<p>Aggregate release notes across multiple repositories into a single changelog &mdash; ideal for monorepo-adjacent setups, platform teams, or microservices.</p>
+
+<pre><code><span class="cmt"># .cullit.yml</span>
+<span class="key">source</span>:
+  <span class="key">type</span>: <span class="str">multi-repo</span>
+
+<span class="key">repos</span>:
+  - <span class="key">url</span>: <span class="str">https://github.com/acme/api.git</span>
+    <span class="key">name</span>: <span class="str">API</span>
+  - <span class="key">url</span>: <span class="str">https://github.com/acme/web.git</span>
+    <span class="key">name</span>: <span class="str">Web</span>
+  - <span class="key">path</span>: <span class="str">../shared-lib</span>
+    <span class="key">name</span>: <span class="str">Shared</span></code></pre>
+
+<p><strong>CLI usage:</strong></p>
+<pre><code><span class="cmd">cullit</span> generate <span class="flag">--source</span> <span class="val">multi-repo</span> <span class="flag">--from</span> <span class="val">v1.0.0</span> <span class="flag">--to</span> <span class="val">v1.1.0</span></code></pre>
+
+<p><strong>GitHub Action:</strong></p>
+<pre><code>- <span class="key">uses</span>: <span class="str">mttaylor/cullit@main</span>
+  <span class="key">with</span>:
+    <span class="key">source</span>: <span class="str">multi-repo</span>
+    <span class="key">from</span>: <span class="str">v1.0.0</span>
+    <span class="key">config</span>: <span class="str">.cullit.yml</span></code></pre>
+
+<p>Each repo can specify its own <code>from</code>/<code>to</code> refs. Commits are tagged with <code>[repo-name]</code> prefix for traceability. Both local paths and remote URLs are supported (remote repos are shallow-cloned).</p>
+
 <h3 id="jira">Jira Integration</h3>
 <p>Cullit can use Jira as a <strong>primary source</strong> (replace git) or as <strong>enrichment</strong> (add ticket context to git commits).</p>
 
@@ -644,6 +710,26 @@ console.log(advisory.breakdown);       <span class="cmt">// { features: 4, fixes
     <tr><td><code>RATE_LIMIT</code></td><td>Requests per minute per IP</td><td><code>30</code></td></tr>
   </tbody>
 </table>
+
+<h3 id="web-dashboard">Web Dashboard</h3>
+<p>Cullit includes a browser-based dashboard at <a href="dashboard.html" style="color:var(--accent)">dashboard.html</a> for visually generating release notes without the CLI.</p>
+
+<p><strong>Features:</strong></p>
+<ul style="margin:0.5rem 0 1rem 1.5rem;">
+  <li>Point-and-click configuration (provider, audience, tone, format)</li>
+  <li>Real-time pipeline output preview</li>
+  <li>Copy-to-clipboard export</li>
+  <li>Connects to the <a href="#api-server" style="color:var(--accent)">API Server</a></li>
+</ul>
+
+<p><strong>Quick start:</strong></p>
+<pre><code><span class="cmt"># Start the API server</span>
+<span class="cmd">node</span> packages/api/dist/index.js
+
+<span class="cmt"># Open dashboard in your browser</span>
+<span class="cmd">open</span> site/dashboard.html</code></pre>
+
+<div class="tip">The dashboard connects to <code>http://localhost:3000</code> by default. Set the API URL in the dashboard settings if your API runs elsewhere.</div>
 
 <!-- ============================================ -->
 <h2 id="real-world">Real-World Walkthrough</h2>

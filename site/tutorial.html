@@ -1447,6 +1447,83 @@
 
   <div class="section-divider"></div>
 
+  <!-- BONUS: GITHUB APP -->
+  <div class="tutorial-step" id="step-github-app">
+    <div class="step-header">
+      <div class="step-number">&#x1f310;</div>
+      <h2>Bonus: GitHub App</h2>
+    </div>
+    <div class="step-body">
+      <p>Skip CI config entirely &mdash; install the <strong>Cullit GitHub App</strong> and get automatic release notes on every tag push or release publish.</p>
+
+      <div class="callout" style="margin:1rem 0;">
+        <strong>How it works:</strong> Push a tag &rarr; App receives webhook &rarr; Clones your repo &rarr; Generates notes &rarr; Creates GitHub Release. Zero config.
+      </div>
+
+      <p>Self-host with Docker:</p>
+      <div class="terminal">
+        <div class="terminal-bar"><span class="terminal-title">Self-host the GitHub App</span></div>
+        <div class="terminal-body">
+<span class="t-comment"># Set your app credentials</span><br>
+<span class="t-dim">$ </span><span class="t-cmd">export</span> GITHUB_APP_ID=12345<br>
+<span class="t-dim">$ </span><span class="t-cmd">export</span> GITHUB_APP_PRIVATE_KEY=$(base64 private-key.pem)<br>
+<span class="t-dim">$ </span><span class="t-cmd">export</span> GITHUB_WEBHOOK_SECRET=your-secret<br>
+<br>
+<span class="t-comment"># Launch</span><br>
+<span class="t-dim">$ </span><span class="t-cmd">docker compose</span> up app<br>
+<span class="t-output">  Cullit GitHub App v1.1.0</span><br>
+<span class="t-output">  http://localhost:3001</span>
+        </div>
+      </div>
+
+      <p style="margin-top:1rem;"><a href="docs.html#github-app" style="color:var(--accent)">Full GitHub App docs &rarr;</a></p>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- BONUS: MULTI-REPO -->
+  <div class="tutorial-step" id="step-multi-repo">
+    <div class="step-header">
+      <div class="step-number">&#x1f4e6;</div>
+      <h2>Bonus: Multi-Repo Aggregation</h2>
+    </div>
+    <div class="step-body">
+      <p>Managing multiple repos? Aggregate release notes across all of them into a single changelog.</p>
+
+      <div class="terminal">
+        <div class="terminal-bar"><span class="terminal-title">.cullit.yml</span></div>
+        <div class="terminal-body">
+<span class="t-key">source</span>:<br>
+&nbsp;&nbsp;<span class="t-key">type</span>: <span class="t-str">multi-repo</span><br>
+<br>
+<span class="t-key">repos</span>:<br>
+&nbsp;&nbsp;- <span class="t-key">url</span>: <span class="t-str">https://github.com/acme/api.git</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-key">name</span>: <span class="t-str">API</span><br>
+&nbsp;&nbsp;- <span class="t-key">url</span>: <span class="t-str">https://github.com/acme/web.git</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-key">name</span>: <span class="t-str">Web</span><br>
+&nbsp;&nbsp;- <span class="t-key">path</span>: <span class="t-str">../shared-lib</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-key">name</span>: <span class="t-str">Shared</span>
+        </div>
+      </div>
+
+      <div class="terminal" style="margin-top:1rem;">
+        <div class="terminal-bar"><span class="terminal-title">Run it</span></div>
+        <div class="terminal-body">
+<span class="t-dim">$ </span><span class="t-cmd">cullit</span> generate --source multi-repo --from v1.0.0<br>
+<span class="t-output">  &raquo; Collecting commits from 3 repositories</span><br>
+<span class="t-output">  &raquo; Found 47 commits across API, Web, Shared</span><br>
+<span class="t-output">  &raquo; Generated 12 change entries</span><br>
+<span class="t-output">  &#x2713; Done in 3.2s</span>
+        </div>
+      </div>
+
+      <p style="margin-top:1rem;"><a href="docs.html#multi-repo" style="color:var(--accent)">Full multi-repo docs &rarr;</a></p>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
   <!-- WHAT'S NEXT -->
   <div class="tutorial-step">
     <div class="step-header">
@@ -1481,6 +1558,18 @@
           <tr>
             <td>Docker deployment</td>
             <td><a href="docs.html#api-server" style="color:var(--accent)">Docker docs &rarr;</a></td>
+          </tr>
+          <tr>
+            <td>GitHub App (auto-generate on push)</td>
+            <td><a href="docs.html#github-app" style="color:var(--accent)">GitHub App docs &rarr;</a></td>
+          </tr>
+          <tr>
+            <td>Multi-repo aggregation</td>
+            <td><a href="docs.html#multi-repo" style="color:var(--accent)">Multi-repo docs &rarr;</a></td>
+          </tr>
+          <tr>
+            <td>Web Dashboard</td>
+            <td><a href="docs.html#web-dashboard" style="color:var(--accent)">Dashboard docs &rarr;</a></td>
           </tr>
           <tr>
             <td>Report issues or contribute</td>

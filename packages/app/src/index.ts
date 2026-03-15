@@ -32,6 +32,46 @@ const APP_ID = process.env['GITHUB_APP_ID'] || '';
 const PRIVATE_KEY = decodeKey(process.env['GITHUB_APP_PRIVATE_KEY'] || '');
 const WEBHOOK_SECRET = process.env['GITHUB_WEBHOOK_SECRET'] || '';
 const PORT = parseInt(process.env['CULLIT_APP_PORT'] || '3001', 10);
+const RATE_LIMIT = parseInt(process.env['CULLIT_APP_RATE_LIMIT'] || '60', 10); // per minute per IP
+const RATE_WINDOW = 60_000;
+
+// AI provider config (requires @cullit/pro)
+const AI_PROVIDER = process.env['CULLIT_AI_PROVIDER'] || 'none';
+const AI_MODEL = process.env['CULLIT_AI_MODEL'] || undefined;
+const AI_API_KEY = process.env['CULLIT_AI_API_KEY'] || undefined;
+
+// --- Rate limiter (per-IP sliding window) ---
+const ipTimestamps = new Map<string, number[]>();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, times] of ipTimestamps) {
+    const active = times.filter(t => now - t < RATE_WINDOW);
+    if (active.length === 0) ipTimestamps.delete(ip);
+    else ipTimestamps.set(ip, active);
+  }
+}, 120_000).unref();
+
+function checkRateLimit(req: IncomingMessage, res: ServerResponse): boolean {
+  const ip = req.socket.remoteAddress || 'unknown';
+  const now = Date.now();
+  const timestamps = ipTimestamps.get(ip) || [];
+  const recent = timestamps.filter(t => now - t < RATE_WINDOW);
+
+  if (recent.length >= RATE_LIMIT) {
+    json(res, 429, { error: 'Too many requests. Try again later.' });
+    return false;
+  }
+
+  if (!ipTimestamps.has(ip) && ipTimestamps.size >= 10_000) {
+    json(res, 503, { error: 'Server is busy. Try again later.' });
+    return false;
+  }
+
+  recent.push(now);
+  ipTimestamps.set(ip, recent);
+  return true;
+}
 
 function decodeKey(key: string): string {
   // Support base64-encoded PEM keys (common in CI/Docker)
@@ -205,7 +245,7 @@ async function handleRelease(payload: any): Promise<void> {
     repoDir = cloneRepo(owner, repo, token);
 
     const config: CullConfig = {
-      ai: { provider: 'none', audience: 'developer', tone: 'professional', categories: DEFAULT_CATEGORIES },
+      ai: { provider: AI_PROVIDER, model: AI_MODEL, apiKey: AI_API_KEY, audience: 'developer', tone: 'professional', categories: DEFAULT_CATEGORIES },
       source: { type: 'local', repoPath: repoDir },
       publish: [],
     };
@@ -244,7 +284,7 @@ async function handlePush(payload: any): Promise<void> {
     repoDir = cloneRepo(owner, repo, token);
 
     const config: CullConfig = {
-      ai: { provider: 'none', audience: 'developer', tone: 'professional', categories: DEFAULT_CATEGORIES },
+      ai: { provider: AI_PROVIDER, model: AI_MODEL, apiKey: AI_API_KEY, audience: 'developer', tone: 'professional', categories: DEFAULT_CATEGORIES },
       source: { type: 'local', repoPath: repoDir },
       publish: [],
     };
@@ -262,11 +302,23 @@ function handleInstallation(payload: any): void {
   const repos = payload.repositories?.map((r: any) => r.full_name) || [];
 
   console.log(`Installation ${action}: ${account} (${repos.length} repos)`);
+  metrics.installations++;
 
   if (action === 'created') {
     console.log('  Repos:', repos.join(', '));
   }
 }
+
+// --- Metrics ---
+
+const metrics = {
+  webhooksReceived: 0,
+  releasesProcessed: 0,
+  pushesProcessed: 0,
+  installations: 0,
+  errors: 0,
+  startedAt: Date.now(),
+};
 
 // --- HTTP Server ---
 
@@ -296,10 +348,22 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  if (req.method === 'GET' && req.url === '/metrics') {
+    json(res, 200, {
+      ...metrics,
+      uptimeMs: Date.now() - metrics.startedAt,
+    });
+    return;
+  }
+
   if (req.method !== 'POST' || req.url !== '/webhook') {
     json(res, 404, { error: 'Not found' });
     return;
   }
+
+  if (!checkRateLimit(req, res)) return;
+
+  metrics.webhooksReceived++;
 
   try {
     const body = await readBody(req);
@@ -322,12 +386,16 @@ const server = createServer(async (req, res) => {
     // Process in background (don't block the response)
     switch (event) {
       case 'release':
-        handleRelease(payload).catch(err =>
-          console.error('Release handler error:', err.message));
+        handleRelease(payload).then(() => { metrics.releasesProcessed++; }).catch(err => {
+          metrics.errors++;
+          console.error('Release handler error:', err.message);
+        });
         break;
       case 'push':
-        handlePush(payload).catch(err =>
-          console.error('Push handler error:', err.message));
+        handlePush(payload).then(() => { metrics.pushesProcessed++; }).catch(err => {
+          metrics.errors++;
+          console.error('Push handler error:', err.message);
+        });
         break;
       case 'installation':
       case 'installation_repositories':
@@ -337,6 +405,7 @@ const server = createServer(async (req, res) => {
         console.log(`Ignored event: ${event}`);
     }
   } catch (err) {
+    metrics.errors++;
     console.error('Webhook error:', (err as Error).message);
     json(res, 500, { error: 'Internal server error' });
   }
@@ -353,6 +422,7 @@ if (isDirectRun) {
   ║                                           ║
   ║  POST /webhook    GitHub events           ║
   ║  GET  /health     Health check            ║
+  ║  GET  /metrics    Usage metrics           ║
   ╚═══════════════════════════════════════════╝
     `);
   });

@@ -229,4 +229,37 @@ publish:
       expect(config.publish[2].databaseId).toBe('abc-def');
     });
   });
+
+  it('validates repos array with valid entries', () => {
+    withConfigFile(`
+source:
+  type: multi-repo
+
+repos:
+  - url: https://github.com/acme/api.git
+    name: API
+  - path: ../shared
+    name: Shared
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.repos).toHaveLength(2);
+      expect(config.repos![0].url).toBe('https://github.com/acme/api.git');
+      expect(config.repos![0].name).toBe('API');
+      expect(config.repos![1].path).toBe('../shared');
+    });
+  });
+
+  it('rejects repos entries missing both url and path', () => {
+    expect(() => {
+      withConfigFile(`
+source:
+  type: multi-repo
+
+repos:
+  - name: broken
+`, (dir) => {
+        loadConfig(dir);
+      });
+    }).toThrow('repos[0] must have either "url" or "path"');
+  });
 });

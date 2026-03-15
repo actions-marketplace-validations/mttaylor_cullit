@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import type { CullConfig, PublishTarget } from './types';
+import type { CullConfig, PublishTarget, RepoSource } from './types';
 
 export type { AIProvider, Audience, Tone, OutputFormat, PublisherType, EnrichmentType, AIConfig, SourceConfig, PublishTarget, JiraConfig, LinearConfig, OpenClawConfig, GitLabConfig, BitbucketConfig, ConfluenceConfig, NotionConfig, CullConfig, RepoSource } from './types';
 
@@ -191,8 +191,29 @@ function mergeWithDefaults(parsed: Record<string, any>): CullConfig {
     bitbucket: parsed.bitbucket,
     confluence: parsed.confluence,
     notion: parsed.notion,
-    ...(parsed.repos ? { repos: parsed.repos } : {}),
+    ...(parsed.repos ? { repos: validateRepos(parsed.repos) } : {}),
   };
+}
+
+function validateRepos(repos: any): RepoSource[] {
+  if (!Array.isArray(repos)) {
+    throw new Error('Config error: "repos" must be an array');
+  }
+  return repos.map((repo: any, i: number) => {
+    if (!repo || typeof repo !== 'object') {
+      throw new Error(`Config error: repos[${i}] must be an object`);
+    }
+    if (!repo.url && !repo.path) {
+      throw new Error(`Config error: repos[${i}] must have either "url" or "path"`);
+    }
+    if (repo.url && typeof repo.url !== 'string') {
+      throw new Error(`Config error: repos[${i}].url must be a string`);
+    }
+    if (repo.path && typeof repo.path !== 'string') {
+      throw new Error(`Config error: repos[${i}].path must be a string`);
+    }
+    return repo as RepoSource;
+  });
 }
 
 /**

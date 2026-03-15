@@ -19,8 +19,8 @@ describe('MultiRepoCollector', () => {
       from: 'v1.0.0',
       to: 'v1.1.0',
       commits: [
-        { hash: 'abc123', message: 'feat: add feature', author: 'matt', date: '2025-01-15T10:00:00Z' },
-        { hash: 'def456', message: 'fix: bug fix', author: 'matt', date: '2025-01-14T10:00:00Z' },
+        { hash: 'abc123', shortHash: 'abc123', message: 'feat: add feature', author: 'matt', date: '2025-01-15T10:00:00Z' },
+        { hash: 'def456', shortHash: 'def456', message: 'fix: bug fix', author: 'matt', date: '2025-01-14T10:00:00Z' },
       ],
       filesChanged: 5,
     });
@@ -48,8 +48,8 @@ describe('MultiRepoCollector', () => {
         return {
           from: 'v1.0.0', to: 'v1.1.0',
           commits: [
-            { hash: 'a1', message: 'repo1 old', author: 'a', date: '2025-01-10T10:00:00Z' },
-            { hash: 'a2', message: 'repo1 new', author: 'a', date: '2025-01-20T10:00:00Z' },
+            { hash: 'a1', shortHash: 'a1', message: 'repo1 old', author: 'a', date: '2025-01-10T10:00:00Z' },
+            { hash: 'a2', shortHash: 'a2', message: 'repo1 new', author: 'a', date: '2025-01-20T10:00:00Z' },
           ],
           filesChanged: 3,
         };
@@ -57,7 +57,7 @@ describe('MultiRepoCollector', () => {
       return {
         from: 'v1.0.0', to: 'v1.1.0',
         commits: [
-          { hash: 'b1', message: 'repo2 mid', author: 'b', date: '2025-01-15T10:00:00Z' },
+          { hash: 'b1', shortHash: 'b1', message: 'repo2 mid', author: 'b', date: '2025-01-15T10:00:00Z' },
         ],
         filesChanged: 2,
       };
@@ -84,7 +84,7 @@ describe('MultiRepoCollector', () => {
 
     const collectSpy = vi.spyOn(GitCollector.prototype, 'collect').mockResolvedValue({
       from: 'v2.0.0', to: 'v2.1.0',
-      commits: [{ hash: 'x1', message: 'custom range', author: 'a', date: '2025-01-15T10:00:00Z' }],
+      commits: [{ hash: 'x1', shortHash: 'x1', message: 'custom range', author: 'a', date: '2025-01-15T10:00:00Z' }],
       filesChanged: 1,
     });
 
@@ -103,7 +103,7 @@ describe('MultiRepoCollector', () => {
 
     vi.spyOn(GitCollector.prototype, 'collect').mockResolvedValue({
       from: 'v1.0.0', to: 'HEAD',
-      commits: [{ hash: 'z1', message: 'test', author: 'a', date: '2025-01-15T10:00:00Z' }],
+      commits: [{ hash: 'z1', shortHash: 'z1', message: 'test', author: 'a', date: '2025-01-15T10:00:00Z' }],
       filesChanged: 1,
     });
 
@@ -148,5 +148,32 @@ describe('MultiRepoCollector', () => {
   it('is registered as multi-repo collector', async () => {
     const { hasCollector } = await import('../src/index');
     expect(hasCollector('multi-repo')).toBe(true);
+  });
+
+  it('preserves shortHash field in tagged commits', async () => {
+    const { MultiRepoCollector } = await import('../src/collectors/multi-repo');
+    const { GitCollector } = await import('../src/collectors/git');
+
+    vi.spyOn(GitCollector.prototype, 'collect').mockResolvedValue({
+      from: 'v1.0.0', to: 'HEAD',
+      commits: [{ hash: 'abcdef1234567890', shortHash: 'abcdef1', message: 'feat: something', author: 'a', date: '2025-01-15T10:00:00Z' }],
+      filesChanged: 1,
+    });
+
+    const collector = new MultiRepoCollector([{ path: '/repo' }]);
+    const result = await collector.collect('v1.0.0', 'HEAD');
+
+    expect(result.commits[0].shortHash).toBe('abcdef1');
+    expect(result.commits[0].hash).toBe('abcdef1234567890');
+  });
+
+  it('cleans up temp dirs even when collect fails', async () => {
+    const { MultiRepoCollector } = await import('../src/collectors/multi-repo');
+    const { GitCollector } = await import('../src/collectors/git');
+
+    vi.spyOn(GitCollector.prototype, 'collect').mockRejectedValue(new Error('git failed'));
+
+    const collector = new MultiRepoCollector([{ path: '/repo', name: 'test' }]);
+    await expect(collector.collect('v1', 'v2')).rejects.toThrow('git failed');
   });
 });

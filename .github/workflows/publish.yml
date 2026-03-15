@@ -64,7 +64,7 @@ jobs:
       - name: Update package versions
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
-          for pkg in . packages/config packages/core packages/cli packages/api packages/pro; do
+          for pkg in . packages/config packages/core packages/cli packages/api packages/pro packages/app; do
             jq --arg v "$VERSION" '.version = $v' "$pkg/package.json" > tmp.json && mv tmp.json "$pkg/package.json"
           done
           sed -i "s/VERSION = '.*'/VERSION = '$VERSION'/" packages/core/src/constants.ts

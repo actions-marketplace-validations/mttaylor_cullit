@@ -9,7 +9,7 @@ url: https://cullit.io
 hook_attributes:
   url: https://app.cullit.io/webhook
   active: true
-setup_url: https://cullit.io/setup
+setup_url: https://cullit.io/setup.html
 redirect_url: https://cullit.io/callback
 public: true
 
