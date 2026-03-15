@@ -14,7 +14,7 @@
  */
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
-import { runPipeline, VERSION, DEFAULT_CATEGORIES } from '@cullit/core';
+import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS } from '@cullit/core';
 import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget } from '@cullit/core';
 import { openApiSpec } from './openapi.js';
 
@@ -103,6 +103,40 @@ async function readBody(req: IncomingMessage): Promise<string> {
   return Buffer.concat(chunks).toString('utf-8');
 }
 
+// --- Pipeline result cache (LRU + TTL) ---
+
+interface CacheEntry {
+  result: any;
+  expiresAt: number;
+}
+
+const CACHE_TTL = parseInt(process.env['CACHE_TTL'] || '300000', 10); // 5 minutes default
+const MAX_CACHE_SIZE = parseInt(process.env['MAX_CACHE_SIZE'] || '100', 10);
+const pipelineCache = new Map<string, CacheEntry>();
+
+function getCacheKey(from: string, to: string, config: CullConfig): string {
+  return `${from}:${to}:${config.ai.provider}:${config.ai.model || ''}:${config.ai.audience}:${config.ai.tone}:${config.source.type}`;
+}
+
+function getCachedResult(key: string): any | null {
+  const entry = pipelineCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    pipelineCache.delete(key);
+    return null;
+  }
+  return entry.result;
+}
+
+function setCachedResult(key: string, result: any): void {
+  // LRU eviction: remove oldest entry if at capacity
+  if (pipelineCache.size >= MAX_CACHE_SIZE && !pipelineCache.has(key)) {
+    const oldest = pipelineCache.keys().next().value;
+    if (oldest) pipelineCache.delete(oldest);
+  }
+  pipelineCache.set(key, { result, expiresAt: Date.now() + CACHE_TTL });
+}
+
 // --- Routes ---
 
 async function handleHealth(_req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -160,13 +194,13 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
     return;
   }
 
-  const VALID_PROVIDERS = ['anthropic', 'openai', 'gemini', 'ollama', 'openclaw', 'none'];
+  const VALID_PROVIDERS = AI_PROVIDERS as readonly string[];
   if (body.provider && !VALID_PROVIDERS.includes(body.provider)) {
     json(res, 400, { error: `Invalid provider. Must be one of: ${VALID_PROVIDERS.join(', ')}` });
     return;
   }
 
-  const VALID_FORMATS = ['markdown', 'html', 'json'];
+  const VALID_FORMATS = OUTPUT_FORMATS as readonly string[];
   if (body.format && !VALID_FORMATS.includes(body.format)) {
     json(res, 400, { error: `Invalid format. Must be one of: ${VALID_FORMATS.join(', ')}` });
     return;
@@ -207,9 +241,17 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
   const to = body.to || 'HEAD';
 
   try {
+    // Check cache first
+    const cacheKey = getCacheKey(body.from, to, config);
+    const cached = getCachedResult(cacheKey);
+    if (cached) {
+      json(res, 200, cached);
+      return;
+    }
+
     const result = await runPipeline(body.from, to, config, { format, dryRun: true });
 
-    json(res, 200, {
+    const response = {
       version: result.notes.version,
       date: result.notes.date,
       summary: result.notes.summary,
@@ -219,7 +261,10 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
       formatted: result.formatted,
       metadata: result.notes.metadata,
       duration: result.duration,
-    });
+    };
+
+    setCachedResult(cacheKey, response);
+    json(res, 200, response);
   } catch (err) {
     console.error('Pipeline error:', (err as Error).message);
     json(res, 500, { error: 'Generation failed. Check server logs for details.' });

@@ -12,7 +12,7 @@
  * https://cullit.io
  */
 
-import { runPipeline, VERSION, createLogger, analyzeReleaseReadiness, resolveLicense } from '@cullit/core';
+import { runPipeline, VERSION, createLogger, analyzeReleaseReadiness, resolveLicense, AI_PROVIDERS, AUDIENCES, TONES, SOURCE_TYPES } from '@cullit/core';
 import { loadConfig } from '@cullit/config';
 import { getLatestTag, getRecentTags } from '@cullit/core';
 import type { OutputFormat, LogLevel } from '@cullit/core';
@@ -194,10 +194,10 @@ async function runGenerate(from: string, to: string, opts: Record<string, string
     return;
   }
 
-  // CLI overrides with validation
-  const VALID_PROVIDERS = ['anthropic', 'openai', 'gemini', 'ollama', 'openclaw', 'none'];
-  const VALID_AUDIENCES = ['developer', 'end-user', 'executive'];
-  const VALID_SOURCES = ['local', 'jira', 'linear'];
+  // CLI overrides with validation (uses well-known constants from core)
+  const VALID_PROVIDERS = AI_PROVIDERS as readonly string[];
+  const VALID_AUDIENCES = AUDIENCES as readonly string[];
+  const VALID_SOURCES = SOURCE_TYPES as readonly string[];
 
   if (opts.provider) {
     if (!VALID_PROVIDERS.includes(opts.provider)) {
@@ -332,10 +332,10 @@ function ask(rl: ReturnType<typeof createInterface>, question: string): Promise<
 async function interactiveInit() {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
 
-  const VALID_PROVIDERS = ['anthropic', 'openai', 'gemini', 'ollama', 'openclaw', 'none'];
-  const VALID_SOURCES = ['local', 'jira', 'linear'];
-  const VALID_AUDIENCES = ['developer', 'end-user', 'executive'];
-  const VALID_TONES = ['professional', 'casual', 'terse'];
+  const VALID_PROVIDERS = AI_PROVIDERS as readonly string[];
+  const VALID_SOURCES = SOURCE_TYPES as readonly string[];
+  const VALID_AUDIENCES = AUDIENCES as readonly string[];
+  const VALID_TONES = TONES as readonly string[];
   const VALID_ENRICHMENTS = ['jira', 'linear', 'both', 'none'];
 
   console.log('\n  Cullit — Project Setup\n');

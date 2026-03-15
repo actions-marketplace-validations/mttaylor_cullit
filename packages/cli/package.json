@@ -1,6 +1,6 @@
 {
   "name": "cullit",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "type": "module",
   "description": "Cull the noise from your releases. AI-powered release notes from the CLI.",
   "license": "MIT",

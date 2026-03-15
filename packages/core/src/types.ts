@@ -62,13 +62,8 @@ export interface EnrichedContext {
 
 // --- Generated Output ---
 
-export type ChangeCategory =
-  | 'features'
-  | 'fixes'
-  | 'breaking'
-  | 'improvements'
-  | 'chores'
-  | 'other';
+// Open type — well-known values in constants.ts
+export type ChangeCategory = string;
 
 export interface ChangeEntry {
   description: string;

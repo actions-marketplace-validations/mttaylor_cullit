@@ -16,6 +16,7 @@ import {
   registerGenerator,
   registerPublisher,
 } from '@cullit/core';
+import type { CullConfig, PublishTarget } from '@cullit/core';
 
 import { AIGenerator } from './generators/ai';
 import { JiraCollector } from './collectors/jira';
@@ -32,18 +33,24 @@ for (const provider of AI_PROVIDERS) {
   registerGenerator(provider, (openclawConfig?: any) => new AIGenerator(openclawConfig));
 }
 
-// --- Register pro collectors ---
-registerCollector('jira', (config: any) => new JiraCollector(config));
-registerCollector('linear', (apiKey?: string) => new LinearCollector(apiKey));
+// --- Register pro collectors (uniform: factory(config: CullConfig)) ---
+registerCollector('jira', (config: CullConfig) => {
+  if (!config.jira) throw new Error('Jira source requires jira config in .cullit.yml');
+  return new JiraCollector(config.jira);
+});
+registerCollector('linear', (config: CullConfig) => new LinearCollector(config.linear?.apiKey));
 
-// --- Register pro enrichers ---
-registerEnricher('jira', (config: any) => new JiraEnricher(config));
-registerEnricher('linear', (apiKey?: string) => new LinearEnricher(apiKey));
+// --- Register pro enrichers (uniform: factory(config: CullConfig)) ---
+registerEnricher('jira', (config: CullConfig) => {
+  if (!config.jira) throw new Error('Jira enrichment requires jira config in .cullit.yml');
+  return new JiraEnricher(config.jira);
+});
+registerEnricher('linear', (config: CullConfig) => new LinearEnricher(config.linear?.apiKey));
 
-// --- Register pro publishers ---
-registerPublisher('slack', (webhookUrl: string) => new SlackPublisher(webhookUrl));
-registerPublisher('discord', (webhookUrl: string) => new DiscordPublisher(webhookUrl));
-registerPublisher('github-release', () => new GitHubReleasePublisher());
+// --- Register pro publishers (uniform: factory(target: PublishTarget)) ---
+registerPublisher('slack', (target: PublishTarget) => new SlackPublisher(target.webhookUrl!));
+registerPublisher('discord', (target: PublishTarget) => new DiscordPublisher(target.webhookUrl!));
+registerPublisher('github-release', (_target: PublishTarget) => new GitHubReleasePublisher());
 
 // Re-export classes for direct usage
 export { AIGenerator } from './generators/ai';

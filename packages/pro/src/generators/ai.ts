@@ -87,13 +87,13 @@ export class AIGenerator implements Generator {
         ).join('\n')
       : 'No enrichment data available.';
 
-    const audienceInstructions = {
+    const audienceInstructions: Record<string, string> = {
       'developer': 'Write for developers. Include technical details, API changes, and migration notes.',
       'end-user': 'Write for end users. Use plain language. Focus on benefits and behavior changes. No jargon.',
       'executive': 'Write a brief executive summary. Focus on business impact, key metrics, and strategic changes.',
     };
 
-    const toneInstructions = {
+    const toneInstructions: Record<string, string> = {
       'professional': 'Tone: professional and clear.',
       'casual': 'Tone: conversational and approachable, but still informative.',
       'terse': 'Tone: minimal and direct. Short bullet points only.',

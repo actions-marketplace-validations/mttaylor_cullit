@@ -2,12 +2,13 @@
 // Cullit Config Types
 // ============================================
 
-export type AIProvider = 'anthropic' | 'openai' | 'gemini' | 'ollama' | 'openclaw' | 'none';
-export type Audience = 'developer' | 'end-user' | 'executive';
-export type Tone = 'professional' | 'casual' | 'terse';
-export type OutputFormat = 'markdown' | 'html' | 'json';
-export type PublisherType = 'stdout' | 'github-release' | 'slack' | 'discord' | 'file';
-export type EnrichmentType = 'jira' | 'linear';
+// Open type system — use string for extensibility, well-known values in constants
+export type AIProvider = string;
+export type Audience = string;
+export type Tone = string;
+export type OutputFormat = string;
+export type PublisherType = string;
+export type EnrichmentType = string;
 
 export interface AIConfig {
   provider: AIProvider;
@@ -20,7 +21,7 @@ export interface AIConfig {
 }
 
 export interface SourceConfig {
-  type: 'local' | 'jira' | 'linear';
+  type: string;
   owner?: string;
   repo?: string;
   enrichment?: EnrichmentType[];
@@ -31,6 +32,7 @@ export interface PublishTarget {
   channel?: string;     // Slack channel
   webhookUrl?: string;  // Discord/Slack webhook
   path?: string;        // File output path
+  [key: string]: unknown; // Extensible for custom publishers
 }
 
 export interface JiraConfig {

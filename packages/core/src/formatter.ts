@@ -1,6 +1,23 @@
 import type { ReleaseNotes, OutputFormat, ChangeCategory } from './types';
 
-const CATEGORY_LABELS: Record<ChangeCategory, string> = {
+// --- Formatter Registry ---
+
+type FormatterFn = (notes: ReleaseNotes) => string;
+const formatters = new Map<string, FormatterFn>();
+
+export function registerFormatter(format: string, fn: FormatterFn): void {
+  formatters.set(format, fn);
+}
+
+export function getFormatter(format: string): FormatterFn | undefined {
+  return formatters.get(format);
+}
+
+export function listFormatters(): string[] {
+  return Array.from(formatters.keys());
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
   features: '✨ Features',
   fixes: '🐛 Bug Fixes',
   breaking: '⚠️ Breaking Changes',
@@ -14,12 +31,8 @@ const CATEGORY_ORDER: ChangeCategory[] = [
 ];
 
 export function formatNotes(notes: ReleaseNotes, format: OutputFormat): string {
-  switch (format) {
-    case 'markdown': return formatMarkdown(notes);
-    case 'html': return formatHTML(notes);
-    case 'json': return JSON.stringify(notes, null, 2);
-    default: return formatMarkdown(notes);
-  }
+  const fn = formatters.get(format) || formatters.get('markdown')!;
+  return fn(notes);
 }
 
 function formatMarkdown(notes: ReleaseNotes): string {
@@ -114,3 +127,8 @@ function groupByCategory(notes: ReleaseNotes) {
   }
   return grouped;
 }
+
+// --- Register built-in formatters ---
+registerFormatter('markdown', formatMarkdown);
+registerFormatter('html', formatHTML);
+registerFormatter('json', (notes) => JSON.stringify(notes, null, 2));

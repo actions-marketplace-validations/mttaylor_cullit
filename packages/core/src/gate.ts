@@ -3,7 +3,12 @@
  *
  * Free tier (no key):  provider=none, publish to stdout/file only
  * Pro tier (with key): all providers, all publishers, all enrichments
+ *
+ * validateLicense() performs async remote validation with caching.
+ * resolveLicense() remains sync for quick format-only checks (display).
  */
+
+import { fetchWithTimeout } from './fetch';
 
 export type LicenseTier = 'free' | 'pro';
 
@@ -16,9 +21,13 @@ export interface LicenseStatus {
 const FREE_PROVIDERS = new Set(['none']);
 const FREE_PUBLISHERS = new Set(['stdout', 'file']);
 
+// --- Remote validation cache ---
+const LICENSE_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+let cachedValidation: { status: LicenseStatus; key: string; expiresAt: number } | null = null;
+
 /**
  * Resolve the user's license tier from CULLIT_API_KEY env var.
- * Validates the key format and caches verification result.
+ * Sync format-only check — use for display, not enforcement.
  */
 export function resolveLicense(): LicenseStatus {
   const key = process.env.CULLIT_API_KEY?.trim();
@@ -33,6 +42,68 @@ export function resolveLicense(): LicenseStatus {
   }
 
   return { tier: 'pro', valid: true };
+}
+
+/**
+ * Validate the license asynchronously with remote server validation.
+ * Falls back to format-only check if offline or no validation URL configured.
+ * Results are cached for 24 hours per key.
+ */
+export async function validateLicense(): Promise<LicenseStatus> {
+  const key = process.env.CULLIT_API_KEY?.trim();
+  const validationUrl = process.env.CULLIT_LICENSE_URL?.trim();
+
+  // No key — free tier, skip remote check
+  if (!key) {
+    return { tier: 'free', valid: true };
+  }
+
+  // Format check first
+  if (!/^clt_[a-zA-Z0-9]{32,}$/.test(key)) {
+    return { tier: 'free', valid: false, message: 'Invalid CULLIT_API_KEY format. Expected: clt_<key>' };
+  }
+
+  // Return cached result if still valid for this key
+  if (cachedValidation && cachedValidation.key === key && Date.now() < cachedValidation.expiresAt) {
+    return cachedValidation.status;
+  }
+
+  // No validation URL configured — fall back to format-only
+  if (!validationUrl) {
+    return { tier: 'pro', valid: true };
+  }
+
+  // Remote validation
+  try {
+    const res = await fetchWithTimeout(validationUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({ key }),
+    }, 10_000);
+
+    if (res.ok) {
+      const data = await res.json() as { valid?: boolean; tier?: string; message?: string };
+      const status: LicenseStatus = {
+        tier: data.tier === 'pro' ? 'pro' : 'free',
+        valid: data.valid !== false,
+        message: data.message,
+      };
+      cachedValidation = { status, key, expiresAt: Date.now() + LICENSE_CACHE_TTL };
+      return status;
+    }
+
+    // Server responded with error — key invalid
+    const status: LicenseStatus = {
+      tier: 'free',
+      valid: false,
+      message: 'License validation failed. Check your API key at https://cullit.io/pricing',
+    };
+    cachedValidation = { status, key, expiresAt: Date.now() + LICENSE_CACHE_TTL };
+    return status;
+  } catch {
+    // Network error — fall back to format-only (offline-friendly)
+    return { tier: 'pro', valid: true };
+  }
 }
 
 /**

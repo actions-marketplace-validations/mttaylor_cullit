@@ -74,3 +74,21 @@ export function hasPublisher(type: string): boolean {
 export function hasEnricher(type: string): boolean {
   return enrichers.has(type);
 }
+
+// --- Discoverability ---
+
+export function listCollectors(): string[] {
+  return Array.from(collectors.keys());
+}
+
+export function listEnrichers(): string[] {
+  return Array.from(enrichers.keys());
+}
+
+export function listGenerators(): string[] {
+  return Array.from(generators.keys());
+}
+
+export function listPublishers(): string[] {
+  return Array.from(publishers.keys());
+}

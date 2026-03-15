@@ -1,6 +1,6 @@
 {
   "name": "@cullit/config",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "type": "module",
   "description": "Config loader for Cullit — YAML config parsing with env var resolution.",
   "license": "MIT",
