@@ -137,3 +137,52 @@ export function upgradeMessage(feature: string): string {
          `   Get your API key at https://cullit.io/pricing\n` +
          `   Then set CULLIT_API_KEY in your environment.`;
 }
+
+// --- Usage Metering ---
+
+export interface UsageLimits {
+  generationsPerMonth: number;
+  maxProjects: number;
+}
+
+const TIER_LIMITS: Record<string, UsageLimits> = {
+  free: { generationsPerMonth: 10, maxProjects: 1 },
+  pro: { generationsPerMonth: 500, maxProjects: 5 },
+  team: { generationsPerMonth: 2000, maxProjects: 25 },
+  enterprise: { generationsPerMonth: Infinity, maxProjects: Infinity },
+};
+
+/**
+ * Get usage limits for a license tier.
+ */
+export function getTierLimits(tier: string): UsageLimits {
+  return TIER_LIMITS[tier] || TIER_LIMITS.free;
+}
+
+/**
+ * Report a generation event to the metering service.
+ * Non-blocking — failures are logged but never block the pipeline.
+ */
+export async function reportUsage(project: string = 'default'): Promise<void> {
+  const key = process.env.CULLIT_API_KEY?.trim();
+  const meterUrl = process.env.CULLIT_METER_URL?.trim();
+
+  if (!meterUrl || !key) return; // No metering configured
+
+  try {
+    await fetchWithTimeout(meterUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        event: 'generation',
+        project,
+        timestamp: new Date().toISOString(),
+      }),
+    }, 5_000);
+  } catch {
+    // Metering is best-effort — never block the pipeline
+  }
+}

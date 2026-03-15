@@ -7,6 +7,7 @@ export type {
   OpenClawConfig, AIProvider, Audience, Tone,
   SourceConfig, PublisherType, EnrichmentType,
   JiraConfig, LinearConfig,
+  GitLabConfig, BitbucketConfig, ConfluenceConfig, NotionConfig,
 } from './types';
 export {
   VERSION, DEFAULT_CATEGORIES, DEFAULT_MODELS,
@@ -24,8 +25,8 @@ export { formatNotes, registerFormatter, getFormatter, listFormatters } from './
 export { StdoutPublisher, FilePublisher } from './publishers/index';
 export { analyzeReleaseReadiness } from './advisor';
 export type { ReleaseAdvisory, SemverBump } from './advisor';
-export { resolveLicense, validateLicense, isProviderAllowed, isPublisherAllowed, isEnrichmentAllowed, upgradeMessage } from './gate';
-export type { LicenseTier, LicenseStatus } from './gate';
+export { resolveLicense, validateLicense, isProviderAllowed, isPublisherAllowed, isEnrichmentAllowed, upgradeMessage, getTierLimits, reportUsage } from './gate';
+export type { LicenseTier, LicenseStatus, UsageLimits } from './gate';
 export {
   registerCollector, registerEnricher, registerGenerator, registerPublisher,
   getCollector, getEnricher, getGenerator, getPublisher,

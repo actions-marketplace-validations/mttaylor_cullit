@@ -2,7 +2,7 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import type { CullConfig, PublishTarget } from './types';
 
-export type { AIProvider, Audience, Tone, OutputFormat, PublisherType, EnrichmentType, AIConfig, SourceConfig, PublishTarget, JiraConfig, LinearConfig, OpenClawConfig, CullConfig } from './types';
+export type { AIProvider, Audience, Tone, OutputFormat, PublisherType, EnrichmentType, AIConfig, SourceConfig, PublishTarget, JiraConfig, LinearConfig, OpenClawConfig, GitLabConfig, BitbucketConfig, ConfluenceConfig, NotionConfig, CullConfig } from './types';
 
 const DEFAULT_CATEGORIES = ['features', 'fixes', 'breaking', 'improvements', 'chores'];
 

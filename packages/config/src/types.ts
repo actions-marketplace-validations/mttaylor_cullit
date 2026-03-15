@@ -50,6 +50,26 @@ export interface OpenClawConfig {
   token?: string;       // gateway auth token
 }
 
+export interface GitLabConfig {
+  domain?: string;      // default: gitlab.com
+  projectId: string;    // numeric ID or URL-encoded path
+}
+
+export interface BitbucketConfig {
+  workspace: string;    // Bitbucket workspace
+  repoSlug: string;     // repository slug
+}
+
+export interface ConfluenceConfig {
+  domain: string;       // yourcompany.atlassian.net
+  spaceKey: string;     // Confluence space key
+  parentPageId?: string; // optional: parent page to nest under
+}
+
+export interface NotionConfig {
+  databaseId: string;   // Notion database ID
+}
+
 export interface CullConfig {
   ai: AIConfig;
   source: SourceConfig;
@@ -57,4 +77,8 @@ export interface CullConfig {
   jira?: JiraConfig;
   linear?: LinearConfig;
   openclaw?: OpenClawConfig;
+  gitlab?: GitLabConfig;
+  bitbucket?: BitbucketConfig;
+  confluence?: ConfluenceConfig;
+  notion?: NotionConfig;
 }

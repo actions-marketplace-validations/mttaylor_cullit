@@ -26,6 +26,13 @@ import { LinearEnricher } from './enrichers/linear';
 import { SlackPublisher } from './publishers/slack';
 import { DiscordPublisher } from './publishers/discord';
 import { GitHubReleasePublisher } from './publishers/github-release';
+import { TeamsPublisher } from './publishers/teams';
+import { ConfluencePublisher } from './publishers/confluence';
+import { NotionPublisher } from './publishers/notion';
+import { GitLabReleasePublisher } from './publishers/gitlab-release';
+import { ChangelogPublisher } from './publishers/changelog';
+import { GitLabCollector } from './collectors/gitlab';
+import { BitbucketCollector } from './collectors/bitbucket';
 
 // --- Register pro generators ---
 const AI_PROVIDERS = ['anthropic', 'openai', 'gemini', 'ollama', 'openclaw'] as const;
@@ -39,6 +46,14 @@ registerCollector('jira', (config: CullConfig) => {
   return new JiraCollector(config.jira);
 });
 registerCollector('linear', (config: CullConfig) => new LinearCollector(config.linear?.apiKey));
+registerCollector('gitlab', (config: CullConfig) => {
+  if (!config.gitlab) throw new Error('GitLab source requires gitlab config in .cullit.yml');
+  return new GitLabCollector(config.gitlab);
+});
+registerCollector('bitbucket', (config: CullConfig) => {
+  if (!config.bitbucket) throw new Error('Bitbucket source requires bitbucket config in .cullit.yml');
+  return new BitbucketCollector(config.bitbucket);
+});
 
 // --- Register pro enrichers (uniform: factory(config: CullConfig)) ---
 registerEnricher('jira', (config: CullConfig) => {
@@ -51,6 +66,11 @@ registerEnricher('linear', (config: CullConfig) => new LinearEnricher(config.lin
 registerPublisher('slack', (target: PublishTarget) => new SlackPublisher(target.webhookUrl!));
 registerPublisher('discord', (target: PublishTarget) => new DiscordPublisher(target.webhookUrl!));
 registerPublisher('github-release', (_target: PublishTarget) => new GitHubReleasePublisher());
+registerPublisher('teams', (target: PublishTarget) => new TeamsPublisher(target.webhookUrl!));
+registerPublisher('confluence', (target: PublishTarget) => new ConfluencePublisher(target as unknown as ConstructorParameters<typeof ConfluencePublisher>[0]));
+registerPublisher('notion', (target: PublishTarget) => new NotionPublisher(target as unknown as ConstructorParameters<typeof NotionPublisher>[0]));
+registerPublisher('gitlab-release', (_target: PublishTarget) => new GitLabReleasePublisher());
+registerPublisher('changelog', (target: PublishTarget) => new ChangelogPublisher(target as unknown as ConstructorParameters<typeof ChangelogPublisher>[0]));
 
 // Re-export classes for direct usage
 export { AIGenerator } from './generators/ai';
@@ -61,3 +81,10 @@ export { LinearEnricher } from './enrichers/linear';
 export { SlackPublisher } from './publishers/slack';
 export { DiscordPublisher } from './publishers/discord';
 export { GitHubReleasePublisher } from './publishers/github-release';
+export { TeamsPublisher } from './publishers/teams';
+export { ConfluencePublisher } from './publishers/confluence';
+export { NotionPublisher } from './publishers/notion';
+export { GitLabReleasePublisher } from './publishers/gitlab-release';
+export { ChangelogPublisher } from './publishers/changelog';
+export { GitLabCollector } from './collectors/gitlab';
+export { BitbucketCollector } from './collectors/bitbucket';

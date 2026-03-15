@@ -43,6 +43,25 @@ inputs:
     description: 'Set to "true" to create/update GitHub Release'
     required: false
     default: 'false'
+  publish-teams-webhook:
+    description: 'Microsoft Teams webhook URL to publish release notes'
+    required: false
+  publish-confluence:
+    description: 'Set to "true" to publish to Confluence (requires CONFLUENCE_EMAIL and CONFLUENCE_API_TOKEN env vars)'
+    required: false
+    default: 'false'
+  publish-notion:
+    description: 'Set to "true" to publish to Notion database (requires NOTION_API_KEY env var)'
+    required: false
+    default: 'false'
+  publish-gitlab-release:
+    description: 'Set to "true" to create/update GitLab Release (requires GITLAB_TOKEN env var)'
+    required: false
+    default: 'false'
+  publish-changelog:
+    description: 'Set to "true" to push to Cullit hosted changelog (requires CULLIT_API_KEY env var)'
+    required: false
+    default: 'false'
   jira-domain:
     description: 'Jira domain (e.g., yourcompany.atlassian.net) for ticket enrichment'
     required: false

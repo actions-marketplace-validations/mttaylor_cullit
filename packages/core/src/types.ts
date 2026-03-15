@@ -17,6 +17,10 @@ export type {
   JiraConfig,
   LinearConfig,
   OpenClawConfig,
+  GitLabConfig,
+  BitbucketConfig,
+  ConfluenceConfig,
+  NotionConfig,
   CullConfig,
 } from '@cullit/config';
 

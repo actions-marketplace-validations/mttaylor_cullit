@@ -64,7 +64,7 @@ const HELP = `
     --format      Output format: markdown, html, json (default: markdown)
     --dry-run     Generate but don't publish
     --provider    Override AI provider (anthropic, openai, gemini, ollama, openclaw, none)
-    --source      Override source type (local, jira, linear)
+    --source      Override source type (local, jira, linear, gitlab, bitbucket)
     --audience    Override audience (developer, end-user, executive)
     --verbose     Show detailed output
     --quiet       Suppress all output except errors
@@ -76,6 +76,7 @@ const HELP = `
     $ cullit generate --from HEAD~5 --provider none         # no AI key needed
     $ cullit generate --source jira --from "project = PROJ" --provider anthropic
     $ cullit generate --source linear --from "team:ENG" --provider openai
+    $ cullit generate --source gitlab --from v1.0.0 --to v1.1.0
     $ cullit init
 `;
 
@@ -90,7 +91,7 @@ ai:
   categories: [features, fixes, breaking, improvements, chores]
 
 source:
-  type: local                  # local | jira | linear
+  type: local                  # local | jira | linear | gitlab | bitbucket
   # enrichment: [jira, linear] # uncomment to enable enrichment
 
 publish:
@@ -347,7 +348,7 @@ async function interactiveInit() {
     process.exit(1);
   }
 
-  const source = await ask(rl, '  Source type (local/jira/linear) [local]: ') || 'local';
+  const source = await ask(rl, '  Source type (local/jira/linear/gitlab/bitbucket) [local]: ') || 'local';
   if (!VALID_SOURCES.includes(source)) {
     console.error(`\n  ✗ Invalid source: ${source}. Must be one of: ${VALID_SOURCES.join(', ')}`);
     rl.close();
@@ -393,6 +394,12 @@ async function interactiveInit() {
   }
   if (enrichment === 'linear' || enrichment === 'both' || source === 'linear') {
     sections.push(`\nlinear:\n  # Set LINEAR_API_KEY in your environment`);
+  }
+  if (source === 'gitlab') {
+    sections.push(`\ngitlab:\n  projectId: "12345"  # GitLab project ID\n  # domain: gitlab.com  # optional: self-hosted domain\n  # Set GITLAB_TOKEN in your environment`);
+  }
+  if (source === 'bitbucket') {
+    sections.push(`\nbitbucket:\n  workspace: your-workspace\n  repoSlug: your-repo\n  # Set BITBUCKET_USERNAME and BITBUCKET_APP_PASSWORD in your environment`);
   }
 
   const yml = `# Cullit Configuration
