@@ -404,7 +404,7 @@
 
   .integration-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 1rem;
   }
 
@@ -604,7 +604,7 @@
 <section class="hero">
 
   <h1>Cullit. <span class="accent">Release Notes</span><br>in no time, anytime.</h1>
-  <p class="hero-sub">Cullit reads your git history, Jira sprints, or Linear cycles, enriches with ticket context, and uses AI to generate categorized, human-readable release notes. Ship to Slack, Discord, GitHub Releases, and more.</p>
+  <p class="hero-sub">Cullit reads your git history, Jira sprints, or Linear cycles, enriches with ticket context, and uses AI to generate categorized, human-readable release notes. Ship to Slack, Discord, Teams, GitHub &amp; GitLab Releases, Confluence, Notion, and more.</p>
   <div class="hero-actions">
     <a href="#cta" class="btn-primary">&#9889; Get Started Free</a>
     <a href="https://github.com/mttaylor/cullit" class="btn-secondary" target="_blank">&#9733; Star on GitHub</a>
@@ -674,7 +674,7 @@
     <div class="feature-card">
       <span class="feature-icon">&#x1f4e4;</span>
       <h3>Publish Everywhere</h3>
-      <p>Push generated notes to GitHub Releases, Slack, Discord, and more. Confluence, Notion, and GitBook coming soon.</p>
+      <p>Push generated notes to GitHub Releases, GitLab Releases, Slack, Discord, Teams, Confluence, Notion, a hosted changelog, or an embeddable widget.</p>
     </div>
     <div class="feature-card">
       <span class="feature-icon">&#x1f3af;</span>
@@ -724,7 +724,7 @@
 <section class="integrations" id="integrations">
   <p class="section-label">// integrations</p>
   <h2 class="section-title">Plugs in where your team works.</h2>
-  <p style="color: var(--text-dim); margin-bottom: 1.5rem; font-size: 0.9rem;">Sources &amp; publishers</p>
+  <p style="color: var(--text-dim); margin-bottom: 1.5rem; font-size: 0.9rem;">Sources, publishers &amp; widgets</p>
   <div class="integration-grid">
     <div class="integration-chip">
       <span class="icon">&#x1f4bb;</span>
@@ -754,12 +754,42 @@
     <div class="integration-chip">
       <span class="icon">&#x1f4d6;</span>
       <span class="name">Confluence</span>
-      <span class="badge badge-soon">soon</span>
+      <span class="badge badge-live">v1</span>
     </div>
     <div class="integration-chip">
       <span class="icon">&#x1f4dd;</span>
       <span class="name">Notion</span>
-      <span class="badge badge-soon">soon</span>
+      <span class="badge badge-live">v1</span>
+    </div>
+    <div class="integration-chip">
+      <span class="icon">&#x1f4e2;</span>
+      <span class="name">Teams</span>
+      <span class="badge badge-live">v1</span>
+    </div>
+    <div class="integration-chip">
+      <span class="icon">&#x1f98a;</span>
+      <span class="name">GitLab</span>
+      <span class="badge badge-live">v1</span>
+    </div>
+    <div class="integration-chip">
+      <span class="icon">&#x1faa3;</span>
+      <span class="name">Bitbucket</span>
+      <span class="badge badge-live">v1</span>
+    </div>
+    <div class="integration-chip">
+      <span class="icon">&#x1f3f7;&#xfe0f;</span>
+      <span class="name">GitLab Releases</span>
+      <span class="badge badge-live">v1</span>
+    </div>
+    <div class="integration-chip">
+      <span class="icon">&#x1f4f0;</span>
+      <span class="name">Hosted Changelog</span>
+      <span class="badge badge-live">v1</span>
+    </div>
+    <div class="integration-chip">
+      <span class="icon">&#x1f9e9;</span>
+      <span class="name">Embed Widget</span>
+      <span class="badge badge-live">v1</span>
     </div>
     <div class="integration-chip">
       <span class="icon">&#x1f4da;</span>
