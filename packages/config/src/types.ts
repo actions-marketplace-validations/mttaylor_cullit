@@ -24,6 +24,7 @@ export interface SourceConfig {
   type: string;
   owner?: string;
   repo?: string;
+  repoPath?: string;  // Override working directory for git operations
   enrichment?: EnrichmentType[];
 }
 

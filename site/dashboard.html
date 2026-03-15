@@ -559,9 +559,8 @@
             <label>Audience</label>
             <select id="audience">
               <option value="developer">Developer</option>
-              <option value="product">Product</option>
+              <option value="end-user">End User</option>
               <option value="executive">Executive</option>
-              <option value="user">End User</option>
             </select>
           </div>
           <div class="form-group">
@@ -569,8 +568,7 @@
             <select id="tone">
               <option value="professional">Professional</option>
               <option value="casual">Casual</option>
-              <option value="technical">Technical</option>
-              <option value="concise">Concise</option>
+              <option value="terse">Terse</option>
             </select>
           </div>
         </div>
@@ -716,15 +714,15 @@ async function generate() {
       throw new Error(data.error || 'Generation failed');
     }
 
-    currentOutput = data.formatted || data.notes || JSON.stringify(data, null, 2);
+    currentOutput = data.formatted || JSON.stringify(data, null, 2);
     renderOutput();
     addToHistory(fromRef, toRef, body.provider);
 
     dot.className = 'status-dot connected';
     statusText.textContent = 'Done';
     document.getElementById('statusMeta').textContent =
-      (data.stats?.commits || '?') + ' commits, ' +
-      (data.stats?.duration || '?') + 'ms';
+      (data.changeCount || '?') + ' changes, ' +
+      (data.duration || '?') + 'ms';
 
   } catch (err) {
     dot.className = 'status-dot disconnected';

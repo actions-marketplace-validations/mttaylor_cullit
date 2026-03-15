@@ -161,7 +161,7 @@ interface GenerateRequest {
   format?: OutputFormat;
   categories?: string[];
   source?: {
-    type?: 'local' | 'jira' | 'linear';
+    type?: 'local' | 'jira' | 'linear' | 'gitlab' | 'bitbucket' | 'multi-repo';
     enrichment?: ('jira' | 'linear')[];
   };
   jira?: { domain: string };

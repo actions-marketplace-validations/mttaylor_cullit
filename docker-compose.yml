@@ -33,3 +33,21 @@ services:
     working_dir: /repo
     profiles:
       - cli
+
+  # GitHub App — webhook handler for auto-generating release notes
+  app:
+    build:
+      context: .
+      dockerfile: packages/app/Dockerfile
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    environment:
+      - CULLIT_APP_PORT=3001
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

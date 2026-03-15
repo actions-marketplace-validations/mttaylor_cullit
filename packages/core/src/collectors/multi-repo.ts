@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { mkdtempSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -75,8 +75,8 @@ export class MultiRepoCollector implements Collector {
     const tempDir = mkdtempSync(join(tmpdir(), 'cullit-repo-'));
     this.tempDirs.push(tempDir);
 
-    execSync(
-      `git clone --depth=500 --single-branch ${repo.url} ${tempDir}`,
+    execFileSync(
+      'git', ['clone', '--depth=500', '--single-branch', repo.url, tempDir],
       { encoding: 'utf-8', timeout: 60_000, stdio: 'pipe' }
     );
 

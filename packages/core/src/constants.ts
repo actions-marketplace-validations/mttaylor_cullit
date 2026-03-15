@@ -20,4 +20,4 @@ export const ENRICHMENT_TYPES = ['jira', 'linear'] as const;
 export const CHANGE_CATEGORIES = ['features', 'fixes', 'breaking', 'improvements', 'chores', 'other'] as const;
 export const AUDIENCES = ['developer', 'end-user', 'executive'] as const;
 export const TONES = ['professional', 'casual', 'terse'] as const;
-export const SOURCE_TYPES = ['local', 'jira', 'linear', 'gitlab', 'bitbucket'] as const;
+export const SOURCE_TYPES = ['local', 'jira', 'linear', 'gitlab', 'bitbucket', 'multi-repo'] as const;

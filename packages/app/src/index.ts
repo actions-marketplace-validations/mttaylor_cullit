@@ -18,6 +18,10 @@
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
 import { createHmac, timingSafeEqual } from 'crypto';
+import { execFileSync } from 'child_process';
+import { mkdtempSync, rmSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 import { runPipeline, VERSION, DEFAULT_CATEGORIES } from '@cullit/core';
 import type { CullConfig } from '@cullit/core';
 
@@ -158,6 +162,19 @@ async function getPreviousTag(token: string, owner: string, repo: string, curren
   return idx >= 0 && idx + 1 < tags.length ? tags[idx + 1].name : null;
 }
 
+// --- Repo Cloning ---
+
+function cloneRepo(owner: string, repo: string, token: string): string {
+  const tempDir = mkdtempSync(join(tmpdir(), 'cullit-app-'));
+  const cloneUrl = `https://x-access-token:${token}@github.com/${owner}/${repo}.git`;
+  execFileSync('git', ['clone', '--depth=500', '--single-branch', cloneUrl, tempDir], {
+    encoding: 'utf-8',
+    timeout: 120_000,
+    stdio: 'pipe',
+  });
+  return tempDir;
+}
+
 // --- Event Handlers ---
 
 async function handleRelease(payload: any): Promise<void> {
@@ -182,20 +199,22 @@ async function handleRelease(payload: any): Promise<void> {
     return;
   }
 
-  // Clone and generate
-  const config: CullConfig = {
-    ai: { provider: 'none', audience: 'developer', tone: 'professional', categories: DEFAULT_CATEGORIES },
-    source: { type: 'local' },
-    publish: [],
-  };
+  // Clone the repo so GitCollector has real git history
+  let repoDir: string | undefined;
+  try {
+    repoDir = cloneRepo(owner, repo, token);
 
-  // Set token so GitCollector can access private repos
-  process.env.GITHUB_TOKEN = token;
+    const config: CullConfig = {
+      ai: { provider: 'none', audience: 'developer', tone: 'professional', categories: DEFAULT_CATEGORIES },
+      source: { type: 'local', repoPath: repoDir },
+      publish: [],
+    };
 
-  const result = await runPipeline(prevTag, tag, config, { format: 'markdown' });
-
-  // Update the release body
-  await createOrUpdateRelease(token, owner, repo, tag, result.formatted);
+    const result = await runPipeline(prevTag, tag, config, { format: 'markdown' });
+    await createOrUpdateRelease(token, owner, repo, tag, result.formatted);
+  } finally {
+    if (repoDir) try { rmSync(repoDir, { recursive: true, force: true }); } catch { /* best effort */ }
+  }
 }
 
 async function handlePush(payload: any): Promise<void> {
@@ -220,18 +239,21 @@ async function handlePush(payload: any): Promise<void> {
     return;
   }
 
-  const config: CullConfig = {
-    ai: { provider: 'none', audience: 'developer', tone: 'professional', categories: DEFAULT_CATEGORIES },
-    source: { type: 'local' },
-    publish: [],
-  };
+  let repoDir: string | undefined;
+  try {
+    repoDir = cloneRepo(owner, repo, token);
 
-  process.env.GITHUB_TOKEN = token;
+    const config: CullConfig = {
+      ai: { provider: 'none', audience: 'developer', tone: 'professional', categories: DEFAULT_CATEGORIES },
+      source: { type: 'local', repoPath: repoDir },
+      publish: [],
+    };
 
-  const result = await runPipeline(prevTag, tag, config, { format: 'markdown' });
-
-  // Create a GitHub Release for the tag
-  await createOrUpdateRelease(token, owner, repo, tag, result.formatted);
+    const result = await runPipeline(prevTag, tag, config, { format: 'markdown' });
+    await createOrUpdateRelease(token, owner, repo, tag, result.formatted);
+  } finally {
+    if (repoDir) try { rmSync(repoDir, { recursive: true, force: true }); } catch { /* best effort */ }
+  }
 }
 
 function handleInstallation(payload: any): void {
@@ -334,6 +356,15 @@ if (isDirectRun) {
   ╚═══════════════════════════════════════════╝
     `);
   });
+
+  // Graceful shutdown — drain in-flight requests before exiting
+  const shutdown = () => {
+    console.log('Shutting down...');
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(1), 10_000).unref(); // force after 10s
+  };
+  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', shutdown);
 }
 
 export { server, verifySignature, handleRelease, handlePush, handleInstallation };

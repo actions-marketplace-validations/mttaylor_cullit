@@ -30,8 +30,13 @@ packages/
   cli/      — CLI entry point
   config/   — Config loading + validation
   api/      — REST API server
+  pro/      — Pro integrations (GitLab, Bitbucket, Teams, Confluence, Notion, AI)
+  app/      — GitHub App webhook handler
 src/
   action.ts — GitHub Action wrapper (bundled to dist/)
+site/
+  index.html    — Marketing site
+  dashboard.html — Web dashboard
 ```
 
 ## Pull Requests

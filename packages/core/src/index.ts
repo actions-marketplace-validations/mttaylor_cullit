@@ -51,7 +51,7 @@ import {
 
 // --- Register free (core) plugins ---
 import type { PublishTarget, CullConfig as CullConfigType } from './types';
-registerCollector('local', () => new GitCollector());
+registerCollector('local', (config: CullConfigType) => new GitCollector(config.source?.repoPath));
 registerCollector('multi-repo', (config: CullConfigType) => {
   if (!config.repos?.length) throw new Error('Multi-repo source requires "repos" array in config');
   return new MultiRepoCollector(config.repos);

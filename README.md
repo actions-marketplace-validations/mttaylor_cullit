@@ -53,6 +53,48 @@ cullit generate --from v1.0.0 --verbose
 cullit generate --from v1.0.0 --quiet
 ```
 
+## Multi-Repo Aggregation
+
+Merge commits from multiple repositories into a single changelog. Add a `repos` array to `.cullit.yml`:
+
+```yaml
+source:
+  type: multi-repo
+
+repos:
+  - path: ../api-service
+    name: api
+  - path: ../web-app
+    name: web
+  - url: https://github.com/acme/shared-lib.git
+    name: shared
+    from: v2.0.0   # optional per-repo override
+    to: v2.1.0
+```
+
+Or run directly:
+
+```bash
+cullit generate --source multi-repo
+```
+
+## GitHub App
+
+Install from the GitHub Marketplace for zero-config release notes. The app auto-generates notes when you:
+
+- **Push a tag** — creates a GitHub Release with AI-generated notes
+- **Publish a release** — enriches the release body with categorized notes
+
+Self-host with Docker:
+
+```bash
+docker run -p 3001:3001 \
+  -e GITHUB_APP_ID=12345 \
+  -e GITHUB_APP_PRIVATE_KEY="$(base64 < private-key.pem)" \
+  -e GITHUB_WEBHOOK_SECRET=your-secret \
+  cullit/app
+```
+
 ## Use as a Library
 
 ```typescript
@@ -176,7 +218,7 @@ ai:
   categories: [features, fixes, breaking, improvements, chores]
 
 source:
-  type: local                 # local | jira | linear | gitlab | bitbucket
+  type: local                 # local | jira | linear | gitlab | bitbucket | multi-repo
   enrichment: [jira]
 
 publish:
@@ -206,6 +248,13 @@ jira:
 #   spaceKey: ENG
 # notion:
 #   databaseId: your-database-id
+
+# Multi-repo aggregation (use with source.type: multi-repo)
+# repos:
+#   - path: ../api-service
+#     name: api
+#   - url: https://github.com/acme/shared-lib.git
+#     name: shared
 ```
 
 ### Environment Variables
@@ -232,6 +281,10 @@ jira:
 | `CONFLUENCE_EMAIL` | Confluence publishing |
 | `CONFLUENCE_API_TOKEN` | Confluence publishing |
 | `NOTION_API_KEY` | Notion publishing |
+| `GITHUB_APP_ID` | GitHub App |
+| `GITHUB_APP_PRIVATE_KEY` | GitHub App (base64 PEM or raw) |
+| `GITHUB_WEBHOOK_SECRET` | GitHub App webhook verification |
+| `CULLIT_APP_PORT` | GitHub App server port (default: 3001) |
 
 ## API Endpoints
 
