@@ -45,6 +45,9 @@ importers:
       '@cullit/core':
         specifier: workspace:*
         version: link:../core
+      '@cullit/pro':
+        specifier: workspace:*
+        version: link:../pro
     devDependencies:
       tsup:
         specifier: ^8.5.1
