@@ -112,7 +112,7 @@ describe('Gate — access checks', () => {
 describe('Gate — getTierLimits', () => {
   it('returns free tier limits', () => {
     const limits = getTierLimits('free');
-    expect(limits.generationsPerMonth).toBe(10);
+    expect(limits.generationsPerMonth).toBe(3);
     expect(limits.maxProjects).toBe(1);
   });
 
@@ -136,7 +136,7 @@ describe('Gate — getTierLimits', () => {
 
   it('falls back to free for unknown tier', () => {
     const limits = getTierLimits('nonexistent');
-    expect(limits.generationsPerMonth).toBe(10);
+    expect(limits.generationsPerMonth).toBe(3);
     expect(limits.maxProjects).toBe(1);
   });
 });

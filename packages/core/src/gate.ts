@@ -146,7 +146,7 @@ export interface UsageLimits {
 }
 
 const TIER_LIMITS: Record<string, UsageLimits> = {
-  free: { generationsPerMonth: 10, maxProjects: 1 },
+  free: { generationsPerMonth: 3, maxProjects: 1 },
   pro: { generationsPerMonth: 500, maxProjects: 5 },
   team: { generationsPerMonth: 2000, maxProjects: 25 },
   enterprise: { generationsPerMonth: Infinity, maxProjects: Infinity },

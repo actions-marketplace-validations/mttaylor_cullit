@@ -254,25 +254,34 @@
 <p>Cullit uses a <code>CULLIT_API_KEY</code> to unlock Pro features. Without a key, the free tier is fully functional for template-based notes.</p>
 
 <table>
-  <thead><tr><th>Feature</th><th>Free</th><th>Pro ($29/mo)</th></tr></thead>
+  <thead><tr><th>Feature</th><th>Free</th><th>Pro ($19/mo)</th><th>Team ($49/mo)</th></tr></thead>
   <tbody>
-    <tr><td>Template engine (<code>--provider none</code>)</td><td>&#x2705;</td><td>&#x2705;</td></tr>
-    <tr><td>Publish to stdout &amp; file</td><td>&#x2705;</td><td>&#x2705;</td></tr>
-    <tr><td><code>cullit status</code> &amp; <code>cullit tags</code></td><td>&#x2705;</td><td>&#x2705;</td></tr>
-    <tr><td>AI providers (Anthropic, OpenAI, Gemini, Ollama)</td><td>&mdash;</td><td>&#x2705;</td></tr>
-    <tr><td>Jira &amp; Linear enrichment</td><td>&mdash;</td><td>&#x2705;</td></tr>
-    <tr><td>Slack, Discord &amp; GitHub Release publishing</td><td>&mdash;</td><td>&#x2705;</td></tr>
-    <tr><td>GitHub Action with AI</td><td>&mdash;</td><td>&#x2705;</td></tr>
+    <tr><td>Template engine (<code>--provider none</code>)</td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
+    <tr><td>Publish to stdout &amp; file</td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
+    <tr><td><code>cullit status</code> &amp; <code>cullit tags</code></td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
+    <tr><td>Generations per month</td><td>3</td><td>500</td><td>2,000</td></tr>
+    <tr><td>Projects</td><td>1</td><td>5</td><td>25</td></tr>
+    <tr><td>AI providers (Anthropic, OpenAI, Gemini, Ollama)</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
+    <tr><td>Web Dashboard</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
+    <tr><td>GitHub App (AI mode)</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
+    <tr><td>Jira &amp; Linear enrichment</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
+    <tr><td>Slack, Discord &amp; GitHub Release publishing</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
+    <tr><td>GitHub Action with AI</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
+    <tr><td>Multi-repo aggregation</td><td>&mdash;</td><td>&mdash;</td><td>&#x2705;</td></tr>
+    <tr><td>Confluence, Notion &amp; Teams publishing</td><td>&mdash;</td><td>&mdash;</td><td>&#x2705;</td></tr>
+    <tr><td>Hosted changelog page</td><td>&mdash;</td><td>&mdash;</td><td>&#x2705;</td></tr>
+    <tr><td>White-label embed widget</td><td>&mdash;</td><td>&mdash;</td><td>&#x2705;</td></tr>
+    <tr><td>Team seats (up to 10)</td><td>&mdash;</td><td>&mdash;</td><td>&#x2705;</td></tr>
   </tbody>
 </table>
 
-<p>To activate Pro, set your API key:</p>
+<p>To activate Pro or Team, set your API key:</p>
 <pre><code><span class="cmt"># In your shell or .env file</span>
 <span class="key">CULLIT_API_KEY</span>=<span class="val">clt_your_key_here</span></code></pre>
 
 <p>Get your key at <a href="mailto:sales@cullit.io">sales@cullit.io</a> or visit <strong>cullit.io/pricing</strong>.</p>
 
-<div class="tip">Enterprise plans with team seats, SSO, and SLAs are available. Contact <a href="mailto:sales@cullit.io">sales@cullit.io</a>.</div>
+<div class="tip">Enterprise plans with unlimited generations, SSO/SAML, SLAs, on-prem deployment, and audit logs are available. Contact <a href="mailto:sales@cullit.io">sales@cullit.io</a>.</div>
 
 <!-- ============================================ -->
 <h2 id="config-file">Configuration</h2>

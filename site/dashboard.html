@@ -507,6 +507,18 @@
   <!-- SIDEBAR: Config -->
   <aside class="sidebar">
 
+    <!-- License Key -->
+    <div class="panel">
+      <div class="panel-header">&#128273; License</div>
+      <div class="panel-body">
+        <div class="form-group">
+          <label>Cullit API Key</label>
+          <input type="password" id="cullitApiKey" placeholder="clt_your_key_here" oninput="onKeyChange()">
+          <div id="keyStatus" style="font-size:0.78rem;margin-top:0.3rem;color:var(--text-dim)">Enter your API key to unlock the dashboard</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Connection -->
     <div class="panel">
       <div class="panel-header">&#9889; API Connection</div>
@@ -585,8 +597,8 @@
     </div>
 
     <!-- Generate -->
-    <button class="btn-generate" id="generateBtn" onclick="generate()">
-      &#9889; GENERATE
+    <button class="btn-generate" id="generateBtn" onclick="generate()" disabled>
+      &#128274; PRO REQUIRED
     </button>
 
     <!-- History -->
@@ -618,9 +630,10 @@
       </div>
       <div class="output-body" id="outputBody">
         <div class="empty-state">
-          <div class="icon">&#128221;</div>
-          <p>Configure your source and click Generate</p>
-          <p style="font-size:0.75rem">Release notes will appear here</p>
+          <div class="icon">&#128273;</div>
+          <p>Enter your <strong style="color:var(--accent)">Cullit API Key</strong> to get started</p>
+          <p style="font-size:0.8rem;margin-top:0.5rem">Get your key at <a href="https://cullit.io/pricing" style="color:var(--accent)">cullit.io/pricing</a> &mdash; Pro starts at $19/mo</p>
+          <p style="font-size:0.75rem;margin-top:1rem;color:var(--text-dim)">Free users: use the CLI with <code style="font-size:0.75rem">cullit generate --provider none</code></p>
         </div>
       </div>
     </div>
@@ -641,6 +654,46 @@
 let currentOutput = '';
 let currentView = 'rendered';
 const MAX_HISTORY = 20;
+
+// --- License Gate ---
+
+function getCullitKey() {
+  return (document.getElementById('cullitApiKey').value || '').trim();
+}
+
+function isKeyValid(key) {
+  return /^clt_[a-zA-Z0-9]{32,}$/.test(key);
+}
+
+function onKeyChange() {
+  const key = getCullitKey();
+  const status = document.getElementById('keyStatus');
+  const btn = document.getElementById('generateBtn');
+
+  if (!key) {
+    status.textContent = 'Enter your API key to unlock the dashboard';
+    status.style.color = 'var(--text-dim)';
+    btn.disabled = true;
+    btn.textContent = '\uD83D\uDD12 PRO REQUIRED';
+    return;
+  }
+
+  if (!isKeyValid(key)) {
+    status.textContent = 'Invalid format — expected: clt_<key>';
+    status.style.color = 'var(--terminal-red)';
+    btn.disabled = true;
+    btn.textContent = '\uD83D\uDD12 PRO REQUIRED';
+    return;
+  }
+
+  status.textContent = '\u2705 Key accepted';
+  status.style.color = 'var(--terminal-green)';
+  btn.disabled = false;
+  btn.textContent = '\u26A1 GENERATE';
+
+  // Persist key in localStorage
+  try { localStorage.setItem('cullit_api_key', key); } catch {}
+}
 
 // --- API ---
 
@@ -672,6 +725,12 @@ async function generate() {
   const fromRef = document.getElementById('fromRef').value.trim();
   const toRef = document.getElementById('toRef').value.trim() || 'HEAD';
 
+  const apiKey = getCullitKey();
+  if (!isKeyValid(apiKey)) {
+    showToast('A valid Cullit API key is required. Get one at cullit.io/pricing');
+    return;
+  }
+
   if (!fromRef) {
     showToast('Please enter a "From" tag or SHA');
     return;
@@ -701,6 +760,7 @@ async function generate() {
   try {
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = 'Bearer ' + token;
+    headers['X-Cullit-Key'] = apiKey;
 
     const res = await fetch(url + '/generate', {
       method: 'POST',
@@ -874,6 +934,15 @@ function showToast(msg) {
 // --- Init ---
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Restore saved API key
+  try {
+    const savedKey = localStorage.getItem('cullit_api_key');
+    if (savedKey) {
+      document.getElementById('cullitApiKey').value = savedKey;
+    }
+  } catch {}
+  onKeyChange();
+
   checkHealth();
   renderHistory();
   // Re-check health when API URL changes
