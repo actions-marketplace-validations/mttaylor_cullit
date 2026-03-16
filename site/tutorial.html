@@ -693,10 +693,33 @@
 
   .footer-links a:hover { color: var(--accent); }
 
+  /* HAMBURGER */
+  .hamburger {
+    display: none;
+    background: none; border: none; cursor: pointer;
+    flex-direction: column; gap: 5px; padding: 4px; z-index: 301;
+  }
+  .hamburger span {
+    display: block; width: 22px; height: 2px;
+    background: var(--text); border-radius: 2px;
+    transition: transform 0.3s, opacity 0.3s;
+  }
+  .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .hamburger.open span:nth-child(2) { opacity: 0; }
+  .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
   /* RESPONSIVE */
   @media (max-width: 768px) {
     .tutorial-container { padding: 5rem 1.25rem 2rem; }
-    .nav-links a:not(.nav-cta) { display: none; }
+    .hamburger { display: flex; }
+    .nav-links {
+      display: none; position: fixed; top: 52px; right: 0;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 0 0 0 8px;
+      flex-direction: column; padding: 1rem 1.5rem; gap: 0.8rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .nav-links.open { display: flex; }
     .flow-diagram { flex-direction: column; }
     .flow-arrow { transform: rotate(90deg); }
     .step-header h2 { font-size: 1.2rem; }
@@ -713,12 +736,13 @@
 <!-- NAV -->
 <nav>
   <a href="index.html" class="logo">cullit<span>.io</span></a>
-  <div class="nav-links">
+  <div class="nav-links" id="navLinks">
     <a href="index.html">Home</a>
     <a href="docs.html">Docs</a>
     <a href="https://github.com/mttaylor/cullit" target="_blank">GitHub</a>
     <a href="index.html#cta" class="nav-cta">Get Started Free</a>
   </div>
+  <button class="hamburger" id="hamburger" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
 </nav>
 
 <div class="tutorial-container">
@@ -1641,6 +1665,14 @@ document.querySelectorAll('.tutorial-step, .flow-node, .callout').forEach(el => 
   el.style.transform = 'translateY(20px)';
   el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
   observer.observe(el);
+});
+
+// Hamburger nav toggle
+const hamburger = document.getElementById('hamburger');
+const navLinks = document.getElementById('navLinks');
+hamburger.addEventListener('click', () => {
+  hamburger.classList.toggle('open');
+  navLinks.classList.toggle('open');
 });
 </script>
 

@@ -154,9 +154,66 @@
   /* SECTION DIVIDERS */
   .section-divider { width: 60px; height: 1px; background: var(--border); margin: 2rem 0; }
 
+  /* TABLE SCROLL WRAPPER */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 1rem 0; }
+  .table-wrap table { margin: 0; min-width: 500px; }
+
+  /* HAMBURGER */
+  .hamburger {
+    display: none;
+    background: none; border: none; cursor: pointer;
+    flex-direction: column; gap: 5px; padding: 4px; z-index: 301;
+  }
+  .hamburger span {
+    display: block; width: 22px; height: 2px;
+    background: var(--text); border-radius: 2px;
+    transition: transform 0.3s, opacity 0.3s;
+  }
+  .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .hamburger.open span:nth-child(2) { opacity: 0; }
+  .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* SIDEBAR TOGGLE (mobile) */
+  .sidebar-toggle {
+    display: none;
+    position: fixed; bottom: 1.5rem; right: 1.5rem;
+    width: 48px; height: 48px;
+    background: var(--accent); color: var(--bg);
+    border: none; border-radius: 50%; cursor: pointer;
+    font-size: 1.2rem; z-index: 300;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    transition: transform 0.2s;
+    align-items: center; justify-content: center;
+  }
+  .sidebar-toggle:active { transform: scale(0.92); }
+
+  /* OVERLAY */
+  .sidebar-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5); z-index: 149;
+  }
+  .sidebar-overlay.open { display: block; }
+
   /* RESPONSIVE */
   @media (max-width: 900px) {
-    .sidebar { display: none; }
+    .hamburger { display: flex; }
+    .nav-links {
+      display: none; position: fixed; top: 52px; right: 0;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 0 0 0 8px;
+      flex-direction: column; padding: 1rem 1.5rem; gap: 0.8rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .nav-links.open { display: flex; }
+    .sidebar {
+      display: none; position: fixed; top: 52px; left: 0; bottom: 0;
+      width: 280px; z-index: 150;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+    }
+    .sidebar.open { display: block; transform: translateX(0); }
+    .sidebar a { padding: 0.5rem 0.6rem; }
+    .sidebar-toggle { display: flex; }
     .main { margin-left: 0; padding: 4rem 1.5rem 3rem; }
   }
 
@@ -166,20 +223,27 @@
 </head>
 <body>
 
+<!-- OVERLAY (for mobile sidebar) -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <!-- NAV (matches main site) -->
 <nav>
   <a href="/" class="logo">cullit<span>.io</span></a>
-  <div class="nav-links">
+  <div class="nav-links" id="navLinks">
     <a href="/">Home</a>
     <a href="/docs.html" class="active">Docs</a>
     <a href="tutorial.html">Tutorial</a>
     <a href="https://github.com/mttaylor/cullit" target="_blank">GitHub</a>
     <a href="https://www.npmjs.com/package/cullit" target="_blank" class="nav-cta">npm</a>
   </div>
+  <button class="hamburger" id="hamburger" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
 </nav>
 
+<!-- SIDEBAR TOGGLE (mobile FAB) -->
+<button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle docs navigation">☰</button>
+
 <!-- SIDEBAR -->
-<aside class="sidebar">
+<aside class="sidebar" id="sidebar">
   <h4>Getting Started</h4>
   <a href="#quick-start">Quick Start</a>
   <a href="#installation">Installation</a>
@@ -253,6 +317,7 @@
 <h3 id="pricing">Pricing &amp; Tiers</h3>
 <p>Cullit uses a <code>CULLIT_API_KEY</code> to unlock Pro features. Without a key, the free tier is fully functional for template-based notes.</p>
 
+<div class="table-wrap">
 <table>
   <thead><tr><th>Feature</th><th>Free</th><th>Pro ($19/mo)</th><th>Team ($49/mo)</th></tr></thead>
   <tbody>
@@ -274,6 +339,7 @@
     <tr><td>Team seats (up to 10)</td><td>&mdash;</td><td>&mdash;</td><td>&#x2705;</td></tr>
   </tbody>
 </table>
+</div>
 
 <p>To activate Pro or Team, set your API key:</p>
 <pre><code><span class="cmt"># In your shell or .env file</span>
@@ -329,6 +395,7 @@
 <h3 id="ai-providers">AI Providers</h3>
 <p>Cullit supports six providers. Set the relevant API key in your environment:</p>
 
+<div class="table-wrap">
 <table>
   <thead><tr><th>Provider</th><th>Env Variable</th><th>Default Model</th><th>Notes</th></tr></thead>
   <tbody>
@@ -340,12 +407,14 @@
     <tr><td><strong>none</strong></td><td>&mdash;</td><td>built-in template</td><td>No AI key needed. Categorizes by conventional commits.</td></tr>
   </tbody>
 </table>
+</div>
 
 <div class="tip">Override the provider per-run: <code>cullit generate --from v1.0.0 --provider openai --model gpt-4o-mini</code></div>
 
 <h3 id="environment-vars">Environment Variables</h3>
 <p>Cullit reads these from your shell or a <code>.env</code> file in the project root:</p>
 
+<div class="table-wrap">
 <table>
   <thead><tr><th>Variable</th><th>Purpose</th></tr></thead>
   <tbody>
@@ -363,6 +432,7 @@
     <tr><td><code>GITHUB_TOKEN</code></td><td>GitHub token (auto-set in Actions)</td></tr>
   </tbody>
 </table>
+</div>
 
 <!-- ============================================ -->
 <h2 id="cli-reference">CLI Reference</h2>
@@ -370,6 +440,7 @@
 <h3 id="cli-generate"><code>cullit generate</code></h3>
 <p>Generate release notes from git commits, Jira issues, or Linear tickets.</p>
 
+<div class="table-wrap">
 <table>
   <thead><tr><th>Flag</th><th>Short</th><th>Description</th><th>Default</th></tr></thead>
   <tbody>
@@ -386,6 +457,7 @@
     <tr><td><code>--quiet</code></td><td></td><td>Suppress non-error output</td><td></td></tr>
   </tbody>
 </table>
+</div>
 
 <pre><code><span class="cmt"># Between two tags</span>
 <span class="cmd">cullit</span> generate <span class="flag">--from</span> <span class="val">v2.3.0</span> <span class="flag">--to</span> <span class="val">v2.4.0</span>
@@ -480,6 +552,7 @@
           <span class="key">GITHUB_TOKEN</span>: <span class="val">${{ secrets.GITHUB_TOKEN }}</span></code></pre>
 
 <p><strong>Action inputs:</strong></p>
+<div class="table-wrap">
 <table>
   <thead><tr><th>Input</th><th>Description</th><th>Default</th></tr></thead>
   <tbody>
@@ -496,6 +569,7 @@
     <tr><td><code>jira-domain</code></td><td>Jira domain for enrichment</td><td></td></tr>
   </tbody>
 </table>
+</div>
 
 <h3 id="github-app">GitHub App</h3>
 <p>The <strong>Cullit GitHub App</strong> auto-generates release notes when you push a tag or publish a release &mdash; no CI config needed. Install it from the GitHub Marketplace and it just works.</p>
@@ -521,6 +595,7 @@
       <span class="key">GITHUB_WEBHOOK_SECRET</span>: <span class="val">${GITHUB_WEBHOOK_SECRET}</span></code></pre>
 
 <p><strong>Environment variables:</strong></p>
+<div class="table-wrap">
 <table>
   <thead><tr><th>Variable</th><th>Description</th></tr></thead>
   <tbody>
@@ -530,6 +605,7 @@
     <tr><td><code>CULLIT_APP_PORT</code></td><td>Port (default: 3001)</td></tr>
   </tbody>
 </table>
+</div>
 
 <div class="tip">The GitHub App uses template-based generation by default (no AI key required). To enable AI-powered notes, install <code>@cullit/pro</code> and provide an AI provider API key.</div>
 
@@ -659,6 +735,7 @@ console.log(result.notes.changes); <span class="cmt">// structured change entrie
 console.log(result.duration);      <span class="cmt">// pipeline duration in ms</span></code></pre>
 
 <p><strong>Packages:</strong></p>
+<div class="table-wrap">
 <table>
   <thead><tr><th>Package</th><th>Purpose</th></tr></thead>
   <tbody>
@@ -667,6 +744,7 @@ console.log(result.duration);      <span class="cmt">// pipeline duration in ms<
     <tr><td><code>@cullit/config</code></td><td>Config loader: YAML parsing, env var resolution, type exports</td></tr>
   </tbody>
 </table>
+</div>
 
 <h3 id="release-advisor">Release Advisor</h3>
 <p>The release advisor analyzes your unreleased commits and recommends when to release:</p>
@@ -700,6 +778,7 @@ console.log(advisory.breakdown);       <span class="cmt">// { features: 4, fixes
   -d <span class="str">'{"from": "v1.0.0", "provider": "none"}'</span></code></pre>
 
 <p><strong>Endpoints:</strong></p>
+<div class="table-wrap">
 <table>
   <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
   <tbody>
@@ -708,8 +787,10 @@ console.log(advisory.breakdown);       <span class="cmt">// { features: 4, fixes
     <tr><td><code>POST</code></td><td><code>/generate</code></td><td>Generate release notes</td></tr>
   </tbody>
 </table>
+</div>
 
 <p><strong>Configuration:</strong></p>
+<div class="table-wrap">
 <table>
   <thead><tr><th>Env Variable</th><th>Purpose</th><th>Default</th></tr></thead>
   <tbody>
@@ -719,6 +800,7 @@ console.log(advisory.breakdown);       <span class="cmt">// { features: 4, fixes
     <tr><td><code>RATE_LIMIT</code></td><td>Requests per minute per IP</td><td><code>30</code></td></tr>
   </tbody>
 </table>
+</div>
 
 <h3 id="web-dashboard">Web Dashboard</h3>
 <p>Cullit includes a browser-based dashboard at <a href="dashboard.html" style="color:var(--accent)">dashboard.html</a> for visually generating release notes without the CLI.</p>
@@ -894,6 +976,42 @@ const sectionObserver = new IntersectionObserver((entries) => {
 }, observerOpts);
 
 sections.forEach(section => sectionObserver.observe(section));
+
+// Hamburger nav toggle
+const hamburger = document.getElementById('hamburger');
+const navLinks = document.getElementById('navLinks');
+hamburger.addEventListener('click', () => {
+  hamburger.classList.toggle('open');
+  navLinks.classList.toggle('open');
+});
+
+// Sidebar drawer toggle (mobile)
+const sidebarToggle = document.getElementById('sidebarToggle');
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('sidebarOverlay');
+
+function closeSidebar() {
+  sidebar.classList.remove('open');
+  overlay.classList.remove('open');
+  sidebarToggle.textContent = '☰';
+}
+function openSidebar() {
+  sidebar.classList.add('open');
+  overlay.classList.add('open');
+  sidebarToggle.textContent = '✕';
+}
+
+sidebarToggle.addEventListener('click', () => {
+  sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+});
+overlay.addEventListener('click', closeSidebar);
+
+// Close sidebar when a link is clicked (mobile)
+sidebarLinks.forEach(link => {
+  link.addEventListener('click', () => {
+    if (window.innerWidth <= 900) closeSidebar();
+  });
+});
 </script>
 
 </body>
