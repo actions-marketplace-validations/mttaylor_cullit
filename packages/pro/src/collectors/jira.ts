@@ -71,8 +71,9 @@ export class JiraCollector implements Collector {
     const issues: JiraIssue[] = [];
     let startAt = 0;
     const maxResults = 50;
+    let hasMore = true;
 
-    while (true) {
+    while (hasMore) {
       const url = new URL(`https://${domain}/rest/api/3/search`);
       url.searchParams.set('jql', jql);
       url.searchParams.set('startAt', String(startAt));
@@ -107,8 +108,11 @@ export class JiraCollector implements Collector {
 
       issues.push(...batch);
 
-      if (issues.length >= data.total || batch.length < maxResults) break;
-      startAt += maxResults;
+      if (issues.length >= data.total || batch.length < maxResults) {
+        hasMore = false;
+      } else {
+        startAt += maxResults;
+      }
     }
 
     return issues;

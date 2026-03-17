@@ -442,9 +442,9 @@ publish:
   # - type: file
   #   path: RELEASE_NOTES.md
   # - type: slack
-  #   webhook_url: \$SLACK_WEBHOOK_URL
+  #   webhook_url: $SLACK_WEBHOOK_URL
   # - type: discord
-  #   webhook_url: \$DISCORD_WEBHOOK_URL
+  #   webhook_url: $DISCORD_WEBHOOK_URL
 ${sections.join('\n')}
 `;
 

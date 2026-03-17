@@ -67,31 +67,20 @@ export class GitLabCollector implements Collector {
   }
 
   private async fetchCommits(from: string, to: string): Promise<GitLabCommit[]> {
-    const commits: GitLabCommit[] = [];
-    let page = 1;
+    const url = new URL(`https://${this.domain}/api/v4/projects/${encodeURIComponent(this.projectId)}/repository/compare`);
+    url.searchParams.set('from', from);
+    url.searchParams.set('to', to);
+    url.searchParams.set('per_page', '100');
 
-    while (true) {
-      const url = new URL(`https://${this.domain}/api/v4/projects/${encodeURIComponent(this.projectId)}/repository/compare`);
-      url.searchParams.set('from', from);
-      url.searchParams.set('to', to);
-      url.searchParams.set('per_page', '100');
-      url.searchParams.set('page', String(page));
+    const res = await fetchWithTimeout(url.toString(), { headers: this.headers() });
 
-      const res = await fetchWithTimeout(url.toString(), { headers: this.headers() });
-
-      if (!res.ok) {
-        const error = await res.text();
-        throw new Error(`GitLab API error (${res.status}): ${error}`);
-      }
-
-      const data = await res.json() as { commits: GitLabCommit[] };
-      commits.push(...(data.commits || []));
-
-      // Compare endpoint returns all at once, no pagination needed
-      break;
+    if (!res.ok) {
+      const error = await res.text();
+      throw new Error(`GitLab API error (${res.status}): ${error}`);
     }
 
-    return commits;
+    const data = await res.json() as { commits: GitLabCommit[] };
+    return data.commits || [];
   }
 
   private async fetchMergedMRs(from: string, to: string): Promise<MRInfo[]> {
