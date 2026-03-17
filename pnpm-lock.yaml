@@ -21,13 +21,13 @@ importers:
         specifier: ^8.57.0
         version: 8.57.1
       tsup:
-        specifier: ^8.0.0
+        specifier: ^8.5.1
         version: 8.5.1(postcss@8.5.8)(typescript@5.9.3)
       typescript:
-        specifier: ^5.4.0
+        specifier: ^5.9.3
         version: 5.9.3
       vitest:
-        specifier: ^1.3.0
+        specifier: ^1.6.1
         version: 1.6.1(@types/node@25.4.0)
 
   packages/api:
@@ -38,16 +38,6 @@ importers:
       '@cullit/core':
         specifier: workspace:*
         version: link:../core
-    devDependencies:
-      tsup:
-        specifier: ^8.5.1
-        version: 8.5.1(postcss@8.5.8)(typescript@5.9.3)
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-      vitest:
-        specifier: ^1.6.1
-        version: 1.6.1(@types/node@25.4.0)
 
   packages/app:
     dependencies:
@@ -57,16 +47,6 @@ importers:
       '@cullit/pro':
         specifier: workspace:*
         version: link:../pro
-    devDependencies:
-      tsup:
-        specifier: ^8.5.1
-        version: 8.5.1(postcss@8.5.8)(typescript@5.9.3)
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-      vitest:
-        specifier: ^1.6.1
-        version: 1.6.1(@types/node@25.4.0)
 
   packages/cli:
     dependencies:
@@ -90,16 +70,6 @@ importers:
       '@cullit/core':
         specifier: workspace:*
         version: link:../core
-    devDependencies:
-      tsup:
-        specifier: ^8.5.1
-        version: 8.5.1(postcss@8.5.8)(typescript@5.9.3)
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-      vitest:
-        specifier: ^1.6.1
-        version: 1.6.1(@types/node@25.4.0)
 
 packages:
 

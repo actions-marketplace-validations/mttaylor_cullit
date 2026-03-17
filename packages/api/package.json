@@ -16,9 +16,5 @@
     "@cullit/core": "workspace:*",
     "@cullit/config": "workspace:*"
   },
-  "devDependencies": {
-    "tsup": "^8.5.1",
-    "typescript": "^5.9.3",
-    "vitest": "^1.6.1"
-  }
+  "devDependencies": {}
 }
