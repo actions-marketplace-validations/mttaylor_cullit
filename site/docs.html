@@ -290,6 +290,7 @@
   <a href="#api-server">API Server</a>
   <a href="#web-dashboard">Web Dashboard</a>
   <a href="#real-world">Real-World Walkthrough</a>
+  <a href="#team-dashboard">Team Dashboard</a>
 </aside>
 
 <!-- MAIN CONTENT -->
@@ -998,6 +999,55 @@ formats, and several performance improvements.</span>
 <span class="val">- /api/v1/export deprecated, use /api/v2/export (DASH-160)</span></code></pre>
 
 <div class="tip">The AI generates human-readable descriptions from raw commit messages and ticket data &mdash; not just a commit log dump. Different <code>audience</code> modes produce different output from the same data.</div>
+
+<div class="section-divider"></div>
+
+<h2 id="team-dashboard">Team Dashboard</h2>
+
+<p>The Cullit Dashboard (v1.6.0+) provides GitHub OAuth login, persistent generation history, usage analytics, and team/org management.</p>
+
+<h3 id="team-auth">Authentication</h3>
+<p>The dashboard uses <strong>GitHub OAuth 2.0</strong> for authentication. To enable it:</p>
+<ol>
+  <li>Create a GitHub OAuth App at <code>Settings &rarr; Developer settings &rarr; OAuth Apps</code></li>
+  <li>Set the callback URL to <code>https://your-domain.com/auth/callback</code></li>
+  <li>Configure the API server environment variables:</li>
+</ol>
+<pre><code><span class="key">GITHUB_CLIENT_ID</span>=<span class="val">your_client_id</span>
+<span class="key">GITHUB_CLIENT_SECRET</span>=<span class="val">your_client_secret</span>
+<span class="key">CULLIT_JWT_SECRET</span>=<span class="val">your_32char_minimum_secret</span>
+<span class="key">CULLIT_BASE_URL</span>=<span class="val">https://your-domain.com</span></code></pre>
+<p>Users sign in via the dashboard login button. Sessions are stored as HttpOnly JWT cookies (7-day expiry). Each user automatically receives a <code>clt_*</code> API key on first login.</p>
+
+<h3 id="team-history">Generation History</h3>
+<p>Every release note generation is recorded server-side. The history tab shows:</p>
+<ul>
+  <li>Source range (from/to), provider, change count, and timestamp</li>
+  <li>Paginated browsing with clickable entries to replay a generation</li>
+  <li>Up to 200 entries per user</li>
+</ul>
+<p>API: <code>GET /v1/history?limit=20&amp;offset=0</code> (requires authentication)</p>
+
+<h3 id="team-analytics">Usage Analytics</h3>
+<p>The analytics tab displays:</p>
+<ul>
+  <li><strong>Stats cards</strong> &mdash; total generations, total changes, average duration, this month&rsquo;s count</li>
+  <li><strong>Daily chart</strong> &mdash; bar chart of generations over the last 30 days</li>
+  <li><strong>Provider breakdown</strong> &mdash; which AI providers are used most</li>
+</ul>
+<p>API: <code>GET /v1/analytics/usage?days=30</code> (requires authentication). Org-level stats are shared across team members.</p>
+
+<h3 id="team-orgs">Organizations</h3>
+<p>Create an organization to share analytics and manage seats:</p>
+<ul>
+  <li><code>POST /v1/org</code> &mdash; create an org (you become the owner)</li>
+  <li><code>GET /v1/org</code> &mdash; view your org and members</li>
+  <li><code>POST /v1/org/invite</code> &mdash; add a member (owner/admin only)</li>
+  <li><code>DELETE /v1/org/members</code> &mdash; remove a member (owner/admin only)</li>
+</ul>
+<p>Team tier supports up to 10 seats. All org members share analytics and usage limits.</p>
+
+<div class="tip">The Team Dashboard is available on the <strong>Team</strong> tier ($49/mo). Individual users can access history and analytics on the <strong>Pro</strong> tier ($9/mo).</div>
 
 <div class="section-divider"></div>
 

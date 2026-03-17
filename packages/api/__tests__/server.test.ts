@@ -218,4 +218,87 @@ describe('API Server', () => {
     const rateLimited = results.some(r => r.status === 429);
     expect(rateLimited).toBe(true);
   });
+
+  // --- Auth endpoints ---
+
+  it('GET /auth/me returns 401 when not authenticated', async () => {
+    const { status, body } = await apiRequest('/auth/me');
+    expect(status).toBe(401);
+    expect(body.error).toContain('Not authenticated');
+  });
+
+  it('POST /auth/logout returns ok', async () => {
+    const { status, body } = await apiRequest('/auth/logout', { method: 'POST' });
+    expect(status).toBe(200);
+    expect(body.ok).toBe(true);
+  });
+
+  // --- Org endpoints ---
+
+  it('GET /v1/org returns 401 when not authenticated', async () => {
+    const { status, body } = await apiRequest('/v1/org');
+    expect(status).toBe(401);
+    expect(body.error).toContain('Not authenticated');
+  });
+
+  it('POST /v1/org returns 401 or 429 when not authenticated', async () => {
+    const { status } = await apiRequest('/v1/org', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Test Org' }),
+    });
+    expect([401, 429]).toContain(status);
+  });
+
+  it('POST /v1/org/invite returns 401 or 429 when not authenticated', async () => {
+    const { status } = await apiRequest('/v1/org/invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: 'test' }),
+    });
+    expect([401, 429]).toContain(status);
+  });
+
+  // --- History endpoint ---
+
+  it('GET /v1/history returns 401 when not authenticated', async () => {
+    const { status, body } = await apiRequest('/v1/history');
+    expect(status).toBe(401);
+    expect(body.error).toContain('Not authenticated');
+  });
+
+  // --- Analytics endpoint ---
+
+  it('GET /v1/analytics/usage returns 401 when not authenticated', async () => {
+    const { status, body } = await apiRequest('/v1/analytics/usage');
+    expect(status).toBe(401);
+    expect(body.error).toContain('Not authenticated');
+  });
+
+  // --- OpenAPI spec includes new endpoints ---
+
+  it('OpenAPI spec includes auth, team, history, and analytics paths', async () => {
+    const { body } = await apiRequest('/openapi.json');
+    expect(body.paths['/auth/github']).toBeDefined();
+    expect(body.paths['/auth/me']).toBeDefined();
+    expect(body.paths['/auth/logout']).toBeDefined();
+    expect(body.paths['/v1/org']).toBeDefined();
+    expect(body.paths['/v1/history']).toBeDefined();
+    expect(body.paths['/v1/analytics/usage']).toBeDefined();
+  });
+
+  it('OpenAPI spec includes new component schemas', async () => {
+    const { body } = await apiRequest('/openapi.json');
+    expect(body.components.schemas.User).toBeDefined();
+    expect(body.components.schemas.OrgResponse).toBeDefined();
+    expect(body.components.schemas.HistoryEntry).toBeDefined();
+    expect(body.components.schemas.DailyUsage).toBeDefined();
+    expect(body.components.schemas.AnalyticsResponse).toBeDefined();
+  });
+
+  it('CORS preflight includes DELETE method and credentials', async () => {
+    const res = await fetch(`http://localhost:${PORT}/generate`, { method: 'OPTIONS' });
+    expect(res.headers.get('access-control-allow-methods')).toContain('DELETE');
+    expect(res.headers.get('access-control-allow-credentials')).toBe('true');
+  });
 });

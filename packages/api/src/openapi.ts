@@ -236,6 +236,210 @@ export const openApiSpec = {
         },
       },
     },
+    '/auth/github': {
+      get: {
+        operationId: 'authGitHub',
+        summary: 'Start GitHub OAuth login',
+        description: 'Redirects to GitHub OAuth consent screen. On success, sets a session cookie and redirects to /dashboard.html.',
+        tags: ['Auth'],
+        responses: {
+          '302': { description: 'Redirect to GitHub OAuth consent' },
+          '500': {
+            description: 'OAuth not configured',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+        },
+      },
+    },
+    '/auth/callback': {
+      get: {
+        operationId: 'authCallback',
+        summary: 'GitHub OAuth callback',
+        description: 'Handles the OAuth callback, exchanges code for token, creates/updates user, and sets session cookie.',
+        tags: ['Auth'],
+        parameters: [
+          { name: 'code', in: 'query', required: true, schema: { type: 'string' } },
+          { name: 'state', in: 'query', required: true, schema: { type: 'string' } },
+        ],
+        responses: {
+          '302': { description: 'Redirect to dashboard on success' },
+          '400': {
+            description: 'Invalid state or missing code',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+        },
+      },
+    },
+    '/auth/me': {
+      get: {
+        operationId: 'authMe',
+        summary: 'Get current user',
+        description: 'Returns the authenticated user from JWT session cookie or API key.',
+        tags: ['Auth'],
+        responses: {
+          '200': {
+            description: 'Current user',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } },
+          },
+          '401': {
+            description: 'Not authenticated',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+        },
+      },
+    },
+    '/auth/logout': {
+      post: {
+        operationId: 'authLogout',
+        summary: 'Logout',
+        description: 'Clears the session cookie.',
+        tags: ['Auth'],
+        responses: {
+          '200': { description: 'Logged out', content: { 'application/json': { schema: { type: 'object', properties: { ok: { type: 'boolean' } } } } } },
+        },
+      },
+    },
+    '/v1/org': {
+      get: {
+        operationId: 'getOrg',
+        summary: 'Get current organization',
+        description: 'Returns org details and member list for the authenticated user.',
+        tags: ['Team'],
+        responses: {
+          '200': {
+            description: 'Organization details',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/OrgResponse' } } },
+          },
+          '401': {
+            description: 'Not authenticated',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+        },
+      },
+      post: {
+        operationId: 'createOrg',
+        summary: 'Create an organization',
+        description: 'Creates a new org with the current user as owner.',
+        tags: ['Team'],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { type: 'object', required: ['name'], properties: { name: { type: 'string', minLength: 2, maxLength: 64 } } },
+            },
+          },
+        },
+        responses: {
+          '201': {
+            description: 'Organization created',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/OrgResponse' } } },
+          },
+          '409': {
+            description: 'Already in an org',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+        },
+      },
+    },
+    '/v1/org/invite': {
+      post: {
+        operationId: 'orgInvite',
+        summary: 'Invite a member',
+        description: 'Adds a user to the org. Requires owner or admin role.',
+        tags: ['Team'],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['userId'],
+                properties: {
+                  userId: { type: 'string' },
+                  role: { type: 'string', enum: ['admin', 'member'], default: 'member' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'Member added', content: { 'application/json': { schema: { type: 'object', properties: { ok: { type: 'boolean' } } } } } },
+          '403': { description: 'Insufficient permissions', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          '404': { description: 'User not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          '409': { description: 'Cannot add member', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+        },
+      },
+    },
+    '/v1/org/members': {
+      delete: {
+        operationId: 'orgRemoveMember',
+        summary: 'Remove a member',
+        description: 'Removes a user from the org. Requires owner or admin role.',
+        tags: ['Team'],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { type: 'object', required: ['userId'], properties: { userId: { type: 'string' } } },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'Member removed', content: { 'application/json': { schema: { type: 'object', properties: { ok: { type: 'boolean' } } } } } },
+          '403': { description: 'Insufficient permissions', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          '409': { description: 'Cannot remove member', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+        },
+      },
+    },
+    '/v1/history': {
+      get: {
+        operationId: 'getHistory',
+        summary: 'Get generation history',
+        description: 'Returns paginated generation history for the authenticated user.',
+        tags: ['History'],
+        parameters: [
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 20, minimum: 1, maximum: 100 } },
+          { name: 'offset', in: 'query', schema: { type: 'integer', default: 0, minimum: 0 } },
+        ],
+        responses: {
+          '200': {
+            description: 'History entries',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    entries: { type: 'array', items: { $ref: '#/components/schemas/HistoryEntry' } },
+                    total: { type: 'integer' },
+                    limit: { type: 'integer' },
+                    offset: { type: 'integer' },
+                  },
+                },
+              },
+            },
+          },
+          '401': { description: 'Not authenticated', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+        },
+      },
+    },
+    '/v1/analytics/usage': {
+      get: {
+        operationId: 'getAnalyticsUsage',
+        summary: 'Get usage analytics',
+        description: 'Returns daily usage stats, provider breakdown, and monthly generation count.',
+        tags: ['Analytics'],
+        parameters: [
+          { name: 'days', in: 'query', schema: { type: 'integer', default: 30, minimum: 1, maximum: 90 } },
+        ],
+        responses: {
+          '200': {
+            description: 'Usage analytics',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/AnalyticsResponse' } } },
+          },
+          '401': { description: 'Not authenticated', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+        },
+      },
+    },
   },
   components: {
     schemas: {
@@ -417,6 +621,104 @@ export const openApiSpec = {
               html: { type: 'string' },
             },
           },
+        },
+      },
+      User: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          login: { type: 'string' },
+          name: { type: 'string' },
+          email: { type: 'string' },
+          avatarUrl: { type: 'string' },
+          tier: { type: 'string', enum: ['free', 'pro', 'team', 'enterprise'] },
+          orgId: { type: 'string', nullable: true },
+          role: { type: 'string', enum: ['owner', 'admin', 'member'] },
+          apiKey: { type: 'string' },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      OrgResponse: {
+        type: 'object',
+        properties: {
+          org: {
+            type: 'object',
+            nullable: true,
+            properties: {
+              id: { type: 'string' },
+              name: { type: 'string' },
+              slug: { type: 'string' },
+              tier: { type: 'string', enum: ['team', 'enterprise'] },
+              maxSeats: { type: 'integer' },
+              memberCount: { type: 'integer' },
+              createdAt: { type: 'string', format: 'date-time' },
+            },
+          },
+          members: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                login: { type: 'string' },
+                name: { type: 'string' },
+                avatarUrl: { type: 'string' },
+                role: { type: 'string', enum: ['owner', 'admin', 'member'] },
+              },
+            },
+          },
+        },
+      },
+      HistoryEntry: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          userId: { type: 'string' },
+          project: { type: 'string' },
+          from: { type: 'string' },
+          to: { type: 'string' },
+          provider: { type: 'string' },
+          format: { type: 'string' },
+          changeCount: { type: 'integer' },
+          summary: { type: 'string' },
+          duration: { type: 'number' },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      DailyUsage: {
+        type: 'object',
+        properties: {
+          date: { type: 'string', format: 'date' },
+          generations: { type: 'integer' },
+          totalChanges: { type: 'integer' },
+          avgDuration: { type: 'number' },
+          providers: { type: 'object', additionalProperties: { type: 'integer' } },
+        },
+      },
+      AnalyticsResponse: {
+        type: 'object',
+        properties: {
+          daily: { type: 'array', items: { $ref: '#/components/schemas/DailyUsage' } },
+          totals: {
+            type: 'object',
+            properties: {
+              generations: { type: 'integer' },
+              totalChanges: { type: 'integer' },
+              avgDuration: { type: 'number' },
+            },
+          },
+          topProviders: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                provider: { type: 'string' },
+                count: { type: 'integer' },
+              },
+            },
+          },
+          monthlyGenerations: { type: 'integer' },
+          tier: { type: 'string' },
         },
       },
     },

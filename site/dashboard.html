@@ -531,6 +531,261 @@
     .form-row { grid-template-columns: 1fr; }
     .publish-grid { grid-template-columns: 1fr; }
   }
+
+  /* AUTH WALL */
+  .auth-wall {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 70vh;
+    gap: 1.5rem;
+    text-align: center;
+    padding: 2rem;
+  }
+  .auth-wall h1 {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 2rem;
+    color: var(--text-bright);
+  }
+  .auth-wall p { color: var(--text-dim); max-width: 400px; }
+  .btn-github {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.8rem 1.5rem;
+    background: #fff;
+    color: #000;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.95rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    text-decoration: none;
+  }
+  .btn-github:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(255,255,255,0.15);
+  }
+  .btn-github svg { width: 20px; height: 20px; }
+
+  /* NAV USER */
+  .nav-user {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--text);
+    font-size: 0.85rem;
+    font-family: 'Space Mono', monospace;
+  }
+  .nav-user img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+  }
+  .nav-user .tier-badge {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    background: var(--accent);
+    color: var(--bg);
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .btn-logout {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* DASHBOARD TABS */
+  .dash-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1rem;
+  }
+  .dash-tab {
+    padding: 0.6rem 1.2rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    color: var(--text-dim);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+  }
+  .dash-tab:first-child { border-radius: 6px 0 0 0; }
+  .dash-tab:last-child { border-radius: 0 6px 0 0; }
+  .dash-tab:hover { color: var(--text); }
+  .dash-tab.active {
+    background: var(--bg-card-hover);
+    color: var(--accent);
+    border-bottom: 2px solid var(--accent);
+  }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ANALYTICS */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .stat-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem;
+    text-align: center;
+  }
+  .stat-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.8rem;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0.2rem;
+  }
+  .chart-container {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    overflow-x: auto;
+  }
+  .chart-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 120px;
+    min-width: 300px;
+  }
+  .bar {
+    flex: 1;
+    min-width: 8px;
+    background: var(--accent);
+    border-radius: 2px 2px 0 0;
+    transition: opacity 0.2s;
+    position: relative;
+  }
+  .bar:hover { opacity: 0.8; }
+  .bar-label {
+    position: absolute;
+    bottom: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.55rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .provider-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .provider-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.6rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text);
+  }
+  .provider-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+
+  /* TEAM */
+  .team-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .member-list { display: flex; flex-direction: column; gap: 0.5rem; }
+  .member-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .member-row img {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+  }
+  .member-info { flex: 1; }
+  .member-name { font-size: 0.9rem; color: var(--text-bright); }
+  .member-role {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    font-family: 'Space Mono', monospace;
+    text-transform: uppercase;
+  }
+  .btn-danger {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .btn-danger:hover { border-color: var(--danger); color: var(--danger); }
+  .btn-small {
+    padding: 0.4rem 0.8rem;
+    background: var(--accent);
+    color: var(--bg);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .btn-small:hover { transform: translateY(-1px); }
+  .create-org-form {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+  }
+  .create-org-form .form-group { flex: 1; margin: 0; }
 </style>
 </head>
 <body>
@@ -542,25 +797,29 @@
     <a href="docs.html">Docs</a>
     <a href="dashboard.html" class="active">Dashboard</a>
     <a href="https://github.com/mttaylor/cullit" target="_blank">GitHub</a>
+    <div class="nav-user" id="navUser" style="display:none">
+      <img id="navAvatar" src="" alt="">
+      <span id="navLogin"></span>
+      <span class="tier-badge" id="navTier"></span>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
   </div>
   <button class="hamburger" id="hamburger" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
 </nav>
 
-<div class="dashboard">
+<div id="authWall" class="auth-wall">
+  <h1>Cullit Dashboard</h1>
+  <p>Sign in with GitHub to generate release notes, view history, and manage your team.</p>
+  <a class="btn-github" id="loginBtn" href="#">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+    Sign in with GitHub
+  </a>
+  <p style="font-size:0.75rem;margin-top:1rem;color:var(--text-dim)">Free users: use the CLI with <code style="font-size:0.75rem">cullit generate --provider none</code></p>
+</div>
+
+<div class="dashboard" id="dashApp" style="display:none">
   <!-- SIDEBAR: Config -->
   <aside class="sidebar">
-
-    <!-- License Key -->
-    <div class="panel">
-      <div class="panel-header">&#128273; License</div>
-      <div class="panel-body">
-        <div class="form-group">
-          <label>Cullit API Key</label>
-          <input type="password" id="cullitApiKey" placeholder="clt_your_key_here" oninput="onKeyChange()">
-          <div id="keyStatus" style="font-size:0.78rem;margin-top:0.3rem;color:var(--text-dim)">Enter your API key to unlock the dashboard</div>
-        </div>
-      </div>
-    </div>
 
     <!-- Connection -->
     <div class="panel">
@@ -569,10 +828,6 @@
         <div class="form-group">
           <label>API URL</label>
           <input type="text" id="apiUrl" value="http://localhost:3000" placeholder="http://localhost:3000">
-        </div>
-        <div class="form-group">
-          <label>API Token (optional)</label>
-          <input type="password" id="apiToken" placeholder="Bearer token">
         </div>
       </div>
     </div>
@@ -640,43 +895,112 @@
     </div>
 
     <!-- Generate -->
-    <button class="btn-generate" id="generateBtn" onclick="generate()" disabled>
-      &#128274; PRO REQUIRED
+    <button class="btn-generate" id="generateBtn" onclick="generate()">
+      &#9889; GENERATE
     </button>
 
-    <!-- History -->
-    <div class="panel">
-      <div class="panel-header">&#128337; History</div>
-      <div class="panel-body">
-        <div class="history-list" id="historyList">
-          <div class="empty-state" style="min-height:60px">
-            <p>No history yet</p>
+  </aside>
+
+  <!-- MAIN: Tabbed Content -->
+  <div class="main-area">
+    <div class="dash-tabs">
+      <button class="dash-tab active" data-tab="generate" onclick="switchDashTab('generate')">&#128196; Generate</button>
+      <button class="dash-tab" data-tab="history" onclick="switchDashTab('history')">&#128337; History</button>
+      <button class="dash-tab" data-tab="analytics" onclick="switchDashTab('analytics')">&#128200; Analytics</button>
+      <button class="dash-tab" data-tab="team" onclick="switchDashTab('team')">&#128101; Team</button>
+    </div>
+
+    <!-- GENERATE TAB -->
+    <div class="tab-content active" id="tab-generate">
+      <div class="output-panel">
+        <div class="output-header">
+          <div class="panel-header" style="border:none;padding:0">&#128196; Output</div>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <div class="output-tabs">
+              <button class="output-tab active" data-view="rendered" onclick="switchView('rendered')">Rendered</button>
+              <button class="output-tab" data-view="raw" onclick="switchView('raw')">Raw</button>
+            </div>
+            <button class="btn-copy" onclick="copyOutput()">&#128203; Copy</button>
+          </div>
+        </div>
+        <div class="output-body" id="outputBody">
+          <div class="empty-state">
+            <div class="icon">&#9889;</div>
+            <p>Configure your source and hit <strong style="color:var(--accent)">Generate</strong></p>
           </div>
         </div>
       </div>
     </div>
 
-  </aside>
-
-  <!-- MAIN: Output -->
-  <div class="main-area">
-    <div class="output-panel">
-      <div class="output-header">
-        <div class="panel-header" style="border:none;padding:0">&#128196; Output</div>
-        <div style="display:flex;gap:0.5rem;align-items:center">
-          <div class="output-tabs">
-            <button class="output-tab active" data-view="rendered" onclick="switchView('rendered')">Rendered</button>
-            <button class="output-tab" data-view="raw" onclick="switchView('raw')">Raw</button>
+    <!-- HISTORY TAB -->
+    <div class="tab-content" id="tab-history">
+      <div class="panel">
+        <div class="panel-header">&#128337; Generation History</div>
+        <div class="panel-body">
+          <div id="historyList" class="history-list" style="max-height:none">
+            <div class="empty-state" style="min-height:100px"><p>Loading history...</p></div>
           </div>
-          <button class="btn-copy" onclick="copyOutput()">&#128203; Copy</button>
+          <div id="historyPager" style="display:flex;justify-content:center;gap:0.5rem;margin-top:1rem"></div>
         </div>
       </div>
-      <div class="output-body" id="outputBody">
-        <div class="empty-state">
-          <div class="icon">&#128273;</div>
-          <p>Enter your <strong style="color:var(--accent)">Cullit API Key</strong> to get started</p>
-          <p style="font-size:0.8rem;margin-top:0.5rem">Get your key at <a href="https://cullit.io/pricing" style="color:var(--accent)">cullit.io/pricing</a> &mdash; Pro starts at $9/mo</p>
-          <p style="font-size:0.75rem;margin-top:1rem;color:var(--text-dim)">Free users: use the CLI with <code style="font-size:0.75rem">cullit generate --provider none</code></p>
+    </div>
+
+    <!-- ANALYTICS TAB -->
+    <div class="tab-content" id="tab-analytics">
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="stat-value" id="statGens">-</div><div class="stat-label">Generations</div></div>
+        <div class="stat-card"><div class="stat-value" id="statChanges">-</div><div class="stat-label">Total Changes</div></div>
+        <div class="stat-card"><div class="stat-value" id="statAvgTime">-</div><div class="stat-label">Avg Duration</div></div>
+        <div class="stat-card"><div class="stat-value" id="statMonthly">-</div><div class="stat-label">This Month</div></div>
+      </div>
+      <div class="chart-container">
+        <div class="chart-title">Daily Generations (30 days)</div>
+        <div class="bar-chart" id="genChart"></div>
+      </div>
+      <div class="chart-container">
+        <div class="chart-title">Provider Breakdown</div>
+        <div class="provider-list" id="providerBreakdown"></div>
+      </div>
+    </div>
+
+    <!-- TEAM TAB -->
+    <div class="tab-content" id="tab-team">
+      <div id="teamNoOrg">
+        <div class="panel">
+          <div class="panel-header">&#128101; Create a Team</div>
+          <div class="panel-body">
+            <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:1rem">Create an organization to share analytics, manage seats, and collaborate on release notes.</p>
+            <div class="create-org-form">
+              <div class="form-group">
+                <label>Organization Name</label>
+                <input type="text" id="orgNameInput" placeholder="My Team" maxlength="64">
+              </div>
+              <button class="btn-small" onclick="createOrgAction()">Create</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="teamHasOrg" style="display:none">
+        <div class="panel">
+          <div class="panel-header">&#128101; Team</div>
+          <div class="panel-body">
+            <div class="team-header">
+              <div>
+                <div style="font-size:1.1rem;color:var(--text-bright)" id="orgName"></div>
+                <div style="font-size:0.75rem;color:var(--text-dim);font-family:'Space Mono',monospace" id="orgMeta"></div>
+              </div>
+            </div>
+            <div class="member-list" id="memberList"></div>
+            <div id="inviteSection" style="margin-top:1rem;display:none">
+              <div class="create-org-form">
+                <div class="form-group">
+                  <label>User ID to invite</label>
+                  <input type="text" id="inviteUserId" placeholder="User ID">
+                </div>
+                <button class="btn-small" onclick="inviteMember()">Invite</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -696,66 +1020,77 @@
 // --- State ---
 let currentOutput = '';
 let currentView = 'rendered';
-const MAX_HISTORY = 20;
+let currentUser = null;
 
-// --- License Gate ---
+// --- API helpers ---
 
-function getCullitKey() {
-  return (document.getElementById('cullitApiKey').value || '').trim();
+function apiUrl() {
+  return (document.getElementById('apiUrl').value || 'http://localhost:3000').replace(/\/+$/, '');
 }
 
-function isKeyValid(key) {
-  return /^clt_[a-zA-Z0-9]{32,}$/.test(key);
+async function apiFetch(path, opts = {}) {
+  const url = apiUrl() + path;
+  return fetch(url, { credentials: 'include', ...opts });
 }
 
-function onKeyChange() {
-  const key = getCullitKey();
-  const status = document.getElementById('keyStatus');
-  const btn = document.getElementById('generateBtn');
+// --- Auth ---
 
-  if (!key) {
-    status.textContent = 'Enter your API key to unlock the dashboard';
-    status.style.color = 'var(--text-dim)';
-    btn.disabled = true;
-    btn.textContent = '\uD83D\uDD12 PRO REQUIRED';
-    return;
-  }
-
-  if (!isKeyValid(key)) {
-    status.textContent = 'Invalid format — expected: clt_<key>';
-    status.style.color = 'var(--terminal-red)';
-    btn.disabled = true;
-    btn.textContent = '\uD83D\uDD12 PRO REQUIRED';
-    return;
-  }
-
-  status.textContent = '\u2705 Key accepted';
-  status.style.color = 'var(--terminal-green)';
-  btn.disabled = false;
-  btn.textContent = '\u26A1 GENERATE';
-
-  // Persist key in localStorage
-  try { localStorage.setItem('cullit_api_key', key); } catch {}
+async function checkAuth() {
+  try {
+    const res = await apiFetch('/auth/me');
+    if (res.ok) {
+      currentUser = await res.json();
+      showDashboard();
+      return;
+    }
+  } catch {}
+  showAuthWall();
 }
 
-// --- API ---
+function showAuthWall() {
+  document.getElementById('authWall').style.display = '';
+  document.getElementById('dashApp').style.display = 'none';
+  document.getElementById('navUser').style.display = 'none';
+  document.getElementById('loginBtn').href = apiUrl() + '/auth/github';
+}
+
+function showDashboard() {
+  document.getElementById('authWall').style.display = 'none';
+  document.getElementById('dashApp').style.display = '';
+
+  // Nav user
+  const nav = document.getElementById('navUser');
+  nav.style.display = 'flex';
+  document.getElementById('navAvatar').src = currentUser.avatarUrl || '';
+  document.getElementById('navLogin').textContent = currentUser.login;
+  document.getElementById('navTier').textContent = currentUser.tier;
+
+  checkHealth();
+  loadHistory();
+  loadAnalytics();
+  loadTeam();
+}
+
+async function logout() {
+  try { await apiFetch('/auth/logout', { method: 'POST' }); } catch {}
+  currentUser = null;
+  showAuthWall();
+}
+
+// --- Health ---
 
 async function checkHealth() {
-  const url = document.getElementById('apiUrl').value.replace(/\/+$/, '');
   const dot = document.getElementById('statusDot');
   const text = document.getElementById('statusText');
   const meta = document.getElementById('statusMeta');
-
   try {
-    const res = await fetch(url + '/health', { signal: AbortSignal.timeout(5000) });
+    const res = await apiFetch('/health');
     if (res.ok) {
       const data = await res.json();
       dot.className = 'status-dot connected';
       text.textContent = 'Connected';
       meta.textContent = 'v' + (data.version || '?');
-    } else {
-      throw new Error('Not OK');
-    }
+    } else { throw new Error(); }
   } catch {
     dot.className = 'status-dot disconnected';
     text.textContent = 'Not connected';
@@ -763,24 +1098,14 @@ async function checkHealth() {
   }
 }
 
+// --- Generate ---
+
 async function generate() {
   const btn = document.getElementById('generateBtn');
   const fromRef = document.getElementById('fromRef').value.trim();
   const toRef = document.getElementById('toRef').value.trim() || 'HEAD';
 
-  const apiKey = getCullitKey();
-  if (!isKeyValid(apiKey)) {
-    showToast('A valid Cullit API key is required. Get one at cullit.io/pricing');
-    return;
-  }
-
-  if (!fromRef) {
-    showToast('Please enter a "From" tag or SHA');
-    return;
-  }
-
-  const url = document.getElementById('apiUrl').value.replace(/\/+$/, '');
-  const token = document.getElementById('apiToken').value.trim();
+  if (!fromRef) { showToast('Please enter a "From" tag or SHA'); return; }
 
   const body = {
     from: fromRef,
@@ -802,31 +1127,28 @@ async function generate() {
 
   try {
     const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = 'Bearer ' + token;
-    headers['X-Cullit-Key'] = apiKey;
+    if (currentUser?.apiKey) headers['Authorization'] = 'Bearer ' + currentUser.apiKey;
 
-    const res = await fetch(url + '/generate', {
+    const res = await apiFetch('/generate', {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
     });
 
     const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.error || 'Generation failed');
-    }
+    if (!res.ok) throw new Error(data.error || 'Generation failed');
 
     currentOutput = data.formatted || JSON.stringify(data, null, 2);
     renderOutput();
-    addToHistory(fromRef, toRef, body.provider);
 
     dot.className = 'status-dot connected';
     statusText.textContent = 'Done';
     document.getElementById('statusMeta').textContent =
-      (data.changeCount || '?') + ' changes, ' +
-      (data.duration || '?') + 'ms';
+      (data.changeCount || '?') + ' changes, ' + (data.duration || '?') + 'ms';
 
+    // Refresh history + analytics after generation
+    loadHistory();
+    loadAnalytics();
   } catch (err) {
     dot.className = 'status-dot disconnected';
     statusText.textContent = 'Error';
@@ -843,7 +1165,6 @@ async function generate() {
 function renderOutput() {
   const container = document.getElementById('outputBody');
   if (!currentOutput) return;
-
   if (currentView === 'raw') {
     container.innerHTML = '<pre>' + escapeHtml(currentOutput) + '</pre>';
   } else {
@@ -868,33 +1189,20 @@ function copyOutput() {
   });
 }
 
-// --- Simple markdown renderer ---
-
 function simpleMarkdown(md) {
   let html = escapeHtml(md);
-
-  // Headers
   html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
   html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
   html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
-
-  // Bold / italic
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-
-  // Inline code
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-  // Unordered lists
   html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
   html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
-
-  // Line breaks for remaining text
   html = html.replace(/\n\n/g, '</p><p>');
   html = '<p>' + html + '</p>';
   html = html.replace(/<p>\s*<(h[123]|ul)/g, '<$1');
   html = html.replace(/<\/(h[123]|ul)>\s*<\/p>/g, '</$1>');
-
   return html;
 }
 
@@ -904,53 +1212,73 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// --- History ---
+// --- Dashboard Tabs ---
 
-function getHistory() {
-  try {
-    return JSON.parse(localStorage.getItem('cullit_history') || '[]');
-  } catch { return []; }
-}
-
-function addToHistory(from, to, provider) {
-  const history = getHistory();
-  history.unshift({
-    from, to, provider,
-    time: Date.now(),
-    output: currentOutput.slice(0, 500), // store preview only
+function switchDashTab(tab) {
+  document.querySelectorAll('.dash-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === tab);
   });
-  if (history.length > MAX_HISTORY) history.length = MAX_HISTORY;
-  localStorage.setItem('cullit_history', JSON.stringify(history));
-  renderHistory();
+  document.querySelectorAll('.tab-content').forEach(c => {
+    c.classList.toggle('active', c.id === 'tab-' + tab);
+  });
+  if (tab === 'history') loadHistory();
+  if (tab === 'analytics') loadAnalytics();
+  if (tab === 'team') loadTeam();
 }
 
-function renderHistory() {
+// --- History (server-side) ---
+
+let historyOffset = 0;
+const HISTORY_LIMIT = 20;
+
+async function loadHistory() {
   const list = document.getElementById('historyList');
-  const history = getHistory();
+  const pager = document.getElementById('historyPager');
+  try {
+    const res = await apiFetch('/v1/history?limit=' + HISTORY_LIMIT + '&offset=' + historyOffset);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
 
-  if (!history.length) {
-    list.innerHTML = '<div class="empty-state" style="min-height:60px"><p>No history yet</p></div>';
-    return;
+    if (!data.entries.length) {
+      list.innerHTML = '<div class="empty-state" style="min-height:100px"><p>No generation history yet</p></div>';
+      pager.innerHTML = '';
+      return;
+    }
+
+    list.innerHTML = data.entries.map(h => {
+      const date = new Date(h.createdAt);
+      const ago = timeAgo(date.getTime());
+      return '<div class="history-item" onclick="loadHistoryEntry(\'' + escapeHtml(h.from) + '\',\'' + escapeHtml(h.to) + '\',\'' + escapeHtml(h.provider) + '\',\'' + escapeHtml(h.summary) + '\')">' +
+        '<span><span class="tag">' + escapeHtml(h.from) + '</span> &rarr; ' + escapeHtml(h.to) + ' <span style="color:var(--terminal-purple);font-size:0.7rem">' + escapeHtml(h.provider) + '</span></span>' +
+        '<span class="time">' + escapeHtml(String(h.changeCount)) + ' changes &middot; ' + ago + '</span>' +
+        '</div>';
+    }).join('');
+
+    // Pager
+    const totalPages = Math.ceil(data.total / HISTORY_LIMIT);
+    const currentPage = Math.floor(historyOffset / HISTORY_LIMIT);
+    let pagerHtml = '';
+    if (currentPage > 0) {
+      pagerHtml += '<button class="btn-copy" onclick="historyOffset -= ' + HISTORY_LIMIT + '; loadHistory()">&larr; Prev</button>';
+    }
+    pagerHtml += '<span style="font-size:0.75rem;color:var(--text-dim);padding:0.35rem">' + (currentPage + 1) + '/' + totalPages + '</span>';
+    if (currentPage < totalPages - 1) {
+      pagerHtml += '<button class="btn-copy" onclick="historyOffset += ' + HISTORY_LIMIT + '; loadHistory()">Next &rarr;</button>';
+    }
+    pager.innerHTML = pagerHtml;
+  } catch {
+    list.innerHTML = '<div class="empty-state" style="min-height:100px"><p>Failed to load history</p></div>';
+    pager.innerHTML = '';
   }
-
-  list.innerHTML = history.map((h, i) => {
-    const ago = timeAgo(h.time);
-    return '<div class="history-item" onclick="loadHistory(' + i + ')">' +
-      '<span><span class="tag">' + escapeHtml(h.from) + '</span> &rarr; ' + escapeHtml(h.to) + '</span>' +
-      '<span class="time">' + ago + '</span>' +
-      '</div>';
-  }).join('');
 }
 
-function loadHistory(index) {
-  const history = getHistory();
-  const h = history[index];
-  if (!h) return;
-  document.getElementById('fromRef').value = h.from;
-  document.getElementById('toRef').value = h.to;
-  document.getElementById('provider').value = h.provider || 'none';
-  currentOutput = h.output;
+function loadHistoryEntry(from, to, provider, summary) {
+  document.getElementById('fromRef').value = from;
+  document.getElementById('toRef').value = to;
+  document.getElementById('provider').value = provider;
+  currentOutput = summary;
   renderOutput();
+  switchDashTab('generate');
 }
 
 function timeAgo(ts) {
@@ -961,12 +1289,177 @@ function timeAgo(ts) {
   return Math.floor(secs / 86400) + 'd ago';
 }
 
+// --- Analytics ---
+
+const PROVIDER_COLORS = {
+  anthropic: '#d97706', openai: '#10b981', gemini: '#3b82f6',
+  ollama: '#8b5cf6', openclaw: '#ec4899', none: '#6b7280',
+};
+
+async function loadAnalytics() {
+  try {
+    const res = await apiFetch('/v1/analytics/usage?days=30');
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+
+    // Stats cards
+    document.getElementById('statGens').textContent = data.totals.generations.toLocaleString();
+    document.getElementById('statChanges').textContent = data.totals.totalChanges.toLocaleString();
+    document.getElementById('statAvgTime').textContent = data.totals.avgDuration > 0 ? (data.totals.avgDuration / 1000).toFixed(1) + 's' : '-';
+    document.getElementById('statMonthly').textContent = data.monthlyGenerations.toLocaleString();
+
+    // Bar chart
+    renderBarChart(data.daily);
+
+    // Provider breakdown
+    renderProviders(data.topProviders);
+  } catch {
+    document.getElementById('statGens').textContent = '-';
+    document.getElementById('statChanges').textContent = '-';
+    document.getElementById('statAvgTime').textContent = '-';
+    document.getElementById('statMonthly').textContent = '-';
+  }
+}
+
+function renderBarChart(daily) {
+  const chart = document.getElementById('genChart');
+  if (!daily || !daily.length) {
+    chart.innerHTML = '<div class="empty-state" style="min-height:100px"><p>No data yet</p></div>';
+    return;
+  }
+
+  // Sort by date, fill gaps for last 30 days
+  const today = new Date();
+  const days = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().split('T')[0];
+    const entry = daily.find(e => e.date === key);
+    days.push({ date: key, generations: entry ? entry.generations : 0 });
+  }
+
+  const max = Math.max(...days.map(d => d.generations), 1);
+
+  chart.innerHTML = days.map(d => {
+    const height = Math.max(2, (d.generations / max) * 100);
+    const label = d.date.slice(5); // MM-DD
+    return '<div class="bar" style="height:' + height + '%" title="' + d.date + ': ' + d.generations + ' generations">' +
+      '<span class="bar-label">' + label + '</span></div>';
+  }).join('');
+}
+
+function renderProviders(topProviders) {
+  const container = document.getElementById('providerBreakdown');
+  if (!topProviders || !topProviders.length) {
+    container.innerHTML = '<span style="color:var(--text-dim);font-size:0.8rem">No data yet</span>';
+    return;
+  }
+  container.innerHTML = topProviders.map(p => {
+    const color = PROVIDER_COLORS[p.provider] || '#6b7280';
+    return '<div class="provider-chip"><span class="provider-dot" style="background:' + color + '"></span>' +
+      escapeHtml(p.provider) + ' <span style="color:var(--text-dim)">' + p.count + '</span></div>';
+  }).join('');
+}
+
+// --- Team ---
+
+async function loadTeam() {
+  try {
+    const res = await apiFetch('/v1/org');
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+
+    if (!data.org) {
+      document.getElementById('teamNoOrg').style.display = '';
+      document.getElementById('teamHasOrg').style.display = 'none';
+      return;
+    }
+
+    document.getElementById('teamNoOrg').style.display = 'none';
+    document.getElementById('teamHasOrg').style.display = '';
+    document.getElementById('orgName').textContent = data.org.name;
+    document.getElementById('orgMeta').textContent = data.org.tier.toUpperCase() + ' \u2022 ' + data.org.memberCount + '/' + data.org.maxSeats + ' seats';
+
+    const isAdmin = currentUser && (currentUser.role === 'owner' || currentUser.role === 'admin');
+    document.getElementById('inviteSection').style.display = isAdmin ? '' : 'none';
+
+    const members = data.members || [];
+    document.getElementById('memberList').innerHTML = members.map(m => {
+      const removeBtn = isAdmin && m.id !== currentUser.id
+        ? '<button class="btn-danger" onclick="removeMember(\'' + m.id + '\')">Remove</button>'
+        : '';
+      return '<div class="member-row">' +
+        '<img src="' + escapeHtml(m.avatarUrl || '') + '" alt="">' +
+        '<div class="member-info"><div class="member-name">' + escapeHtml(m.name || m.login) + '</div>' +
+        '<div class="member-role">' + escapeHtml(m.role) + '</div></div>' +
+        removeBtn + '</div>';
+    }).join('');
+  } catch {
+    document.getElementById('teamNoOrg').style.display = '';
+    document.getElementById('teamHasOrg').style.display = 'none';
+  }
+}
+
+async function createOrgAction() {
+  const name = document.getElementById('orgNameInput').value.trim();
+  if (!name || name.length < 2) { showToast('Organization name must be at least 2 characters'); return; }
+
+  try {
+    const res = await apiFetch('/v1/org', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create organization');
+    showToast('Organization created: ' + data.org.name);
+    await checkAuth(); // refresh user state
+  } catch (err) {
+    showToast(err.message);
+  }
+}
+
+async function inviteMember() {
+  const userId = document.getElementById('inviteUserId').value.trim();
+  if (!userId) { showToast('Enter a user ID to invite'); return; }
+
+  try {
+    const res = await apiFetch('/v1/org/invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to invite member');
+    document.getElementById('inviteUserId').value = '';
+    loadTeam();
+  } catch (err) {
+    showToast(err.message);
+  }
+}
+
+async function removeMember(userId) {
+  if (!confirm('Remove this member from the organization?')) return;
+  try {
+    const res = await apiFetch('/v1/org/members', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to remove member');
+    loadTeam();
+  } catch (err) {
+    showToast(err.message);
+  }
+}
+
 // --- Toast ---
 
 function showToast(msg) {
   const existing = document.querySelector('.toast');
   if (existing) existing.remove();
-
   const toast = document.createElement('div');
   toast.className = 'toast';
   toast.textContent = msg;
@@ -977,19 +1470,10 @@ function showToast(msg) {
 // --- Init ---
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Restore saved API key
-  try {
-    const savedKey = localStorage.getItem('cullit_api_key');
-    if (savedKey) {
-      document.getElementById('cullitApiKey').value = savedKey;
-    }
-  } catch {}
-  onKeyChange();
-
-  checkHealth();
-  renderHistory();
-  // Re-check health when API URL changes
-  document.getElementById('apiUrl').addEventListener('change', checkHealth);
+  checkAuth();
+  document.getElementById('apiUrl').addEventListener('change', () => {
+    checkAuth();
+  });
 
   // Hamburger nav toggle
   const hamburger = document.getElementById('hamburger');

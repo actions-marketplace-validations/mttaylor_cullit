@@ -18,9 +18,19 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
 import { createHash } from 'crypto';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { randomBytes } from 'crypto';
 import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS } from '@cullit/core';
 import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget } from '@cullit/core';
 import { openApiSpec } from './openapi.js';
+import {
+  handleAuthRedirect, handleAuthCallback, handleAuthMe, handleAuthLogout,
+  resolveUser, getUser, getOrg, createOrg, addOrgMember, removeOrgMember, getOrgMembers,
+} from './auth.js';
+import {
+  addHistoryEntry, getHistory, getHistoryCount,
+  recordUsageEvent, getUsageStats, getMonthlyGenerationCount,
+  type HistoryEntry,
+} from './store.js';
 
 // Load pro plugins if installed
 try { await import('@cullit/pro'); } catch { /* pro not installed */ }
@@ -83,6 +93,7 @@ function json(res: ServerResponse, status: number, body: unknown): void {
     'Content-Type': 'application/json',
     'Content-Length': Buffer.byteLength(payload),
     'Access-Control-Allow-Origin': ALLOWED_ORIGINS,
+    'Access-Control-Allow-Credentials': 'true',
   });
   res.end(payload);
 }
@@ -353,6 +364,34 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
 
     setCachedResult(cacheKey, response);
     json(res, 200, response);
+
+    // Record history + analytics (fire-and-forget, don't block response)
+    const user = resolveUser(req);
+    if (user) {
+      const entry: HistoryEntry = {
+        id: randomBytes(8).toString('hex'),
+        userId: user.id,
+        project: body.from,
+        from: body.from,
+        to,
+        provider: config.ai.provider,
+        format,
+        changeCount: result.notes.changes.length,
+        summary: result.formatted.slice(0, 500),
+        duration: result.duration,
+        createdAt: new Date().toISOString(),
+      };
+      addHistoryEntry(entry);
+      recordUsageEvent({
+        userId: user.id,
+        orgId: user.orgId,
+        project: body.from,
+        provider: config.ai.provider,
+        changeCount: result.notes.changes.length,
+        duration: result.duration,
+        timestamp: entry.createdAt,
+      });
+    }
   } catch (err) {
     console.error('Pipeline error:', (err as Error).message);
     json(res, 500, { error: 'Generation failed. Check server logs for details.' });
@@ -478,6 +517,135 @@ async function handleChangelogLatest(req: IncomingMessage, res: ServerResponse, 
   json(res, 200, { project, releases: result });
 }
 
+// --- Team / Org Endpoints ---
+
+async function handleGetOrg(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  if (!user.orgId) { json(res, 200, { org: null }); return; }
+
+  const org = getOrg(user.orgId);
+  if (!org) { json(res, 200, { org: null }); return; }
+
+  const members = getOrgMembers(org.id).map(m => ({
+    id: m.id, login: m.login, name: m.name, avatarUrl: m.avatarUrl, role: m.role,
+  }));
+
+  json(res, 200, {
+    org: { id: org.id, name: org.name, slug: org.slug, tier: org.tier, maxSeats: org.maxSeats, memberCount: members.length, createdAt: org.createdAt },
+    members,
+  });
+}
+
+async function handleCreateOrg(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  if (user.orgId) { json(res, 409, { error: 'Already a member of an organization' }); return; }
+
+  const raw = await readBody(req);
+  let body: { name?: string };
+  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
+
+  if (!body.name || typeof body.name !== 'string' || body.name.length < 2 || body.name.length > 64) {
+    json(res, 400, { error: '"name" is required (2-64 characters)' }); return;
+  }
+
+  const org = createOrg(body.name, user);
+  json(res, 201, { org: { id: org.id, name: org.name, slug: org.slug, tier: org.tier } });
+}
+
+async function handleOrgInvite(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  if (!user.orgId || (user.role !== 'owner' && user.role !== 'admin')) {
+    json(res, 403, { error: 'Must be org owner or admin to invite members' }); return;
+  }
+
+  const raw = await readBody(req);
+  let body: { userId?: string; role?: 'admin' | 'member' };
+  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
+
+  if (!body.userId || typeof body.userId !== 'string') {
+    json(res, 400, { error: '"userId" is required' }); return;
+  }
+
+  const targetUser = getUser(body.userId);
+  if (!targetUser) {
+    json(res, 404, { error: 'User not found' }); return;
+  }
+
+  const role = body.role === 'admin' ? 'admin' : 'member';
+  const success = addOrgMember(user.orgId, targetUser, role);
+  if (!success) {
+    json(res, 409, { error: 'Cannot add member (org full or already a member)' }); return;
+  }
+
+  json(res, 200, { ok: true });
+}
+
+async function handleOrgRemoveMember(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  if (!user.orgId || (user.role !== 'owner' && user.role !== 'admin')) {
+    json(res, 403, { error: 'Must be org owner or admin to remove members' }); return;
+  }
+
+  const raw = await readBody(req);
+  let body: { userId?: string };
+  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
+
+  if (!body.userId || typeof body.userId !== 'string') {
+    json(res, 400, { error: '"userId" is required' }); return;
+  }
+
+  const success = removeOrgMember(user.orgId, body.userId);
+  if (!success) {
+    json(res, 409, { error: 'Cannot remove member (owner, not found, or not a member)' }); return;
+  }
+
+  json(res, 200, { ok: true });
+}
+
+// --- History Endpoint ---
+
+async function handleGetHistory(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+
+  const url = new URL(req.url || '/', `http://localhost:${PORT}`);
+  const rawLimit = parseInt(url.searchParams.get('limit') || '20', 10);
+  const limit = Math.max(1, Math.min(isNaN(rawLimit) ? 20 : rawLimit, 100));
+  const rawOffset = parseInt(url.searchParams.get('offset') || '0', 10);
+  const offset = Math.max(0, isNaN(rawOffset) ? 0 : rawOffset);
+
+  const entries = getHistory(user.id, limit, offset);
+  const total = getHistoryCount(user.id);
+
+  json(res, 200, { entries, total, limit, offset });
+}
+
+// --- Analytics Endpoint ---
+
+async function handleGetAnalytics(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+
+  const url = new URL(req.url || '/', `http://localhost:${PORT}`);
+  const rawDays = parseInt(url.searchParams.get('days') || '30', 10);
+  const days = Math.max(1, Math.min(isNaN(rawDays) ? 30 : rawDays, 90));
+
+  // Use org-level stats if in an org, otherwise user-level
+  const key = user.orgId || user.id;
+  const stats = getUsageStats(key, days);
+  const monthlyCount = getMonthlyGenerationCount(key);
+
+  json(res, 200, {
+    ...stats,
+    monthlyGenerations: monthlyCount,
+    tier: user.tier,
+  });
+}
+
 // --- Router ---
 
 const server = createServer(async (req, res) => {
@@ -485,8 +653,9 @@ const server = createServer(async (req, res) => {
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
       'Access-Control-Allow-Origin': ALLOWED_ORIGINS,
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Credentials': 'true',
       'Access-Control-Max-Age': '86400',
     });
     res.end();
@@ -497,10 +666,23 @@ const server = createServer(async (req, res) => {
   const path = url.pathname;
 
   try {
-    if (path === '/health' && req.method === 'GET') {
+    // --- Auth routes (no rate limit — OAuth has its own protection) ---
+    if (path === '/auth/github' && req.method === 'GET') {
+      handleAuthRedirect(req, res);
+    } else if (path === '/auth/callback' && req.method === 'GET') {
+      await handleAuthCallback(req, res);
+    } else if (path === '/auth/me' && req.method === 'GET') {
+      handleAuthMe(req, res, json);
+    } else if (path === '/auth/logout' && req.method === 'POST') {
+      handleAuthLogout(req, res, json);
+
+    // --- Public / system routes ---
+    } else if (path === '/health' && req.method === 'GET') {
       await handleHealth(req, res);
     } else if (path === '/openapi.json' && req.method === 'GET') {
       await handleOpenAPI(req, res);
+
+    // --- Authenticated routes ---
     } else if (path === '/generate' && req.method === 'POST') {
       if (!checkAuth(req, res)) return;
       if (!checkRateLimit(req, res)) return;
@@ -510,7 +692,6 @@ const server = createServer(async (req, res) => {
       if (!checkRateLimit(req, res)) return;
       await handleChangelogPublish(req, res);
     } else if (req.method === 'GET' && path.match(/^\/v1\/changelog\/[^/]+\/latest$/)) {
-      // Public endpoint — no auth required (CORS-enabled for widget embedding)
       if (!checkRateLimit(req, res)) return;
       const project = path.split('/')[3];
       if (!/^[a-zA-Z0-9_-]{1,64}$/.test(project)) {
@@ -518,6 +699,26 @@ const server = createServer(async (req, res) => {
         return;
       }
       await handleChangelogLatest(req, res, project);
+
+    // --- Team / Org routes ---
+    } else if (path === '/v1/org' && req.method === 'GET') {
+      await handleGetOrg(req, res);
+    } else if (path === '/v1/org' && req.method === 'POST') {
+      if (!checkRateLimit(req, res)) return;
+      await handleCreateOrg(req, res);
+    } else if (path === '/v1/org/invite' && req.method === 'POST') {
+      if (!checkRateLimit(req, res)) return;
+      await handleOrgInvite(req, res);
+    } else if (path === '/v1/org/members' && req.method === 'DELETE') {
+      if (!checkRateLimit(req, res)) return;
+      await handleOrgRemoveMember(req, res);
+
+    // --- History & Analytics ---
+    } else if (path === '/v1/history' && req.method === 'GET') {
+      await handleGetHistory(req, res);
+    } else if (path === '/v1/analytics/usage' && req.method === 'GET') {
+      await handleGetAnalytics(req, res);
+
     } else {
       json(res, 404, { error: 'Not found', docs: '/openapi.json' });
     }
@@ -540,6 +741,11 @@ if (isDirectRun) {
   ║  POST /generate                Notes      ║
   ║  POST /v1/changelog            Publish    ║
   ║  GET  /v1/changelog/:p/latest  Releases   ║
+  ║  GET  /auth/github             Login      ║
+  ║  GET  /auth/me                 Profile    ║
+  ║  GET  /v1/org                  Team       ║
+  ║  GET  /v1/history              History    ║
+  ║  GET  /v1/analytics/usage      Analytics  ║
   ╚═══════════════════════════════════════════╝
   `);
   });
