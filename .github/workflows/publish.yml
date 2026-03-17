@@ -24,6 +24,7 @@ on:
 
 permissions:
   contents: write  # For GitHub Release
+  id-token: write  # For npm provenance attestation
 
 jobs:
   publish:
@@ -76,7 +77,7 @@ jobs:
           if npm view @cullit/config@$VERSION version 2>/dev/null; then
             echo "@cullit/config@$VERSION already published, skipping"
           else
-            pnpm --filter @cullit/config publish --access public --no-git-checks
+            pnpm --filter @cullit/config publish --access public --no-git-checks --provenance
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -87,7 +88,7 @@ jobs:
           if npm view @cullit/core@$VERSION version 2>/dev/null; then
             echo "@cullit/core@$VERSION already published, skipping"
           else
-            pnpm --filter @cullit/core publish --access public --no-git-checks
+            pnpm --filter @cullit/core publish --access public --no-git-checks --provenance
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -98,7 +99,7 @@ jobs:
           if npm view cullit@$VERSION version 2>/dev/null; then
             echo "cullit@$VERSION already published, skipping"
           else
-            pnpm --filter cullit publish --access public --no-git-checks
+            pnpm --filter cullit publish --access public --no-git-checks --provenance
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -1,6 +1,6 @@
 # Contributing to Cullit
 
-Thanks for your interest in contributing. Cullit is open source and PRs are welcome.
+Thanks for your interest in contributing! Cullit is open source and PRs are welcome.
 
 ## Development Setup
 
@@ -9,42 +9,117 @@ Thanks for your interest in contributing. Cullit is open source and PRs are welc
 git clone https://github.com/mttaylor/cullit.git
 cd cullit
 
-# Install dependencies
+# Install dependencies (requires pnpm 9+)
 pnpm install
 
-# Build
+# Build all packages
 pnpm build
 
-# Test
+# Run tests
 pnpm test
+
+# Lint
+pnpm lint
 
 # Run CLI locally
 node packages/cli/dist/index.js generate --from <tag1> --to <tag2>
 ```
 
+## Architecture
+
+Cullit is a pnpm monorepo with a staged pipeline architecture:
+
+```
+┌───────────┐    ┌──────────┐    ┌───────────┐    ┌───────────┐
+│ Collector  │ →  │ Enricher │ →  │ Generator │ →  │ Publisher │
+│ (git diff) │    │ (Jira/   │    │ (AI or    │    │ (stdout/  │
+│            │    │  Linear) │    │  template)│    │  file/…)  │
+└───────────┘    └──────────┘    └───────────┘    └───────────┘
+```
+
+**Pipeline stages:**
+1. **Collect** — Gather commits between two refs (tags, SHAs, branches)
+2. **Enrich** — Cross-reference commits with Jira/Linear tickets (optional, Pro)
+3. **Generate** — Produce structured release notes via AI or the built-in template engine
+4. **Publish** — Output to stdout, file, Slack, Discord, GitHub Release, etc.
+
 ## Project Structure
 
 ```
 packages/
-  core/     — Shared logic (git, AI, integrations, formatting)
-  cli/      — CLI entry point
-  config/   — Config loading + validation
-  api/      — REST API server
-  pro/      — Pro integrations (GitLab, Bitbucket, Teams, Confluence, Notion, AI)
-  app/      — GitHub App webhook handler
-src/
-  action.ts — GitHub Action wrapper (bundled to dist/)
+  config/   — Config loading (.cullit.yml), YAML parsing, type definitions
+  core/     — Pipeline orchestration, git collector, template generator,
+              formatting, license gating, constants
+  cli/      — CLI entry point (parseArgs, commands)
+  api/      — REST API server (zero-dependency, Node http module)
+  pro/      — Pro features: AI generators (Anthropic, OpenAI, Gemini,
+              Ollama, OpenClaw), source collectors (Jira, Linear, GitLab,
+              Bitbucket), enrichers (Jira, Linear), publishers (Slack,
+              Discord, Teams, GitHub Release, GitLab Release, Confluence,
+              Notion, Changelog)
+  app/      — GitHub App webhook handler (auto-generate on release/tag)
 site/
-  index.html    — Marketing site
-  dashboard.html — Web dashboard
+  *.html    — Static marketing site, docs, dashboard, tutorial
 ```
+
+**Dependency order:** `config` → `core` → `cli` / `api` / `pro` → `app`
+
+## Testing
+
+We use [vitest](https://vitest.dev/) for all tests.
+
+```bash
+# Run all tests
+pnpm test
+
+# Run tests for a specific package
+pnpm --filter @cullit/core test
+
+# Run a specific test file
+pnpm vitest run packages/core/__tests__/gate.test.ts
+
+# Run in watch mode
+pnpm vitest packages/core
+```
+
+**Test conventions:**
+- Test files live in `packages/<pkg>/__tests__/`
+- Name test files `<module>.test.ts`
+- Use `vi.stubEnv()` for environment variables, `vi.fn()` for mocks
+- Mock `fetch` with `vi.stubGlobal('fetch', ...)` for HTTP tests
+- Each test should be independent — no shared mutable state
+
+## Code Style
+
+- **TypeScript strict mode** — all packages use `strict: true`
+- **ESM only** — use `import`/`export`, no CommonJS
+- **No runtime dependencies** in `@cullit/core` — use Node built-ins only
+- **Lint** with `pnpm lint` (ESLint + TypeScript rules)
+- Prefer `const` over `let`, never use `var`
+- Use `===` for equality checks
+- Suffix unused parameters with `_` (e.g., `_req`)
+
+## Commit Convention
+
+Cullit uses [Conventional Commits](https://www.conventionalcommits.org/) since the tool itself relies on them:
+
+```
+feat: add GitLab release publisher
+fix: handle empty commit messages in parser
+docs: update env var table in docs
+chore: bump vitest to 1.6.1
+feat!: rename --output flag to --format (BREAKING)
+```
+
+Prefixes: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `perf`, `ci`, `build`
 
 ## Pull Requests
 
 - Keep PRs focused on a single change
-- Add tests for new features
-- Run `pnpm test` before submitting
-- Follow existing code style
+- Add tests for new features or bug fixes
+- Run `pnpm test` and `pnpm lint` before submitting
+- Use conventional commit format for PR titles
+- Fill out the PR description explaining what changed and why
 
 ## Issues
 
@@ -52,4 +127,4 @@ Found a bug or have a feature request? Open an issue on GitHub.
 
 ## License
 
-MIT — see [LICENSE](LICENSE)
+By contributing, you agree that your contributions will be licensed under the [MIT License](LICENSE).

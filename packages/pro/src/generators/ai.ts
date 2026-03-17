@@ -193,10 +193,13 @@ Rules:
   private async callGemini(prompt: string, apiKey: string, model?: string, maxTokens: number = 4096): Promise<string> {
     const modelId = model || 'gemini-2.0-flash';
     const response = await this.fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${encodeURIComponent(apiKey)}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
+        },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: { temperature: 0.3, maxOutputTokens: maxTokens },

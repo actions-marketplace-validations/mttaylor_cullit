@@ -368,13 +368,16 @@ const server = createServer(async (req, res) => {
   try {
     const body = await readBody(req);
 
-    // Verify webhook signature
-    if (WEBHOOK_SECRET) {
-      const sig = req.headers['x-hub-signature-256'] as string;
-      if (!verifySignature(body, sig)) {
-        json(res, 401, { error: 'Invalid signature' });
-        return;
-      }
+    // Verify webhook signature (always required)
+    const sig = req.headers['x-hub-signature-256'] as string;
+    if (!WEBHOOK_SECRET) {
+      console.error('GITHUB_WEBHOOK_SECRET is not set — rejecting all webhooks');
+      json(res, 500, { error: 'Server misconfigured: webhook secret not set' });
+      return;
+    }
+    if (!verifySignature(body, sig)) {
+      json(res, 401, { error: 'Invalid signature' });
+      return;
     }
 
     const event = req.headers['x-github-event'] as string;

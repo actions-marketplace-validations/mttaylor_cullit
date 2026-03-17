@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cullit — Interactive Tutorial</title>
 <meta name="description" content="Step-by-step tutorial for Cullit — AI-powered release notes. Learn to install, configure, generate, and publish release notes in under 10 minutes.">
+<meta property="og:title" content="Cullit — Interactive Tutorial">
+<meta property="og:description" content="Learn to generate AI-powered release notes in under 10 minutes.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cullit.io/tutorial">
+<meta property="og:image" content="https://cullit.io/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://cullit.io/tutorial">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Chakra+Petch:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -67,7 +76,11 @@
     color: var(--accent);
     text-decoration: none;
     letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
+  .logo-mark { width: 28px; height: 28px; flex-shrink: 0; }
   .logo span { color: var(--text-dim); font-weight: 400; }
 
   .nav-links { display: flex; gap: 2rem; align-items: center; }
@@ -735,7 +748,7 @@
 
 <!-- NAV -->
 <nav>
-  <a href="index.html" class="logo">cullit<span>.io</span></a>
+  <a href="index.html" class="logo"><svg class="logo-mark" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#0f1117"/><path d="M42 22A17 17 0 1 0 42 42" stroke="#5eead4" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="50" cy="32" r="3.5" fill="#2dd4bf"/></svg>cullit<span>.io</span></a>
   <div class="nav-links" id="navLinks">
     <a href="index.html">Home</a>
     <a href="docs.html">Docs</a>
@@ -895,7 +908,7 @@
 <span class="t-output">added 1 package in 2s</span><br>
 <br>
 <span class="t-prompt">$</span> <span class="t-cmd">cullit --version</span><br>
-<span class="t-accent">cullit v0.2.1</span>
+<span class="t-accent">cullit v1.3.0</span>
         </div>
       </div>
 

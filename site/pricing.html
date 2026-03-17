@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pricing — Cullit</title>
+<meta name="description" content="Cullit pricing plans — Free, Pro, Team, and Enterprise. AI-powered release notes from $0/mo. BYOK support, Jira & Linear enrichment, multi-provider AI.">
+<meta property="og:title" content="Pricing — Cullit">
+<meta property="og:description" content="Cullit pricing — AI release notes from $0/mo. Free, Pro, Team & Enterprise plans.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cullit.io/pricing">
+<meta property="og:image" content="https://cullit.io/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://cullit.io/pricing">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Chakra+Petch:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg-card: #161822;
+    --bg-card-hover: #1e2030;
+    --accent: #5eead4;
+    --accent-dim: #2dd4bf;
+    --text: #d4d4e0;
+    --text-dim: #7e819a;
+    --text-bright: #f0f0f5;
+    --border: #282a3a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(15, 17, 23, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-bright);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .logo-mark { width: 28px; height: 28px; flex-shrink: 0; }
+  .logo span { color: var(--accent); }
+  .nav-links { display: flex; gap: 2rem; align-items: center; }
+  .nav-links a {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+  .nav-cta {
+    background: var(--accent) !important;
+    color: var(--bg) !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 6px;
+    font-weight: 600 !important;
+  }
+
+  /* PRICING */
+  .pricing-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 8rem 2rem 4rem;
+  }
+
+  .pricing-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .pricing-header h1 {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 0.75rem;
+  }
+
+  .pricing-header p {
+    color: var(--text-dim);
+    font-size: 1.05rem;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 4rem;
+  }
+
+  .pricing-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.2s;
+  }
+
+  .pricing-card:hover {
+    border-color: var(--accent);
+  }
+
+  .pricing-card.featured {
+    border-color: var(--accent);
+    position: relative;
+  }
+
+  .pricing-card.featured::before {
+    content: 'Most Popular';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--accent);
+    color: var(--bg);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .plan-name {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-bright);
+    margin-bottom: 0.5rem;
+  }
+
+  .plan-price {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.25rem;
+  }
+
+  .plan-price .period {
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: var(--text-dim);
+  }
+
+  .plan-desc {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-bottom: 1.5rem;
+    min-height: 2.5rem;
+  }
+
+  .plan-features {
+    list-style: none;
+    margin-bottom: 1.5rem;
+    flex: 1;
+  }
+
+  .plan-features li {
+    font-size: 0.88rem;
+    color: var(--text);
+    padding: 0.4rem 0;
+    border-bottom: 1px solid rgba(40, 42, 58, 0.5);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .plan-features li:last-child {
+    border-bottom: none;
+  }
+
+  .plan-features .check {
+    color: var(--accent);
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .plan-features .dash {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .plan-btn {
+    display: block;
+    text-align: center;
+    padding: 0.75rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+
+  .plan-btn:hover { opacity: 0.85; }
+
+  .plan-btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  .plan-btn-outline {
+    border: 2px solid var(--border);
+    color: var(--text);
+  }
+
+  .plan-btn-outline:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* FAQ */
+  .faq-section {
+    max-width: 700px;
+    margin: 0 auto 3rem;
+  }
+
+  .faq-section h2 {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.6rem;
+    color: var(--text-bright);
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .faq-item {
+    border-bottom: 1px solid var(--border);
+    padding: 1.25rem 0;
+  }
+
+  .faq-item:first-of-type {
+    border-top: 1px solid var(--border);
+  }
+
+  .faq-q {
+    font-family: 'Chakra Petch', sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-bright);
+    margin-bottom: 0.5rem;
+  }
+
+  .faq-a {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .faq-a a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .faq-a a:hover { text-decoration: underline; }
+
+  /* FOOTER */
+  footer {
+    padding: 3rem 2rem;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+  .footer-brand {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+  .footer-brand a { color: var(--accent); text-decoration: none; }
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .footer-links a {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--accent); }
+
+  /* HAMBURGER */
+  .hamburger {
+    display: none;
+    background: none; border: none; cursor: pointer;
+    flex-direction: column; gap: 5px; padding: 4px; z-index: 301;
+  }
+  .hamburger span {
+    display: block; width: 22px; height: 2px;
+    background: var(--text); border-radius: 2px;
+    transition: transform 0.3s, opacity 0.3s;
+  }
+  .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .hamburger.open span:nth-child(2) { opacity: 0; }
+  .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 768px) {
+    .pricing-container { padding: 6rem 1.25rem 3rem; }
+    .pricing-header h1 { font-size: 1.8rem; }
+    .hamburger { display: flex; }
+    .nav-links {
+      display: none; position: fixed; top: 52px; right: 0;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 0 0 0 8px;
+      flex-direction: column; padding: 1rem 1.5rem; gap: 0.8rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .nav-links.open { display: flex; }
+  }
+
+  @media (max-width: 520px) {
+    .pricing-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo"><svg class="logo-mark" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#0f1117"/><path d="M42 22A17 17 0 1 0 42 42" stroke="#5eead4" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="50" cy="32" r="3.5" fill="#2dd4bf"/></svg>cullit<span>.io</span></a>
+  <div class="nav-links" id="navLinks">
+    <a href="docs.html">Docs</a>
+    <a href="tutorial.html">Tutorial</a>
+    <a href="https://github.com/mttaylor/cullit" target="_blank">GitHub</a>
+    <a href="index.html#cta" class="nav-cta">Get Started Free</a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
+</nav>
+
+<main class="pricing-container">
+  <header class="pricing-header">
+    <h1>Simple, transparent <span style="color: var(--accent)">pricing</span></h1>
+    <p>Start free. Upgrade when you need AI, integrations, or team features.</p>
+  </header>
+
+  <div class="pricing-grid">
+
+    <!-- FREE -->
+    <div class="pricing-card">
+      <div class="plan-name">Free</div>
+      <div class="plan-price">$0 <span class="period">/ mo</span></div>
+      <p class="plan-desc">Get started with template-based release notes.</p>
+      <ul class="plan-features">
+        <li><span class="check">&#10003;</span> 3 generations / month</li>
+        <li><span class="check">&#10003;</span> 1 project</li>
+        <li><span class="check">&#10003;</span> Git commit collector</li>
+        <li><span class="check">&#10003;</span> Template-based generator</li>
+        <li><span class="check">&#10003;</span> Stdout &amp; file output</li>
+        <li><span class="check">&#10003;</span> CLI &amp; GitHub Action</li>
+        <li><span class="dash">&mdash;</span> AI generation</li>
+        <li><span class="dash">&mdash;</span> Jira / Linear enrichment</li>
+      </ul>
+      <a href="docs.html" class="plan-btn plan-btn-outline">Get Started</a>
+    </div>
+
+    <!-- PRO -->
+    <div class="pricing-card featured">
+      <div class="plan-name">Pro</div>
+      <div class="plan-price">$19 <span class="period">/ mo</span></div>
+      <p class="plan-desc">AI-powered notes with your own API keys.</p>
+      <ul class="plan-features">
+        <li><span class="check">&#10003;</span> 500 generations / month</li>
+        <li><span class="check">&#10003;</span> 5 projects</li>
+        <li><span class="check">&#10003;</span> All free features</li>
+        <li><span class="check">&#10003;</span> AI generation (BYOK)</li>
+        <li><span class="check">&#10003;</span> OpenAI, Anthropic, Gemini, Ollama</li>
+        <li><span class="check">&#10003;</span> Jira &amp; Linear enrichment</li>
+        <li><span class="check">&#10003;</span> All publishers</li>
+        <li><span class="dash">&mdash;</span> Priority support</li>
+      </ul>
+      <a href="mailto:sales@cullit.io?subject=Cullit%20Pro" class="plan-btn plan-btn-primary">Start Pro</a>
+    </div>
+
+    <!-- TEAM -->
+    <div class="pricing-card">
+      <div class="plan-name">Team</div>
+      <div class="plan-price">$49 <span class="period">/ mo</span></div>
+      <p class="plan-desc">For teams shipping across multiple repos.</p>
+      <ul class="plan-features">
+        <li><span class="check">&#10003;</span> 2,000 generations / month</li>
+        <li><span class="check">&#10003;</span> 25 projects</li>
+        <li><span class="check">&#10003;</span> All Pro features</li>
+        <li><span class="check">&#10003;</span> Multi-repo collectors</li>
+        <li><span class="check">&#10003;</span> GitLab &amp; Bitbucket</li>
+        <li><span class="check">&#10003;</span> Confluence &amp; Notion</li>
+        <li><span class="check">&#10003;</span> Priority support</li>
+        <li><span class="check">&#10003;</span> Team usage dashboard</li>
+      </ul>
+      <a href="mailto:sales@cullit.io?subject=Cullit%20Team" class="plan-btn plan-btn-outline">Start Team</a>
+    </div>
+
+    <!-- ENTERPRISE -->
+    <div class="pricing-card">
+      <div class="plan-name">Enterprise</div>
+      <div class="plan-price">Custom</div>
+      <p class="plan-desc">Unlimited usage with dedicated support.</p>
+      <ul class="plan-features">
+        <li><span class="check">&#10003;</span> Unlimited generations</li>
+        <li><span class="check">&#10003;</span> Unlimited projects</li>
+        <li><span class="check">&#10003;</span> All Team features</li>
+        <li><span class="check">&#10003;</span> Self-hosted / on-prem</li>
+        <li><span class="check">&#10003;</span> SSO &amp; SAML</li>
+        <li><span class="check">&#10003;</span> Custom integrations</li>
+        <li><span class="check">&#10003;</span> Dedicated support &amp; SLA</li>
+        <li><span class="check">&#10003;</span> Invoice billing</li>
+      </ul>
+      <a href="mailto:sales@cullit.io?subject=Cullit%20Enterprise" class="plan-btn plan-btn-outline">Contact Sales</a>
+    </div>
+
+  </div>
+
+  <!-- FAQ -->
+  <section class="faq-section">
+    <h2>Frequently asked questions</h2>
+
+    <div class="faq-item">
+      <p class="faq-q">What does BYOK mean?</p>
+      <p class="faq-a">Bring Your Own Key. You provide your own API key for OpenAI, Anthropic, Google Gemini, or Ollama. Cullit never stores or proxies your keys &mdash; they stay in your environment.</p>
+    </div>
+
+    <div class="faq-item">
+      <p class="faq-q">Can I use Cullit without AI?</p>
+      <p class="faq-a">Yes. The free tier uses template-based generation from your git history. No API key required.</p>
+    </div>
+
+    <div class="faq-item">
+      <p class="faq-q">What counts as a &ldquo;generation&rdquo;?</p>
+      <p class="faq-a">Each run of <code style="background: var(--bg-card); padding: 0.15rem 0.4rem; border-radius: 4px;">cullit generate</code> counts as one generation, whether via CLI, GitHub Action, or API.</p>
+    </div>
+
+    <div class="faq-item">
+      <p class="faq-q">Is there a free trial for Pro?</p>
+      <p class="faq-a">The free tier lets you try the full workflow. When you upgrade, Pro features activate immediately.</p>
+    </div>
+
+    <div class="faq-item">
+      <p class="faq-q">How do I cancel?</p>
+      <p class="faq-a">Email <a href="mailto:sales@cullit.io">sales@cullit.io</a> anytime. No lock-in, no questions asked.</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p class="footer-brand">Built by <a href="https://cullit.io" target="_blank">Cullit</a></p>
+  <div class="footer-links">
+    <a href="https://github.com/mttaylor/cullit" target="_blank">GitHub</a>
+    <a href="https://cullit.io" target="_blank">Blog</a>
+    <a href="https://x.com/Cullit_io" target="_blank">X / Twitter</a>
+    <a href="https://www.linkedin.com/company/cullit/" target="_blank">LinkedIn</a>
+    <a href="terms.html">Terms</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="mailto:sales@cullit.io">sales@cullit.io</a>
+  </div>
+</footer>
+
+<script>
+const hamburger = document.getElementById('hamburger');
+const navLinks = document.getElementById('navLinks');
+hamburger.addEventListener('click', () => {
+  hamburger.classList.toggle('open');
+  navLinks.classList.toggle('open');
+});
+</script>
+
+</body>
+</html>

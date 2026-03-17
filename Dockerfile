@@ -48,6 +48,10 @@ COPY --from=build /app/packages/pro/dist/ packages/pro/dist/
 
 RUN pnpm install --prod --frozen-lockfile
 
+# Run as non-root user
+RUN addgroup -g 1001 cullit && adduser -u 1001 -G cullit -s /bin/sh -D cullit
+USER cullit
+
 # Default: CLI mode
 ENTRYPOINT ["tini", "--", "node", "packages/cli/dist/index.js"]
 CMD ["--help"]

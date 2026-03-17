@@ -4,7 +4,8 @@
 
 | Version | Supported          |
 |---------|--------------------|
-| 0.1.x   | :white_check_mark: |
+| 1.x     | :white_check_mark: |
+| < 1.0   | :x:                |
 
 ## Reporting a Vulnerability
 
@@ -42,7 +43,8 @@ We take security seriously. If you discover a vulnerability, please report it re
 
 - Cullit processes git commit messages and ticket metadata locally
 - Data is sent only to the AI provider you configure (Anthropic, OpenAI, Gemini, Ollama, or OpenClaw)
-- No telemetry, analytics, or data collection is performed
+- **Pro/Team users:** Anonymous usage metering (generation count, project name) is sent to the Cullit metering service when `CULLIT_API_KEY` and `CULLIT_METER_URL` are configured. No commit data, code, or personally identifiable information is included. Metering is non-blocking and best-effort.
+- **Free users / self-hosted:** No telemetry or data collection is performed
 - Self-hosted options (Ollama, OpenClaw) keep all data on your infrastructure
 
 ### Dependencies
@@ -54,8 +56,8 @@ We take security seriously. If you discover a vulnerability, please report it re
 ### Docker
 
 - Multi-stage builds minimize the attack surface
-- Production images run on `node:20-alpine` (minimal base)
-- No root user in production containers
+- Production images run on `node:22-alpine` (minimal base)
+- Production containers run as a non-root user
 
 ## Scope
 

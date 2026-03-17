@@ -8,6 +8,12 @@
 <meta property="og:title" content="Cullit Documentation">
 <meta property="og:description" content="Complete guide to Cullit — AI release notes from git, Jira, and Linear.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://cullit.io/docs">
+<meta property="og:image" content="https://cullit.io/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://cullit.io/docs">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Chakra+Petch:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -51,7 +57,8 @@
     backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border);
   }
-  .logo { font-family: 'Space Mono', monospace; font-size: 1.3rem; font-weight: 700; color: var(--accent); text-decoration: none; letter-spacing: -0.5px; }
+  .logo { font-family: 'Space Mono', monospace; font-size: 1.3rem; font-weight: 700; color: var(--accent); text-decoration: none; letter-spacing: -0.5px; display: flex; align-items: center; gap: 0.5rem; }
+  .logo-mark { width: 28px; height: 28px; flex-shrink: 0; }
   .logo span { color: var(--text-dim); font-weight: 400; }
   .nav-links { display: flex; gap: 1.5rem; align-items: center; }
   .nav-links a { color: var(--text-dim); text-decoration: none; font-size: 0.85rem; font-family: 'Space Mono', monospace; transition: color 0.2s; }
@@ -228,7 +235,7 @@
 
 <!-- NAV (matches main site) -->
 <nav>
-  <a href="/" class="logo">cullit<span>.io</span></a>
+  <a href="/" class="logo"><svg class="logo-mark" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#0f1117"/><path d="M42 22A17 17 0 1 0 42 42" stroke="#5eead4" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="50" cy="32" r="3.5" fill="#2dd4bf"/></svg>cullit<span>.io</span></a>
   <div class="nav-links" id="navLinks">
     <a href="/">Home</a>
     <a href="/docs.html" class="active">Docs</a>
@@ -371,7 +378,7 @@
     - <span class="str">chores</span>
 
 <span class="key">source</span>:
-  <span class="key">type</span>: <span class="str">local</span>               <span class="cmt"># local (git) | jira | linear</span>
+  <span class="key">type</span>: <span class="str">local</span>               <span class="cmt"># local | jira | linear | gitlab | bitbucket | multi-repo</span>
   <span class="key">enrichment</span>:              <span class="cmt"># enrich git commits with ticket data</span>
     - <span class="str">jira</span>
     - <span class="str">linear</span>
@@ -401,7 +408,7 @@
   <tbody>
     <tr><td><strong>Anthropic</strong></td><td><code>ANTHROPIC_API_KEY</code></td><td>claude-sonnet-4-20250514</td><td>Best quality. Recommended.</td></tr>
     <tr><td><strong>OpenAI</strong></td><td><code>OPENAI_API_KEY</code></td><td>gpt-4o</td><td>Great alternative.</td></tr>
-    <tr><td><strong>Gemini</strong></td><td><code>GEMINI_API_KEY</code></td><td>gemini-2.5-flash</td><td>Google AI.</td></tr>
+    <tr><td><strong>Gemini</strong></td><td><code>GOOGLE_API_KEY</code></td><td>gemini-2.0-flash</td><td>Google AI.</td></tr>
     <tr><td><strong>Ollama</strong></td><td><code>OLLAMA_HOST</code> (optional)</td><td>llama3.1</td><td>Local inference. Free. Private.</td></tr>
     <tr><td><strong>OpenClaw</strong></td><td><code>OPENCLAW_TOKEN</code></td><td>routes to best model</td><td>AI gateway / router.</td></tr>
     <tr><td><strong>none</strong></td><td>&mdash;</td><td>built-in template</td><td>No AI key needed. Categorizes by conventional commits.</td></tr>
@@ -421,12 +428,19 @@
     <tr><td><code>CULLIT_API_KEY</code></td><td>Cullit Pro license key (enables AI, integrations, advanced publishing)</td></tr>
     <tr><td><code>ANTHROPIC_API_KEY</code></td><td>Anthropic API key</td></tr>
     <tr><td><code>OPENAI_API_KEY</code></td><td>OpenAI API key</td></tr>
-    <tr><td><code>GEMINI_API_KEY</code></td><td>Gemini API key</td></tr>
+    <tr><td><code>GOOGLE_API_KEY</code></td><td>Google Gemini API key</td></tr>
     <tr><td><code>OLLAMA_HOST</code></td><td>Ollama server URL (default: http://localhost:11434)</td></tr>
     <tr><td><code>OPENCLAW_TOKEN</code></td><td>OpenClaw gateway auth token</td></tr>
+    <tr><td><code>OPENCLAW_URL</code></td><td>OpenClaw gateway URL (default: http://localhost:18789)</td></tr>
     <tr><td><code>JIRA_EMAIL</code></td><td>Jira account email for API auth</td></tr>
     <tr><td><code>JIRA_API_TOKEN</code></td><td>Jira API token</td></tr>
     <tr><td><code>LINEAR_API_KEY</code></td><td>Linear API key</td></tr>
+    <tr><td><code>GITLAB_TOKEN</code></td><td>GitLab personal access token</td></tr>
+    <tr><td><code>BITBUCKET_USERNAME</code></td><td>Bitbucket username</td></tr>
+    <tr><td><code>BITBUCKET_APP_PASSWORD</code></td><td>Bitbucket app password</td></tr>
+    <tr><td><code>CONFLUENCE_EMAIL</code></td><td>Confluence account email (falls back to JIRA_EMAIL)</td></tr>
+    <tr><td><code>CONFLUENCE_API_TOKEN</code></td><td>Confluence API token (falls back to JIRA_API_TOKEN)</td></tr>
+    <tr><td><code>NOTION_API_KEY</code></td><td>Notion integration API key</td></tr>
     <tr><td><code>SLACK_WEBHOOK_URL</code></td><td>Slack incoming webhook</td></tr>
     <tr><td><code>DISCORD_WEBHOOK_URL</code></td><td>Discord webhook</td></tr>
     <tr><td><code>GITHUB_TOKEN</code></td><td>GitHub token (auto-set in Actions)</td></tr>

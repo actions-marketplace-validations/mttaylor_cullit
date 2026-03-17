@@ -23,9 +23,12 @@ try { await import('@cullit/pro'); } catch { /* pro not installed */ }
 
 const PORT = parseInt(process.env['PORT'] || '3000', 10);
 const API_TOKEN = process.env['CULLIT_API_TOKEN'] || ''; // optional bearer auth
-// SECURITY: Defaults to '*' for local dev. In production, restrict to specific origins:
+// SECURITY: Restrict to specific origins in production.
 //   ALLOWED_ORIGINS=https://yourdomain.com
-const ALLOWED_ORIGINS = process.env['ALLOWED_ORIGINS'] || '*';
+const ALLOWED_ORIGINS = process.env['ALLOWED_ORIGINS'] || '';
+if (!ALLOWED_ORIGINS) {
+  console.warn('⚠ WARNING: ALLOWED_ORIGINS is not set. CORS will reject cross-origin requests. Set ALLOWED_ORIGINS=* for local dev or specify your domain.');
+}
 const RATE_LIMIT = parseInt(process.env['RATE_LIMIT'] || '30', 10); // requests per window
 const RATE_WINDOW = 60_000; // 1 minute
 

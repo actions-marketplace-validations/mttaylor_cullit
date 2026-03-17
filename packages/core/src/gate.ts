@@ -22,7 +22,8 @@ const FREE_PROVIDERS = new Set(['none']);
 const FREE_PUBLISHERS = new Set(['stdout', 'file']);
 
 // --- Remote validation cache ---
-const LICENSE_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const LICENSE_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours for successful validations
+const LICENSE_FAILURE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes for failures (retry sooner)
 let cachedValidation: { status: LicenseStatus; key: string; expiresAt: number } | null = null;
 
 /**
@@ -92,17 +93,21 @@ export async function validateLicense(): Promise<LicenseStatus> {
       return status;
     }
 
-    // Server responded with error — key invalid
+    // Server responded with error — key invalid, cache with short TTL
     const status: LicenseStatus = {
       tier: 'free',
       valid: false,
       message: 'License validation failed. Check your API key at https://cullit.io/pricing',
     };
-    cachedValidation = { status, key, expiresAt: Date.now() + LICENSE_CACHE_TTL };
+    cachedValidation = { status, key, expiresAt: Date.now() + LICENSE_FAILURE_CACHE_TTL };
     return status;
   } catch {
-    // Network error — fall back to format-only (offline-friendly)
-    return { tier: 'pro', valid: true };
+    // Network error — use last cached result if available for this key
+    if (cachedValidation && cachedValidation.key === key) {
+      return cachedValidation.status;
+    }
+    // No cached result — fall back to format-only (offline-friendly, first run)
+    return { tier: 'pro', valid: true, message: 'Offline validation — using cached license.' };
   }
 }
 

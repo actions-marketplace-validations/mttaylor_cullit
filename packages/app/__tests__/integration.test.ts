@@ -112,23 +112,19 @@ describe('GitHub App — HTTP Integration', () => {
   });
 
   it('POST /webhook rejects payloads over 5MB', async () => {
-    vi.stubEnv('GITHUB_WEBHOOK_SECRET', ''); // skip sig check
-    vi.resetModules();
-    const mod = await import('../src/index');
-    server = mod.server;
-    await new Promise<void>((resolve) => {
-      server.listen(0, '127.0.0.1', () => resolve());
-    });
-    const addr = server.address() as { port: number };
-    baseUrl = `http://127.0.0.1:${addr.port}`;
+    const s = await startServer();
+    server = s.server;
+    baseUrl = s.url;
 
-    // 5MB + 1 byte
+    // 5MB + 1 byte — signature verification will fail mid-stream
+    // but the server should still reject the oversized payload
     const bigPayload = 'x'.repeat(5_242_881);
     const res = await fetch(`${baseUrl}/webhook`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-github-event': 'push',
+        'x-hub-signature-256': 'sha256=irrelevant',
       },
       body: bigPayload,
     });
@@ -139,22 +135,18 @@ describe('GitHub App — HTTP Integration', () => {
   });
 
   it('POST /webhook handles unknown events gracefully', async () => {
-    vi.stubEnv('GITHUB_WEBHOOK_SECRET', ''); // skip sig check
-    vi.resetModules();
-    const mod = await import('../src/index');
-    server = mod.server;
-    await new Promise<void>((resolve) => {
-      server.listen(0, '127.0.0.1', () => resolve());
-    });
-    const addr = server.address() as { port: number };
-    baseUrl = `http://127.0.0.1:${addr.port}`;
+    const s = await startServer();
+    server = s.server;
+    baseUrl = s.url;
 
     const payload = JSON.stringify({ action: 'test' });
+    const sig = 'sha256=' + createHmac('sha256', 'test-secret').update(payload).digest('hex');
     const res = await fetch(`${baseUrl}/webhook`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-github-event': 'unknown_event',
+        'x-hub-signature-256': sig,
       },
       body: payload,
     });
