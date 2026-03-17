@@ -357,12 +357,12 @@
 
   <section id="description" class="legal-section">
     <h2>2. Description of Service</h2>
-    <p>Cullit is an AI-powered release notes generation tool. The Service includes a command-line interface (CLI), GitHub Action, and related integrations that analyze git commit history and generate release notes using third-party AI providers. The Service is offered as both a free open-source tool and a paid hosted service.</p>
+    <p>Cullit is an AI-powered release notes generation tool. The Service includes a command-line interface (CLI), GitHub Action, hosted API server, web dashboard, and related integrations that analyze git commit history and generate release notes using third-party AI providers. The hosted platform provides user accounts (authenticated via GitHub OAuth), generation history, usage analytics, and organization management. The Service is offered as both a free open-source tool and a paid hosted service.</p>
   </section>
 
   <section id="accounts" class="legal-section">
     <h2>3. Accounts</h2>
-    <p>To use certain features of the Service, you may need to provide configuration details including API keys for third-party services. You are responsible for maintaining the confidentiality of your API keys and account credentials. You are responsible for all activity that occurs under your account.</p>
+    <p>To use the hosted Service, you authenticate via GitHub OAuth 2.0. By logging in, you authorize Cullit to access your GitHub user ID, username, display name, email address, and avatar URL to create and maintain your account. You may also create or join organizations and invite team members. We issue you a Cullit API key for programmatic access. You are responsible for maintaining the confidentiality of your API keys and account credentials, and for all activity that occurs under your account.</p>
   </section>
 
   <section id="byok" class="legal-section">
@@ -371,7 +371,7 @@
     <ul>
       <li>You are responsible for all costs incurred with your third-party AI provider.</li>
       <li>Your use of third-party services is governed by their respective terms of service.</li>
-      <li>We do not store, log, or transmit your API keys beyond what is necessary to process your request in the current session.</li>
+      <li>We do not store, log, or transmit your <strong>third-party</strong> API keys (e.g., Anthropic, OpenAI) beyond what is necessary to process your request in the current session. Cullit-issued API keys are stored securely in our systems.</li>
     </ul>
   </section>
 
@@ -416,7 +416,7 @@
 
   <section id="third-party" class="legal-section">
     <h2>9. Third-Party Services</h2>
-    <p>The Service integrates with third-party services including but not limited to GitHub, GitLab, Bitbucket, Jira, Linear, Slack, Discord, Microsoft Teams, Confluence, Notion, Anthropic, OpenAI, Google Gemini, Ollama, and OpenClaw. Your use of these integrations is subject to the terms and policies of those third-party providers. We are not responsible for the availability, accuracy, or practices of any third-party service.</p>
+    <p>The Service uses GitHub as an authentication identity provider via OAuth 2.0. The Service also integrates with third-party services including but not limited to GitHub (for source control data), GitLab, Bitbucket, Jira, Linear, Slack, Discord, Microsoft Teams, Confluence, Notion, Anthropic, OpenAI, Google Gemini, Ollama, and OpenClaw. Your use of these integrations is subject to the terms and policies of those third-party providers. We are not responsible for the availability, accuracy, or practices of any third-party service.</p>
   </section>
 
   <section id="warranty" class="legal-section">

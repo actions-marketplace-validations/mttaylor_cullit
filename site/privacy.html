@@ -389,7 +389,8 @@
 
     <h3>Information You Provide</h3>
     <ul>
-      <li><strong>Account information:</strong> Email address when you sign up for our waitlist or create an account.</li>
+      <li><strong>Account information:</strong> When you log in via GitHub OAuth, we collect your GitHub user ID, username, display name, email address, and avatar URL. We also generate and store a Cullit API key, your subscription tier, organization membership, role, and login timestamps.</li>
+      <li><strong>Organization data:</strong> If you create or join an organization, we store the organization name, membership roster (user IDs and roles), subscription tier, and seat allocation.</li>
       <li><strong>Payment information:</strong> If you subscribe to a paid plan, payment is processed by Stripe. We do not store your credit card information directly. See <a href="https://stripe.com/privacy" target="_blank" rel="noopener" style="color: var(--accent);">Stripe&rsquo;s privacy policy</a>.</li>
       <li><strong>Configuration data:</strong> Settings you provide in your <code style="background: var(--bg-card); padding: 0.15em 0.4em; border-radius: 4px; font-family: 'Space Mono', monospace; font-size: 0.85em;">.cullit.yml</code> configuration file, including AI provider preferences and integration settings.</li>
     </ul>
@@ -406,18 +407,27 @@
         <p>Ticket information retrieved from Jira or Linear using your credentials.</p>
       </div>
       <div class="data-card">
-        <h4>API Keys</h4>
-        <p>Your third-party API keys are used only for the current request and are never logged or stored by us.</p>
+        <h4>Third-Party API Keys</h4>
+        <p>Your third-party API keys (e.g., Anthropic, OpenAI) are used only for the current request and are never logged or stored by us.</p>
+      </div>
+    </div>
+
+    <h3>Information Stored Persistently</h3>
+    <p>When you use the hosted Service, the following data is stored:</p>
+    <div class="data-grid">
+      <div class="data-card">
+        <h4>Generation History</h4>
+        <p>A summary of each generation including: project name, version range, AI provider used, output format, change count, a 500-character summary of the generated content, processing duration, and timestamp. Up to 200 history entries are stored per user.</p>
       </div>
       <div class="data-card">
-        <h4>Generated Content</h4>
-        <p>Release notes generated during your session are not retained on our servers.</p>
+        <h4>Usage Analytics</h4>
+        <p>Daily aggregated usage metrics including generation counts, changes processed, processing duration, and AI provider breakdown. Retained for 90 days per user/organization.</p>
       </div>
     </div>
 
     <h3>Information Collected Automatically</h3>
     <ul>
-      <li><strong>Usage analytics:</strong> We may collect anonymous usage data such as command frequency, feature usage, and error rates to improve the Service. This data does not include your code, commit messages, or generated content.</li>
+      <li><strong>Usage analytics:</strong> We collect per-user and per-organization usage data including daily generation counts, total changes processed, average processing duration, and AI provider breakdown. This data is retained for 90 days. It does not include your code, commit messages, or generated content.</li>
       <li><strong>Website analytics:</strong> When you visit cullit.io, we may collect standard web analytics data including IP address, browser type, and pages visited.</li>
     </ul>
   </section>
@@ -454,11 +464,19 @@
         <p>Retained while your account is active. Deleted within 30 days of deletion request.</p>
       </div>
       <div class="data-card">
-        <h4>Session Data</h4>
-        <p>Commits &amp; generated notes are not retained. Processed in-memory only.</p>
+        <h4>Generation History</h4>
+        <p>Generation metadata and 500-character summaries are retained per user (max 200 entries). Full commit data and complete release notes text are not retained.</p>
       </div>
       <div class="data-card">
-        <h4>API Keys</h4>
+        <h4>Usage Analytics</h4>
+        <p>Daily aggregated usage metrics are retained for 90 days per user/organization.</p>
+      </div>
+      <div class="data-card">
+        <h4>Organization Data</h4>
+        <p>Retained while the organization is active. Deleted within 30 days of deletion request by the organization owner.</p>
+      </div>
+      <div class="data-card">
+        <h4>Third-Party API Keys</h4>
         <p>Never stored. Used only for the duration of the request.</p>
       </div>
       <div class="data-card">
@@ -474,7 +492,9 @@
     <ul>
       <li>HTTPS encryption for all web traffic.</li>
       <li>No storage of third-party API keys.</li>
-      <li>No logging of your git commit content or generated release notes.</li>
+      <li>Summaries of generated release notes (up to 500 characters) are stored; full content is not logged or retained.</li>
+      <li>JWT session tokens with HttpOnly, SameSite=Lax, and Secure (in production) cookie flags.</li>
+      <li>CSRF protection via OAuth state parameter validation.</li>
       <li>Secure payment processing through Stripe (PCI-compliant).</li>
     </ul>
     <p>However, no method of transmission over the Internet or electronic storage is completely secure, and we cannot guarantee absolute security.</p>
@@ -518,8 +538,7 @@
 
   <section id="cookies" class="legal-section">
     <h2>11. Cookies &amp; Local Storage</h2>
-    <p>The Cullit website and dashboard use browser <code>localStorage</code> to persist user preferences (e.g., saved API URL, generation history, widget dismissed state). We do not set cookies for tracking. No personal data is stored in localStorage &mdash; only functional configuration values.</p>
-    <p>If we introduce analytics or cookies in the future, we will update this policy and provide appropriate consent mechanisms.</p>
+    <p>The Cullit website and dashboard use browser <code>localStorage</code> to persist user preferences (e.g., saved API URL, widget dismissed state). When you log in, we set an HttpOnly authentication cookie (<code>cullit_session</code>) containing a signed JWT token with your user ID and username. This cookie expires after 7 days and uses the Secure flag in production and SameSite=Lax to prevent cross-site request forgery. We do not set cookies for advertising or tracking purposes.</p>
   </section>
 
   <section id="opensource" class="legal-section">
