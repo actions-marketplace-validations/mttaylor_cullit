@@ -442,6 +442,10 @@ export const openApiSpec = {
     },
   },
   components: {
+    securitySchemes: {
+      bearerAuth: { type: 'http', scheme: 'bearer', description: 'API token (CULLIT_API_TOKEN)' },
+      cookieAuth: { type: 'apiKey', in: 'cookie', name: 'cullit_session', description: 'GitHub OAuth session cookie' },
+    },
     schemas: {
       GenerateRequest: {
         type: 'object',

@@ -26,11 +26,16 @@ import type { IncomingMessage, ServerResponse } from 'http';
 
 const GITHUB_CLIENT_ID = process.env['GITHUB_CLIENT_ID'] || '';
 const GITHUB_CLIENT_SECRET = process.env['GITHUB_CLIENT_SECRET'] || '';
-const JWT_SECRET = process.env['CULLIT_JWT_SECRET'] || randomBytes(32).toString('hex');
+const JWT_SECRET = process.env['CULLIT_JWT_SECRET'] || (() => {
+  const fallback = randomBytes(32).toString('hex');
+  console.warn('⚠ WARNING: CULLIT_JWT_SECRET is not set. Using random key — sessions will not survive restarts.');
+  return fallback;
+})();
 const AUTH_STORE_PATH = process.env['CULLIT_AUTH_STORE_PATH'] || './auth-store.json';
 const BASE_URL = process.env['CULLIT_BASE_URL'] || 'http://localhost:3000';
 const JWT_EXPIRY = 7 * 24 * 60 * 60; // 7 days in seconds
 const SESSION_COOKIE_NAME = 'cullit_session';
+const COOKIE_SECURE = BASE_URL.startsWith('https') ? '; Secure' : '';
 
 // --- Types ---
 
@@ -427,7 +432,7 @@ export async function handleAuthCallback(req: IncomingMessage, res: ServerRespon
 
     res.writeHead(302, {
       Location: `${BASE_URL}/dashboard.html`,
-      'Set-Cookie': `${SESSION_COOKIE_NAME}=${jwt}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAge}`,
+      'Set-Cookie': `${SESSION_COOKIE_NAME}=${jwt}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAge}${COOKIE_SECURE}`,
     });
     res.end();
   } catch (err) {
@@ -465,6 +470,6 @@ export function handleAuthMe(req: IncomingMessage, res: ServerResponse, jsonFn: 
  * POST /auth/logout — Clear session cookie
  */
 export function handleAuthLogout(_req: IncomingMessage, res: ServerResponse, jsonFn: (r: ServerResponse, s: number, b: unknown) => void): void {
-  res.setHeader('Set-Cookie', `${SESSION_COOKIE_NAME}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`);
+  res.setHeader('Set-Cookie', `${SESSION_COOKIE_NAME}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${COOKIE_SECURE}`);
   jsonFn(res, 200, { ok: true });
 }

@@ -38,10 +38,17 @@ try { await import('@cullit/pro'); } catch { /* pro not installed */ }
 const PORT = parseInt(process.env['PORT'] || '3000', 10);
 const API_TOKEN = process.env['CULLIT_API_TOKEN'] || ''; // optional bearer auth
 // SECURITY: Restrict to specific origins in production.
-//   ALLOWED_ORIGINS=https://yourdomain.com
+//   ALLOWED_ORIGINS=https://yourdomain.com (comma-separated for multiple)
 const ALLOWED_ORIGINS = process.env['ALLOWED_ORIGINS'] || '';
 if (!ALLOWED_ORIGINS) {
   console.warn('⚠ WARNING: ALLOWED_ORIGINS is not set. CORS will reject cross-origin requests. Set ALLOWED_ORIGINS=* for local dev or specify your domain.');
+}
+const allowedOriginSet = new Set(ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean));
+
+function getCorsOrigin(req: IncomingMessage): string {
+  const origin = req.headers['origin'] || '';
+  if (ALLOWED_ORIGINS === '*') return origin || '*';
+  return allowedOriginSet.has(origin) ? origin : '';
 }
 const RATE_LIMIT = parseInt(process.env['RATE_LIMIT'] || '30', 10); // requests per window
 const RATE_WINDOW = 60_000; // 1 minute
@@ -87,12 +94,15 @@ function checkRateLimit(req: IncomingMessage, res: ServerResponse): boolean {
 
 // --- Helpers ---
 
+// Per-request resolved CORS origin (set at top of each request handler)
+let currentCorsOrigin = '';
+
 function json(res: ServerResponse, status: number, body: unknown): void {
   const payload = JSON.stringify(body);
   res.writeHead(status, {
     'Content-Type': 'application/json',
     'Content-Length': Buffer.byteLength(payload),
-    'Access-Control-Allow-Origin': ALLOWED_ORIGINS,
+    'Access-Control-Allow-Origin': currentCorsOrigin,
     'Access-Control-Allow-Credentials': 'true',
   });
   res.end(payload);
@@ -575,6 +585,12 @@ async function handleOrgInvite(req: IncomingMessage, res: ServerResponse): Promi
   }
 
   const role = body.role === 'admin' ? 'admin' : 'member';
+
+  // Only the org owner can grant admin role
+  if (role === 'admin' && user.role !== 'owner') {
+    json(res, 403, { error: 'Only the org owner can grant admin role' }); return;
+  }
+
   const success = addOrgMember(user.orgId, targetUser, role);
   if (!success) {
     json(res, 409, { error: 'Cannot add member (org full or already a member)' }); return;
@@ -649,10 +665,13 @@ async function handleGetAnalytics(req: IncomingMessage, res: ServerResponse): Pr
 // --- Router ---
 
 const server = createServer(async (req, res) => {
+  // Resolve CORS origin for this request
+  currentCorsOrigin = getCorsOrigin(req);
+
   // CORS preflight
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
-      'Access-Control-Allow-Origin': ALLOWED_ORIGINS,
+      'Access-Control-Allow-Origin': currentCorsOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Allow-Credentials': 'true',
@@ -666,7 +685,12 @@ const server = createServer(async (req, res) => {
   const path = url.pathname;
 
   try {
-    // --- Auth routes (no rate limit — OAuth has its own protection) ---
+    // --- Rate limit all non-system routes ---
+    if (path !== '/health' && path !== '/openapi.json' && path !== '/auth/callback') {
+      if (!checkRateLimit(req, res)) return;
+    }
+
+    // --- Auth routes ---
     if (path === '/auth/github' && req.method === 'GET') {
       handleAuthRedirect(req, res);
     } else if (path === '/auth/callback' && req.method === 'GET') {
@@ -685,14 +709,11 @@ const server = createServer(async (req, res) => {
     // --- Authenticated routes ---
     } else if (path === '/generate' && req.method === 'POST') {
       if (!checkAuth(req, res)) return;
-      if (!checkRateLimit(req, res)) return;
       await handleGenerate(req, res);
     } else if (path === '/v1/changelog' && req.method === 'POST') {
       if (!checkAuth(req, res)) return;
-      if (!checkRateLimit(req, res)) return;
       await handleChangelogPublish(req, res);
     } else if (req.method === 'GET' && path.match(/^\/v1\/changelog\/[^/]+\/latest$/)) {
-      if (!checkRateLimit(req, res)) return;
       const project = path.split('/')[3];
       if (!/^[a-zA-Z0-9_-]{1,64}$/.test(project)) {
         json(res, 400, { error: 'Invalid project slug' });
@@ -704,13 +725,10 @@ const server = createServer(async (req, res) => {
     } else if (path === '/v1/org' && req.method === 'GET') {
       await handleGetOrg(req, res);
     } else if (path === '/v1/org' && req.method === 'POST') {
-      if (!checkRateLimit(req, res)) return;
       await handleCreateOrg(req, res);
     } else if (path === '/v1/org/invite' && req.method === 'POST') {
-      if (!checkRateLimit(req, res)) return;
       await handleOrgInvite(req, res);
     } else if (path === '/v1/org/members' && req.method === 'DELETE') {
-      if (!checkRateLimit(req, res)) return;
       await handleOrgRemoveMember(req, res);
 
     // --- History & Analytics ---

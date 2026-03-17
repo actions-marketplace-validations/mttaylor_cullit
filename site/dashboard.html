@@ -1211,6 +1211,9 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
+function escapeAttr(text) {
+  return escapeHtml(text).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+}
 
 // --- Dashboard Tabs ---
 
@@ -1248,7 +1251,7 @@ async function loadHistory() {
     list.innerHTML = data.entries.map(h => {
       const date = new Date(h.createdAt);
       const ago = timeAgo(date.getTime());
-      return '<div class="history-item" onclick="loadHistoryEntry(\'' + escapeHtml(h.from) + '\',\'' + escapeHtml(h.to) + '\',\'' + escapeHtml(h.provider) + '\',\'' + escapeHtml(h.summary) + '\')">' +
+      return '<div class="history-item" onclick="loadHistoryEntry(\'' + escapeAttr(h.from) + '\',\'' + escapeAttr(h.to) + '\',\'' + escapeAttr(h.provider) + '\',\'' + escapeAttr(h.summary) + '\')">' +
         '<span><span class="tag">' + escapeHtml(h.from) + '</span> &rarr; ' + escapeHtml(h.to) + ' <span style="color:var(--terminal-purple);font-size:0.7rem">' + escapeHtml(h.provider) + '</span></span>' +
         '<span class="time">' + escapeHtml(String(h.changeCount)) + ' changes &middot; ' + ago + '</span>' +
         '</div>';
@@ -1387,7 +1390,7 @@ async function loadTeam() {
     const members = data.members || [];
     document.getElementById('memberList').innerHTML = members.map(m => {
       const removeBtn = isAdmin && m.id !== currentUser.id
-        ? '<button class="btn-danger" onclick="removeMember(\'' + m.id + '\')">Remove</button>'
+        ? '<button class="btn-danger" onclick="removeMember(\'' + escapeAttr(m.id) + '\')">Remove</button>'
         : '';
       return '<div class="member-row">' +
         '<img src="' + escapeHtml(m.avatarUrl || '') + '" alt="">' +

@@ -851,6 +851,12 @@ console.log(advisory.breakdown);       <span class="cmt">// { features: 4, fixes
     <tr><td><code>CULLIT_API_TOKEN</code></td><td>Bearer token for auth</td><td>disabled</td></tr>
     <tr><td><code>ALLOWED_ORIGINS</code></td><td>CORS allowed origins</td><td><code>*</code></td></tr>
     <tr><td><code>RATE_LIMIT</code></td><td>Requests per minute per IP</td><td><code>30</code></td></tr>
+    <tr><td><code>GITHUB_CLIENT_ID</code></td><td>GitHub OAuth App client ID</td><td>required for auth</td></tr>
+    <tr><td><code>GITHUB_CLIENT_SECRET</code></td><td>GitHub OAuth App client secret</td><td>required for auth</td></tr>
+    <tr><td><code>CULLIT_JWT_SECRET</code></td><td>Secret key for JWT signing (HS256)</td><td>random per restart</td></tr>
+    <tr><td><code>CULLIT_BASE_URL</code></td><td>Public URL for OAuth callback</td><td><code>http://localhost:3000</code></td></tr>
+    <tr><td><code>CULLIT_AUTH_STORE_PATH</code></td><td>Path to auth JSON store</td><td><code>./auth-store.json</code></td></tr>
+    <tr><td><code>CULLIT_HISTORY_STORE_PATH</code></td><td>Path to history JSON store</td><td><code>./history-store.json</code></td></tr>
   </tbody>
 </table>
 </div>
