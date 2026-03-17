@@ -5,15 +5,18 @@
  * No external dependencies — zero-overhead, production-ready.
  * 
  * Endpoints:
- *   GET  /health         → Health check
- *   GET  /openapi.json   → OpenAPI 3.1 spec
- *   POST /generate       → Generate release notes
+ *   GET  /health                           → Health check
+ *   GET  /openapi.json                     → OpenAPI 3.1 spec
+ *   POST /generate                         → Generate release notes
+ *   POST /v1/changelog                     → Publish a release to hosted changelog
+ *   GET  /v1/changelog/:project/latest     → Get latest releases (widget/page)
  * 
  * Usage:
  *   PORT=3000 node packages/api/dist/index.js
  */
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS } from '@cullit/core';
 import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget } from '@cullit/core';
 import { openApiSpec } from './openapi.js';
@@ -139,6 +142,55 @@ function setCachedResult(key: string, result: any): void {
   }
   pipelineCache.set(key, { result, expiresAt: Date.now() + CACHE_TTL });
 }
+
+// --- Changelog Store ---
+// In-memory with file-backed persistence. Replace with D1/Redis/Postgres for scale.
+
+interface ChangelogRelease {
+  version: string;
+  date: string;
+  summary: string;
+  changes: { description: string; category: string; ticketKey?: string }[];
+  contributors: string[];
+  metadata?: Record<string, unknown>;
+  formatted: { markdown: string; html: string };
+  publishedAt: string;
+}
+
+const CHANGELOG_FILE = process.env['CHANGELOG_STORE_PATH'] || './changelog-store.json';
+const MAX_RELEASES_PER_PROJECT = 100;
+const changelogStore = new Map<string, ChangelogRelease[]>();
+
+// Load from disk on startup
+function loadChangelogStore(): void {
+  try {
+    if (existsSync(CHANGELOG_FILE)) {
+      const data = JSON.parse(readFileSync(CHANGELOG_FILE, 'utf-8'));
+      for (const [project, releases] of Object.entries(data)) {
+        if (typeof project === 'string' && Array.isArray(releases)) {
+          changelogStore.set(project, releases as ChangelogRelease[]);
+        }
+      }
+      console.log(`Loaded changelog store: ${changelogStore.size} projects`);
+    }
+  } catch (err) {
+    console.warn('Failed to load changelog store:', (err as Error).message);
+  }
+}
+
+function saveChangelogStore(): void {
+  try {
+    const data: Record<string, ChangelogRelease[]> = {};
+    for (const [project, releases] of changelogStore) {
+      data[project] = releases;
+    }
+    writeFileSync(CHANGELOG_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('Failed to save changelog store:', (err as Error).message);
+  }
+}
+
+loadChangelogStore();
 
 // --- Routes ---
 
@@ -274,6 +326,115 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
   }
 }
 
+// --- Changelog Endpoints ---
+
+async function handleChangelogPublish(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const raw = await readBody(req);
+  let body: any;
+
+  try {
+    body = JSON.parse(raw);
+  } catch {
+    json(res, 400, { error: 'Invalid JSON body' });
+    return;
+  }
+
+  // Validate required fields
+  if (!body.project || typeof body.project !== 'string') {
+    json(res, 400, { error: '"project" is required (string)' });
+    return;
+  }
+  if (!body.version || typeof body.version !== 'string') {
+    json(res, 400, { error: '"version" is required (string)' });
+    return;
+  }
+
+  // Validate project slug (alphanumeric, hyphens, underscores)
+  if (!/^[a-zA-Z0-9_-]{1,64}$/.test(body.project)) {
+    json(res, 400, { error: '"project" must be 1-64 alphanumeric characters, hyphens, or underscores' });
+    return;
+  }
+
+  // Validate version format
+  if (body.version.length > 64) {
+    json(res, 400, { error: '"version" must be under 64 characters' });
+    return;
+  }
+
+  if (!Array.isArray(body.changes)) {
+    json(res, 400, { error: '"changes" must be an array' });
+    return;
+  }
+
+  const release: ChangelogRelease = {
+    version: body.version,
+    date: body.date || new Date().toISOString().split('T')[0],
+    summary: body.summary || '',
+    changes: body.changes.slice(0, 50).map((c: any) => ({
+      description: String(c.description || '').slice(0, 500),
+      category: String(c.category || 'chores').slice(0, 50),
+      ticketKey: c.ticketKey ? String(c.ticketKey).slice(0, 32) : undefined,
+    })),
+    contributors: Array.isArray(body.contributors)
+      ? body.contributors.slice(0, 50).map((c: any) => String(c).slice(0, 100))
+      : [],
+    metadata: body.metadata || undefined,
+    formatted: {
+      markdown: String(body.formatted?.markdown || '').slice(0, 50_000),
+      html: String(body.formatted?.html || '').slice(0, 100_000),
+    },
+    publishedAt: new Date().toISOString(),
+  };
+
+  // Store the release
+  const releases = changelogStore.get(body.project) || [];
+
+  // Check for duplicate version (update if exists)
+  const existingIdx = releases.findIndex(r => r.version === release.version);
+  if (existingIdx >= 0) {
+    releases[existingIdx] = release;
+  } else {
+    releases.unshift(release); // newest first
+    // Cap stored releases
+    if (releases.length > MAX_RELEASES_PER_PROJECT) {
+      releases.length = MAX_RELEASES_PER_PROJECT;
+    }
+  }
+
+  changelogStore.set(body.project, releases);
+  saveChangelogStore();
+
+  json(res, 201, {
+    ok: true,
+    url: `https://cullit.io/changelog/${body.project}`,
+    version: release.version,
+    project: body.project,
+  });
+}
+
+async function handleChangelogLatest(req: IncomingMessage, res: ServerResponse, project: string): Promise<void> {
+  const url = new URL(req.url || '/', `http://localhost:${PORT}`);
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || '20', 10), 50);
+
+  const releases = changelogStore.get(project);
+  if (!releases || releases.length === 0) {
+    json(res, 200, { project, releases: [] });
+    return;
+  }
+
+  // Return releases in the shape the widget expects
+  const result = releases.slice(0, limit).map(r => ({
+    version: r.version,
+    date: r.date,
+    summary: r.summary,
+    changes: r.changes,
+    contributors: r.contributors,
+    formatted: r.formatted,
+  }));
+
+  json(res, 200, { project, releases: result });
+}
+
 // --- Router ---
 
 const server = createServer(async (req, res) => {
@@ -301,6 +462,14 @@ const server = createServer(async (req, res) => {
       if (!checkAuth(req, res)) return;
       if (!checkRateLimit(req, res)) return;
       await handleGenerate(req, res);
+    } else if (path === '/v1/changelog' && req.method === 'POST') {
+      if (!checkAuth(req, res)) return;
+      if (!checkRateLimit(req, res)) return;
+      await handleChangelogPublish(req, res);
+    } else if (req.method === 'GET' && path.match(/^\/v1\/changelog\/[^/]+\/latest$/)) {
+      // Public endpoint — no auth required (CORS-enabled for widget embedding)
+      const project = path.split('/')[3];
+      await handleChangelogLatest(req, res, project);
     } else {
       json(res, 404, { error: 'Not found', docs: '/openapi.json' });
     }
@@ -316,9 +485,11 @@ server.listen(PORT, () => {
   ║  Cullit API v${VERSION}                      ║
   ║  http://localhost:${PORT}                    ║
   ║                                           ║
-  ║  GET  /health         Health check        ║
-  ║  GET  /openapi.json   OpenAPI spec        ║
-  ║  POST /generate       Generate notes      ║
+  ║  GET  /health                  Status     ║
+  ║  GET  /openapi.json            Spec       ║
+  ║  POST /generate                Notes      ║
+  ║  POST /v1/changelog            Publish    ║
+  ║  GET  /v1/changelog/:p/latest  Releases   ║
   ╚═══════════════════════════════════════════╝
   `);
 });

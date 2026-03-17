@@ -584,6 +584,10 @@
     <tr><td><code>publish-github-release</code></td><td>Create/update GitHub Release</td><td><code>false</code></td></tr>
     <tr><td><code>publish-slack-webhook</code></td><td>Slack webhook URL</td><td></td></tr>
     <tr><td><code>publish-discord-webhook</code></td><td>Discord webhook URL</td><td></td></tr>
+    <tr><td><code>publish-teams-webhook</code></td><td>Teams webhook URL</td><td></td></tr>
+    <tr><td><code>publish-confluence</code></td><td>Publish to Confluence</td><td><code>false</code></td></tr>
+    <tr><td><code>publish-notion</code></td><td>Publish to Notion</td><td><code>false</code></td></tr>
+    <tr><td><code>publish-changelog</code></td><td>Push to hosted changelog</td><td><code>false</code></td></tr>
     <tr><td><code>jira-domain</code></td><td>Jira domain for enrichment</td><td></td></tr>
   </tbody>
 </table>
@@ -597,6 +601,7 @@
   <li>You push a tag or publish a GitHub Release</li>
   <li>The App receives a webhook, clones your repo, and runs the Cullit pipeline</li>
   <li>Release notes are created or updated on your GitHub Release</li>
+  <li>If configured, notes are also auto-posted to Slack, Discord, Teams, and/or the hosted changelog</li>
 </ol>
 
 <p><strong>Self-hosting:</strong></p>
@@ -621,6 +626,11 @@
     <tr><td><code>GITHUB_APP_PRIVATE_KEY</code></td><td>PEM private key (base64 or raw with \n)</td></tr>
     <tr><td><code>GITHUB_WEBHOOK_SECRET</code></td><td>Webhook signature secret</td></tr>
     <tr><td><code>CULLIT_APP_PORT</code></td><td>Port (default: 3001)</td></tr>
+    <tr><td><code>CULLIT_APP_SLACK_WEBHOOK</code></td><td>Slack webhook URL for auto-posting release notes</td></tr>
+    <tr><td><code>CULLIT_APP_DISCORD_WEBHOOK</code></td><td>Discord webhook URL for auto-posting release notes</td></tr>
+    <tr><td><code>CULLIT_APP_TEAMS_WEBHOOK</code></td><td>Teams webhook URL for auto-posting release notes</td></tr>
+    <tr><td><code>CULLIT_APP_CHANGELOG_ENABLED</code></td><td>Set to <code>true</code> to push to hosted changelog</td></tr>
+    <tr><td><code>CULLIT_APP_CHANGELOG_API_KEY</code></td><td>API key for hosted changelog publishing</td></tr>
   </tbody>
 </table>
 </div>
@@ -729,6 +739,30 @@
 <p>Automatically creates or updates a GitHub Release. Works in GitHub Actions (uses <code>GITHUB_TOKEN</code> automatically):</p>
 <pre><code><span class="key">publish</span>:
   - <span class="key">type</span>: <span class="str">github-release</span></code></pre>
+
+<h3 id="pub-teams">Microsoft Teams</h3>
+<p>Post release notes to a Teams channel via <a href="https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook" target="_blank">incoming webhook</a>:</p>
+<pre><code><span class="key">publish</span>:
+  - <span class="key">type</span>: <span class="str">teams</span>
+    <span class="key">webhook_url</span>: <span class="str">$TEAMS_WEBHOOK_URL</span></code></pre>
+
+<h3 id="pub-confluence">Confluence</h3>
+<p>Publish release notes as a Confluence page. Requires <code>CONFLUENCE_EMAIL</code> and <code>CONFLUENCE_API_TOKEN</code> environment variables:</p>
+<pre><code><span class="key">publish</span>:
+  - <span class="key">type</span>: <span class="str">confluence</span></code></pre>
+
+<h3 id="pub-notion">Notion</h3>
+<p>Add release notes to a Notion database. Requires <code>NOTION_API_KEY</code> environment variable:</p>
+<pre><code><span class="key">publish</span>:
+  - <span class="key">type</span>: <span class="str">notion</span></code></pre>
+
+<h3 id="pub-changelog">Hosted Changelog <span style="font-size:0.7em; color:var(--accent); border:1px solid var(--accent); padding:0.1rem 0.4rem; border-radius:4px; margin-left:0.5rem;">Pro</span></h3>
+<p>Push release notes to Cullit&apos;s hosted changelog &mdash; a public, embeddable page that your users can visit or you can embed in your app with the widget.</p>
+<pre><code><span class="key">publish</span>:
+  - <span class="key">type</span>: <span class="str">changelog</span></code></pre>
+<p>Your changelog will be available at <code>cullit.io/changelog?project=your-project</code>. To embed a &ldquo;What&apos;s New&rdquo; widget in your app:</p>
+<pre><code>&lt;script src="https://cullit.io/widget.js" data-project="your-project"&gt;&lt;/script&gt;</code></pre>
+<p>Requires <code>CULLIT_API_KEY</code> environment variable. The GitHub App can also auto-publish to the hosted changelog &mdash; set <code>CULLIT_APP_CHANGELOG_ENABLED=true</code>.</p>
 
 <!-- ============================================ -->
 <h2 id="advanced">Advanced Usage</h2>

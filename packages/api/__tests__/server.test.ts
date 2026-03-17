@@ -128,6 +128,82 @@ describe('API Server', () => {
     expect(res.headers.get('access-control-allow-methods')).toContain('POST');
   });
 
+  // --- Changelog API ---
+
+  it('POST /v1/changelog rejects missing project', async () => {
+    const { status, body } = await apiRequest('/v1/changelog', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ version: 'v1.0.0', changes: [] }),
+    });
+    expect(status).toBe(400);
+    expect(body.error).toContain('"project"');
+  });
+
+  it('POST /v1/changelog rejects invalid project slug', async () => {
+    const { status, body } = await apiRequest('/v1/changelog', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ project: 'bad slug!', version: 'v1.0.0', changes: [] }),
+    });
+    expect(status).toBe(400);
+    expect(body.error).toContain('alphanumeric');
+  });
+
+  it('POST /v1/changelog accepts and stores a release', async () => {
+    const { status, body } = await apiRequest('/v1/changelog', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        project: 'test-project',
+        version: 'v1.0.0',
+        date: '2026-03-16',
+        summary: 'First release',
+        changes: [{ description: 'Added feature X', category: 'features' }],
+        contributors: ['alice'],
+        formatted: { markdown: '# v1.0.0', html: '<h1>v1.0.0</h1>' },
+      }),
+    });
+    expect(status).toBe(201);
+    expect(body.ok).toBe(true);
+    expect(body.url).toContain('test-project');
+    expect(body.version).toBe('v1.0.0');
+  });
+
+  it('GET /v1/changelog/:project/latest returns stored releases', async () => {
+    const { status, body } = await apiRequest('/v1/changelog/test-project/latest');
+    expect(status).toBe(200);
+    expect(body.project).toBe('test-project');
+    expect(body.releases).toHaveLength(1);
+    expect(body.releases[0].version).toBe('v1.0.0');
+    expect(body.releases[0].summary).toBe('First release');
+    expect(body.releases[0].changes[0].description).toBe('Added feature X');
+  });
+
+  it('GET /v1/changelog/:project/latest returns empty for unknown project', async () => {
+    const { status, body } = await apiRequest('/v1/changelog/nonexistent/latest');
+    expect(status).toBe(200);
+    expect(body.releases).toHaveLength(0);
+  });
+
+  it('POST /v1/changelog updates existing version', async () => {
+    const { status } = await apiRequest('/v1/changelog', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        project: 'test-project',
+        version: 'v1.0.0',
+        summary: 'Updated release',
+        changes: [{ description: 'Updated feature X', category: 'improvements' }],
+        formatted: { markdown: '# v1.0.0 updated', html: '<h1>v1.0.0 updated</h1>' },
+      }),
+    });
+    expect(status).toBe(201);
+
+    const { body } = await apiRequest('/v1/changelog/test-project/latest');
+    expect(body.releases[0].summary).toBe('Updated release');
+  });
+
   it('rate limits excessive requests', async () => {
     // RATE_LIMIT is 15, only POST /generate is rate-limited
     // Earlier tests used ~6 POST /generate requests

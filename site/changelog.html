@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Changelog — Cullit</title>
+<meta name="description" content="Cullit hosted changelog — see what's new in every release. AI-powered release notes from git history.">
+<meta property="og:title" content="Changelog — Cullit">
+<meta property="og:description" content="See what's new in every release. AI-powered release notes from git history.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cullit.io/changelog">
+<link rel="canonical" href="https://cullit.io/changelog">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Chakra+Petch:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg-card: #161822;
+    --bg-card-hover: #1e2030;
+    --accent: #5eead4;
+    --accent-dim: #2dd4bf;
+    --text: #d4d4e0;
+    --text-dim: #7e819a;
+    --text-bright: #f0f0f5;
+    --border: #282a3a;
+    --terminal-green: #4ade80;
+    --terminal-blue: #60a5fa;
+    --terminal-red: #f87171;
+    --terminal-yellow: #fbbf24;
+    --terminal-purple: #c084fc;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* --- Nav --- */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid var(--border);
+    background: rgba(15, 17, 23, 0.95);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .nav-logo {
+    font-family: 'Chakra Petch', sans-serif;
+    font-weight: 700;
+    font-size: 1.3rem;
+    color: var(--accent);
+    text-decoration: none;
+    letter-spacing: 1px;
+  }
+  .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+  .nav-links a {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+
+  /* --- Header --- */
+  .changelog-header {
+    text-align: center;
+    padding: 3rem 2rem 1.5rem;
+  }
+  .changelog-header h1 {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 2.2rem;
+    color: var(--text-bright);
+    margin-bottom: 0.5rem;
+  }
+  .changelog-header p {
+    color: var(--text-dim);
+    font-size: 1rem;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+  .project-badge {
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+
+  /* --- Controls --- */
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0 2rem 2rem;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+  .filter-btn:hover { border-color: var(--accent-dim); color: var(--text); }
+  .filter-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; }
+
+  /* --- Timeline --- */
+  .timeline {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 2rem 4rem;
+    position: relative;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 24px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+
+  /* --- Release Card --- */
+  .release {
+    position: relative;
+    margin-bottom: 2.5rem;
+    padding-left: 50px;
+  }
+  .release::before {
+    content: '';
+    position: absolute;
+    left: 18px;
+    top: 8px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 3px solid var(--bg);
+    z-index: 1;
+  }
+  .release-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .release-version {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-bright);
+  }
+  .release-date {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+  .release-summary {
+    color: var(--text);
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  /* --- Changes --- */
+  .changes-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .change-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: var(--text);
+  }
+  .change-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .badge-features { background: rgba(78, 205, 196, 0.15); color: #4ecdc4; }
+  .badge-fixes { background: rgba(248, 113, 113, 0.15); color: #f87171; }
+  .badge-breaking { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+  .badge-improvements { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
+  .badge-chores { background: rgba(126, 129, 154, 0.15); color: #7e819a; }
+  .change-ticket {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent-dim);
+    margin-left: 0.25rem;
+  }
+
+  /* --- Contributors --- */
+  .contributors {
+    margin-top: 0.75rem;
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+  .contributor {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 0.15rem 0.5rem;
+    border-radius: 12px;
+    color: var(--text-dim);
+  }
+
+  /* --- Loading / Empty --- */
+  .loading, .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-dim);
+  }
+  .loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty-state h2 {
+    font-family: 'Chakra Petch', sans-serif;
+    color: var(--text-bright);
+    margin-bottom: 0.5rem;
+  }
+
+  /* --- Footer --- */
+  footer {
+    text-align: center;
+    padding: 2rem;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 0.8rem;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* --- Embed link --- */
+  .embed-section {
+    max-width: 720px;
+    margin: 0 auto 2rem;
+    padding: 0 2rem;
+    text-align: center;
+  }
+  .embed-code {
+    font-family: 'Space Mono', monospace;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    word-break: break-all;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .embed-code:hover { border-color: var(--accent-dim); }
+  .embed-label {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+
+  @media (max-width: 600px) {
+    .changelog-header h1 { font-size: 1.6rem; }
+    .timeline { padding: 0 1rem 3rem; }
+    .timeline::before { left: 16px; }
+    .release { padding-left: 40px; }
+    .release::before { left: 10px; }
+    .release-header { flex-direction: column; gap: 0.25rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">CULLIT</a>
+  <div class="nav-links">
+    <a href="/docs.html">Docs</a>
+    <a href="/pricing.html">Pricing</a>
+    <a href="/changelog.html" style="color: var(--accent)">Changelog</a>
+    <a href="https://github.com/mttaylor/cullit" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</nav>
+
+<div class="changelog-header">
+  <div class="project-badge" id="projectBadge">changelog</div>
+  <h1>What's New</h1>
+  <p>Every release, documented automatically from git history.</p>
+</div>
+
+<div class="controls" id="filterControls">
+  <button class="filter-btn active" data-filter="all">All</button>
+  <button class="filter-btn" data-filter="features">Features</button>
+  <button class="filter-btn" data-filter="fixes">Fixes</button>
+  <button class="filter-btn" data-filter="breaking">Breaking</button>
+  <button class="filter-btn" data-filter="improvements">Improvements</button>
+</div>
+
+<div class="timeline" id="timeline">
+  <div class="loading">
+    <div class="loading-spinner"></div>
+    <p>Loading releases&hellip;</p>
+  </div>
+</div>
+
+<div class="embed-section" id="embedSection" style="display:none">
+  <p class="embed-label">Embed this changelog in your app:</p>
+  <div class="embed-code" id="embedCode" title="Click to copy"></div>
+</div>
+
+<footer>
+  <p>Powered by <a href="https://cullit.io">Cullit</a> &mdash; AI release notes from git history.</p>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  // --- Config ---
+  const API_BASE = window.CULLIT_API_URL || 'https://api.cullit.io';
+  const params = new URLSearchParams(window.location.search);
+  const project = params.get('project') || window.location.pathname.split('/changelog/')[1] || 'default';
+  let activeFilter = 'all';
+  let releases = [];
+
+  // Update project badge
+  const badge = document.getElementById('projectBadge');
+  if (badge) badge.textContent = project;
+
+  // --- Fetch releases ---
+  async function loadReleases() {
+    const timeline = document.getElementById('timeline');
+    try {
+      const res = await fetch(API_BASE + '/v1/changelog/' + encodeURIComponent(project) + '/latest?limit=50');
+      if (!res.ok) throw new Error('API returned ' + res.status);
+      const data = await res.json();
+      releases = data.releases || [];
+      renderReleases();
+      showEmbed();
+    } catch (err) {
+      timeline.innerHTML = '<div class="empty-state"><h2>No releases yet</h2><p>Publish your first release with <code>cullit generate --publish changelog</code></p></div>';
+    }
+  }
+
+  // --- Render ---
+  function escapeHtml(text) {
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function badgeClass(category) {
+    var cat = (category || 'chores').toLowerCase();
+    if (cat === 'features' || cat === 'feature') return 'badge-features';
+    if (cat === 'fixes' || cat === 'fix' || cat === 'bugfix') return 'badge-fixes';
+    if (cat === 'breaking') return 'badge-breaking';
+    if (cat === 'improvements' || cat === 'improvement') return 'badge-improvements';
+    return 'badge-chores';
+  }
+
+  function renderReleases() {
+    var timeline = document.getElementById('timeline');
+    if (!releases.length) {
+      timeline.innerHTML = '<div class="empty-state"><h2>No releases yet</h2><p>Publish your first release to see it here.</p></div>';
+      return;
+    }
+
+    var html = '';
+    releases.forEach(function (r) {
+      var changes = r.changes || [];
+      if (activeFilter !== 'all') {
+        changes = changes.filter(function (c) { return (c.category || '').toLowerCase() === activeFilter; });
+      }
+      // Skip release if no changes match filter (unless showing all)
+      if (activeFilter !== 'all' && changes.length === 0) return;
+
+      html += '<div class="release">';
+      html += '<div class="release-header">';
+      html += '<span class="release-version">' + escapeHtml(r.version) + '</span>';
+      html += '<span class="release-date">' + escapeHtml(r.date || '') + '</span>';
+      html += '</div>';
+      if (r.summary) {
+        html += '<p class="release-summary">' + escapeHtml(r.summary) + '</p>';
+      }
+      if (changes.length) {
+        html += '<ul class="changes-list">';
+        changes.forEach(function (c) {
+          html += '<li class="change-item">';
+          html += '<span class="change-badge ' + badgeClass(c.category) + '">' + escapeHtml(c.category || 'chore') + '</span>';
+          html += '<span>' + escapeHtml(c.description || '');
+          if (c.ticketKey) html += ' <span class="change-ticket">' + escapeHtml(c.ticketKey) + '</span>';
+          html += '</span>';
+          html += '</li>';
+        });
+        html += '</ul>';
+      }
+      if (r.contributors && r.contributors.length) {
+        html += '<div class="contributors">';
+        r.contributors.forEach(function (c) {
+          html += '<span class="contributor">@' + escapeHtml(c) + '</span>';
+        });
+        html += '</div>';
+      }
+      html += '</div>';
+    });
+
+    timeline.innerHTML = html || '<div class="empty-state"><p>No changes match the selected filter.</p></div>';
+  }
+
+  function showEmbed() {
+    var section = document.getElementById('embedSection');
+    var code = document.getElementById('embedCode');
+    if (section && code) {
+      section.style.display = 'block';
+      var snippet = '<script src="https://cullit.io/widget.js" data-project="' + project + '"><\/script>';
+      code.textContent = snippet;
+      code.addEventListener('click', function () {
+        navigator.clipboard.writeText(snippet).then(function () {
+          code.style.borderColor = 'var(--accent)';
+          var orig = code.textContent;
+          code.textContent = 'Copied!';
+          setTimeout(function () { code.textContent = orig; code.style.borderColor = ''; }, 1500);
+        });
+      });
+    }
+  }
+
+  // --- Filter buttons ---
+  document.getElementById('filterControls').addEventListener('click', function (e) {
+    var btn = e.target.closest('.filter-btn');
+    if (!btn) return;
+    document.querySelectorAll('.filter-btn').forEach(function (b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    activeFilter = btn.getAttribute('data-filter');
+    renderReleases();
+  });
+
+  // --- Init ---
+  loadReleases();
+})();
+</script>
+
+</body>
+</html>

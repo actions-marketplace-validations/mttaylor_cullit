@@ -151,6 +151,91 @@ export const openApiSpec = {
         },
       },
     },
+    '/v1/changelog': {
+      post: {
+        operationId: 'publishChangelog',
+        summary: 'Publish a release to the hosted changelog',
+        description: 'Stores a release for a project. Requires Bearer token authentication.',
+        tags: ['Changelog'],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ChangelogPublishRequest' },
+            },
+          },
+        },
+        responses: {
+          '201': {
+            description: 'Release published successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    ok: { type: 'boolean', example: true },
+                    url: { type: 'string' },
+                    version: { type: 'string' },
+                    project: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
+          '400': {
+            description: 'Invalid request',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+          '401': {
+            description: 'Unauthorized',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+        },
+      },
+    },
+    '/v1/changelog/{project}/latest': {
+      get: {
+        operationId: 'getChangelogLatest',
+        summary: 'Get latest releases for a project',
+        description: 'Returns the most recent releases for the given project slug. Public endpoint (no auth required).',
+        tags: ['Changelog'],
+        parameters: [
+          {
+            name: 'project',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+            description: 'Project slug (1-64 chars, alphanumeric/hyphens/underscores)',
+          },
+          {
+            name: 'limit',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', default: 20, minimum: 1, maximum: 50 },
+            description: 'Number of releases to return',
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Releases for the project',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    project: { type: 'string' },
+                    releases: {
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/ChangelogRelease' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   },
   components: {
     schemas: {
@@ -281,6 +366,57 @@ export const openApiSpec = {
         type: 'object',
         properties: {
           error: { type: 'string' },
+        },
+      },
+      ChangelogPublishRequest: {
+        type: 'object',
+        required: ['project', 'version', 'changes'],
+        properties: {
+          project: { type: 'string', description: 'Project slug (1-64 chars, alphanumeric/hyphens/underscores)' },
+          version: { type: 'string', description: 'Release version string', maxLength: 64 },
+          date: { type: 'string', description: 'Release date (defaults to today)' },
+          summary: { type: 'string', description: 'Release summary' },
+          changes: {
+            type: 'array',
+            maxItems: 50,
+            items: { $ref: '#/components/schemas/ChangeEntry' },
+          },
+          contributors: {
+            type: 'array',
+            items: { type: 'string' },
+          },
+          metadata: { type: 'object' },
+          formatted: {
+            type: 'object',
+            properties: {
+              markdown: { type: 'string' },
+              html: { type: 'string' },
+            },
+          },
+        },
+      },
+      ChangelogRelease: {
+        type: 'object',
+        properties: {
+          version: { type: 'string' },
+          date: { type: 'string' },
+          summary: { type: 'string' },
+          changes: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/ChangeEntry' },
+          },
+          contributors: {
+            type: 'array',
+            items: { type: 'string' },
+          },
+          metadata: { type: 'object' },
+          formatted: {
+            type: 'object',
+            properties: {
+              markdown: { type: 'string' },
+              html: { type: 'string' },
+            },
+          },
         },
       },
     },

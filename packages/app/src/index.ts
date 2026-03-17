@@ -23,7 +23,7 @@ import { mkdtempSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { runPipeline, VERSION, DEFAULT_CATEGORIES } from '@cullit/core';
-import type { CullConfig } from '@cullit/core';
+import type { CullConfig, PublishTarget } from '@cullit/core';
 
 // Load pro plugins
 try { await import('@cullit/pro'); } catch { /* pro not installed */ }
@@ -39,6 +39,13 @@ const RATE_WINDOW = 60_000;
 const AI_PROVIDER = process.env['CULLIT_AI_PROVIDER'] || 'none';
 const AI_MODEL = process.env['CULLIT_AI_MODEL'] || undefined;
 const AI_API_KEY = process.env['CULLIT_AI_API_KEY'] || undefined;
+
+// Auto-publish config
+const SLACK_WEBHOOK = process.env['CULLIT_APP_SLACK_WEBHOOK'] || '';
+const DISCORD_WEBHOOK = process.env['CULLIT_APP_DISCORD_WEBHOOK'] || '';
+const TEAMS_WEBHOOK = process.env['CULLIT_APP_TEAMS_WEBHOOK'] || '';
+const CHANGELOG_ENABLED = process.env['CULLIT_APP_CHANGELOG_ENABLED'] === 'true';
+const CHANGELOG_API_KEY = process.env['CULLIT_APP_CHANGELOG_API_KEY'] || '';
 
 // --- Rate limiter (per-IP sliding window) ---
 const ipTimestamps = new Map<string, number[]>();
@@ -215,6 +222,17 @@ function cloneRepo(owner: string, repo: string, token: string): string {
   return tempDir;
 }
 
+// --- Publish Target Builder ---
+
+function buildPublishTargets(): PublishTarget[] {
+  const targets: PublishTarget[] = [];
+  if (SLACK_WEBHOOK) targets.push({ type: 'slack', webhookUrl: SLACK_WEBHOOK });
+  if (DISCORD_WEBHOOK) targets.push({ type: 'discord', webhookUrl: DISCORD_WEBHOOK });
+  if (TEAMS_WEBHOOK) targets.push({ type: 'teams', webhookUrl: TEAMS_WEBHOOK });
+  if (CHANGELOG_ENABLED) targets.push({ type: 'changelog' });
+  return targets;
+}
+
 // --- Event Handlers ---
 
 async function handleRelease(payload: any): Promise<void> {
@@ -247,7 +265,7 @@ async function handleRelease(payload: any): Promise<void> {
     const config: CullConfig = {
       ai: { provider: AI_PROVIDER, model: AI_MODEL, apiKey: AI_API_KEY, audience: 'developer', tone: 'professional', categories: DEFAULT_CATEGORIES },
       source: { type: 'local', repoPath: repoDir },
-      publish: [],
+      publish: buildPublishTargets(),
     };
 
     const result = await runPipeline(prevTag, tag, config, { format: 'markdown' });
@@ -286,7 +304,7 @@ async function handlePush(payload: any): Promise<void> {
     const config: CullConfig = {
       ai: { provider: AI_PROVIDER, model: AI_MODEL, apiKey: AI_API_KEY, audience: 'developer', tone: 'professional', categories: DEFAULT_CATEGORIES },
       source: { type: 'local', repoPath: repoDir },
-      publish: [],
+      publish: buildPublishTargets(),
     };
 
     const result = await runPipeline(prevTag, tag, config, { format: 'markdown' });

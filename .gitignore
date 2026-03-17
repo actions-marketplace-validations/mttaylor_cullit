@@ -12,3 +12,4 @@ coverage/
 *.code-workspace
 cullit_setup_guide.md
 RELEASE_NOTES.md
+changelog-store.json
