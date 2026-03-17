@@ -368,8 +368,8 @@ async function handleChangelogPublish(req: IncomingMessage, res: ServerResponse)
 
   const release: ChangelogRelease = {
     version: body.version,
-    date: body.date || new Date().toISOString().split('T')[0],
-    summary: body.summary || '',
+    date: /^\d{4}-\d{2}-\d{2}$/.test(body.date) ? body.date : new Date().toISOString().split('T')[0],
+    summary: String(body.summary || '').slice(0, 2000),
     changes: body.changes.slice(0, 50).map((c: any) => ({
       description: String(c.description || '').slice(0, 500),
       category: String(c.category || 'chores').slice(0, 50),
@@ -378,13 +378,22 @@ async function handleChangelogPublish(req: IncomingMessage, res: ServerResponse)
     contributors: Array.isArray(body.contributors)
       ? body.contributors.slice(0, 50).map((c: any) => String(c).slice(0, 100))
       : [],
-    metadata: body.metadata || undefined,
+    metadata: body.metadata
+      ? JSON.parse(JSON.stringify(body.metadata, (k, v) => k === '__proto__' || k === 'constructor' || k === 'prototype' ? undefined : v))
+      : undefined,
     formatted: {
       markdown: String(body.formatted?.markdown || '').slice(0, 50_000),
       html: String(body.formatted?.html || '').slice(0, 100_000),
     },
     publishedAt: new Date().toISOString(),
   };
+
+  // Cap total number of projects
+  const MAX_PROJECTS = 1000;
+  if (!changelogStore.has(body.project) && changelogStore.size >= MAX_PROJECTS) {
+    json(res, 409, { error: 'Maximum number of projects reached' });
+    return;
+  }
 
   // Store the release
   const releases = changelogStore.get(body.project) || [];
@@ -414,7 +423,8 @@ async function handleChangelogPublish(req: IncomingMessage, res: ServerResponse)
 
 async function handleChangelogLatest(req: IncomingMessage, res: ServerResponse, project: string): Promise<void> {
   const url = new URL(req.url || '/', `http://localhost:${PORT}`);
-  const limit = Math.min(parseInt(url.searchParams.get('limit') || '20', 10), 50);
+  const rawLimit = parseInt(url.searchParams.get('limit') || '20', 10);
+  const limit = Math.max(1, Math.min(isNaN(rawLimit) ? 20 : rawLimit, 50));
 
   const releases = changelogStore.get(project);
   if (!releases || releases.length === 0) {
@@ -468,7 +478,12 @@ const server = createServer(async (req, res) => {
       await handleChangelogPublish(req, res);
     } else if (req.method === 'GET' && path.match(/^\/v1\/changelog\/[^/]+\/latest$/)) {
       // Public endpoint — no auth required (CORS-enabled for widget embedding)
+      if (!checkRateLimit(req, res)) return;
       const project = path.split('/')[3];
+      if (!/^[a-zA-Z0-9_-]{1,64}$/.test(project)) {
+        json(res, 400, { error: 'Invalid project slug' });
+        return;
+      }
       await handleChangelogLatest(req, res, project);
     } else {
       json(res, 404, { error: 'Not found', docs: '/openapi.json' });
