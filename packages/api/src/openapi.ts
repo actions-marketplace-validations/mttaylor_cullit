@@ -20,6 +20,7 @@ export const openApiSpec = {
     },
   },
   servers: [
+    { url: 'https://api.cullit.io', description: 'Production' },
     { url: 'http://localhost:3000', description: 'Local development' },
   ],
   paths: {
@@ -437,6 +438,100 @@ export const openApiSpec = {
             content: { 'application/json': { schema: { $ref: '#/components/schemas/AnalyticsResponse' } } },
           },
           '401': { description: 'Not authenticated', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+        },
+      },
+    },
+    '/v1/generate': {
+      post: {
+        operationId: 'generateV1',
+        summary: 'Generate release notes (v1)',
+        description: 'Alias for POST /generate with usage enforcement.',
+        tags: ['Generation'],
+        security: [{ bearerAuth: [] }],
+        requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/GenerateRequest' } } } },
+        responses: {
+          '200': { description: 'Generated release notes', content: { 'application/json': { schema: { $ref: '#/components/schemas/GenerateResponse' } } } },
+          '400': { description: 'Invalid request', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          '402': { description: 'Monthly generation limit reached', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+        },
+      },
+    },
+    '/v1/billing/checkout': {
+      post: {
+        operationId: 'createCheckout',
+        summary: 'Create Stripe checkout session',
+        description: 'Initiates a Stripe Checkout session for Pro or Team plan subscription.',
+        tags: ['Billing'],
+        security: [{ cookieAuth: [] }],
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  plan: { type: 'string', enum: ['pro', 'team'] },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Checkout session URL',
+            content: { 'application/json': { schema: { type: 'object', properties: { url: { type: 'string', format: 'uri' } } } } },
+          },
+          '401': { description: 'Not authenticated' },
+          '503': { description: 'Billing not configured' },
+        },
+      },
+    },
+    '/v1/billing/portal': {
+      post: {
+        operationId: 'createBillingPortal',
+        summary: 'Create Stripe customer portal session',
+        description: 'Returns a URL to the Stripe customer portal for managing subscriptions.',
+        tags: ['Billing'],
+        security: [{ cookieAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Portal session URL',
+            content: { 'application/json': { schema: { type: 'object', properties: { url: { type: 'string', format: 'uri' } } } } },
+          },
+          '400': { description: 'No billing account' },
+          '401': { description: 'Not authenticated' },
+        },
+      },
+    },
+    '/v1/billing/subscription': {
+      get: {
+        operationId: 'getSubscription',
+        summary: 'Get current subscription status',
+        tags: ['Billing'],
+        security: [{ cookieAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Subscription status',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    subscription: {
+                      type: 'object',
+                      nullable: true,
+                      properties: {
+                        plan: { type: 'string' },
+                        status: { type: 'string' },
+                        currentPeriodEnd: { type: 'string', format: 'date-time' },
+                        cancelAtPeriodEnd: { type: 'boolean' },
+                      },
+                    },
+                    plan: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
         },
       },
     },

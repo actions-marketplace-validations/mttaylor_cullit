@@ -8,6 +8,11 @@
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'fs';
+import {
+  sql, dbAddGeneration, dbGetGenerations, dbGetGenerationCount,
+  dbRecordUsage, dbGetUsageStats, dbGetMonthlyGenerationCount,
+} from './db.js';
+import { useDb } from './auth.js';
 
 // --- Config ---
 
@@ -84,7 +89,17 @@ loadHistoryStore();
 
 // --- History ---
 
-export function addHistoryEntry(entry: HistoryEntry): void {
+export async function addHistoryEntry(entry: HistoryEntry): Promise<void> {
+  if (useDb) {
+    await dbAddGeneration({
+      id: entry.id, userId: entry.userId, project: entry.project,
+      from: entry.from, to: entry.to, provider: entry.provider,
+      format: entry.format, changeCount: entry.changeCount,
+      summary: entry.summary, duration: entry.duration,
+    });
+    return;
+  }
+
   const entries = store.history[entry.userId] || [];
 
   // Cap per-user history
@@ -102,18 +117,39 @@ export function addHistoryEntry(entry: HistoryEntry): void {
   saveHistoryStore();
 }
 
-export function getHistory(userId: string, limit: number = 20, offset: number = 0): HistoryEntry[] {
+export async function getHistory(userId: string, limit: number = 20, offset: number = 0): Promise<HistoryEntry[]> {
+  if (useDb) {
+    const rows = await dbGetGenerations(userId, limit, offset);
+    return rows.map(r => ({
+      id: r.id, userId: r.user_id, project: r.project,
+      from: r.from_ref, to: r.to_ref, provider: r.provider,
+      format: r.format, changeCount: r.change_count,
+      summary: r.summary, duration: r.duration,
+      createdAt: r.created_at.toISOString(),
+    }));
+  }
   const entries = store.history[userId] || [];
   return entries.slice(offset, offset + limit);
 }
 
-export function getHistoryCount(userId: string): number {
+export async function getHistoryCount(userId: string): Promise<number> {
+  if (useDb) return dbGetGenerationCount(userId);
   return (store.history[userId] || []).length;
 }
 
 // --- Analytics ---
 
-export function recordUsageEvent(event: UsageEvent): void {
+export async function recordUsageEvent(event: UsageEvent): Promise<void> {
+  if (useDb) {
+    await dbRecordUsage({
+      key: event.orgId || event.userId,
+      provider: event.provider,
+      changeCount: event.changeCount,
+      duration: event.duration,
+    });
+    return;
+  }
+
   const key = event.orgId || event.userId;
   const date = event.timestamp.split('T')[0]; // YYYY-MM-DD
 
@@ -141,11 +177,26 @@ export function recordUsageEvent(event: UsageEvent): void {
   saveHistoryStore();
 }
 
-export function getUsageStats(key: string, days: number = 30): {
+export async function getUsageStats(key: string, days: number = 30): Promise<{
   daily: DailyUsage[];
   totals: { generations: number; totalChanges: number; avgDuration: number };
   topProviders: { provider: string; count: number }[];
-} {
+}> {
+  if (useDb) {
+    const stats = await dbGetUsageStats(key, days);
+    return {
+      daily: stats.daily.map(d => ({
+        date: d.date,
+        generations: d.generations,
+        totalChanges: d.total_changes,
+        avgDuration: d.avg_duration,
+        providers: d.providers,
+      })),
+      totals: stats.totals,
+      topProviders: stats.topProviders,
+    };
+  }
+
   const entries = store.dailyUsage[key] || [];
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - days);
@@ -184,7 +235,9 @@ export function getUsageStats(key: string, days: number = 30): {
 /**
  * Get this month's generation count for a user/org.
  */
-export function getMonthlyGenerationCount(key: string): number {
+export async function getMonthlyGenerationCount(key: string): Promise<number> {
+  if (useDb) return dbGetMonthlyGenerationCount(key);
+
   const entries = store.dailyUsage[key] || [];
   const now = new Date();
   const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;

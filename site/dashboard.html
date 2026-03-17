@@ -827,7 +827,7 @@
       <div class="panel-body">
         <div class="form-group">
           <label>API URL</label>
-          <input type="text" id="apiUrl" value="http://localhost:3000" placeholder="http://localhost:3000">
+          <input type="text" id="apiUrl" value="" placeholder="https://api.cullit.io">
         </div>
       </div>
     </div>
@@ -1025,7 +1025,11 @@ let currentUser = null;
 // --- API helpers ---
 
 function apiUrl() {
-  return (document.getElementById('apiUrl').value || 'http://localhost:3000').replace(/\/+$/, '');
+  const input = document.getElementById('apiUrl').value;
+  if (input) return input.replace(/\/+$/, '');
+  // Auto-detect: same origin in production, localhost for dev
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return 'http://localhost:3000';
+  return location.origin;
 }
 
 async function apiFetch(path, opts = {}) {

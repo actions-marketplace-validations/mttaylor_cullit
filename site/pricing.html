@@ -419,7 +419,7 @@
         <li><span class="check">&#10003;</span> All publishers</li>
         <li><span class="check">&#10003;</span> Styled HTML themes</li>
       </ul>
-      <a href="mailto:sales@cullit.io?subject=Cullit%20Pro" class="plan-btn plan-btn-primary">Start Pro</a>
+      <a href="mailto:sales@cullit.io?subject=Cullit%20Pro" class="plan-btn plan-btn-primary" onclick="startCheckout('pro', event)">Start Pro</a>
     </div>
 
     <!-- TEAM -->
@@ -437,7 +437,7 @@
         <li><span class="check">&#10003;</span> Priority support</li>
         <li><span class="check">&#10003;</span> Team usage dashboard</li>
       </ul>
-      <a href="mailto:sales@cullit.io?subject=Cullit%20Team" class="plan-btn plan-btn-outline">Start Team</a>
+      <a href="mailto:sales@cullit.io?subject=Cullit%20Team" class="plan-btn plan-btn-outline" onclick="startCheckout('team', event)">Start Team</a>
     </div>
 
     <!-- ENTERPRISE -->
@@ -486,7 +486,7 @@
 
     <div class="faq-item">
       <p class="faq-q">How do I cancel?</p>
-      <p class="faq-a">Email <a href="mailto:sales@cullit.io">sales@cullit.io</a> anytime. No lock-in, no questions asked.</p>
+      <p class="faq-a">Cancel anytime from the <a href="dashboard.html">billing dashboard</a> or email <a href="mailto:sales@cullit.io">sales@cullit.io</a>. No lock-in, no questions asked.</p>
     </div>
   </section>
 </main>
@@ -510,6 +510,34 @@ hamburger.addEventListener('click', () => {
   hamburger.classList.toggle('open');
   navLinks.classList.toggle('open');
 });
+
+function getApiUrl() {
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return 'http://localhost:3000';
+  return location.origin;
+}
+
+async function startCheckout(plan, e) {
+  e.preventDefault();
+  try {
+    const res = await fetch(getApiUrl() + '/v1/billing/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ plan }),
+    });
+    const data = await res.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else if (res.status === 401) {
+      window.location.href = 'dashboard.html';
+    } else {
+      alert(data.error || 'Could not start checkout. Please try again.');
+    }
+  } catch {
+    // Fallback to mailto if API isn't available
+    window.location.href = 'mailto:sales@cullit.io?subject=Cullit%20' + plan.charAt(0).toUpperCase() + plan.slice(1);
+  }
+}
 </script>
 
 </body>

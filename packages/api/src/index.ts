@@ -19,21 +19,28 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'http';
 import { createHash } from 'crypto';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { randomBytes } from 'crypto';
-import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS } from '@cullit/core';
+import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS, getTierLimits } from '@cullit/core';
 import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget } from '@cullit/core';
 import { openApiSpec } from './openapi.js';
 import {
   handleAuthRedirect, handleAuthCallback, handleAuthMe, handleAuthLogout,
   resolveUser, getUser, getOrg, createOrg, addOrgMember, removeOrgMember, getOrgMembers,
+  useDb,
 } from './auth.js';
 import {
   addHistoryEntry, getHistory, getHistoryCount,
   recordUsageEvent, getUsageStats, getMonthlyGenerationCount,
   type HistoryEntry,
 } from './store.js';
+import { migrate } from './db.js';
+import { handleCheckout, handleBillingPortal, handleGetSubscription, handleStripeWebhook, isStripeConfigured } from './billing.js';
+import { sendSubscriptionConfirmed, sendPaymentFailed } from './email.js';
 
 // Load pro plugins if installed
 try { await import('@cullit/pro'); } catch { /* pro not installed */ }
+
+// Run database migrations (no-op if DATABASE_URL not set)
+await migrate();
 
 const PORT = parseInt(process.env['PORT'] || '3000', 10);
 const API_TOKEN = process.env['CULLIT_API_TOKEN'] || ''; // optional bearer auth
@@ -350,6 +357,24 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
   const to = body.to || 'HEAD';
 
   try {
+    // Usage enforcement: check monthly limit before running pipeline
+    const user = await resolveUser(req);
+    if (user) {
+      const key = user.orgId || user.id;
+      const monthlyCount = await getMonthlyGenerationCount(key);
+      const limits = getTierLimits(user.tier);
+      if (monthlyCount >= limits.generationsPerMonth) {
+        json(res, 402, {
+          error: 'Monthly generation limit reached',
+          used: monthlyCount,
+          limit: limits.generationsPerMonth,
+          tier: user.tier,
+          upgrade: 'https://cullit.io/pricing',
+        });
+        return;
+      }
+    }
+
     // Check cache first
     const cacheKey = getCacheKey(body.from, to, format, config);
     const cached = getCachedResult(cacheKey);
@@ -376,7 +401,6 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
     json(res, 200, response);
 
     // Record history + analytics (fire-and-forget, don't block response)
-    const user = resolveUser(req);
     if (user) {
       const entry: HistoryEntry = {
         id: randomBytes(8).toString('hex'),
@@ -391,7 +415,7 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
         duration: result.duration,
         createdAt: new Date().toISOString(),
       };
-      addHistoryEntry(entry);
+      addHistoryEntry(entry).catch(() => {});
       recordUsageEvent({
         userId: user.id,
         orgId: user.orgId,
@@ -400,7 +424,7 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
         changeCount: result.notes.changes.length,
         duration: result.duration,
         timestamp: entry.createdAt,
-      });
+      }).catch(() => {});
     }
   } catch (err) {
     console.error('Pipeline error:', (err as Error).message);
@@ -530,14 +554,14 @@ async function handleChangelogLatest(req: IncomingMessage, res: ServerResponse, 
 // --- Team / Org Endpoints ---
 
 async function handleGetOrg(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = resolveUser(req);
+  const user = await resolveUser(req);
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
   if (!user.orgId) { json(res, 200, { org: null }); return; }
 
-  const org = getOrg(user.orgId);
+  const org = await getOrg(user.orgId);
   if (!org) { json(res, 200, { org: null }); return; }
 
-  const members = getOrgMembers(org.id).map(m => ({
+  const members = (await getOrgMembers(org.id)).map(m => ({
     id: m.id, login: m.login, name: m.name, avatarUrl: m.avatarUrl, role: m.role,
   }));
 
@@ -548,7 +572,7 @@ async function handleGetOrg(req: IncomingMessage, res: ServerResponse): Promise<
 }
 
 async function handleCreateOrg(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = resolveUser(req);
+  const user = await resolveUser(req);
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
   if (user.orgId) { json(res, 409, { error: 'Already a member of an organization' }); return; }
 
@@ -560,12 +584,12 @@ async function handleCreateOrg(req: IncomingMessage, res: ServerResponse): Promi
     json(res, 400, { error: '"name" is required (2-64 characters)' }); return;
   }
 
-  const org = createOrg(body.name, user);
+  const org = await createOrg(body.name, user);
   json(res, 201, { org: { id: org.id, name: org.name, slug: org.slug, tier: org.tier } });
 }
 
 async function handleOrgInvite(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = resolveUser(req);
+  const user = await resolveUser(req);
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
   if (!user.orgId || (user.role !== 'owner' && user.role !== 'admin')) {
     json(res, 403, { error: 'Must be org owner or admin to invite members' }); return;
@@ -579,7 +603,7 @@ async function handleOrgInvite(req: IncomingMessage, res: ServerResponse): Promi
     json(res, 400, { error: '"userId" is required' }); return;
   }
 
-  const targetUser = getUser(body.userId);
+  const targetUser = await getUser(body.userId);
   if (!targetUser) {
     json(res, 404, { error: 'User not found' }); return;
   }
@@ -591,7 +615,7 @@ async function handleOrgInvite(req: IncomingMessage, res: ServerResponse): Promi
     json(res, 403, { error: 'Only the org owner can grant admin role' }); return;
   }
 
-  const success = addOrgMember(user.orgId, targetUser, role);
+  const success = await addOrgMember(user.orgId, targetUser, role);
   if (!success) {
     json(res, 409, { error: 'Cannot add member (org full or already a member)' }); return;
   }
@@ -600,7 +624,7 @@ async function handleOrgInvite(req: IncomingMessage, res: ServerResponse): Promi
 }
 
 async function handleOrgRemoveMember(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = resolveUser(req);
+  const user = await resolveUser(req);
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
   if (!user.orgId || (user.role !== 'owner' && user.role !== 'admin')) {
     json(res, 403, { error: 'Must be org owner or admin to remove members' }); return;
@@ -614,7 +638,7 @@ async function handleOrgRemoveMember(req: IncomingMessage, res: ServerResponse):
     json(res, 400, { error: '"userId" is required' }); return;
   }
 
-  const success = removeOrgMember(user.orgId, body.userId);
+  const success = await removeOrgMember(user.orgId, body.userId);
   if (!success) {
     json(res, 409, { error: 'Cannot remove member (owner, not found, or not a member)' }); return;
   }
@@ -625,7 +649,7 @@ async function handleOrgRemoveMember(req: IncomingMessage, res: ServerResponse):
 // --- History Endpoint ---
 
 async function handleGetHistory(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = resolveUser(req);
+  const user = await resolveUser(req);
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
 
   const url = new URL(req.url || '/', `http://localhost:${PORT}`);
@@ -634,8 +658,8 @@ async function handleGetHistory(req: IncomingMessage, res: ServerResponse): Prom
   const rawOffset = parseInt(url.searchParams.get('offset') || '0', 10);
   const offset = Math.max(0, isNaN(rawOffset) ? 0 : rawOffset);
 
-  const entries = getHistory(user.id, limit, offset);
-  const total = getHistoryCount(user.id);
+  const entries = await getHistory(user.id, limit, offset);
+  const total = await getHistoryCount(user.id);
 
   json(res, 200, { entries, total, limit, offset });
 }
@@ -643,7 +667,7 @@ async function handleGetHistory(req: IncomingMessage, res: ServerResponse): Prom
 // --- Analytics Endpoint ---
 
 async function handleGetAnalytics(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = resolveUser(req);
+  const user = await resolveUser(req);
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
 
   const url = new URL(req.url || '/', `http://localhost:${PORT}`);
@@ -652,8 +676,8 @@ async function handleGetAnalytics(req: IncomingMessage, res: ServerResponse): Pr
 
   // Use org-level stats if in an org, otherwise user-level
   const key = user.orgId || user.id;
-  const stats = getUsageStats(key, days);
-  const monthlyCount = getMonthlyGenerationCount(key);
+  const stats = await getUsageStats(key, days);
+  const monthlyCount = await getMonthlyGenerationCount(key);
 
   json(res, 200, {
     ...stats,
@@ -686,7 +710,7 @@ const server = createServer(async (req, res) => {
 
   try {
     // --- Rate limit all non-system routes ---
-    if (path !== '/health' && path !== '/openapi.json' && path !== '/auth/callback') {
+    if (path !== '/health' && path !== '/openapi.json' && path !== '/auth/callback' && path !== '/v1/billing/webhook') {
       if (!checkRateLimit(req, res)) return;
     }
 
@@ -696,7 +720,7 @@ const server = createServer(async (req, res) => {
     } else if (path === '/auth/callback' && req.method === 'GET') {
       await handleAuthCallback(req, res);
     } else if (path === '/auth/me' && req.method === 'GET') {
-      handleAuthMe(req, res, json);
+      await handleAuthMe(req, res, json);
     } else if (path === '/auth/logout' && req.method === 'POST') {
       handleAuthLogout(req, res, json);
 
@@ -707,7 +731,7 @@ const server = createServer(async (req, res) => {
       await handleOpenAPI(req, res);
 
     // --- Authenticated routes ---
-    } else if (path === '/generate' && req.method === 'POST') {
+    } else if ((path === '/generate' || path === '/v1/generate') && req.method === 'POST') {
       if (!checkAuth(req, res)) return;
       await handleGenerate(req, res);
     } else if (path === '/v1/changelog' && req.method === 'POST') {
@@ -720,6 +744,27 @@ const server = createServer(async (req, res) => {
         return;
       }
       await handleChangelogLatest(req, res, project);
+
+    // --- Billing routes ---
+    } else if (path === '/v1/billing/checkout' && req.method === 'POST') {
+      const user = await resolveUser(req);
+      if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+      const raw = await readBody(req);
+      let body: { plan?: string };
+      try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
+      const plan = body.plan === 'team' ? 'team' : 'pro';
+      await handleCheckout(user.id, plan, json, res);
+    } else if (path === '/v1/billing/portal' && req.method === 'POST') {
+      const user = await resolveUser(req);
+      if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+      await handleBillingPortal(user.id, json, res);
+    } else if (path === '/v1/billing/subscription' && req.method === 'GET') {
+      const user = await resolveUser(req);
+      if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+      await handleGetSubscription(user.id, json, res);
+    } else if (path === '/v1/billing/webhook' && req.method === 'POST') {
+      const raw = await readBody(req);
+      await handleStripeWebhook(req, raw, json, res);
 
     // --- Team / Org routes ---
     } else if (path === '/v1/org' && req.method === 'GET') {
@@ -750,21 +795,24 @@ const isDirectRun = process.argv[1]?.endsWith('index.js') || process.argv[1]?.en
 if (isDirectRun) {
   server.listen(PORT, () => {
     console.log(`
-  ╔═══════════════════════════════════════════╗
-  ║  Cullit API v${VERSION}                      ║
-  ║  http://localhost:${PORT}                    ║
-  ║                                           ║
-  ║  GET  /health                  Status     ║
-  ║  GET  /openapi.json            Spec       ║
-  ║  POST /generate                Notes      ║
-  ║  POST /v1/changelog            Publish    ║
-  ║  GET  /v1/changelog/:p/latest  Releases   ║
-  ║  GET  /auth/github             Login      ║
-  ║  GET  /auth/me                 Profile    ║
-  ║  GET  /v1/org                  Team       ║
-  ║  GET  /v1/history              History    ║
-  ║  GET  /v1/analytics/usage      Analytics  ║
-  ╚═══════════════════════════════════════════╝
+  ╔═══════════════════════════════════════════════╗
+  ║  Cullit API v${VERSION}                          ║
+  ║  http://localhost:${PORT}                        ║
+  ║                                               ║
+  ║  GET  /health                      Status     ║
+  ║  GET  /openapi.json                Spec       ║
+  ║  POST /v1/generate                 Notes      ║
+  ║  POST /v1/changelog                Publish    ║
+  ║  GET  /v1/changelog/:p/latest      Releases   ║
+  ║  GET  /auth/github                 Login      ║
+  ║  GET  /auth/me                     Profile    ║
+  ║  GET  /v1/org                      Team       ║
+  ║  GET  /v1/history                  History    ║
+  ║  GET  /v1/analytics/usage          Analytics  ║
+  ║  POST /v1/billing/checkout         Billing    ║
+  ║  POST /v1/billing/portal           Portal     ║
+  ║  GET  /v1/billing/subscription     Sub        ║
+  ╚═══════════════════════════════════════════════╝
   `);
   });
 }

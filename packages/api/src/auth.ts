@@ -21,6 +21,16 @@
 import { createHmac, randomBytes } from 'crypto';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import type { IncomingMessage, ServerResponse } from 'http';
+import {
+  sql, dbGetUser, dbGetUserByApiKey, dbUpsertUser, dbUpdateUserTier,
+  dbUpdateUserOrg, dbGetOrg, dbGetOrgBySlug, dbCreateOrg, dbGetOrgMemberCount,
+  dbAddOrgMember, dbRemoveOrgMember, dbGetOrgMembers, dbUpdateUserStripe,
+  type DbUser, type DbOrg,
+} from './db.js';
+import { sendWelcome } from './email.js';
+
+/** Whether PostgreSQL is available */
+export const useDb = !!process.env['DATABASE_URL'];
 
 // --- Config ---
 
@@ -173,21 +183,23 @@ export function verifyJWT(token: string): { sub: string } | null {
 /**
  * Extract authenticated user from request (JWT cookie or Bearer token / API key).
  */
-export function resolveUser(req: IncomingMessage): User | null {
+export async function resolveUser(req: IncomingMessage): Promise<User | null> {
   // Try JWT from cookie first
   const cookies = parseCookies(req.headers['cookie'] || '');
   const sessionToken = cookies[SESSION_COOKIE_NAME];
   if (sessionToken) {
     const jwt = verifyJWT(sessionToken);
-    if (jwt && store.users[jwt.sub]) return store.users[jwt.sub];
+    if (jwt) {
+      const user = await getUser(jwt.sub);
+      if (user) return user;
+    }
   }
 
   // Try API key from Authorization header
   const authHeader = req.headers['authorization'] || '';
   if (authHeader.startsWith('Bearer clt_')) {
     const apiKey = authHeader.slice(7);
-    const userId = store.apiKeyIndex[apiKey];
-    if (userId && store.users[userId]) return store.users[userId];
+    return getUserByApiKey(apiKey);
   }
 
   return null;
@@ -204,25 +216,58 @@ function parseCookies(header: string): Record<string, string> {
 
 // --- User CRUD ---
 
-export function getUser(id: string): User | null {
+export async function getUser(id: string): Promise<User | null> {
+  if (useDb) {
+    const row = await dbGetUser(id);
+    return row ? dbUserToUser(row) : null;
+  }
   return store.users[id] || null;
 }
 
-export function getUserByApiKey(apiKey: string): User | null {
+export async function getUserByApiKey(apiKey: string): Promise<User | null> {
+  if (useDb) {
+    const row = await dbGetUserByApiKey(apiKey);
+    return row ? dbUserToUser(row) : null;
+  }
   const userId = store.apiKeyIndex[apiKey];
   return userId ? store.users[userId] || null : null;
+}
+
+function dbUserToUser(row: DbUser): User {
+  return {
+    id: row.id, login: row.login, name: row.name, email: row.email,
+    avatarUrl: row.avatar_url,
+    tier: row.tier as User['tier'], orgId: row.org_id, role: row.role as User['role'],
+    apiKey: row.api_key,
+    createdAt: row.created_at.toISOString(),
+    lastLoginAt: row.last_login_at.toISOString(),
+  };
 }
 
 function generateApiKey(): string {
   return 'clt_' + randomBytes(24).toString('hex');
 }
 
-function createOrUpdateUser(ghUser: GitHubUser): User {
+async function createOrUpdateUser(ghUser: GitHubUser): Promise<User> {
+  if (useDb) {
+    const apiKey = generateApiKey();
+    const isNew = !(await dbGetUser(ghUser.id));
+    const row = await dbUpsertUser({
+      id: ghUser.id, login: ghUser.login,
+      name: ghUser.name || ghUser.login, email: ghUser.email || '',
+      avatarUrl: ghUser.avatar_url, apiKey,
+    });
+    const user = dbUserToUser(row);
+    if (isNew && user.email) {
+      sendWelcome(user.email, user.name, user.apiKey).catch(() => {});
+    }
+    return user;
+  }
+
   const existing = store.users[ghUser.id];
   const now = new Date().toISOString();
 
   if (existing) {
-    // Update login info but preserve tier, org, role, apiKey
     existing.login = ghUser.login;
     existing.name = ghUser.name || existing.name;
     existing.email = ghUser.email || existing.email;
@@ -233,17 +278,11 @@ function createOrUpdateUser(ghUser: GitHubUser): User {
   }
 
   const user: User = {
-    id: ghUser.id,
-    login: ghUser.login,
-    name: ghUser.name || ghUser.login,
-    email: ghUser.email || '',
-    avatarUrl: ghUser.avatar_url,
-    tier: 'free',
-    orgId: null,
-    role: 'member',
-    apiKey: generateApiKey(),
-    createdAt: now,
-    lastLoginAt: now,
+    id: ghUser.id, login: ghUser.login,
+    name: ghUser.name || ghUser.login, email: ghUser.email || '',
+    avatarUrl: ghUser.avatar_url, tier: 'free',
+    orgId: null, role: 'member',
+    apiKey: generateApiKey(), createdAt: now, lastLoginAt: now,
   };
 
   store.users[user.id] = user;
@@ -254,29 +293,48 @@ function createOrUpdateUser(ghUser: GitHubUser): User {
 
 // --- Org CRUD ---
 
-export function getOrg(id: string): Org | null {
+export async function getOrg(id: string): Promise<Org | null> {
+  if (useDb) {
+    const row = await dbGetOrg(id);
+    return row ? dbOrgToOrg(row) : null;
+  }
   return store.orgs[id] || null;
 }
 
-export function getOrgBySlug(slug: string): Org | null {
+export async function getOrgBySlug(slug: string): Promise<Org | null> {
+  if (useDb) {
+    const row = await dbGetOrgBySlug(slug);
+    return row ? dbOrgToOrg(row) : null;
+  }
   for (const org of Object.values(store.orgs)) {
     if (org.slug === slug) return org;
   }
   return null;
 }
 
-export function createOrg(name: string, owner: User): Org {
+function dbOrgToOrg(row: DbOrg): Org {
+  return {
+    id: row.id, name: row.name, slug: row.slug,
+    ownerId: row.owner_id, tier: row.tier as Org['tier'],
+    maxSeats: row.max_seats, members: [],
+    createdAt: row.created_at.toISOString(),
+  };
+}
+
+export async function createOrg(name: string, owner: User): Promise<Org> {
   const id = randomBytes(12).toString('hex');
   const slug = name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').slice(0, 48);
   const now = new Date().toISOString();
 
+  if (useDb) {
+    const row = await dbCreateOrg({ id, name, slug, ownerId: owner.id, tier: 'team', maxSeats: 10 });
+    await dbAddOrgMember(id, owner.id, 'owner');
+    await dbUpdateUserOrg(owner.id, id, 'owner', 'team');
+    return dbOrgToOrg(row);
+  }
+
   const org: Org = {
-    id,
-    name,
-    slug,
-    ownerId: owner.id,
-    tier: 'team',
-    maxSeats: 10,
+    id, name, slug, ownerId: owner.id, tier: 'team', maxSeats: 10,
     members: [{ userId: owner.id, role: 'owner', joinedAt: now }],
     createdAt: now,
   };
@@ -289,7 +347,18 @@ export function createOrg(name: string, owner: User): Org {
   return org;
 }
 
-export function addOrgMember(orgId: string, user: User, role: 'admin' | 'member' = 'member'): boolean {
+export async function addOrgMember(orgId: string, user: User, role: 'admin' | 'member' = 'member'): Promise<boolean> {
+  if (useDb) {
+    const org = await dbGetOrg(orgId);
+    if (!org) return false;
+    const count = await dbGetOrgMemberCount(orgId);
+    if (count >= org.max_seats) return false;
+    const ok = await dbAddOrgMember(orgId, user.id, role);
+    if (!ok) return false;
+    await dbUpdateUserOrg(user.id, orgId, role, org.tier);
+    return true;
+  }
+
   const org = store.orgs[orgId];
   if (!org) return false;
   if (org.members.length >= org.maxSeats) return false;
@@ -303,10 +372,19 @@ export function addOrgMember(orgId: string, user: User, role: 'admin' | 'member'
   return true;
 }
 
-export function removeOrgMember(orgId: string, userId: string): boolean {
+export async function removeOrgMember(orgId: string, userId: string): Promise<boolean> {
+  if (useDb) {
+    const org = await dbGetOrg(orgId);
+    if (!org || org.owner_id === userId) return false;
+    const ok = await dbRemoveOrgMember(orgId, userId);
+    if (!ok) return false;
+    await dbUpdateUserOrg(userId, null, 'member', 'free');
+    return true;
+  }
+
   const org = store.orgs[orgId];
   if (!org) return false;
-  if (org.ownerId === userId) return false; // can't remove owner
+  if (org.ownerId === userId) return false;
 
   const idx = org.members.findIndex(m => m.userId === userId);
   if (idx < 0) return false;
@@ -322,7 +400,11 @@ export function removeOrgMember(orgId: string, userId: string): boolean {
   return true;
 }
 
-export function getOrgMembers(orgId: string): User[] {
+export async function getOrgMembers(orgId: string): Promise<User[]> {
+  if (useDb) {
+    const rows = await dbGetOrgMembers(orgId);
+    return rows.map(dbUserToUser);
+  }
   const org = store.orgs[orgId];
   if (!org) return [];
   return org.members
@@ -424,7 +506,7 @@ export async function handleAuthCallback(req: IncomingMessage, res: ServerRespon
     ghUser.id = String(ghUser.id); // Ensure string
 
     // Create or update user
-    const user = createOrUpdateUser(ghUser);
+    const user = await createOrUpdateUser(ghUser);
 
     // Issue JWT and set cookie
     const jwt = createJWT(user.id);
@@ -445,8 +527,8 @@ export async function handleAuthCallback(req: IncomingMessage, res: ServerRespon
 /**
  * GET /auth/me — Return current user
  */
-export function handleAuthMe(req: IncomingMessage, res: ServerResponse, jsonFn: (r: ServerResponse, s: number, b: unknown) => void): void {
-  const user = resolveUser(req);
+export async function handleAuthMe(req: IncomingMessage, res: ServerResponse, jsonFn: (r: ServerResponse, s: number, b: unknown) => void): Promise<void> {
+  const user = await resolveUser(req);
   if (!user) {
     jsonFn(res, 401, { error: 'Not authenticated' });
     return;
