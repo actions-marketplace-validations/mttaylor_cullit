@@ -372,7 +372,7 @@
   <span class="key">provider</span>: <span class="str">anthropic</span>        <span class="cmt"># anthropic | openai | gemini | ollama | openclaw | none</span>
   <span class="key">model</span>: <span class="str">claude-sonnet-4-20250514</span>  <span class="cmt"># optional: override default model</span>
   <span class="key">audience</span>: <span class="str">developer</span>       <span class="cmt"># developer | end-user | executive</span>
-  <span class="key">tone</span>: <span class="str">professional</span>        <span class="cmt"># professional | casual | terse</span>
+  <span class="key">tone</span>: <span class="str">professional</span>        <span class="cmt"># professional | casual | terse | edgy | hype | snarky</span>
   <span class="key">categories</span>:              <span class="cmt"># customize change categories</span>
     - <span class="str">features</span>
     - <span class="str">fixes</span>
@@ -465,9 +465,10 @@
     <tr><td><code>--to</code></td><td><code>-t</code></td><td>End ref — tag, branch, or SHA</td><td><code>HEAD</code></td></tr>
     <tr><td><code>--provider</code></td><td></td><td>AI provider to use</td><td>From config or <code>anthropic</code></td></tr>
     <tr><td><code>--model</code></td><td></td><td>AI model override</td><td>Provider default</td></tr>
-    <tr><td><code>--format</code></td><td></td><td>Output format: <code>markdown</code>, <code>html</code>, <code>json</code></td><td><code>markdown</code></td></tr>
-    <tr><td><code>--source</code></td><td></td><td>Source type: <code>local</code>, <code>jira</code>, <code>linear</code></td><td>From config or <code>local</code></td></tr>
+    <tr><td><code>--format</code></td><td></td><td>Output format: <code>markdown</code>, <code>html</code>, <code>html-dark</code>, <code>html-minimal</code>, <code>html-edgy</code>, <code>json</code></td><td><code>markdown</code></td></tr>
+    <tr><td><code>--source</code></td><td></td><td>Source type: <code>local</code>, <code>jira</code>, <code>linear</code>, <code>gitlab</code>, <code>bitbucket</code></td><td>From config or <code>local</code></td></tr>
     <tr><td><code>--audience</code></td><td></td><td>Audience: <code>developer</code>, <code>end-user</code>, <code>executive</code></td><td>From config or <code>developer</code></td></tr>
+    <tr><td><code>--tone</code></td><td></td><td>Tone: <code>professional</code>, <code>casual</code>, <code>terse</code>, <code>edgy</code>, <code>hype</code>, <code>snarky</code></td><td>From config or <code>professional</code></td></tr>
     <tr><td><code>--config</code></td><td><code>-c</code></td><td>Config file path</td><td><code>.cullit.yml</code></td></tr>
     <tr><td><code>--dry-run</code></td><td></td><td>Generate but don't publish</td><td></td></tr>
     <tr><td><code>--verbose</code></td><td></td><td>Show detailed output</td><td></td></tr>

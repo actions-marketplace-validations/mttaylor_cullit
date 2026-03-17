@@ -45,6 +45,14 @@ export function loadConfig(cwdOrPath: string = process.cwd()): CullConfig {
  * For v1, avoids adding a yaml dependency. Handles our specific schema.
  */
 function parseSimpleYaml(raw: string): Record<string, any> {
+  const RESERVED_KEYS = ['__proto__', 'constructor', 'prototype'];
+  const safeKey = (k: string): string => {
+    const trimmed = k.trim();
+    if (RESERVED_KEYS.includes(trimmed)) {
+      throw new Error(`Config error: reserved key "${trimmed}" is not allowed`);
+    }
+    return trimmed;
+  };
   const result: Record<string, any> = {};
   let currentSection = '';
   let currentArray: any[] | null = null;
@@ -61,10 +69,10 @@ function parseSimpleYaml(raw: string): Record<string, any> {
       const [key, ...valParts] = trimmed.split(':');
       const val = valParts.join(':').trim();
       if (val) {
-        result[key.trim()] = parseValue(val);
+        result[safeKey(key)] = parseValue(val);
       } else {
-        result[key.trim()] = {};
-        currentSection = key.trim();
+        result[safeKey(key)] = {};
+        currentSection = safeKey(key);
       }
       currentArray = null;
       continue;
@@ -85,7 +93,7 @@ function parseSimpleYaml(raw: string): Record<string, any> {
         }
         const obj: Record<string, any> = {};
         const [k, ...vParts] = content.split(':');
-        obj[k.trim()] = parseValue(vParts.join(':').trim());
+        obj[safeKey(k)] = parseValue(vParts.join(':').trim());
         currentArray.push(obj);
       } else {
         // Simple array value
@@ -113,15 +121,15 @@ function parseSimpleYaml(raw: string): Record<string, any> {
         if (currentArray && currentArray.length > 0) {
           const lastObj = currentArray[currentArray.length - 1];
           if (typeof lastObj === 'object') {
-            lastObj[key.trim()] = parseValue(val);
+            lastObj[safeKey(key)] = parseValue(val);
             continue;
           }
         }
         if (currentSection) {
-          (result[currentSection] as any)[key.trim()] = parseValue(val);
+          (result[currentSection] as any)[safeKey(key)] = parseValue(val);
         }
       } else {
-        currentArrayKey = key.trim();
+        currentArrayKey = safeKey(key);
         currentArray = null;
         if (currentSection) {
           (result[currentSection] as any)[currentArrayKey] = {};

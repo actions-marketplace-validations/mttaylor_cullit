@@ -7,8 +7,9 @@ import { fetchWithTimeout } from '@cullit/core';
  */
 export class TeamsPublisher implements Publisher {
   constructor(private webhookUrl: string) {
-    // Teams webhook URLs are hosted on various Microsoft domains
-    if (!webhookUrl.startsWith('https://') || !webhookUrl.includes('.webhook.office.com/')) {
+    // Validate domain to prevent SSRF — must be an Office 365 webhook host
+    const parsed = new URL(webhookUrl);
+    if (parsed.protocol !== 'https:' || !parsed.hostname.endsWith('.webhook.office.com')) {
       throw new Error('Invalid Teams webhook URL — must be an Office 365 webhook URL');
     }
   }

@@ -18,6 +18,9 @@ export class GitLabReleasePublisher implements Publisher {
     this.domain = config?.domain || process.env.GITLAB_DOMAIN || 'gitlab.com';
     this.projectId = config?.projectId || process.env.GITLAB_PROJECT_ID || '';
 
+    if (!/^[a-zA-Z0-9.-]+$/.test(this.domain)) {
+      throw new Error('Invalid GitLab domain — must be a valid hostname');
+    }
     if (!this.token) {
       throw new Error('GITLAB_TOKEN is required for GitLab Release publishing');
     }

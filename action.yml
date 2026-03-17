@@ -26,7 +26,7 @@ inputs:
     required: false
     default: 'developer'
   tone:
-    description: 'Writing tone: professional, casual, or terse'
+    description: 'Writing tone: professional, casual, terse, edgy, hype, or snarky'
     required: false
     default: 'professional'
   source:
@@ -34,7 +34,7 @@ inputs:
     required: false
     default: 'local'
   format:
-    description: 'Output format: markdown, html, or json'
+    description: 'Output format: markdown, html, html-dark, html-minimal, html-edgy, or json'
     required: false
     default: 'markdown'
   publish-slack-webhook:

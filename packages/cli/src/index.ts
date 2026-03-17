@@ -210,9 +210,21 @@ async function main() {
 }
 
 async function runGenerate(from: string, to: string, opts: Record<string, string>) {
+  // Validate --config path stays within the project directory
+  const configInput = opts.config || opts.c;
+  if (configInput) {
+    const resolvedConfig = resolve(configInput);
+    const projectRoot = resolve(process.cwd());
+    if (!resolvedConfig.startsWith(projectRoot)) {
+      console.error('\n✗ Config error: config file must be within the current project directory');
+      process.exitCode = 1;
+      return;
+    }
+  }
+
   let config;
   try {
-    config = loadConfig(opts.config || opts.c || process.cwd());
+    config = loadConfig(configInput || process.cwd());
   } catch (err) {
     console.error(`\n✗ Config error: ${(err as Error).message}`);
     console.error('  Fix your .cullit.yml or delete it to use defaults.');
