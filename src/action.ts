@@ -6,11 +6,12 @@
  *   pnpm build:action
  */
 
-import { runPipeline } from '@cullit/core';
+import { runPipeline, getRecentTags } from '@cullit/core';
 import { loadConfig } from '@cullit/config';
 import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget } from '@cullit/core';
 import { DEFAULT_CATEGORIES } from '@cullit/core';
 import { appendFileSync } from 'fs';
+import { resolveActionRefs } from './action-refs';
 
 // Load pro plugins (AI generators, enrichers, publishers)
 try { await import('@cullit/pro'); } catch { /* pro not installed */ }
@@ -35,11 +36,11 @@ function setFailed(message: string): void {
 
 // --- Main ---
 
-async function run(): Promise<void> {
+export async function run(): Promise<void> {
   try {
     // Read inputs
-    const from = getInput('from');
-    const to = getInput('to') || 'HEAD';
+    const inputFrom = getInput('from');
+    const inputTo = getInput('to') || 'HEAD';
     const configPath = getInput('config');
     const provider = (getInput('provider') || 'none') as AIProvider;
     const model = getInput('model');
@@ -57,9 +58,13 @@ async function run(): Promise<void> {
     const jiraDomain = getInput('jira-domain');
     const source = getInput('source') || 'local';
 
-    if (!from) {
-      setFailed('Input "from" is required. Specify a tag, branch, or commit SHA.');
-      return;
+    const { from, to, autoDetected } = resolveActionRefs(
+      inputFrom,
+      inputTo,
+      inputFrom ? [] : getRecentTags()
+    );
+    if (autoDetected) {
+      console.log(`» Auto-detected start ref: ${from} → ${to}`);
     }
 
     // Set API key from input if provided (env var takes precedence)
@@ -137,4 +142,10 @@ async function run(): Promise<void> {
   }
 }
 
-run();
+const isDirectRun = (process.argv[1] || '').replace(/\\/g, '/').match(/\/action\.(cjs|mjs|js|ts)$/);
+if (isDirectRun) {
+  run().catch(err => {
+    console.error(`Fatal: ${err.message}`);
+    process.exitCode = 1;
+  });
+}

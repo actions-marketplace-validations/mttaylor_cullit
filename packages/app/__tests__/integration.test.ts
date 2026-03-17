@@ -129,7 +129,9 @@ describe('GitHub App — HTTP Integration', () => {
       body: bigPayload,
     });
 
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(413);
+    const body = await res.json() as any;
+    expect(body.error).toBe('Payload too large');
 
     await new Promise<void>((resolve) => server.close(() => resolve()));
   });

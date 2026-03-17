@@ -427,7 +427,12 @@ const server = createServer(async (req, res) => {
     }
   } catch (err) {
     metrics.errors++;
-    console.error('Webhook error:', (err as Error).message);
+    const message = (err as Error).message;
+    console.error('Webhook error:', message);
+    if (message === 'Payload too large') {
+      json(res, 413, { error: message });
+      return;
+    }
     json(res, 500, { error: 'Internal server error' });
   }
 });

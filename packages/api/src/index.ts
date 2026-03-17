@@ -16,6 +16,7 @@
  */
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
+import { createHash } from 'crypto';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS } from '@cullit/core';
 import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget } from '@cullit/core';
@@ -120,8 +121,40 @@ const CACHE_TTL = parseInt(process.env['CACHE_TTL'] || '300000', 10); // 5 minut
 const MAX_CACHE_SIZE = parseInt(process.env['MAX_CACHE_SIZE'] || '100', 10);
 const pipelineCache = new Map<string, CacheEntry>();
 
-function getCacheKey(from: string, to: string, config: CullConfig): string {
-  return `${from}:${to}:${config.ai.provider}:${config.ai.model || ''}:${config.ai.audience}:${config.ai.tone}:${config.source.type}`;
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(',')}]`;
+  }
+
+  const entries = Object.entries(value as Record<string, unknown>)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, nestedValue]) => `${JSON.stringify(key)}:${stableStringify(nestedValue)}`);
+
+  return `{${entries.join(',')}}`;
+}
+
+export function getCacheKey(from: string, to: string, format: OutputFormat, config: CullConfig): string {
+  const fingerprint = stableStringify({
+    from,
+    to,
+    format,
+    ai: config.ai,
+    source: config.source,
+    jira: config.jira,
+    linear: config.linear,
+    openclaw: config.openclaw,
+    gitlab: config.gitlab,
+    bitbucket: config.bitbucket,
+    confluence: config.confluence,
+    notion: config.notion,
+    repos: config.repos,
+  });
+
+  return createHash('sha256').update(fingerprint).digest('hex');
 }
 
 function getCachedResult(key: string): any | null {
@@ -297,7 +330,7 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
 
   try {
     // Check cache first
-    const cacheKey = getCacheKey(body.from, to, config);
+    const cacheKey = getCacheKey(body.from, to, format, config);
     const cached = getCachedResult(cacheKey);
     if (cached) {
       json(res, 200, cached);
@@ -494,8 +527,10 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`
+const isDirectRun = process.argv[1]?.endsWith('index.js') || process.argv[1]?.endsWith('index.mjs');
+if (isDirectRun) {
+  server.listen(PORT, () => {
+    console.log(`
   ╔═══════════════════════════════════════════╗
   ║  Cullit API v${VERSION}                      ║
   ║  http://localhost:${PORT}                    ║
@@ -507,4 +542,7 @@ server.listen(PORT, () => {
   ║  GET  /v1/changelog/:p/latest  Releases   ║
   ╚═══════════════════════════════════════════╝
   `);
-});
+  });
+}
+
+export { server };
