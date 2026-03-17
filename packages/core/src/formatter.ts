@@ -128,7 +128,61 @@ function groupByCategory(notes: ReleaseNotes) {
   return grouped;
 }
 
+// --- Themed HTML Formatters ---
+
+const THEME_DARK = `<style>
+.cull-release{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f1117;color:#d4d4e0;padding:2rem;border-radius:12px;max-width:720px;line-height:1.7}
+.cull-release h2{color:#f0f0f5;font-size:1.6rem;border-bottom:2px solid #5eead4;padding-bottom:.5rem;margin-bottom:1rem}
+.cull-release h3{color:#5eead4;font-size:1.1rem;margin:1.5rem 0 .5rem}
+.cull-release .summary{color:#7e819a;font-size:.95rem;margin-bottom:1.5rem}
+.cull-release ul{list-style:none;padding:0}
+.cull-release li{padding:.4rem 0;border-bottom:1px solid #1e2030;font-size:.9rem}
+.cull-release li:last-child{border-bottom:none}
+.cull-release code{background:#161822;color:#5eead4;padding:.15rem .4rem;border-radius:4px;font-size:.8rem}
+.cull-release footer{margin-top:2rem;padding-top:1rem;border-top:1px solid #282a3a;color:#7e819a;font-size:.75rem}
+.cull-release a{color:#5eead4;text-decoration:none}
+</style>\n`;
+
+const THEME_MINIMAL = `<style>
+.cull-release{font-family:'Georgia',serif;background:#fafafa;color:#222;padding:2.5rem;max-width:680px;line-height:1.8}
+.cull-release h2{font-weight:400;font-size:1.4rem;letter-spacing:-.02em;border-bottom:1px solid #ddd;padding-bottom:.75rem;margin-bottom:1.25rem}
+.cull-release h3{font-weight:600;font-size:.9rem;text-transform:uppercase;letter-spacing:.1em;color:#888;margin:1.5rem 0 .5rem}
+.cull-release .summary{color:#555;font-size:.95rem;font-style:italic;margin-bottom:1.5rem}
+.cull-release ul{list-style:none;padding:0}
+.cull-release li{padding:.5rem 0;border-bottom:1px solid #eee;font-size:.9rem}
+.cull-release li:last-child{border-bottom:none}
+.cull-release code{background:#f0f0f0;color:#c7254e;padding:.1rem .35rem;border-radius:3px;font-size:.8rem}
+.cull-release footer{margin-top:2rem;color:#aaa;font-size:.75rem}
+.cull-release a{color:#222}
+</style>\n`;
+
+const THEME_EDGY = `<style>
+.cull-release{font-family:'Courier New',monospace;background:#000;color:#0f0;padding:2rem;border:1px solid #0f0;border-radius:0;max-width:720px;line-height:1.6;text-shadow:0 0 4px rgba(0,255,0,.3)}
+.cull-release h2{color:#0f0;font-size:1.5rem;text-transform:uppercase;letter-spacing:.15em;border-bottom:2px solid #0f0;padding-bottom:.5rem;margin-bottom:1rem}
+.cull-release h3{color:#0f0;font-size:1rem;text-transform:uppercase;letter-spacing:.1em;margin:1.5rem 0 .5rem;opacity:.8}
+.cull-release h3::before{content:'> '}
+.cull-release .summary{color:#0c0;font-size:.9rem;margin-bottom:1.5rem;opacity:.7}
+.cull-release ul{list-style:none;padding:0}
+.cull-release li{padding:.3rem 0;font-size:.85rem}
+.cull-release li::before{content:'$ ';color:#0a0;opacity:.6}
+.cull-release code{background:#001100;color:#5f5;padding:.15rem .4rem;border:1px solid #0a0;font-size:.8rem}
+.cull-release footer{margin-top:2rem;padding-top:1rem;border-top:1px solid #0a0;color:#0a0;font-size:.7rem;opacity:.5}
+.cull-release a{color:#0f0}
+</style>\n`;
+
+function formatThemedHTML(theme: string): FormatterFn {
+  const themeCSS: Record<string, string> = {
+    dark: THEME_DARK,
+    minimal: THEME_MINIMAL,
+    edgy: THEME_EDGY,
+  };
+  return (notes) => (themeCSS[theme] || '') + formatHTML(notes);
+}
+
 // --- Register built-in formatters ---
 registerFormatter('markdown', formatMarkdown);
 registerFormatter('html', formatHTML);
+registerFormatter('html-dark', formatThemedHTML('dark'));
+registerFormatter('html-minimal', formatThemedHTML('minimal'));
+registerFormatter('html-edgy', formatThemedHTML('edgy'));
 registerFormatter('json', (notes) => JSON.stringify(notes, null, 2));

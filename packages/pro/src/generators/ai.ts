@@ -97,6 +97,9 @@ export class AIGenerator implements Generator {
       'professional': 'Tone: professional and clear.',
       'casual': 'Tone: conversational and approachable, but still informative.',
       'terse': 'Tone: minimal and direct. Short bullet points only.',
+      'edgy': 'Tone: bold, irreverent, and sharp. Use punchy language, dry humor, and strong opinions. Talk like a senior engineer who ships fast and has zero patience for ceremony. Use vivid verbs. No corporate fluff.',
+      'hype': 'Tone: extremely enthusiastic and high-energy. Use exclamation marks, power words, and make every change sound like a breakthrough. Channel the energy of a product launch keynote. Make readers EXCITED to upgrade.',
+      'snarky': 'Tone: witty, sarcastic, and self-aware. Add subtle roasts of the old behavior being replaced. Be clever, not mean. Think of a comedian doing a tech talk. Still be accurate and informative underneath the humor.',
     };
 
     const categories = config.categories.join(', ');

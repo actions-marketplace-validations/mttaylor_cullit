@@ -153,6 +153,21 @@ export class TemplateGenerator implements Generator {
       return `We've got ${parts.join(', ')} packed into ${commitCount} commits. Let's go!`;
     }
 
+    if (tone === 'edgy') {
+      if (parts.length === 0) return `${commitCount} commits. No fluff. Just code that needed to exist.`;
+      return `Shipped: ${parts.join(', ')}. ${commitCount} commits. Zero apologies.`;
+    }
+
+    if (tone === 'hype') {
+      if (parts.length === 0) return `🔥 ${commitCount} commits just dropped and they're INCREDIBLE!`;
+      return `🚀 HUGE release! ${parts.join(', ')} across ${commitCount} commits! This changes EVERYTHING!`;
+    }
+
+    if (tone === 'snarky') {
+      if (parts.length === 0) return `${commitCount} commits. We were bored, okay?`;
+      return `Oh look, ${parts.join(', ')} from ${commitCount} commits. You're welcome.`;
+    }
+
     // Default: professional
     return parts.length > 0
       ? `This release includes ${parts.join(', ')} across ${commitCount} commits.`

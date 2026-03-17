@@ -61,11 +61,12 @@ const HELP = `
     --from, -f    Start ref, JQL query, or Linear filter
     --to, -t      End ref (defaults to HEAD)
     --config, -c  Path to config file (default: .cullit.yml)
-    --format      Output format: markdown, html, json (default: markdown)
+    --format      Output format: markdown, html, html-dark, html-minimal, html-edgy, json
     --dry-run     Generate but don't publish
     --provider    Override AI provider (anthropic, openai, gemini, ollama, openclaw, none)
     --source      Override source type (local, jira, linear, gitlab, bitbucket)
     --audience    Override audience (developer, end-user, executive)
+    --tone        Override tone (professional, casual, terse, edgy, hype, snarky)
     --verbose     Show detailed output
     --quiet       Suppress all output except errors
 
@@ -77,6 +78,7 @@ const HELP = `
     $ cullit generate --source jira --from "project = PROJ" --provider anthropic
     $ cullit generate --source linear --from "team:ENG" --provider openai
     $ cullit generate --source gitlab --from v1.0.0 --to v1.1.0
+    $ cullit generate --from HEAD~5 --tone edgy --format html-edgy
     $ cullit init
 `;
 
@@ -87,7 +89,7 @@ ai:
   provider: anthropic          # anthropic | openai | gemini | ollama | openclaw | none
   # model: claude-sonnet-4-20250514  # optional: override default model
   audience: developer          # developer | end-user | executive
-  tone: professional           # professional | casual | terse
+  tone: professional           # professional | casual | terse | edgy | hype | snarky
   categories: [features, fixes, breaking, improvements, chores]
 
 source:
@@ -222,6 +224,7 @@ async function runGenerate(from: string, to: string, opts: Record<string, string
   const VALID_PROVIDERS = AI_PROVIDERS as readonly string[];
   const VALID_AUDIENCES = AUDIENCES as readonly string[];
   const VALID_SOURCES = SOURCE_TYPES as readonly string[];
+  const VALID_TONES = TONES as readonly string[];
 
   if (opts.provider) {
     if (!VALID_PROVIDERS.includes(opts.provider)) {
@@ -240,6 +243,15 @@ async function runGenerate(from: string, to: string, opts: Record<string, string
       return;
     }
     config.ai.audience = opts.audience as any;
+  }
+  if (opts.tone) {
+    if (!VALID_TONES.includes(opts.tone)) {
+      console.error(`\n\u2717 Invalid tone: ${opts.tone}`);
+      console.error(`  Valid tones: ${VALID_TONES.join(', ')}`);
+      process.exitCode = 1;
+      return;
+    }
+    config.ai.tone = opts.tone as any;
   }
   if (opts.model) config.ai.model = opts.model;
   if (opts.source) {
