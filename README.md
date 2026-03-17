@@ -202,9 +202,9 @@ docker compose up api
 | [`cullit`](https://www.npmjs.com/package/cullit) | CLI — `npx cullit generate` |
 | [`@cullit/core`](https://www.npmjs.com/package/@cullit/core) | Core engine — pipeline, generators, publishers |
 | [`@cullit/config`](https://www.npmjs.com/package/@cullit/config) | Config loader — YAML parsing with env var resolution |
-| [`@cullit/pro`](https://www.npmjs.com/package/@cullit/pro) | Pro integrations — GitLab, Bitbucket, Teams, Confluence, Notion, AI generators |
-| [`@cullit/api`](https://www.npmjs.com/package/@cullit/api) | REST API server — OpenAPI 3.1, rate limiting, pipeline cache |
-| [`@cullit/app`](https://www.npmjs.com/package/@cullit/app) | GitHub App — auto-generate release notes on tag push or release publish |
+| `@cullit/pro` | Pro integrations (private) — GitLab, Bitbucket, Teams, Confluence, Notion, AI generators |
+| `@cullit/api` | REST API server (private) — OpenAPI 3.1, rate limiting, pipeline cache |
+| `@cullit/app` | GitHub App (private) — auto-generate release notes on tag push or release publish |
 
 ## Configuration
 

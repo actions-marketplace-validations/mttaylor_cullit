@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 
 vi.mock('child_process', () => ({
-  execSync: vi.fn(),
+  execFileSync: vi.fn(),
 }));
 
-const mockedExecSync = vi.mocked(execSync);
+const mockedExecFileSync = vi.mocked(execFileSync);
 
 // Import after mock
 import { analyzeReleaseReadiness } from '../src/advisor';
@@ -17,7 +17,7 @@ describe('analyzeReleaseReadiness', () => {
 
   it('returns first-release advisory when no tags exist', () => {
     // getLatestTag fails
-    mockedExecSync.mockImplementation(() => { throw new Error('no tags'); });
+    mockedExecFileSync.mockImplementation(() => { throw new Error('no tags'); });
 
     const advisory = analyzeReleaseReadiness('/test');
 
@@ -29,17 +29,17 @@ describe('analyzeReleaseReadiness', () => {
   it('reports no urgency with few chore commits', () => {
     const sep = '---CULLIT_COMMIT---';
 
-    mockedExecSync.mockImplementation((cmd: any) => {
-      const cmdStr = String(cmd);
-      if (cmdStr.includes('describe --tags')) return 'v1.0.0\n';
-      if (cmdStr.includes('git log -1 --format=%aI')) return '2026-03-10T00:00:00Z\n';
-      if (cmdStr.includes('git log') && cmdStr.includes('--no-merges')) {
+    mockedExecFileSync.mockImplementation((_cmd: any, args: any) => {
+      const argsArr = args as string[];
+      if (argsArr.includes('describe')) return 'v1.0.0\n';
+      if (argsArr.includes('-1') && argsArr.some((a: string) => a.includes('%aI'))) return '2026-03-10T00:00:00Z\n';
+      if (argsArr.includes('--no-merges')) {
         return [
           `aaa|aaa|matt|2026-03-12|chore: update deps|${sep}`,
           `bbb|bbb|matt|2026-03-11|docs: fix typo|${sep}`,
         ].join('\n');
       }
-      if (cmdStr.includes('git tag')) return 'v1.0.0\n';
+      if (argsArr.includes('tag')) return 'v1.0.0\n';
       return '';
     });
 
@@ -55,11 +55,11 @@ describe('analyzeReleaseReadiness', () => {
   it('recommends minor bump when features are present', () => {
     const sep = '---CULLIT_COMMIT---';
 
-    mockedExecSync.mockImplementation((cmd: any) => {
-      const cmdStr = String(cmd);
-      if (cmdStr.includes('describe --tags')) return 'v1.0.0\n';
-      if (cmdStr.includes('git log -1 --format=%aI')) return '2026-03-01T00:00:00Z\n';
-      if (cmdStr.includes('git log') && cmdStr.includes('--no-merges')) {
+    mockedExecFileSync.mockImplementation((_cmd: any, args: any) => {
+      const argsArr = args as string[];
+      if (argsArr.includes('describe')) return 'v1.0.0\n';
+      if (argsArr.includes('-1') && argsArr.some((a: string) => a.includes('%aI'))) return '2026-03-01T00:00:00Z\n';
+      if (argsArr.includes('--no-merges')) {
         return [
           `aaa|aaa|alice|2026-03-12|feat: add SSO support|${sep}`,
           `bbb|bbb|bob|2026-03-11|fix: login crash|${sep}`,
@@ -68,7 +68,7 @@ describe('analyzeReleaseReadiness', () => {
           `eee|eee|bob|2026-03-08|chore: deps|${sep}`,
         ].join('\n');
       }
-      if (cmdStr.includes('git tag')) return 'v1.0.0\n';
+      if (argsArr.includes('tag')) return 'v1.0.0\n';
       return '';
     });
 
@@ -85,14 +85,14 @@ describe('analyzeReleaseReadiness', () => {
   it('recommends major bump for breaking changes', () => {
     const sep = '---CULLIT_COMMIT---';
 
-    mockedExecSync.mockImplementation((cmd: any) => {
-      const cmdStr = String(cmd);
-      if (cmdStr.includes('describe --tags')) return 'v2.0.0\n';
-      if (cmdStr.includes('git log -1 --format=%aI')) return '2026-03-11T00:00:00Z\n';
-      if (cmdStr.includes('git log') && cmdStr.includes('--no-merges')) {
+    mockedExecFileSync.mockImplementation((_cmd: any, args: any) => {
+      const argsArr = args as string[];
+      if (argsArr.includes('describe')) return 'v2.0.0\n';
+      if (argsArr.includes('-1') && argsArr.some((a: string) => a.includes('%aI'))) return '2026-03-11T00:00:00Z\n';
+      if (argsArr.includes('--no-merges')) {
         return `aaa|aaa|matt|2026-03-12|feat!: redesign config format|${sep}\n`;
       }
-      if (cmdStr.includes('git tag')) return 'v2.0.0\n';
+      if (argsArr.includes('tag')) return 'v2.0.0\n';
       return '';
     });
 
@@ -107,14 +107,14 @@ describe('analyzeReleaseReadiness', () => {
   it('flags security commits as urgent', () => {
     const sep = '---CULLIT_COMMIT---';
 
-    mockedExecSync.mockImplementation((cmd: any) => {
-      const cmdStr = String(cmd);
-      if (cmdStr.includes('describe --tags')) return 'v1.0.0\n';
-      if (cmdStr.includes('git log -1 --format=%aI')) return '2026-03-11T00:00:00Z\n';
-      if (cmdStr.includes('git log') && cmdStr.includes('--no-merges')) {
+    mockedExecFileSync.mockImplementation((_cmd: any, args: any) => {
+      const argsArr = args as string[];
+      if (argsArr.includes('describe')) return 'v1.0.0\n';
+      if (argsArr.includes('-1') && argsArr.some((a: string) => a.includes('%aI'))) return '2026-03-11T00:00:00Z\n';
+      if (argsArr.includes('--no-merges')) {
         return `aaa|aaa|matt|2026-03-12|fix: security vulnerability in auth|${sep}\n`;
       }
-      if (cmdStr.includes('git tag')) return 'v1.0.0\n';
+      if (argsArr.includes('tag')) return 'v1.0.0\n';
       return '';
     });
 
@@ -128,14 +128,14 @@ describe('analyzeReleaseReadiness', () => {
     const sep = '---CULLIT_COMMIT---';
     const oldDate = new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString();
 
-    mockedExecSync.mockImplementation((cmd: any) => {
-      const cmdStr = String(cmd);
-      if (cmdStr.includes('describe --tags')) return 'v1.0.0\n';
-      if (cmdStr.includes('git log -1 --format=%aI')) return `${oldDate}\n`;
-      if (cmdStr.includes('git log') && cmdStr.includes('--no-merges')) {
+    mockedExecFileSync.mockImplementation((_cmd: any, args: any) => {
+      const argsArr = args as string[];
+      if (argsArr.includes('describe')) return 'v1.0.0\n';
+      if (argsArr.includes('-1') && argsArr.some((a: string) => a.includes('%aI'))) return `${oldDate}\n`;
+      if (argsArr.includes('--no-merges')) {
         return `aaa|aaa|matt|2026-03-01|chore: update deps|${sep}\n`;
       }
-      if (cmdStr.includes('git tag')) return 'v1.0.0\n';
+      if (argsArr.includes('tag')) return 'v1.0.0\n';
       return '';
     });
 
@@ -147,12 +147,12 @@ describe('analyzeReleaseReadiness', () => {
   });
 
   it('reports up-to-date when no unreleased commits', () => {
-    mockedExecSync.mockImplementation((cmd: any) => {
-      const cmdStr = String(cmd);
-      if (cmdStr.includes('describe --tags')) return 'v1.2.3\n';
-      if (cmdStr.includes('git log -1 --format=%aI')) return '2026-03-12T00:00:00Z\n';
-      if (cmdStr.includes('git log') && cmdStr.includes('--no-merges')) return '';
-      if (cmdStr.includes('git tag')) return 'v1.2.3\n';
+    mockedExecFileSync.mockImplementation((_cmd: any, args: any) => {
+      const argsArr = args as string[];
+      if (argsArr.includes('describe')) return 'v1.2.3\n';
+      if (argsArr.includes('-1') && argsArr.some((a: string) => a.includes('%aI'))) return '2026-03-12T00:00:00Z\n';
+      if (argsArr.includes('--no-merges')) return '';
+      if (argsArr.includes('tag')) return 'v1.2.3\n';
       return '';
     });
 
@@ -166,14 +166,14 @@ describe('analyzeReleaseReadiness', () => {
   it('calculates next version correctly', () => {
     const sep = '---CULLIT_COMMIT---';
 
-    mockedExecSync.mockImplementation((cmd: any) => {
-      const cmdStr = String(cmd);
-      if (cmdStr.includes('describe --tags')) return 'v2.3.4\n';
-      if (cmdStr.includes('git log -1 --format=%aI')) return '2026-03-11T00:00:00Z\n';
-      if (cmdStr.includes('git log') && cmdStr.includes('--no-merges')) {
+    mockedExecFileSync.mockImplementation((_cmd: any, args: any) => {
+      const argsArr = args as string[];
+      if (argsArr.includes('describe')) return 'v2.3.4\n';
+      if (argsArr.includes('-1') && argsArr.some((a: string) => a.includes('%aI'))) return '2026-03-11T00:00:00Z\n';
+      if (argsArr.includes('--no-merges')) {
         return `aaa|aaa|matt|2026-03-12|fix: typo|${sep}\n`;
       }
-      if (cmdStr.includes('git tag')) return 'v2.3.4\n';
+      if (argsArr.includes('tag')) return 'v2.3.4\n';
       return '';
     });
 

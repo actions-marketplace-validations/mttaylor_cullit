@@ -63,10 +63,19 @@ registerEnricher('jira', (config: CullConfig) => {
 registerEnricher('linear', (config: CullConfig) => new LinearEnricher(config.linear?.apiKey));
 
 // --- Register pro publishers (uniform: factory(target: PublishTarget)) ---
-registerPublisher('slack', (target: PublishTarget) => new SlackPublisher(target.webhookUrl!));
-registerPublisher('discord', (target: PublishTarget) => new DiscordPublisher(target.webhookUrl!));
+registerPublisher('slack', (target: PublishTarget) => {
+  if (!target.webhookUrl) throw new Error('Slack publisher requires "webhookUrl" in config.');
+  return new SlackPublisher(target.webhookUrl);
+});
+registerPublisher('discord', (target: PublishTarget) => {
+  if (!target.webhookUrl) throw new Error('Discord publisher requires "webhookUrl" in config.');
+  return new DiscordPublisher(target.webhookUrl);
+});
 registerPublisher('github-release', (_target: PublishTarget) => new GitHubReleasePublisher());
-registerPublisher('teams', (target: PublishTarget) => new TeamsPublisher(target.webhookUrl!));
+registerPublisher('teams', (target: PublishTarget) => {
+  if (!target.webhookUrl) throw new Error('Teams publisher requires "webhookUrl" in config.');
+  return new TeamsPublisher(target.webhookUrl);
+});
 registerPublisher('confluence', (target: PublishTarget) => new ConfluencePublisher(target as unknown as ConstructorParameters<typeof ConfluencePublisher>[0]));
 registerPublisher('notion', (target: PublishTarget) => new NotionPublisher(target as unknown as ConstructorParameters<typeof NotionPublisher>[0]));
 registerPublisher('gitlab-release', (_target: PublishTarget) => new GitLabReleasePublisher());

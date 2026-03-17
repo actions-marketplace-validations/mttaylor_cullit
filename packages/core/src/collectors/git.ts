@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import { execSync, execFileSync } from 'child_process';
 import type { Collector, GitCommit, GitDiff } from '../types';
 
 /**
@@ -46,8 +46,9 @@ export class GitCollector implements Collector {
     const separator = '---CULLIT_COMMIT---';
 
     try {
-      return execSync(
-        `git log ${from}..${to} --format="${format}${separator}" --no-merges`,
+      return execFileSync(
+        'git',
+        ['log', `${from}..${to}`, `--format=${format}${separator}`, '--no-merges'],
         { cwd: this.cwd, encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 }
       );
     } catch (error) {
@@ -118,8 +119,9 @@ export class GitCollector implements Collector {
 
   private getFilesChanged(from: string, to: string): number {
     try {
-      const output = execSync(
-        `git diff --shortstat ${from}..${to}`,
+      const output = execFileSync(
+        'git',
+        ['diff', '--shortstat', `${from}..${to}`],
         { cwd: this.cwd, encoding: 'utf-8' }
       );
       const match = output.match(/(\d+) files? changed/);
@@ -135,8 +137,9 @@ export class GitCollector implements Collector {
  */
 export function getRecentTags(cwd: string = process.cwd(), count: number = 10): string[] {
   try {
-    const output = execSync(
-      `git tag --sort=-v:refname`,
+    const output = execFileSync(
+      'git',
+      ['tag', '--sort=-v:refname'],
       { cwd, encoding: 'utf-8' }
     );
     return output.trim().split('\n').filter(Boolean).slice(0, count);
@@ -150,7 +153,7 @@ export function getRecentTags(cwd: string = process.cwd(), count: number = 10): 
  */
 export function getLatestTag(cwd: string = process.cwd()): string | null {
   try {
-    return execSync('git describe --tags --abbrev=0', { cwd, encoding: 'utf-8' }).trim();
+    return execFileSync('git', ['describe', '--tags', '--abbrev=0'], { cwd, encoding: 'utf-8' }).trim();
   } catch {
     return null;
   }
@@ -167,8 +170,9 @@ export function getCommitsSince(from: string, to: string, cwd: string = process.
   const format = '%H|%h|%an|%aI|%s';
   const separator = '---CULLIT_COMMIT---';
 
-  const log = execSync(
-    `git log ${from}..${to} --format="${format}${separator}" --no-merges`,
+  const log = execFileSync(
+    'git',
+    ['log', `${from}..${to}`, `--format=${format}${separator}`, '--no-merges'],
     { cwd, encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 }
   );
 

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0a0c10"/>
+      <stop offset="100%" stop-color="#141821"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <g transform="translate(500, 120)">
+    <path d="M142 72A57 57 0 1 0 142 142" stroke="#5eead4" stroke-width="14" stroke-linecap="round" fill="none"/>
+    <circle cx="170" cy="107" r="10" fill="#2dd4bf"/>
+  </g>
+  <text x="600" y="340" text-anchor="middle" font-family="'Space Mono', monospace" font-size="72" font-weight="700" fill="#f0f6fc">cullit</text>
+  <text x="600" y="400" text-anchor="middle" font-family="'DM Sans', sans-serif" font-size="28" fill="#8b949e">Release Notes in no time, anytime.</text>
+  <text x="600" y="460" text-anchor="middle" font-family="'DM Sans', sans-serif" font-size="22" fill="#5eead4">CLI &#x2022; GitHub Action &#x2022; API</text>
+  <text x="600" y="560" text-anchor="middle" font-family="'Space Mono', monospace" font-size="20" fill="#484f58">cullit.io</text>
+</svg>

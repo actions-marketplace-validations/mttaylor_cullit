@@ -12,6 +12,9 @@ import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarge
 import { DEFAULT_CATEGORIES } from '@cullit/core';
 import { appendFileSync } from 'fs';
 
+// Load pro plugins (AI generators, enrichers, publishers)
+try { await import('@cullit/pro'); } catch { /* pro not installed */ }
+
 // --- GitHub Actions helpers (no @actions/core dependency) ---
 
 function getInput(name: string): string {
@@ -38,7 +41,7 @@ async function run(): Promise<void> {
     const from = getInput('from');
     const to = getInput('to') || 'HEAD';
     const configPath = getInput('config');
-    const provider = getInput('provider') as AIProvider || 'anthropic';
+    const provider = (getInput('provider') || 'none') as AIProvider;
     const model = getInput('model');
     const audience = (getInput('audience') || 'developer') as Audience;
     const tone = (getInput('tone') || 'professional') as Tone;

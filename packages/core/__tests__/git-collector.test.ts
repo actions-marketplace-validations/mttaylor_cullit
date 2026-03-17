@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { GitCollector, getRecentTags, getLatestTag } from '../src/collectors/git';
 
 // Mock child_process to test parsing without a real git repo
 vi.mock('child_process', () => ({
-  execSync: vi.fn(),
+  execFileSync: vi.fn(),
 }));
 
-const mockedExecSync = vi.mocked(execSync);
+const mockedExecSync = vi.mocked(execFileSync);
 
 describe('GitCollector', () => {
   beforeEach(() => {

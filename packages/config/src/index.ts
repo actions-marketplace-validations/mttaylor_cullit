@@ -158,9 +158,14 @@ function parseValue(val: string): any {
  * Resolves $ENV_VAR references in config values.
  */
 function resolveEnvVars(obj: any): any {
-  if (typeof obj === 'string' && obj.startsWith('$')) {
-    const envKey = obj.substring(1);
-    return process.env[envKey] || obj;
+  if (typeof obj === 'string') {
+    // Handle both $VAR and ${VAR} syntax
+    if (obj.startsWith('$')) {
+      const envKey = obj.startsWith('${') && obj.endsWith('}')
+        ? obj.slice(2, -1)
+        : obj.substring(1);
+      return process.env[envKey] || obj;
+    }
   }
   if (Array.isArray(obj)) return obj.map(resolveEnvVars);
   if (obj && typeof obj === 'object') {

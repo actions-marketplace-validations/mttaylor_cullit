@@ -10,7 +10,7 @@ This is deployed automatically via Cloudflare, connected to the `site/` director
 
 1. Connect GitHub repo `mttaylor/cullit`
 2. Set build settings:
-   - **Build command:** (leave blank — static HTML)
+   - **Build command:** `rm -f ../pnpm-workspace.yaml`
    - **Build output directory:** `site`
 3. Deploy
 4. Add custom domain: cullit.io

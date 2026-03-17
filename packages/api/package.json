@@ -13,7 +13,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@cullit/core": "workspace:*"
+    "@cullit/core": "workspace:*",
+    "@cullit/config": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.5.1",

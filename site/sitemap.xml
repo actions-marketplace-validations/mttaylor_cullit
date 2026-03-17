@@ -5,27 +5,31 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://cullit.io/docs</loc>
+    <loc>https://cullit.io/docs.html</loc>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://cullit.io/tutorial</loc>
+    <loc>https://cullit.io/tutorial.html</loc>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://cullit.io/pricing</loc>
+    <loc>https://cullit.io/pricing.html</loc>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://cullit.io/dashboard</loc>
+    <loc>https://cullit.io/dashboard.html</loc>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://cullit.io/terms</loc>
+    <loc>https://cullit.io/setup.html</loc>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://cullit.io/privacy</loc>
+    <loc>https://cullit.io/terms.html</loc>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://cullit.io/privacy.html</loc>
     <priority>0.3</priority>
   </url>
 </urlset>

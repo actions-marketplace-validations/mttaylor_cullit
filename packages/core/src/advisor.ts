@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import type { GitCommit } from './types';
 import { getCommitsSince, getLatestTag, getRecentTags } from './collectors/git';
 
@@ -71,8 +71,9 @@ function getCommitsSinceTag(tag: string, cwd: string): GitCommit[] {
 
 function getTagDate(tag: string, cwd: string): Date | null {
   try {
-    const dateStr = execSync(
-      `git log -1 --format=%aI ${tag}`,
+    const dateStr = execFileSync(
+      'git',
+      ['log', '-1', '--format=%aI', tag],
       { cwd, encoding: 'utf-8' }
     ).trim();
     return new Date(dateStr);

@@ -1,5 +1,5 @@
 import { writeFileSync } from 'fs';
-import { resolve, relative } from 'path';
+import { resolve, relative, isAbsolute } from 'path';
 import type { Publisher, ReleaseNotes, OutputFormat } from '../types';
 import { formatNotes } from '../formatter';
 
@@ -21,7 +21,7 @@ export class FilePublisher implements Publisher {
     const resolved = resolve(path);
     const cwd = resolve('.');
     const rel = relative(cwd, resolved);
-    if (rel.startsWith('..') || resolve(rel) !== resolved && rel.startsWith('/')) {
+    if (rel.startsWith('..') || isAbsolute(rel)) {
       throw new Error(`File output path must be within the project directory. Got: ${path}`);
     }
   }

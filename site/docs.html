@@ -9,8 +9,11 @@
 <meta property="og:description" content="Complete guide to Cullit — AI release notes from git, Jira, and Linear.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://cullit.io/docs">
-<meta property="og:image" content="https://cullit.io/og-image.png">
+<meta property="og:image" content="https://cullit.io/og-image.svg">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Cullit Documentation">
+<meta name="twitter:description" content="Complete guide to Cullit — AI release notes from git, Jira, and Linear.">
+<meta name="twitter:image" content="https://cullit.io/og-image.svg">
 <link rel="canonical" href="https://cullit.io/docs">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -235,13 +238,13 @@
 
 <!-- NAV (matches main site) -->
 <nav>
-  <a href="/" class="logo"><svg class="logo-mark" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#0f1117"/><path d="M42 22A17 17 0 1 0 42 42" stroke="#5eead4" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="50" cy="32" r="3.5" fill="#2dd4bf"/></svg>cullit<span>.io</span></a>
+  <a href="index.html" class="logo"><svg class="logo-mark" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#0f1117"/><path d="M42 22A17 17 0 1 0 42 42" stroke="#5eead4" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="50" cy="32" r="3.5" fill="#2dd4bf"/></svg>cullit<span>.io</span></a>
   <div class="nav-links" id="navLinks">
-    <a href="/">Home</a>
-    <a href="/docs.html" class="active">Docs</a>
+    <a href="index.html">Home</a>
+    <a href="docs.html" class="active">Docs</a>
     <a href="tutorial.html">Tutorial</a>
     <a href="https://github.com/mttaylor/cullit" target="_blank">GitHub</a>
-    <a href="https://www.npmjs.com/package/cullit" target="_blank" class="nav-cta">npm</a>
+    <a href="index.html#cta" class="nav-cta">Get Started Free</a>
   </div>
   <button class="hamburger" id="hamburger" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
 </nav>
@@ -389,7 +392,7 @@
     <span class="key">path</span>: <span class="str">RELEASE_NOTES.md</span>
   - <span class="key">type</span>: <span class="str">slack</span>
     <span class="key">webhook_url</span>: <span class="str">$SLACK_WEBHOOK_URL</span>
-  - <span class="key">type</span>: <span class="str">slack</span>
+  - <span class="key">type</span>: <span class="str">discord</span>
     <span class="key">webhook_url</span>: <span class="str">$DISCORD_WEBHOOK_URL</span>
 
 <span class="key">jira</span>:
@@ -967,10 +970,21 @@ formats, and several performance improvements.</span>
   Cullit is open source under the MIT license.
   <a href="https://github.com/mttaylor/cullit" target="_blank">View on GitHub</a> &bull;
   <a href="https://www.npmjs.com/package/cullit" target="_blank">npm</a> &bull;
-  <a href="/">Home</a>
+  <a href="index.html">Home</a>
 </p>
 
 </div><!-- .main -->
+
+<!-- FOOTER -->
+<footer style="text-align: center; padding: 2rem 1rem; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 0.85rem;">
+  <p>&copy; 2026 Cullit</p>
+  <div style="margin-top: 0.5rem; display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;">
+    <a href="https://github.com/mttaylor/cullit" target="_blank" style="color: var(--text-dim);">GitHub</a>
+    <a href="terms.html" style="color: var(--text-dim);">Terms</a>
+    <a href="privacy.html" style="color: var(--text-dim);">Privacy</a>
+    <a href="mailto:sales@cullit.io" style="color: var(--text-dim);">sales@cullit.io</a>
+  </div>
+</footer>
 
 <script>
 // Highlight active sidebar link on scroll

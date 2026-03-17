@@ -32,6 +32,9 @@ importers:
 
   packages/api:
     dependencies:
+      '@cullit/config':
+        specifier: workspace:*
+        version: link:../config
       '@cullit/core':
         specifier: workspace:*
         version: link:../core

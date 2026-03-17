@@ -17,6 +17,9 @@
     "automation",
     "devops"
   ],
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "pnpm -r build",
     "build:action": "tsup src/action.ts --format cjs --out-dir dist --no-splitting --target node22",

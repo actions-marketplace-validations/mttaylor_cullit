@@ -18,6 +18,7 @@ COPY packages/config/package.json packages/config/
 COPY packages/cli/package.json packages/cli/
 COPY packages/api/package.json packages/api/
 COPY packages/pro/package.json packages/pro/
+COPY packages/app/package.json packages/app/
 RUN pnpm install --frozen-lockfile
 
 # --- Build ---
