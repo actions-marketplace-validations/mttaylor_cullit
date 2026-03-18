@@ -32,7 +32,7 @@ import {
   recordUsageEvent, getUsageStats, getMonthlyGenerationCount,
   type HistoryEntry,
 } from './store.js';
-import { migrate, dbPublishRelease, dbGetReleases, dbGetProjectCount, closeDb, sql } from './db.js';
+import { migrate, dbPublishRelease, dbGetReleases, dbGetProjectCount, dbDeleteRelease, closeDb, sql } from './db.js';
 import { handleCheckout, handleBillingPortal, handleGetSubscription, handleStripeWebhook, isStripeConfigured } from './billing.js';
 import { sendSubscriptionConfirmed, sendPaymentFailed } from './email.js';
 import { log } from './logger.js';
@@ -591,6 +591,38 @@ async function handleChangelogLatest(req: IncomingMessage, res: ServerResponse, 
   json(res, 200, { project, releases: result });
 }
 
+async function handleChangelogDelete(req: IncomingMessage, res: ServerResponse, project: string, version: string): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+
+  if (useDb) {
+    const deleted = await dbDeleteRelease(project, version);
+    if (!deleted) { json(res, 404, { error: 'Release not found' }); return; }
+  } else {
+    const releases = changelogStore.get(project);
+    if (!releases) { json(res, 404, { error: 'Release not found' }); return; }
+    const idx = releases.findIndex(r => r.version === version);
+    if (idx < 0) { json(res, 404, { error: 'Release not found' }); return; }
+    releases.splice(idx, 1);
+    if (releases.length === 0) changelogStore.delete(project);
+    saveChangelogStore();
+  }
+
+  json(res, 200, { ok: true, project, version });
+}
+
+async function handleChangelogListProjects(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+
+  if (useDb) {
+    const rows = await sql`SELECT DISTINCT project FROM changelog_releases ORDER BY project`;
+    json(res, 200, { projects: rows.map((r: any) => r.project) });
+  } else {
+    json(res, 200, { projects: Array.from(changelogStore.keys()).sort() });
+  }
+}
+
 // --- Team / Org Endpoints ---
 
 async function handleGetOrg(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -786,6 +818,17 @@ const server = createServer(async (req, res) => {
         return;
       }
       await handleChangelogLatest(req, res, project);
+    } else if (path === '/v1/changelog/projects' && req.method === 'GET') {
+      await handleChangelogListProjects(req, res);
+    } else if (req.method === 'DELETE' && path.match(/^\/v1\/changelog\/[^/]+\/[^/]+$/)) {
+      const parts = path.split('/');
+      const project = parts[3];
+      const version = decodeURIComponent(parts[4]);
+      if (!/^[a-zA-Z0-9_-]{1,64}$/.test(project)) {
+        json(res, 400, { error: 'Invalid project slug' });
+        return;
+      }
+      await handleChangelogDelete(req, res, project, version);
 
     // --- Billing routes ---
     } else if (path === '/v1/billing/checkout' && req.method === 'POST') {

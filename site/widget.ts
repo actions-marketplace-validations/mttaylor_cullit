@@ -6,11 +6,14 @@
  * Usage:
  *   <script src="https://cullit.io/widget.js" 
  *           data-project="your-project" 
- *           data-position="bottom-right">
+ *           data-position="bottom-right"
+ *           data-accent-color="#ff6b00"
+ *           data-header-text="Release Notes"
+ *           data-trigger-emoji="🚀">
  *   </script>
  *
  * Or programmatic:
- *   CullitWidget.init({ project: 'your-project', position: 'bottom-right' });
+ *   CullitWidget.init({ project: 'your-project', position: 'bottom-right', accentColor: '#ff6b00' });
  *
  * Reads from: https://api.cullit.io/v1/changelog/{project}/latest
  */
@@ -152,6 +155,9 @@
     position?: string;
     apiUrl?: string;
     branding?: boolean;
+    accentColor?: string;
+    headerText?: string;
+    triggerEmoji?: string;
   }
 
   interface ReleaseData {
@@ -165,10 +171,16 @@
     const pos = POSITION_MAP[config.position || 'bottom-right'] || 'br';
     const apiUrl = config.apiUrl || 'https://api.cullit.io/v1/changelog';
     const showBranding = config.branding !== false;
+    const accent = config.accentColor || '#e8ff47';
+    const headerText = config.headerText || "What's New";
+    const triggerEmoji = config.triggerEmoji || '🔔';
 
-    // Inject styles
+    // Inject styles with custom accent color
     const style = document.createElement('style');
-    style.textContent = STYLES;
+    const customStyles = STYLES
+      .replace(/background: #e8ff47/g, `background: ${accent}`)
+      .replace(/color: #e8ff47/g, `color: ${accent}`);
+    style.textContent = customStyles;
     document.head.appendChild(style);
 
     // Create container
@@ -178,16 +190,17 @@
     // Trigger button
     const trigger = document.createElement('button');
     trigger.className = 'cullit-widget-trigger';
-    trigger.innerHTML = '🔔';
-    trigger.setAttribute('aria-label', "What's New");
+    trigger.innerHTML = triggerEmoji;
+    trigger.setAttribute('aria-label', headerText);
     trigger.setAttribute('data-count', '0');
+    if (accent !== '#e8ff47') trigger.style.background = accent;
 
     // Panel
     const panel = document.createElement('div');
     panel.className = 'cullit-widget-panel';
     panel.innerHTML = `
       <div class="cullit-widget-header">
-        <h3>What's New</h3>
+        <h3>${escapeHtml(headerText)}</h3>
         <button class="cullit-widget-close" aria-label="Close">&times;</button>
       </div>
       <div class="cullit-widget-body">
@@ -195,6 +208,11 @@
       </div>
       ${showBranding ? '<div class="cullit-widget-footer">Powered by <a href="https://cullit.io" target="_blank" rel="noopener">Cullit</a></div>' : ''}
     `;
+    // Apply custom accent to header title
+    if (accent !== '#e8ff47') {
+      const h3 = panel.querySelector('h3');
+      if (h3) h3.style.color = accent;
+    }
 
     container.appendChild(trigger);
     container.appendChild(panel);
@@ -258,16 +276,17 @@
   // Auto-init from script tag attributes
   const currentScript = document.currentScript as HTMLScriptElement | null;
   if (currentScript?.dataset.project) {
+    const cfg: WidgetConfig = {
+      project: currentScript.dataset.project!,
+      position: currentScript.dataset.position,
+      accentColor: currentScript.dataset.accentColor,
+      headerText: currentScript.dataset.headerText,
+      triggerEmoji: currentScript.dataset.triggerEmoji,
+    };
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => init({
-        project: currentScript.dataset.project!,
-        position: currentScript.dataset.position,
-      }));
+      document.addEventListener('DOMContentLoaded', () => init(cfg));
     } else {
-      init({
-        project: currentScript.dataset.project,
-        position: currentScript.dataset.position,
-      });
+      init(cfg);
     }
   }
 

@@ -440,6 +440,16 @@ export async function dbGetProjectCount(): Promise<number> {
   return parseInt(rows[0].count, 10);
 }
 
+export async function dbDeleteRelease(project: string, version: string): Promise<boolean> {
+  const result = await sql`DELETE FROM changelog_releases WHERE project = ${project} AND version = ${version}`;
+  return result.count > 0;
+}
+
+export async function dbGetUserProjects(userId: string): Promise<string[]> {
+  const rows = await sql`SELECT DISTINCT project FROM changelog_releases ORDER BY project`;
+  return rows.map((r: any) => r.project);
+}
+
 // --- Subscription DB operations ---
 
 export async function dbUpsertSubscription(sub: {

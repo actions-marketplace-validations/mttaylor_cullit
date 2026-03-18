@@ -1034,6 +1034,7 @@
       <button class="dash-tab" data-tab="history" onclick="switchDashTab('history')">&#128337; History</button>
       <button class="dash-tab" data-tab="analytics" onclick="switchDashTab('analytics')">&#128200; Analytics</button>
       <button class="dash-tab" data-tab="team" onclick="switchDashTab('team')">&#128101; Team</button>
+      <button class="dash-tab" data-tab="changelog" onclick="switchDashTab('changelog')">&#128240; Changelog</button>
       <button class="dash-tab" data-tab="billing" onclick="switchDashTab('billing')">&#128179; Billing</button>
     </div>
 
@@ -1132,6 +1133,54 @@
       </div>
     </div>
 
+    <!-- CHANGELOG TAB -->
+    <div class="tab-content" id="tab-changelog">
+      <div class="panel">
+        <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
+          <span>&#128240; Published Releases</span>
+          <button class="btn-small" onclick="loadChangelog()" style="font-size:0.7rem">&#x21bb; Refresh</button>
+        </div>
+        <div class="panel-body">
+          <div id="changelogProjectList" style="margin-bottom:1rem">
+            <label style="font-size:0.8rem;color:var(--text-dim)">Project</label>
+            <select id="changelogProjectSelect" onchange="loadChangelogReleases()" style="width:100%;padding:0.4rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:6px;margin-top:0.25rem">
+              <option value="">Select a project...</option>
+            </select>
+          </div>
+          <div id="changelogReleaseList">
+            <div class="empty-state" style="min-height:100px"><p>Select a project to view releases</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:1rem">
+        <div class="panel-header">&#128268; Embed Widget</div>
+        <div class="panel-body">
+          <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:0.75rem">Add a "What's New" widget to your app. Customize branding below, then paste the snippet before <code>&lt;/body&gt;</code>:</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;margin-bottom:1rem">
+            <div>
+              <label style="font-size:0.75rem;color:var(--text-dim)">Accent Color</label>
+              <input type="color" id="widgetAccentColor" value="#e8ff47" onchange="updateWidgetSnippet()" style="width:100%;height:32px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);cursor:pointer;margin-top:0.25rem">
+            </div>
+            <div>
+              <label style="font-size:0.75rem;color:var(--text-dim)">Header Text</label>
+              <input type="text" id="widgetHeaderText" value="What's New" oninput="updateWidgetSnippet()" placeholder="What's New" style="width:100%;padding:0.4rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:6px;margin-top:0.25rem;box-sizing:border-box">
+            </div>
+            <div>
+              <label style="font-size:0.75rem;color:var(--text-dim)">Trigger Emoji</label>
+              <input type="text" id="widgetTriggerEmoji" value="🔔" oninput="updateWidgetSnippet()" maxlength="4" style="width:100%;padding:0.4rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:6px;margin-top:0.25rem;text-align:center;font-size:1.2rem;box-sizing:border-box">
+            </div>
+          </div>
+          <div style="position:relative">
+            <pre id="widgetSnippet" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.75rem;font-size:0.75rem;overflow-x:auto;color:var(--text-dim)">&lt;script src="https://cullit.io/widget.js"
+  data-project="your-project"
+  data-position="bottom-right"&gt;
+&lt;/script&gt;</pre>
+            <button class="btn-copy" onclick="copyWidgetSnippet()" style="position:absolute;top:0.5rem;right:0.5rem;font-size:0.7rem">&#128203; Copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- BILLING TAB -->
     <div class="tab-content" id="tab-billing">
       <div class="billing-header">
@@ -1163,8 +1212,8 @@
           <div class="plan-tier">Free</div>
           <div class="plan-price">$0<span>/mo</span></div>
           <ul class="plan-features">
-            <li>3 generations / month</li>
-            <li>1 project</li>
+            <li>5 generations / month</li>
+            <li>3 projects</li>
             <li>Template-based notes</li>
           </ul>
         </div>
@@ -1173,7 +1222,7 @@
           <div class="plan-price">$9<span>/mo</span></div>
           <ul class="plan-features">
             <li>500 generations / month</li>
-            <li>5 projects</li>
+            <li>50 projects</li>
             <li>AI-powered notes</li>
             <li>All integrations</li>
           </ul>
@@ -1200,6 +1249,32 @@
             <li>Dedicated support</li>
           </ul>
           <a class="btn-small plan-upgrade-btn" href="mailto:sales@cullit.io?subject=Cullit%20Enterprise">Contact Sales</a>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:1.5rem">
+        <div class="panel-header">&#128172; Support</div>
+        <div class="panel-body" id="supportSection">
+          <div id="supportFree" style="display:none">
+            <p style="font-size:0.85rem;color:var(--text-dim);line-height:1.6">
+              <strong>Community Support</strong> &mdash; Browse the <a href="https://cullit.io/docs.html" style="color:var(--teal)">documentation</a> or open an issue on <a href="https://github.com/mttaylor/cullit/issues" style="color:var(--teal)">GitHub</a>.
+            </p>
+          </div>
+          <div id="supportPro" style="display:none">
+            <p style="font-size:0.85rem;color:var(--text-dim);line-height:1.6">
+              <strong>Email Support</strong> &mdash; Reach us at <a href="mailto:support@cullit.io" style="color:var(--teal)">support@cullit.io</a>. Response within 2 business days.
+            </p>
+          </div>
+          <div id="supportTeam" style="display:none">
+            <p style="font-size:0.85rem;color:var(--text-dim);line-height:1.6">
+              <strong>Priority Support</strong> &mdash; Your team's issues are triaged first. Reach us at <a href="mailto:priority@cullit.io" style="color:var(--teal)">priority@cullit.io</a>. Response within 1 business day.
+            </p>
+          </div>
+          <div id="supportEnterprise" style="display:none">
+            <p style="font-size:0.85rem;color:var(--text-dim);line-height:1.6">
+              <strong>Dedicated Support &amp; SLA</strong> &mdash; Contact your dedicated account manager or reach us at <a href="mailto:enterprise@cullit.io" style="color:var(--teal)">enterprise@cullit.io</a>. SLA-backed response times.
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -1431,6 +1506,7 @@ function switchDashTab(tab) {
   if (tab === 'history') loadHistory();
   if (tab === 'analytics') loadAnalytics();
   if (tab === 'team') loadTeam();
+  if (tab === 'changelog') loadChangelog();
   if (tab === 'billing') loadBilling();
 }
 
@@ -1677,7 +1753,108 @@ function showToast(msg) {
 
 // --- Billing ---
 
-const TIER_LIMITS = { free: 3, pro: 500, team: 2000, enterprise: Infinity };
+const TIER_LIMITS = { free: 5, pro: 500, team: 2000, enterprise: Infinity };
+
+// --- Changelog Management ---
+
+async function loadChangelog() {
+  try {
+    const res = await apiFetch('/v1/changelog/projects');
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const select = document.getElementById('changelogProjectSelect');
+    const current = select.value;
+    select.innerHTML = '<option value="">Select a project...</option>';
+    (data.projects || []).forEach(function(p) {
+      const opt = document.createElement('option');
+      opt.value = p;
+      opt.textContent = p;
+      select.appendChild(opt);
+    });
+    if (current && data.projects.includes(current)) {
+      select.value = current;
+      loadChangelogReleases();
+    }
+    // Update widget snippet with first project
+    if (data.projects && data.projects.length > 0) {
+      updateWidgetSnippet(data.projects[0]);
+    }
+  } catch {
+    document.getElementById('changelogReleaseList').innerHTML =
+      '<div class="empty-state" style="min-height:100px"><p>Failed to load projects</p></div>';
+  }
+}
+
+function updateWidgetSnippet(project) {
+  var proj = project || document.getElementById('changelogProjectSelect').value || 'your-project';
+  var accent = document.getElementById('widgetAccentColor').value;
+  var header = document.getElementById('widgetHeaderText').value;
+  var emoji = document.getElementById('widgetTriggerEmoji').value;
+  var snippet = '<script src="https://cullit.io/widget.js"\n' +
+    '  data-project="' + escapeHtml(proj) + '"\n' +
+    '  data-position="bottom-right"';
+  if (accent && accent !== '#e8ff47') snippet += '\n  data-accent-color="' + escapeHtml(accent) + '"';
+  if (header && header !== "What's New") snippet += '\n  data-header-text="' + escapeHtml(header) + '"';
+  if (emoji && emoji !== '🔔') snippet += '\n  data-trigger-emoji="' + escapeHtml(emoji) + '"';
+  snippet += '>\n<\/script>';
+  document.getElementById('widgetSnippet').textContent = snippet;
+}
+
+async function loadChangelogReleases() {
+  const project = document.getElementById('changelogProjectSelect').value;
+  const list = document.getElementById('changelogReleaseList');
+  if (!project) {
+    list.innerHTML = '<div class="empty-state" style="min-height:100px"><p>Select a project to view releases</p></div>';
+    return;
+  }
+  updateWidgetSnippet(project);
+  try {
+    const res = await apiFetch('/v1/changelog/' + encodeURIComponent(project) + '/latest?limit=50');
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const releases = data.releases || [];
+    if (!releases.length) {
+      list.innerHTML = '<div class="empty-state" style="min-height:100px"><p>No releases published yet</p></div>';
+      return;
+    }
+    list.innerHTML = releases.map(function(r) {
+      return '<div class="history-item" style="display:flex;justify-content:space-between;align-items:center">' +
+        '<div>' +
+          '<span class="tag">' + escapeHtml(r.version) + '</span> ' +
+          '<span style="color:var(--text-dim);font-size:0.75rem">' + escapeHtml(r.date) + '</span>' +
+          (r.summary ? '<div style="font-size:0.8rem;color:var(--text-dim);margin-top:0.25rem">' + escapeHtml(r.summary.slice(0, 120)) + '</div>' : '') +
+        '</div>' +
+        '<button class="btn-danger" style="font-size:0.7rem;padding:0.2rem 0.5rem" onclick="deleteRelease(\'' + escapeAttr(project) + '\',\'' + escapeAttr(r.version) + '\')">Delete</button>' +
+      '</div>';
+    }).join('');
+  } catch {
+    list.innerHTML = '<div class="empty-state" style="min-height:100px"><p>Failed to load releases</p></div>';
+  }
+}
+
+async function deleteRelease(project, version) {
+  if (!confirm('Delete release ' + version + ' from ' + project + '?')) return;
+  try {
+    const res = await apiFetch('/v1/changelog/' + encodeURIComponent(project) + '/' + encodeURIComponent(version), {
+      method: 'DELETE',
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || 'Failed to delete');
+    }
+    showToast('Deleted ' + version);
+    loadChangelogReleases();
+  } catch (err) {
+    showToast(err.message);
+  }
+}
+
+function copyWidgetSnippet() {
+  const text = document.getElementById('widgetSnippet').textContent;
+  navigator.clipboard.writeText(text).then(function() {
+    showToast('Widget snippet copied!');
+  });
+}
 
 async function loadBilling() {
   const tier = (currentUser && currentUser.tier) ? currentUser.tier : 'free';
@@ -1695,6 +1872,12 @@ async function loadBilling() {
     const btn = planEl.querySelector('.plan-upgrade-btn');
     if (btn) btn.style.display = 'none';
   }
+
+  // Show tier-appropriate support section
+  ['Free', 'Pro', 'Team', 'Enterprise'].forEach(function(t) {
+    const el = document.getElementById('support' + t);
+    if (el) el.style.display = (t.toLowerCase() === tier) ? '' : 'none';
+  });
 
   // Subscription details
   const statusEl = document.getElementById('billingPlanStatus');

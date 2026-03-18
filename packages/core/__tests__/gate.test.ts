@@ -55,6 +55,7 @@ describe('Gate — resolveLicense', () => {
 describe('Gate — access checks', () => {
   const freeLicense = { tier: 'free' as const, valid: true };
   const proLicense = { tier: 'pro' as const, valid: true };
+  const teamLicense = { tier: 'team' as const, valid: true };
   const invalidPro = { tier: 'pro' as const, valid: false };
 
   it('allows "none" provider on free tier', () => {
@@ -69,6 +70,10 @@ describe('Gate — access checks', () => {
     expect(isProviderAllowed('anthropic', proLicense)).toBe(true);
     expect(isProviderAllowed('openai', proLicense)).toBe(true);
     expect(isProviderAllowed('gemini', proLicense)).toBe(true);
+  });
+
+  it('allows any provider on team', () => {
+    expect(isProviderAllowed('anthropic', teamLicense)).toBe(true);
   });
 
   it('blocks pro features when key is invalid', () => {
@@ -86,11 +91,29 @@ describe('Gate — access checks', () => {
     expect(isPublisherAllowed('teams', freeLicense)).toBe(false);
   });
 
-  it('allows all publishers on pro', () => {
+  it('allows slack/discord/github-release on pro', () => {
     expect(isPublisherAllowed('slack', proLicense)).toBe(true);
-    expect(isPublisherAllowed('teams', proLicense)).toBe(true);
-    expect(isPublisherAllowed('confluence', proLicense)).toBe(true);
-    expect(isPublisherAllowed('notion', proLicense)).toBe(true);
+    expect(isPublisherAllowed('discord', proLicense)).toBe(true);
+    expect(isPublisherAllowed('github-release', proLicense)).toBe(true);
+  });
+
+  it('blocks confluence/notion/teams on pro tier (team-only)', () => {
+    expect(isPublisherAllowed('confluence', proLicense)).toBe(false);
+    expect(isPublisherAllowed('notion', proLicense)).toBe(false);
+    expect(isPublisherAllowed('teams', proLicense)).toBe(false);
+  });
+
+  it('allows confluence/notion/teams on team tier', () => {
+    expect(isPublisherAllowed('confluence', teamLicense)).toBe(true);
+    expect(isPublisherAllowed('notion', teamLicense)).toBe(true);
+    expect(isPublisherAllowed('teams', teamLicense)).toBe(true);
+  });
+
+  it('allows all publishers on team tier', () => {
+    expect(isPublisherAllowed('slack', teamLicense)).toBe(true);
+    expect(isPublisherAllowed('discord', teamLicense)).toBe(true);
+    expect(isPublisherAllowed('confluence', teamLicense)).toBe(true);
+    expect(isPublisherAllowed('notion', teamLicense)).toBe(true);
   });
 
   it('blocks enrichment on free tier', () => {
@@ -99,6 +122,10 @@ describe('Gate — access checks', () => {
 
   it('allows enrichment on pro', () => {
     expect(isEnrichmentAllowed(proLicense)).toBe(true);
+  });
+
+  it('allows enrichment on team', () => {
+    expect(isEnrichmentAllowed(teamLicense)).toBe(true);
   });
 
   it('generates readable upgrade message', () => {
@@ -112,14 +139,14 @@ describe('Gate — access checks', () => {
 describe('Gate — getTierLimits', () => {
   it('returns free tier limits', () => {
     const limits = getTierLimits('free');
-    expect(limits.generationsPerMonth).toBe(3);
-    expect(limits.maxProjects).toBe(1);
+    expect(limits.generationsPerMonth).toBe(5);
+    expect(limits.maxProjects).toBe(3);
   });
 
   it('returns pro tier limits', () => {
     const limits = getTierLimits('pro');
     expect(limits.generationsPerMonth).toBe(500);
-    expect(limits.maxProjects).toBe(5);
+    expect(limits.maxProjects).toBe(50);
   });
 
   it('returns team tier limits', () => {
@@ -136,7 +163,7 @@ describe('Gate — getTierLimits', () => {
 
   it('falls back to free for unknown tier', () => {
     const limits = getTierLimits('nonexistent');
-    expect(limits.generationsPerMonth).toBe(3);
-    expect(limits.maxProjects).toBe(1);
+    expect(limits.generationsPerMonth).toBe(5);
+    expect(limits.maxProjects).toBe(3);
   });
 });

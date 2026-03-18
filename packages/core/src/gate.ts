@@ -10,7 +10,7 @@
 
 import { fetchWithTimeout } from './fetch';
 
-export type LicenseTier = 'free' | 'pro';
+export type LicenseTier = 'free' | 'pro' | 'team' | 'enterprise';
 
 export interface LicenseStatus {
   tier: LicenseTier;
@@ -20,6 +20,7 @@ export interface LicenseStatus {
 
 const FREE_PROVIDERS = new Set(['none']);
 const FREE_PUBLISHERS = new Set(['stdout', 'file']);
+const TEAM_ONLY_PUBLISHERS = new Set(['confluence', 'notion', 'teams']);
 
 // --- Remote validation cache ---
 const LICENSE_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours for successful validations
@@ -85,7 +86,7 @@ export async function validateLicense(): Promise<LicenseStatus> {
     if (res.ok) {
       const data = await res.json() as { valid?: boolean; tier?: string; message?: string };
       const status: LicenseStatus = {
-        tier: data.tier === 'pro' ? 'pro' : 'free',
+        tier: (data.tier === 'team' || data.tier === 'enterprise') ? data.tier : data.tier === 'pro' ? 'pro' : 'free',
         valid: data.valid !== false,
         message: data.message,
       };
@@ -115,15 +116,19 @@ export async function validateLicense(): Promise<LicenseStatus> {
  * Check whether the current license allows the requested provider.
  */
 export function isProviderAllowed(provider: string, license: LicenseStatus): boolean {
-  if (license.tier === 'pro' && license.valid) return true;
+  if (license.tier !== 'free' && license.valid) return true;
   return FREE_PROVIDERS.has(provider);
 }
 
 /**
  * Check whether the current license allows the requested publisher.
+ * Confluence, Notion, and Teams require Team tier or above.
  */
 export function isPublisherAllowed(publisherType: string, license: LicenseStatus): boolean {
-  if (license.tier === 'pro' && license.valid) return true;
+  if (TEAM_ONLY_PUBLISHERS.has(publisherType)) {
+    return (license.tier === 'team' || license.tier === 'enterprise') && license.valid;
+  }
+  if (license.tier !== 'free' && license.valid) return true;
   return FREE_PUBLISHERS.has(publisherType);
 }
 
@@ -131,7 +136,7 @@ export function isPublisherAllowed(publisherType: string, license: LicenseStatus
  * Check whether the current license allows enrichment (Jira/Linear).
  */
 export function isEnrichmentAllowed(license: LicenseStatus): boolean {
-  return license.tier === 'pro' && license.valid;
+  return license.tier !== 'free' && license.valid;
 }
 
 /**
@@ -151,8 +156,8 @@ export interface UsageLimits {
 }
 
 const TIER_LIMITS: Record<string, UsageLimits> = {
-  free: { generationsPerMonth: 3, maxProjects: 1 },
-  pro: { generationsPerMonth: 500, maxProjects: 5 },
+  free: { generationsPerMonth: 5, maxProjects: 3 },
+  pro: { generationsPerMonth: 500, maxProjects: 50 },
   team: { generationsPerMonth: 2000, maxProjects: 25 },
   enterprise: { generationsPerMonth: Infinity, maxProjects: Infinity },
 };
