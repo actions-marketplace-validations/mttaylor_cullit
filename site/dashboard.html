@@ -1031,9 +1031,11 @@
   <div class="main-area">
     <div class="dash-tabs">
       <button class="dash-tab active" data-tab="generate" onclick="switchDashTab('generate')">&#128196; Generate</button>
+      <button class="dash-tab" data-tab="drafts" onclick="switchDashTab('drafts')">&#128221; Drafts</button>
       <button class="dash-tab" data-tab="history" onclick="switchDashTab('history')">&#128337; History</button>
       <button class="dash-tab" data-tab="analytics" onclick="switchDashTab('analytics')">&#128200; Analytics</button>
       <button class="dash-tab" data-tab="team" onclick="switchDashTab('team')">&#128101; Team</button>
+      <button class="dash-tab" data-tab="settings" onclick="switchDashTab('settings')">&#9881;&#65039; Settings</button>
       <button class="dash-tab" data-tab="changelog" onclick="switchDashTab('changelog')">&#128240; Changelog</button>
       <button class="dash-tab" data-tab="billing" onclick="switchDashTab('billing')">&#128179; Billing</button>
     </div>
@@ -1066,6 +1068,53 @@
             <div class="icon">&#9889;</div>
             <p>Configure your source and hit <strong style="color:var(--accent)">Generate</strong></p>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DRAFTS TAB -->
+    <div class="tab-content" id="tab-drafts">
+      <div class="panel">
+        <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
+          <span>&#128221; Release Drafts</span>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <select id="draftStatusFilter" onchange="loadDrafts()" style="padding:0.3rem 0.5rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.75rem">
+              <option value="">All</option>
+              <option value="draft">Draft</option>
+              <option value="submitted">Submitted</option>
+              <option value="approved">Approved</option>
+              <option value="published">Published</option>
+            </select>
+            <button class="btn-small" onclick="loadDrafts()" style="font-size:0.7rem">&#x21bb; Refresh</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div id="draftList">
+            <div class="empty-state" style="min-height:100px"><p>No drafts yet</p></div>
+          </div>
+          <div id="draftPager" style="display:flex;justify-content:center;gap:0.5rem;margin-top:1rem"></div>
+        </div>
+      </div>
+      <div class="panel" id="draftDetailPanel" style="margin-top:1rem;display:none">
+        <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
+          <span>&#128196; Draft Detail</span>
+          <button class="btn-small" onclick="closeDraftDetail()" style="font-size:0.7rem">&#10005; Close</button>
+        </div>
+        <div class="panel-body">
+          <div id="draftDetailMeta" style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;font-size:0.8rem;color:var(--text-dim)"></div>
+          <div id="draftDetailContent" style="font-size:0.85rem;line-height:1.6"></div>
+          <div id="draftDetailActions" style="display:flex;gap:0.75rem;margin-top:1.5rem;flex-wrap:wrap"></div>
+          <div id="draftRevisions" style="margin-top:1.5rem;display:none">
+            <div style="font-size:0.8rem;color:var(--text-dim);font-family:'Space Mono',monospace;margin-bottom:0.5rem">Revision History</div>
+            <div id="draftRevisionList" style="font-size:0.8rem"></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:1rem" id="draftTeamGate">
+        <div class="panel-body" style="text-align:center;padding:2rem">
+          <div style="font-size:1.2rem;margin-bottom:0.5rem">&#128274;</div>
+          <p style="font-size:0.85rem;color:var(--text-dim)">Release drafts and approval workflows require a <strong>Team</strong> plan.</p>
+          <button class="btn-small" onclick="switchDashTab('billing')" style="margin-top:0.75rem">View Plans</button>
         </div>
       </div>
     </div>
@@ -1139,6 +1188,66 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div class="tab-content" id="tab-settings">
+      <div class="panel">
+        <div class="panel-header">&#9881;&#65039; Project Settings</div>
+        <div class="panel-body">
+          <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:1rem">
+            <label style="font-size:0.8rem;color:var(--text-dim)">Project:</label>
+            <select id="settingsProjectSelect" onchange="loadProjectSettings()" style="padding:0.3rem 0.5rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.75rem"></select>
+          </div>
+          <form id="projectSettingsForm" onsubmit="event.preventDefault();saveProjectSettings()">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+              <div>
+                <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.25rem">Default Source</label>
+                <select id="ps-source" style="width:100%;padding:0.3rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
+                  <option value="commits">Commits</option><option value="prs">Pull Requests</option><option value="tags">Tags</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.25rem">Default Provider</label>
+                <select id="ps-provider" style="width:100%;padding:0.3rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
+                  <option value="openai">OpenAI</option><option value="anthropic">Anthropic</option><option value="ollama">Ollama</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.25rem">Default Model</label>
+                <input id="ps-model" type="text" placeholder="gpt-4o" style="width:100%;padding:0.3rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
+              </div>
+              <div>
+                <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.25rem">Default Audience</label>
+                <select id="ps-audience" style="width:100%;padding:0.3rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
+                  <option value="developers">Developers</option><option value="users">End Users</option><option value="stakeholders">Stakeholders</option><option value="mixed">Mixed</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.25rem">Default Tone</label>
+                <select id="ps-tone" style="width:100%;padding:0.3rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
+                  <option value="professional">Professional</option><option value="casual">Casual</option><option value="technical">Technical</option><option value="friendly">Friendly</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.25rem">Categories (comma-separated)</label>
+                <input id="ps-categories" type="text" placeholder="Features, Bug Fixes, Performance" style="width:100%;padding:0.3rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
+              </div>
+            </div>
+            <div style="margin-top:1.25rem;display:flex;gap:0.5rem">
+              <button class="btn-small" type="submit" style="background:var(--accent);color:#000;border:none;font-size:0.75rem">Save Settings</button>
+              <span id="settingsSaveStatus" style="font-size:0.75rem;color:var(--text-dim);align-self:center"></span>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:1rem" id="settingsTeamGate">
+        <div class="panel-body" style="text-align:center;padding:2rem">
+          <div style="font-size:1.2rem;margin-bottom:0.5rem">&#128274;</div>
+          <p style="font-size:0.85rem;color:var(--text-dim)">Saved project settings require a <strong>Team</strong> plan.</p>
+          <button class="btn-small" onclick="switchDashTab('billing')" style="margin-top:0.75rem">View Plans</button>
         </div>
       </div>
     </div>
@@ -1371,15 +1480,30 @@ function showDashboard() {
 function renderTrialBanner() {
   const banner = document.getElementById('trialBanner');
   const text = document.getElementById('trialBannerText');
-  if (!currentUser || !currentUser.trial || !currentUser.trial.active) {
+  if (!currentUser || !currentUser.trial) {
     banner.style.display = 'none';
     text.textContent = '';
     return;
   }
-  const tier = capitalize(currentUser.trial.tier || currentUser.effectiveTier || 'pro');
-  const days = currentUser.trial.daysRemaining || 0;
-  text.textContent = tier + ' trial active. ' + days + ' day' + (days === 1 ? '' : 's') + ' remaining to keep AI generation, integrations, and publishing unlocked.';
-  banner.style.display = '';
+
+  const trial = currentUser.trial;
+
+  if (trial.active) {
+    const tier = capitalize(trial.tier || currentUser.effectiveTier || 'pro');
+    const days = trial.daysRemaining || 0;
+    text.textContent = tier + ' trial active. ' + days + ' day' + (days === 1 ? '' : 's') + ' remaining to keep AI generation, integrations, and publishing unlocked.';
+    banner.style.display = '';
+    banner.style.borderColor = 'rgba(94,234,212,0.45)';
+    banner.querySelector('.btn-small').textContent = 'Upgrade Before Trial Ends';
+  } else if (trial.expired) {
+    text.textContent = 'Your ' + capitalize(trial.tier || 'pro') + ' trial has ended. You\'ve been downgraded to Free (5 generations/month, template-only). Upgrade to keep AI, integrations, and publishing.';
+    banner.style.display = '';
+    banner.style.borderColor = 'rgba(239,68,68,0.45)';
+    banner.querySelector('.btn-small').textContent = 'Upgrade Now';
+  } else {
+    banner.style.display = 'none';
+    text.textContent = '';
+  }
 }
 
 async function logout() {
@@ -1449,6 +1573,7 @@ async function generate() {
     const data = await res.json();
     if (res.status === 402) {
       switchDashTab('billing');
+      showToast('Monthly generation limit reached. Upgrade your plan to continue.');
     }
     if (!res.ok) throw new Error(data.error || 'Generation failed');
 
@@ -1541,6 +1666,8 @@ function switchDashTab(tab) {
   if (tab === 'history') loadHistory();
   if (tab === 'analytics') loadAnalytics();
   if (tab === 'team') loadTeam();
+  if (tab === 'drafts') loadDrafts();
+  if (tab === 'settings') loadSettingsTab();
   if (tab === 'changelog') loadChangelog();
   if (tab === 'billing') loadBilling();
 }
@@ -1790,6 +1917,256 @@ function showToast(msg) {
 
 const TIER_LIMITS = { free: 5, pro: 500, team: 2000, enterprise: Infinity };
 
+// --- Drafts Management ---
+
+let draftsOffset = 0;
+const DRAFTS_LIMIT = 20;
+
+function draftStatusBadge(status) {
+  const colors = { draft: '#888', submitted: '#f5a623', approved: '#4ecdc4', published: 'var(--accent)' };
+  return '<span style="display:inline-block;padding:0.15rem 0.5rem;border-radius:3px;font-size:0.7rem;font-family:\'Space Mono\',monospace;background:' + (colors[status] || '#888') + '20;color:' + (colors[status] || '#888') + ';border:1px solid ' + (colors[status] || '#888') + '40">' + status + '</span>';
+}
+
+async function loadDrafts() {
+  const userTier = window.__dashUser?.tier || 'free';
+  const isTeam = userTier === 'team' || userTier === 'enterprise';
+  document.getElementById('draftTeamGate').style.display = isTeam ? 'none' : 'block';
+  document.getElementById('draftList').parentElement.parentElement.style.display = isTeam ? 'block' : 'none';
+  if (document.getElementById('draftDetailPanel')) document.getElementById('draftDetailPanel').style.display = 'none';
+  if (!isTeam) return;
+
+  const list = document.getElementById('draftList');
+  const pager = document.getElementById('draftPager');
+  const statusFilter = document.getElementById('draftStatusFilter').value;
+  try {
+    let url = '/v1/drafts?limit=' + DRAFTS_LIMIT + '&offset=' + draftsOffset;
+    if (statusFilter) url += '&status=' + statusFilter;
+    const res = await apiFetch(url);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+
+    if (!data.drafts.length) {
+      list.innerHTML = '<div class="empty-state" style="min-height:100px"><p>No drafts' + (statusFilter ? ' with status "' + statusFilter + '"' : '') + '</p></div>';
+      pager.innerHTML = '';
+      return;
+    }
+
+    list.innerHTML = data.drafts.map(function(d) {
+      return '<div style="padding:0.75rem;border:1px solid var(--border);border-radius:6px;margin-bottom:0.5rem;cursor:pointer" onclick="loadDraftDetail(\'' + d.id + '\')">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center">'
+        + '<div><strong style="font-size:0.85rem">' + escapeHtml(d.project) + '</strong> <span style="color:var(--text-dim);font-size:0.75rem">' + escapeHtml(d.version || '') + '</span></div>'
+        + draftStatusBadge(d.status)
+        + '</div>'
+        + '<div style="font-size:0.7rem;color:var(--text-dim);margin-top:0.35rem">'
+        + (d.provider ? d.provider + '/' + (d.model || '') + ' &middot; ' : '')
+        + new Date(d.created_at).toLocaleDateString()
+        + '</div></div>';
+    }).join('');
+
+    const totalPages = Math.ceil(data.total / DRAFTS_LIMIT);
+    const currentPage = Math.floor(draftsOffset / DRAFTS_LIMIT) + 1;
+    pager.innerHTML = (currentPage > 1 ? '<button class="btn-small" onclick="draftsOffset-=' + DRAFTS_LIMIT + ';loadDrafts()" style="font-size:0.7rem">&larr; Prev</button>' : '')
+      + '<span style="font-size:0.75rem;color:var(--text-dim)">' + currentPage + ' / ' + totalPages + '</span>'
+      + (currentPage < totalPages ? '<button class="btn-small" onclick="draftsOffset+=' + DRAFTS_LIMIT + ';loadDrafts()" style="font-size:0.7rem">Next &rarr;</button>' : '');
+  } catch (e) {
+    list.innerHTML = '<div class="empty-state" style="min-height:100px"><p>Failed to load drafts</p></div>';
+  }
+}
+
+async function loadDraftDetail(id) {
+  const panel = document.getElementById('draftDetailPanel');
+  const meta = document.getElementById('draftDetailMeta');
+  const content = document.getElementById('draftDetailContent');
+  const actions = document.getElementById('draftDetailActions');
+  const revisions = document.getElementById('draftRevisions');
+  panel.style.display = 'block';
+
+  try {
+    const res = await apiFetch('/v1/drafts/' + id);
+    if (!res.ok) throw new Error();
+    const d = await res.json();
+
+    meta.innerHTML = draftStatusBadge(d.status)
+      + '<span>' + escapeHtml(d.project) + ' ' + escapeHtml(d.version || '') + '</span>'
+      + (d.provider ? '<span>' + d.provider + '/' + (d.model || '') + '</span>' : '')
+      + '<span>Created ' + new Date(d.created_at).toLocaleString() + '</span>';
+
+    content.innerHTML = d.formatted_html || ('<pre style="white-space:pre-wrap;font-size:0.8rem">' + escapeHtml(d.formatted_md || '') + '</pre>');
+
+    let btns = '';
+    if (d.status === 'draft') {
+      btns += '<button class="btn-small" onclick="submitDraft(\'' + id + '\')" style="background:var(--accent);color:#000;border:none;font-size:0.75rem">Submit for Review</button>';
+      btns += '<button class="btn-small" onclick="deleteDraft(\'' + id + '\')" style="font-size:0.75rem;color:#e74c3c">Delete</button>';
+    }
+    if (d.status === 'submitted') {
+      btns += '<button class="btn-small" onclick="approveDraft(\'' + id + '\')" style="background:#4ecdc4;color:#000;border:none;font-size:0.75rem">Approve</button>';
+    }
+    if (d.status === 'approved') {
+      btns += '<button class="btn-small" onclick="publishDraft(\'' + id + '\')" style="background:var(--accent);color:#000;border:none;font-size:0.75rem">Publish</button>';
+    }
+    actions.innerHTML = btns;
+
+    if (d.revisions && d.revisions.length) {
+      revisions.style.display = 'block';
+      document.getElementById('draftRevisionList').innerHTML = d.revisions.map(function(r) {
+        return '<div style="padding:0.5rem;border-left:2px solid var(--border);margin-bottom:0.5rem;padding-left:0.75rem">'
+          + '<div style="color:var(--text-dim);font-size:0.7rem">Revision ' + r.revision_number + ' &middot; ' + new Date(r.created_at).toLocaleString() + '</div>'
+          + '</div>';
+      }).join('');
+    } else {
+      revisions.style.display = 'none';
+    }
+  } catch (e) {
+    content.innerHTML = '<p style="color:#e74c3c">Failed to load draft</p>';
+  }
+}
+
+function closeDraftDetail() {
+  document.getElementById('draftDetailPanel').style.display = 'none';
+}
+
+async function submitDraft(id) {
+  try {
+    const res = await apiFetch('/v1/drafts/' + id + '/submit', { method: 'POST' });
+    if (!res.ok) throw new Error();
+    loadDraftDetail(id);
+    loadDrafts();
+  } catch (e) { showToast('Failed to submit draft', true); }
+}
+
+async function approveDraft(id) {
+  try {
+    const res = await apiFetch('/v1/drafts/' + id + '/approve', { method: 'POST' });
+    if (!res.ok) throw new Error();
+    loadDraftDetail(id);
+    loadDrafts();
+  } catch (e) { showToast('Failed to approve draft', true); }
+}
+
+async function publishDraft(id) {
+  try {
+    const res = await apiFetch('/v1/drafts/' + id + '/publish', { method: 'POST' });
+    if (!res.ok) throw new Error();
+    showToast('Draft published to changelog!');
+    loadDraftDetail(id);
+    loadDrafts();
+  } catch (e) { showToast('Failed to publish draft', true); }
+}
+
+async function deleteDraft(id) {
+  if (!confirm('Delete this draft?')) return;
+  try {
+    const res = await apiFetch('/v1/drafts/' + id, { method: 'DELETE' });
+    if (!res.ok) throw new Error();
+    closeDraftDetail();
+    loadDrafts();
+  } catch (e) { showToast('Failed to delete draft', true); }
+}
+
+// --- Project Settings ---
+
+async function loadSettingsTab() {
+  const userTier = window.__dashUser?.tier || 'free';
+  const isTeam = userTier === 'team' || userTier === 'enterprise';
+  document.getElementById('settingsTeamGate').style.display = isTeam ? 'none' : 'block';
+  document.getElementById('projectSettingsForm').parentElement.parentElement.style.display = isTeam ? 'block' : 'none';
+  if (!isTeam) return;
+
+  const select = document.getElementById('settingsProjectSelect');
+  if (!select.options.length) {
+    try {
+      const res = await apiFetch('/v1/projects/settings');
+      if (res.ok) {
+        const data = await res.json();
+        select.innerHTML = '';
+        if (data.settings && data.settings.length) {
+          data.settings.forEach(function(s) {
+            const opt = document.createElement('option');
+            opt.value = s.project;
+            opt.textContent = s.project;
+            select.appendChild(opt);
+          });
+        }
+        const opt = document.createElement('option');
+        opt.value = '__new__';
+        opt.textContent = '+ New project...';
+        select.appendChild(opt);
+      }
+    } catch (e) {}
+  }
+  loadProjectSettings();
+}
+
+async function loadProjectSettings() {
+  const select = document.getElementById('settingsProjectSelect');
+  const project = select.value;
+  if (!project || project === '__new__') {
+    document.getElementById('ps-source').value = 'commits';
+    document.getElementById('ps-provider').value = 'openai';
+    document.getElementById('ps-model').value = '';
+    document.getElementById('ps-audience').value = 'developers';
+    document.getElementById('ps-tone').value = 'professional';
+    document.getElementById('ps-categories').value = '';
+    return;
+  }
+  try {
+    const res = await apiFetch('/v1/projects/settings');
+    if (!res.ok) return;
+    const data = await res.json();
+    const s = (data.settings || []).find(function(x) { return x.project === project; });
+    if (s) {
+      document.getElementById('ps-source').value = s.default_source_type || 'commits';
+      document.getElementById('ps-provider').value = s.default_provider || 'openai';
+      document.getElementById('ps-model').value = s.default_model || '';
+      document.getElementById('ps-audience').value = s.default_audience || 'developers';
+      document.getElementById('ps-tone').value = s.default_tone || 'professional';
+      document.getElementById('ps-categories').value = (s.categories_json ? JSON.parse(s.categories_json) : []).join(', ');
+    }
+  } catch (e) {}
+}
+
+async function saveProjectSettings() {
+  const select = document.getElementById('settingsProjectSelect');
+  let project = select.value;
+  if (project === '__new__') {
+    project = prompt('Project name (e.g. my-app):');
+    if (!project) return;
+  }
+  const cats = document.getElementById('ps-categories').value.split(',').map(function(c) { return c.trim(); }).filter(Boolean);
+  const body = {
+    default_source_type: document.getElementById('ps-source').value,
+    default_provider: document.getElementById('ps-provider').value,
+    default_model: document.getElementById('ps-model').value,
+    default_audience: document.getElementById('ps-audience').value,
+    default_tone: document.getElementById('ps-tone').value,
+    categories_json: JSON.stringify(cats)
+  };
+  const status = document.getElementById('settingsSaveStatus');
+  try {
+    const res = await apiFetch('/v1/projects/' + encodeURIComponent(project) + '/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error();
+    status.textContent = 'Saved!';
+    status.style.color = 'var(--accent)';
+    setTimeout(function() { status.textContent = ''; }, 2000);
+    // Refresh project list
+    const opt = Array.from(select.options).find(function(o) { return o.value === project; });
+    if (!opt) {
+      const newOpt = document.createElement('option');
+      newOpt.value = project;
+      newOpt.textContent = project;
+      select.insertBefore(newOpt, select.querySelector('[value="__new__"]'));
+      select.value = project;
+    }
+  } catch (e) {
+    status.textContent = 'Failed to save';
+    status.style.color = '#e74c3c';
+  }
+}
+
 // --- Changelog Management ---
 
 async function loadChangelog() {
@@ -1942,6 +2319,14 @@ async function loadBilling() {
         trialBtn.textContent = 'Upgrade Now';
         trialBtn.onclick = function() { upgradePlan('pro'); };
         actionsEl.appendChild(trialBtn);
+      } else if (sub && sub.trial && sub.trial.expired) {
+        statusEl.textContent = capitalize(sub.trial.tier || 'pro') + ' trial expired — downgraded to Free';
+        statusEl.style.color = 'var(--terminal-red)';
+        const upgradeBtn = document.createElement('button');
+        upgradeBtn.className = 'btn-small';
+        upgradeBtn.textContent = 'Upgrade to Keep AI Features';
+        upgradeBtn.onclick = function() { upgradePlan('pro'); };
+        actionsEl.appendChild(upgradeBtn);
       } else {
         statusEl.textContent = tier === 'free' ? 'No active subscription' : '';
       }

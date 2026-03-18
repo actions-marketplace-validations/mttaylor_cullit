@@ -12,6 +12,8 @@ import {
   isEnrichmentAllowed,
   upgradeMessage,
   getTierLimits,
+  isFeatureAllowed,
+  getFeatureGating,
 } from '@cullit/core';
 
 describe('Gate — resolveLicense', () => {
@@ -165,5 +167,79 @@ describe('Gate — getTierLimits', () => {
     const limits = getTierLimits('nonexistent');
     expect(limits.generationsPerMonth).toBe(5);
     expect(limits.maxProjects).toBe(3);
+  });
+});
+
+describe('Gate — isFeatureAllowed', () => {
+  it('blocks drafts on free tier', () => {
+    expect(isFeatureAllowed('drafts', 'free')).toBe(false);
+  });
+
+  it('blocks drafts on pro tier', () => {
+    expect(isFeatureAllowed('drafts', 'pro')).toBe(false);
+  });
+
+  it('allows drafts on team tier', () => {
+    expect(isFeatureAllowed('drafts', 'team')).toBe(true);
+  });
+
+  it('allows drafts on enterprise tier', () => {
+    expect(isFeatureAllowed('drafts', 'enterprise')).toBe(true);
+  });
+
+  it('blocks audit_logs on team tier (enterprise-only)', () => {
+    expect(isFeatureAllowed('audit_logs', 'team')).toBe(false);
+  });
+
+  it('allows audit_logs on enterprise tier', () => {
+    expect(isFeatureAllowed('audit_logs', 'enterprise')).toBe(true);
+  });
+
+  it('blocks sso on team tier (enterprise-only)', () => {
+    expect(isFeatureAllowed('sso', 'team')).toBe(false);
+  });
+
+  it('allows sso on enterprise tier', () => {
+    expect(isFeatureAllowed('sso', 'enterprise')).toBe(true);
+  });
+
+  it('allows approvals on team tier', () => {
+    expect(isFeatureAllowed('approvals', 'team')).toBe(true);
+  });
+
+  it('allows project_templates on team tier', () => {
+    expect(isFeatureAllowed('project_templates', 'team')).toBe(true);
+  });
+});
+
+describe('Gate — getFeatureGating', () => {
+  it('returns all features blocked for free tier', () => {
+    const gating = getFeatureGating('free');
+    expect(gating.drafts).toBe(false);
+    expect(gating.approvals).toBe(false);
+    expect(gating.sso).toBe(false);
+    expect(gating.audit_logs).toBe(false);
+  });
+
+  it('returns team features enabled for team tier', () => {
+    const gating = getFeatureGating('team');
+    expect(gating.drafts).toBe(true);
+    expect(gating.approvals).toBe(true);
+    expect(gating.shared_history).toBe(true);
+    expect(gating.project_templates).toBe(true);
+    expect(gating.hosted_changelog).toBe(true);
+    expect(gating.branded_widget).toBe(true);
+    expect(gating.team_publishers).toBe(true);
+    expect(gating.org_settings).toBe(true);
+    expect(gating.audit_logs).toBe(false);
+    expect(gating.sso).toBe(false);
+  });
+
+  it('returns all features enabled for enterprise tier', () => {
+    const gating = getFeatureGating('enterprise');
+    expect(gating.drafts).toBe(true);
+    expect(gating.approvals).toBe(true);
+    expect(gating.audit_logs).toBe(true);
+    expect(gating.sso).toBe(true);
   });
 });

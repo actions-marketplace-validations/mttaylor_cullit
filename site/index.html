@@ -706,6 +706,81 @@
 
 <div class="section-divider"></div>
 
+<!-- AI COMPARISON: Same release, three outputs -->
+<section style="max-width: 1100px; margin: 0 auto; padding: 4rem 2rem;" id="ai-comparison">
+  <p class="section-label">// see the difference</p>
+  <h2 class="section-title">Same release. Three very different outputs.</h2>
+  <p style="text-align: center; color: var(--text-dim); margin-bottom: 2.5rem; max-width: 660px; margin-left: auto; margin-right: auto;">Compare a raw commit log, GitHub's auto-generated notes, and what Cullit produces from the same <code style="background:var(--bg-card);padding:0.15rem 0.4rem;border-radius:4px;font-size:0.85rem">v2.3.0..v2.4.0</code> range.</p>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+    <!-- Raw commit log -->
+    <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;">
+      <div style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.5rem;">
+        <span style="color: var(--terminal-red); font-size: 0.9rem;">&#10007;</span>
+        <span style="font-family: 'Space Mono', monospace; font-size: 0.8rem; color: var(--text-dim);">git log --oneline</span>
+      </div>
+      <div style="padding: 1rem; font-family: 'Space Mono', monospace; font-size: 0.72rem; color: var(--text-dim); line-height: 1.7; max-height: 320px; overflow-y: auto;">
+        <div>a3f81c2 fix: resolve memory leak in ws pool</div>
+        <div>e9d42a7 feat: add webhook config UI</div>
+        <div>1b07fc3 chore: bump deps</div>
+        <div>c44e019 fix(api): tz rendering in reports</div>
+        <div>8a2d5ff feat: real-time collab for dashboards</div>
+        <div>f72c4b1 refactor: extract socket manager</div>
+        <div>3e91db8 test: add webhook coverage</div>
+        <div>20ad6c5 feat(api): export csv + pdf (PROJ-156)</div>
+        <div>bb310f7 docs: update API reference</div>
+        <div>d6f82e1 fix: null check on empty payload</div>
+        <div>5ca01f9 chore: lint fixes</div>
+        <div>7ef33a2 feat: webhook test-send capability</div>
+        <div style="color:var(--text-dim);opacity:0.5">... 11 more commits</div>
+      </div>
+    </div>
+
+    <!-- GitHub auto-generated -->
+    <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;">
+      <div style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.5rem;">
+        <span style="color: var(--terminal-yellow); font-size: 0.9rem;">~</span>
+        <span style="font-family: 'Space Mono', monospace; font-size: 0.8rem; color: var(--text-dim);">GitHub Auto-Generated</span>
+      </div>
+      <div style="padding: 1rem; font-size: 0.82rem; color: var(--text-dim); line-height: 1.7; max-height: 320px; overflow-y: auto;">
+        <div style="font-weight:600;color:var(--text);">What's Changed</div>
+        <div style="margin-top:0.5rem;">&#8226; fix: resolve memory leak in ws pool by @dev-jane</div>
+        <div>&#8226; feat: add webhook config UI by @dev-bob</div>
+        <div>&#8226; chore: bump deps by @dependabot</div>
+        <div>&#8226; fix(api): tz rendering in reports by @dev-jane</div>
+        <div>&#8226; feat: real-time collab for dashboards by @dev-alice</div>
+        <div>&#8226; refactor: extract socket manager by @dev-alice</div>
+        <div>&#8226; feat(api): export csv + pdf by @dev-bob</div>
+        <div style="margin-top:0.75rem;font-weight:600;color:var(--text);">New Contributors</div>
+        <div>&#8226; @dev-alice made their first contribution</div>
+        <div style="margin-top:0.75rem;color:var(--text-dim);font-size:0.75rem;opacity:0.6">Full Changelog: v2.3.0...v2.4.0</div>
+      </div>
+    </div>
+
+    <!-- Cullit AI output -->
+    <div style="background: var(--bg-card); border: 1px solid rgba(94,234,212,0.35); border-radius: 10px; overflow: hidden; box-shadow: 0 0 20px rgba(94,234,212,0.06);">
+      <div style="padding: 0.75rem 1rem; border-bottom: 1px solid rgba(94,234,212,0.2); display: flex; align-items: center; gap: 0.5rem;">
+        <span style="color: var(--accent); font-size: 0.9rem;">&#10003;</span>
+        <span style="font-family: 'Space Mono', monospace; font-size: 0.8rem; color: var(--accent);">Cullit AI &mdash; End-User Audience</span>
+      </div>
+      <div style="padding: 1rem; font-size: 0.82rem; color: var(--text); line-height: 1.7; max-height: 320px; overflow-y: auto;">
+        <div style="font-weight:600;color:var(--accent);font-size:0.95rem;">Release v2.4.0 &mdash; March 10, 2026</div>
+        <div style="margin-top:0.75rem;font-weight:600;color:var(--terminal-green);">&#10024; Features</div>
+        <div>&#8226; <strong>Real-time collaboration</strong> &mdash; Multiple team members can now edit shared dashboards simultaneously with live cursors and conflict resolution.</div>
+        <div>&#8226; <strong>Export API</strong> &mdash; Download reports in CSV or PDF directly from the dashboard or via the new <code style="font-size:0.75rem;background:var(--bg);padding:0.1rem 0.3rem;border-radius:3px">/api/v2/export</code> endpoint.</div>
+        <div>&#8226; <strong>Webhook configuration</strong> &mdash; Set up and test webhooks through the UI instead of editing config files. Includes a test-send button.</div>
+        <div style="margin-top:0.75rem;font-weight:600;color:var(--terminal-yellow);">&#128027; Bug Fixes</div>
+        <div>&#8226; Fixed timezone rendering in scheduled reports that caused shifted dates for UTC-negative zones.</div>
+        <div>&#8226; Resolved a WebSocket connection pool memory leak under sustained load.</div>
+        <div style="margin-top:0.75rem;font-weight:600;color:var(--terminal-red);">&#9888;&#65039; Breaking Changes</div>
+        <div>&#8226; The <code style="font-size:0.75rem;background:var(--bg);padding:0.1rem 0.3rem;border-radius:3px">/api/v1/export</code> endpoint is deprecated. Migrate to <code style="font-size:0.75rem;background:var(--bg);padding:0.1rem 0.3rem;border-radius:3px">/api/v2/export</code> before v2.6.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
 <!-- FEATURES -->
 <section class="features" id="features">
   <p class="section-label">// capabilities</p>

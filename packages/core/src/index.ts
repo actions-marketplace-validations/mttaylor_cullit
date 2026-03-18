@@ -26,8 +26,8 @@ export { formatNotes, registerFormatter, getFormatter, listFormatters } from './
 export { StdoutPublisher, FilePublisher } from './publishers/index';
 export { analyzeReleaseReadiness } from './advisor';
 export type { ReleaseAdvisory, SemverBump } from './advisor';
-export { resolveLicense, validateLicense, isProviderAllowed, isPublisherAllowed, isEnrichmentAllowed, upgradeMessage, getTierLimits, reportUsage } from './gate';
-export type { LicenseTier, LicenseStatus, UsageLimits } from './gate';
+export { resolveLicense, validateLicense, isProviderAllowed, isPublisherAllowed, isEnrichmentAllowed, upgradeMessage, getTierLimits, reportUsage, isFeatureAllowed, getFeatureGating } from './gate';
+export type { LicenseTier, LicenseStatus, UsageLimits, TeamFeature } from './gate';
 export {
   registerCollector, registerEnricher, registerGenerator, registerPublisher,
   getCollector, getEnricher, getGenerator, getPublisher,

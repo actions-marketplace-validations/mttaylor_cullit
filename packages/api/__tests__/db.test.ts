@@ -29,6 +29,10 @@ describe('Database Module', () => {
       'dbRecordUsage', 'dbGetUsageStats',
       'dbPublishRelease', 'dbGetReleases', 'dbGetProjectCount',
       'dbUpsertSubscription', 'dbGetSubscription',
+      'dbCreateDraft', 'dbGetDraft', 'dbListDrafts', 'dbUpdateDraft', 'dbUpdateDraftStatus', 'dbDeleteDraft',
+      'dbCreateRevision', 'dbGetRevisions', 'dbGetRevisionCount',
+      'dbGetProjectSettings', 'dbUpsertProjectSettings', 'dbListProjectSettings',
+      'dbCreateOrgInvite', 'dbListOrgInvites', 'dbGetOrgInviteByToken', 'dbAcceptOrgInvite', 'dbDeleteOrgInvite',
     ];
     for (const name of expectedExports) {
       expect(db).toHaveProperty(name);

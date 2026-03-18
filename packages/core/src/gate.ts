@@ -169,6 +169,52 @@ export function getTierLimits(tier: string): UsageLimits {
   return TIER_LIMITS[tier] || TIER_LIMITS.free;
 }
 
+// --- Feature gating by tier ---
+
+export type TeamFeature =
+  | 'drafts'
+  | 'approvals'
+  | 'shared_history'
+  | 'project_templates'
+  | 'hosted_changelog'
+  | 'branded_widget'
+  | 'team_publishers'
+  | 'org_settings'
+  | 'audit_logs'
+  | 'sso';
+
+const FEATURE_TIERS: Record<TeamFeature, Set<string>> = {
+  drafts:             new Set(['team', 'enterprise']),
+  approvals:          new Set(['team', 'enterprise']),
+  shared_history:     new Set(['team', 'enterprise']),
+  project_templates:  new Set(['team', 'enterprise']),
+  hosted_changelog:   new Set(['team', 'enterprise']),
+  branded_widget:     new Set(['team', 'enterprise']),
+  team_publishers:    new Set(['team', 'enterprise']),
+  org_settings:       new Set(['team', 'enterprise']),
+  audit_logs:         new Set(['enterprise']),
+  sso:                new Set(['enterprise']),
+};
+
+/**
+ * Check whether a license tier grants access to a Team/Enterprise feature.
+ */
+export function isFeatureAllowed(feature: TeamFeature, tier: string): boolean {
+  const allowed = FEATURE_TIERS[feature];
+  return allowed ? allowed.has(tier) : false;
+}
+
+/**
+ * Build a gating summary for a tier — which features are unlocked.
+ */
+export function getFeatureGating(tier: string): Record<TeamFeature, boolean> {
+  const result: Record<string, boolean> = {};
+  for (const feature of Object.keys(FEATURE_TIERS) as TeamFeature[]) {
+    result[feature] = isFeatureAllowed(feature, tier);
+  }
+  return result as Record<TeamFeature, boolean>;
+}
+
 /**
  * Report a generation event to the metering service.
  * Non-blocking — failures are logged but never block the pipeline.

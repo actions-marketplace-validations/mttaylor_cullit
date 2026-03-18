@@ -164,6 +164,88 @@ export async function migrate(): Promise<void> {
   await sql`CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions (user_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe ON subscriptions (stripe_subscription_id)`;
 
+  // --- Team workflow tables ---
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS release_drafts (
+      id              TEXT PRIMARY KEY,
+      org_id          TEXT,
+      user_id         TEXT NOT NULL REFERENCES users(id),
+      project         TEXT NOT NULL,
+      version         TEXT NOT NULL DEFAULT '',
+      status          TEXT NOT NULL DEFAULT 'draft',
+      source_type     TEXT NOT NULL DEFAULT 'local',
+      provider        TEXT NOT NULL DEFAULT 'none',
+      model           TEXT NOT NULL DEFAULT '',
+      audience        TEXT NOT NULL DEFAULT 'developer',
+      tone            TEXT NOT NULL DEFAULT 'professional',
+      notes_json      JSONB NOT NULL DEFAULT '[]',
+      formatted_md    TEXT NOT NULL DEFAULT '',
+      formatted_html  TEXT NOT NULL DEFAULT '',
+      raw_inputs_json JSONB,
+      created_by      TEXT NOT NULL REFERENCES users(id),
+      approved_by     TEXT,
+      published_at    TIMESTAMPTZ,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+
+  await sql`CREATE INDEX IF NOT EXISTS idx_drafts_user ON release_drafts (user_id, created_at DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_drafts_org ON release_drafts (org_id, created_at DESC) WHERE org_id IS NOT NULL`;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS draft_revisions (
+      id              TEXT PRIMARY KEY,
+      draft_id        TEXT NOT NULL REFERENCES release_drafts(id) ON DELETE CASCADE,
+      revision_number INT NOT NULL,
+      notes_json      JSONB NOT NULL DEFAULT '[]',
+      formatted_md    TEXT NOT NULL DEFAULT '',
+      formatted_html  TEXT NOT NULL DEFAULT '',
+      changed_by      TEXT NOT NULL REFERENCES users(id),
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+
+  await sql`CREATE INDEX IF NOT EXISTS idx_revisions_draft ON draft_revisions (draft_id, revision_number)`;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS project_settings (
+      id                TEXT PRIMARY KEY,
+      org_id            TEXT,
+      user_id           TEXT NOT NULL REFERENCES users(id),
+      project           TEXT NOT NULL,
+      default_source    TEXT NOT NULL DEFAULT 'local',
+      default_provider  TEXT NOT NULL DEFAULT 'none',
+      default_model     TEXT NOT NULL DEFAULT '',
+      default_audience  TEXT NOT NULL DEFAULT 'developer',
+      default_tone      TEXT NOT NULL DEFAULT 'professional',
+      categories_json   JSONB NOT NULL DEFAULT '[]',
+      publish_targets_json JSONB NOT NULL DEFAULT '[]',
+      widget_config_json   JSONB,
+      created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (COALESCE(org_id, user_id), project)
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS org_invites (
+      id          TEXT PRIMARY KEY,
+      org_id      TEXT NOT NULL REFERENCES orgs(id) ON DELETE CASCADE,
+      email       TEXT NOT NULL,
+      role        TEXT NOT NULL DEFAULT 'member',
+      token       TEXT UNIQUE NOT NULL,
+      expires_at  TIMESTAMPTZ NOT NULL,
+      accepted_at TIMESTAMPTZ,
+      created_by  TEXT NOT NULL REFERENCES users(id),
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+
+  await sql`CREATE INDEX IF NOT EXISTS idx_invites_org ON org_invites (org_id)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_invites_token ON org_invites (token) WHERE accepted_at IS NULL`;
+
   log.info('Database migrations complete');
 }
 
@@ -528,4 +610,296 @@ export async function dbGetSubscription(userId: string): Promise<{
  */
 export async function closeDb(): Promise<void> {
   if (sql) await sql.end();
+}
+
+// --- Release Draft DB operations ---
+
+export type DraftStatus = 'draft' | 'submitted' | 'approved' | 'published';
+
+export interface DbDraft {
+  id: string;
+  org_id: string | null;
+  user_id: string;
+  project: string;
+  version: string;
+  status: DraftStatus;
+  source_type: string;
+  provider: string;
+  model: string;
+  audience: string;
+  tone: string;
+  notes_json: unknown[];
+  formatted_md: string;
+  formatted_html: string;
+  raw_inputs_json: unknown | null;
+  created_by: string;
+  approved_by: string | null;
+  published_at: Date | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export async function dbCreateDraft(draft: {
+  id: string; orgId: string | null; userId: string; project: string; version: string;
+  sourceType: string; provider: string; model: string; audience: string; tone: string;
+  notesJson: unknown[]; formattedMd: string; formattedHtml: string; rawInputsJson?: unknown;
+  createdBy: string;
+}): Promise<DbDraft> {
+  const rows = await sql<DbDraft[]>`
+    INSERT INTO release_drafts (id, org_id, user_id, project, version, source_type, provider, model, audience, tone,
+      notes_json, formatted_md, formatted_html, raw_inputs_json, created_by)
+    VALUES (${draft.id}, ${draft.orgId}, ${draft.userId}, ${draft.project}, ${draft.version},
+      ${draft.sourceType}, ${draft.provider}, ${draft.model}, ${draft.audience}, ${draft.tone},
+      ${JSON.stringify(draft.notesJson)}::jsonb, ${draft.formattedMd}, ${draft.formattedHtml},
+      ${draft.rawInputsJson ? JSON.stringify(draft.rawInputsJson) : null}::jsonb, ${draft.createdBy})
+    RETURNING *
+  `;
+  return rows[0];
+}
+
+export async function dbGetDraft(id: string): Promise<DbDraft | null> {
+  const rows = await sql<DbDraft[]>`SELECT * FROM release_drafts WHERE id = ${id}`;
+  return rows[0] || null;
+}
+
+export async function dbListDrafts(opts: {
+  userId?: string; orgId?: string; status?: string; limit: number; offset: number;
+}): Promise<{ drafts: DbDraft[]; total: number }> {
+  const conditions: string[] = [];
+  if (opts.orgId) conditions.push('org_id');
+  else if (opts.userId) conditions.push('user_id');
+
+  // Build query dynamically based on whether we filter by org or user
+  let drafts: DbDraft[];
+  let total: number;
+
+  if (opts.orgId && opts.status) {
+    drafts = await sql<DbDraft[]>`
+      SELECT * FROM release_drafts WHERE org_id = ${opts.orgId} AND status = ${opts.status}
+      ORDER BY updated_at DESC LIMIT ${opts.limit} OFFSET ${opts.offset}`;
+    const countRows = await sql<[{ count: string }]>`
+      SELECT COUNT(*)::text AS count FROM release_drafts WHERE org_id = ${opts.orgId} AND status = ${opts.status}`;
+    total = parseInt(countRows[0].count, 10);
+  } else if (opts.orgId) {
+    drafts = await sql<DbDraft[]>`
+      SELECT * FROM release_drafts WHERE org_id = ${opts.orgId}
+      ORDER BY updated_at DESC LIMIT ${opts.limit} OFFSET ${opts.offset}`;
+    const countRows = await sql<[{ count: string }]>`
+      SELECT COUNT(*)::text AS count FROM release_drafts WHERE org_id = ${opts.orgId}`;
+    total = parseInt(countRows[0].count, 10);
+  } else if (opts.userId && opts.status) {
+    drafts = await sql<DbDraft[]>`
+      SELECT * FROM release_drafts WHERE user_id = ${opts.userId} AND status = ${opts.status}
+      ORDER BY updated_at DESC LIMIT ${opts.limit} OFFSET ${opts.offset}`;
+    const countRows = await sql<[{ count: string }]>`
+      SELECT COUNT(*)::text AS count FROM release_drafts WHERE user_id = ${opts.userId} AND status = ${opts.status}`;
+    total = parseInt(countRows[0].count, 10);
+  } else if (opts.userId) {
+    drafts = await sql<DbDraft[]>`
+      SELECT * FROM release_drafts WHERE user_id = ${opts.userId}
+      ORDER BY updated_at DESC LIMIT ${opts.limit} OFFSET ${opts.offset}`;
+    const countRows = await sql<[{ count: string }]>`
+      SELECT COUNT(*)::text AS count FROM release_drafts WHERE user_id = ${opts.userId}`;
+    total = parseInt(countRows[0].count, 10);
+  } else {
+    drafts = [];
+    total = 0;
+  }
+
+  return { drafts, total };
+}
+
+export async function dbUpdateDraft(id: string, updates: {
+  version?: string; notesJson?: unknown[]; formattedMd?: string; formattedHtml?: string;
+  audience?: string; tone?: string;
+}): Promise<DbDraft | null> {
+  const rows = await sql<DbDraft[]>`
+    UPDATE release_drafts SET
+      version = COALESCE(${updates.version ?? null}, version),
+      notes_json = COALESCE(${updates.notesJson ? JSON.stringify(updates.notesJson) : null}::jsonb, notes_json),
+      formatted_md = COALESCE(${updates.formattedMd ?? null}, formatted_md),
+      formatted_html = COALESCE(${updates.formattedHtml ?? null}, formatted_html),
+      audience = COALESCE(${updates.audience ?? null}, audience),
+      tone = COALESCE(${updates.tone ?? null}, tone),
+      updated_at = NOW()
+    WHERE id = ${id}
+    RETURNING *
+  `;
+  return rows[0] || null;
+}
+
+export async function dbUpdateDraftStatus(id: string, status: DraftStatus, actorId?: string): Promise<DbDraft | null> {
+  if (status === 'approved' && actorId) {
+    const rows = await sql<DbDraft[]>`
+      UPDATE release_drafts SET status = ${status}, approved_by = ${actorId}, updated_at = NOW()
+      WHERE id = ${id} RETURNING *`;
+    return rows[0] || null;
+  }
+  if (status === 'published') {
+    const rows = await sql<DbDraft[]>`
+      UPDATE release_drafts SET status = ${status}, published_at = NOW(), updated_at = NOW()
+      WHERE id = ${id} RETURNING *`;
+    return rows[0] || null;
+  }
+  const rows = await sql<DbDraft[]>`
+    UPDATE release_drafts SET status = ${status}, updated_at = NOW()
+    WHERE id = ${id} RETURNING *`;
+  return rows[0] || null;
+}
+
+export async function dbDeleteDraft(id: string): Promise<boolean> {
+  const result = await sql`DELETE FROM release_drafts WHERE id = ${id}`;
+  return result.count > 0;
+}
+
+// --- Draft Revision DB operations ---
+
+export interface DbRevision {
+  id: string;
+  draft_id: string;
+  revision_number: number;
+  notes_json: unknown[];
+  formatted_md: string;
+  formatted_html: string;
+  changed_by: string;
+  created_at: Date;
+}
+
+export async function dbCreateRevision(rev: {
+  id: string; draftId: string; revisionNumber: number;
+  notesJson: unknown[]; formattedMd: string; formattedHtml: string; changedBy: string;
+}): Promise<DbRevision> {
+  const rows = await sql<DbRevision[]>`
+    INSERT INTO draft_revisions (id, draft_id, revision_number, notes_json, formatted_md, formatted_html, changed_by)
+    VALUES (${rev.id}, ${rev.draftId}, ${rev.revisionNumber},
+      ${JSON.stringify(rev.notesJson)}::jsonb, ${rev.formattedMd}, ${rev.formattedHtml}, ${rev.changedBy})
+    RETURNING *
+  `;
+  return rows[0];
+}
+
+export async function dbGetRevisions(draftId: string): Promise<DbRevision[]> {
+  return sql<DbRevision[]>`
+    SELECT * FROM draft_revisions WHERE draft_id = ${draftId} ORDER BY revision_number DESC
+  `;
+}
+
+export async function dbGetRevisionCount(draftId: string): Promise<number> {
+  const rows = await sql<[{ count: string }]>`
+    SELECT COUNT(*)::text AS count FROM draft_revisions WHERE draft_id = ${draftId}`;
+  return parseInt(rows[0].count, 10);
+}
+
+// --- Project Settings DB operations ---
+
+export interface DbProjectSettings {
+  id: string;
+  org_id: string | null;
+  user_id: string;
+  project: string;
+  default_source: string;
+  default_provider: string;
+  default_model: string;
+  default_audience: string;
+  default_tone: string;
+  categories_json: unknown[];
+  publish_targets_json: unknown[];
+  widget_config_json: unknown | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export async function dbGetProjectSettings(ownerId: string, project: string, orgId?: string | null): Promise<DbProjectSettings | null> {
+  if (orgId) {
+    const rows = await sql<DbProjectSettings[]>`
+      SELECT * FROM project_settings WHERE org_id = ${orgId} AND project = ${project}`;
+    return rows[0] || null;
+  }
+  const rows = await sql<DbProjectSettings[]>`
+    SELECT * FROM project_settings WHERE user_id = ${ownerId} AND org_id IS NULL AND project = ${project}`;
+  return rows[0] || null;
+}
+
+export async function dbUpsertProjectSettings(settings: {
+  id: string; orgId: string | null; userId: string; project: string;
+  defaultSource?: string; defaultProvider?: string; defaultModel?: string;
+  defaultAudience?: string; defaultTone?: string;
+  categoriesJson?: unknown[]; publishTargetsJson?: unknown[]; widgetConfigJson?: unknown;
+}): Promise<DbProjectSettings> {
+  const rows = await sql<DbProjectSettings[]>`
+    INSERT INTO project_settings (id, org_id, user_id, project, default_source, default_provider, default_model,
+      default_audience, default_tone, categories_json, publish_targets_json, widget_config_json)
+    VALUES (${settings.id}, ${settings.orgId}, ${settings.userId}, ${settings.project},
+      ${settings.defaultSource || 'local'}, ${settings.defaultProvider || 'none'}, ${settings.defaultModel || ''},
+      ${settings.defaultAudience || 'developer'}, ${settings.defaultTone || 'professional'},
+      ${JSON.stringify(settings.categoriesJson || [])}::jsonb, ${JSON.stringify(settings.publishTargetsJson || [])}::jsonb,
+      ${settings.widgetConfigJson ? JSON.stringify(settings.widgetConfigJson) : null}::jsonb)
+    ON CONFLICT (COALESCE(org_id, user_id), project) DO UPDATE SET
+      default_source = EXCLUDED.default_source,
+      default_provider = EXCLUDED.default_provider,
+      default_model = EXCLUDED.default_model,
+      default_audience = EXCLUDED.default_audience,
+      default_tone = EXCLUDED.default_tone,
+      categories_json = EXCLUDED.categories_json,
+      publish_targets_json = EXCLUDED.publish_targets_json,
+      widget_config_json = EXCLUDED.widget_config_json,
+      updated_at = NOW()
+    RETURNING *
+  `;
+  return rows[0];
+}
+
+export async function dbListProjectSettings(ownerId: string, orgId?: string | null): Promise<DbProjectSettings[]> {
+  if (orgId) {
+    return sql<DbProjectSettings[]>`SELECT * FROM project_settings WHERE org_id = ${orgId} ORDER BY project`;
+  }
+  return sql<DbProjectSettings[]>`SELECT * FROM project_settings WHERE user_id = ${ownerId} AND org_id IS NULL ORDER BY project`;
+}
+
+// --- Org Invites DB operations ---
+
+export interface DbOrgInvite {
+  id: string;
+  org_id: string;
+  email: string;
+  role: string;
+  token: string;
+  expires_at: Date;
+  accepted_at: Date | null;
+  created_by: string;
+  created_at: Date;
+}
+
+export async function dbCreateOrgInvite(invite: {
+  id: string; orgId: string; email: string; role: string; token: string; expiresAt: Date; createdBy: string;
+}): Promise<DbOrgInvite> {
+  const rows = await sql<DbOrgInvite[]>`
+    INSERT INTO org_invites (id, org_id, email, role, token, expires_at, created_by)
+    VALUES (${invite.id}, ${invite.orgId}, ${invite.email}, ${invite.role}, ${invite.token}, ${invite.expiresAt}, ${invite.createdBy})
+    RETURNING *
+  `;
+  return rows[0];
+}
+
+export async function dbListOrgInvites(orgId: string): Promise<DbOrgInvite[]> {
+  return sql<DbOrgInvite[]>`
+    SELECT * FROM org_invites WHERE org_id = ${orgId} AND accepted_at IS NULL AND expires_at > NOW()
+    ORDER BY created_at DESC
+  `;
+}
+
+export async function dbGetOrgInviteByToken(token: string): Promise<DbOrgInvite | null> {
+  const rows = await sql<DbOrgInvite[]>`
+    SELECT * FROM org_invites WHERE token = ${token} AND accepted_at IS NULL AND expires_at > NOW()`;
+  return rows[0] || null;
+}
+
+export async function dbAcceptOrgInvite(id: string): Promise<boolean> {
+  const result = await sql`UPDATE org_invites SET accepted_at = NOW() WHERE id = ${id}`;
+  return result.count > 0;
+}
+
+export async function dbDeleteOrgInvite(id: string): Promise<boolean> {
+  const result = await sql`DELETE FROM org_invites WHERE id = ${id}`;
+  return result.count > 0;
 }

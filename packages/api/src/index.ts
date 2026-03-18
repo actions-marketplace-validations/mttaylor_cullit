@@ -32,7 +32,13 @@ import {
   recordUsageEvent, getUsageStats, getMonthlyGenerationCount,
   type HistoryEntry,
 } from './store.js';
-import { migrate, dbPublishRelease, dbGetReleases, dbGetProjectCount, dbDeleteRelease, closeDb, sql } from './db.js';
+import { migrate, dbPublishRelease, dbGetReleases, dbGetProjectCount, dbDeleteRelease, closeDb, sql,
+  dbCreateDraft, dbGetDraft, dbListDrafts, dbUpdateDraft, dbUpdateDraftStatus, dbDeleteDraft,
+  dbCreateRevision, dbGetRevisions, dbGetRevisionCount,
+  dbGetProjectSettings, dbUpsertProjectSettings, dbListProjectSettings,
+  dbCreateOrgInvite, dbListOrgInvites, dbDeleteOrgInvite, dbAcceptOrgInvite, dbGetOrgInviteByToken,
+  type DraftStatus,
+} from './db.js';
 import { handleCheckout, handleBillingPortal, handleGetSubscription, handleStripeWebhook, isStripeConfigured } from './billing.js';
 import { sendSubscriptionConfirmed, sendPaymentFailed } from './email.js';
 import { log } from './logger.js';
@@ -759,6 +765,366 @@ async function handleGetAnalytics(req: IncomingMessage, res: ServerResponse): Pr
   });
 }
 
+// --- Draft Workflow Endpoints ---
+
+const VALID_DRAFT_STATUSES = new Set(['draft', 'submitted', 'approved', 'published']);
+
+async function handleCreateDraft(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+
+  // Team feature: require team or higher tier
+  const tier = getEffectiveTier(user);
+  if (tier !== 'team' && tier !== 'enterprise') {
+    json(res, 403, { error: 'Release drafts require a Team plan', upgrade: 'https://cullit.io/pricing' }); return;
+  }
+
+  const raw = await readBody(req);
+  let body: any;
+  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
+
+  if (!body.project || typeof body.project !== 'string') {
+    json(res, 400, { error: '"project" is required' }); return;
+  }
+  if (!/^[a-zA-Z0-9_-]{1,64}$/.test(body.project)) {
+    json(res, 400, { error: '"project" must be 1-64 alphanumeric characters, hyphens, or underscores' }); return;
+  }
+
+  const draft = await dbCreateDraft({
+    id: randomBytes(12).toString('hex'),
+    orgId: user.orgId,
+    userId: user.id,
+    project: body.project,
+    version: String(body.version || '').slice(0, 64),
+    sourceType: body.sourceType || 'local',
+    provider: body.provider || 'none',
+    model: body.model || '',
+    audience: body.audience || 'developer',
+    tone: body.tone || 'professional',
+    notesJson: Array.isArray(body.notes) ? body.notes.slice(0, 200) : [],
+    formattedMd: String(body.formattedMd || '').slice(0, 50_000),
+    formattedHtml: String(body.formattedHtml || '').slice(0, 100_000),
+    rawInputsJson: body.rawInputs || null,
+    createdBy: user.id,
+  });
+
+  json(res, 201, { draft });
+}
+
+async function handleListDrafts(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+
+  const url = new URL(req.url || '/', `http://localhost:${PORT}`);
+  const rawLimit = parseInt(url.searchParams.get('limit') || '20', 10);
+  const limit = Math.max(1, Math.min(isNaN(rawLimit) ? 20 : rawLimit, 100));
+  const rawOffset = parseInt(url.searchParams.get('offset') || '0', 10);
+  const offset = Math.max(0, isNaN(rawOffset) ? 0 : rawOffset);
+  const statusFilter = url.searchParams.get('status') || undefined;
+  if (statusFilter && !VALID_DRAFT_STATUSES.has(statusFilter)) {
+    json(res, 400, { error: 'Invalid status filter' }); return;
+  }
+
+  const result = await dbListDrafts({
+    userId: user.id,
+    orgId: user.orgId || undefined,
+    status: statusFilter,
+    limit,
+    offset,
+  });
+
+  json(res, 200, { drafts: result.drafts, total: result.total, limit, offset });
+}
+
+async function handleGetDraft(req: IncomingMessage, res: ServerResponse, draftId: string): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+
+  const draft = await dbGetDraft(draftId);
+  if (!draft) { json(res, 404, { error: 'Draft not found' }); return; }
+
+  // Access check: own draft or same org
+  if (draft.user_id !== user.id && draft.org_id !== user.orgId) {
+    json(res, 403, { error: 'Access denied' }); return;
+  }
+
+  const revisions = await dbGetRevisions(draftId);
+  json(res, 200, { draft, revisions });
+}
+
+async function handleUpdateDraft(req: IncomingMessage, res: ServerResponse, draftId: string): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+
+  const draft = await dbGetDraft(draftId);
+  if (!draft) { json(res, 404, { error: 'Draft not found' }); return; }
+
+  // Only draft owner or org admin can edit
+  if (draft.user_id !== user.id && (draft.org_id !== user.orgId || user.role === 'member')) {
+    json(res, 403, { error: 'Access denied' }); return;
+  }
+
+  if (draft.status === 'published') {
+    json(res, 409, { error: 'Cannot edit a published draft' }); return;
+  }
+
+  const raw = await readBody(req);
+  let body: any;
+  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
+
+  // Save revision before updating
+  const revisionNum = await dbGetRevisionCount(draftId);
+  await dbCreateRevision({
+    id: randomBytes(12).toString('hex'),
+    draftId,
+    revisionNumber: revisionNum + 1,
+    notesJson: typeof draft.notes_json === 'string' ? JSON.parse(draft.notes_json as string) : (draft.notes_json || []),
+    formattedMd: draft.formatted_md,
+    formattedHtml: draft.formatted_html,
+    changedBy: user.id,
+  });
+
+  const updated = await dbUpdateDraft(draftId, {
+    version: body.version,
+    notesJson: Array.isArray(body.notes) ? body.notes.slice(0, 200) : undefined,
+    formattedMd: body.formattedMd ? String(body.formattedMd).slice(0, 50_000) : undefined,
+    formattedHtml: body.formattedHtml ? String(body.formattedHtml).slice(0, 100_000) : undefined,
+    audience: body.audience,
+    tone: body.tone,
+  });
+
+  json(res, 200, { draft: updated });
+}
+
+async function handleDraftSubmit(req: IncomingMessage, res: ServerResponse, draftId: string): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+
+  const draft = await dbGetDraft(draftId);
+  if (!draft) { json(res, 404, { error: 'Draft not found' }); return; }
+  if (draft.user_id !== user.id && draft.org_id !== user.orgId) {
+    json(res, 403, { error: 'Access denied' }); return;
+  }
+  if (draft.status !== 'draft') {
+    json(res, 409, { error: 'Draft must be in "draft" status to submit for review' }); return;
+  }
+
+  const updated = await dbUpdateDraftStatus(draftId, 'submitted');
+  json(res, 200, { draft: updated });
+}
+
+async function handleDraftApprove(req: IncomingMessage, res: ServerResponse, draftId: string): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+
+  // Only owner or admin can approve
+  if (user.role !== 'owner' && user.role !== 'admin') {
+    json(res, 403, { error: 'Only org owners and admins can approve drafts' }); return;
+  }
+
+  const draft = await dbGetDraft(draftId);
+  if (!draft) { json(res, 404, { error: 'Draft not found' }); return; }
+  if (draft.org_id !== user.orgId) {
+    json(res, 403, { error: 'Access denied' }); return;
+  }
+  if (draft.status !== 'submitted') {
+    json(res, 409, { error: 'Draft must be in "submitted" status to approve' }); return;
+  }
+
+  const updated = await dbUpdateDraftStatus(draftId, 'approved', user.id);
+  json(res, 200, { draft: updated });
+}
+
+async function handleDraftPublish(req: IncomingMessage, res: ServerResponse, draftId: string): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+
+  // Only owner or admin can publish
+  if (user.role !== 'owner' && user.role !== 'admin') {
+    json(res, 403, { error: 'Only org owners and admins can publish drafts' }); return;
+  }
+
+  const draft = await dbGetDraft(draftId);
+  if (!draft) { json(res, 404, { error: 'Draft not found' }); return; }
+  if (draft.org_id !== user.orgId) {
+    json(res, 403, { error: 'Access denied' }); return;
+  }
+  if (draft.status !== 'approved') {
+    json(res, 409, { error: 'Draft must be approved before publishing' }); return;
+  }
+
+  // Publish to changelog
+  if (draft.version) {
+    await dbPublishRelease(draft.project, {
+      version: draft.version,
+      date: new Date().toISOString().split('T')[0],
+      summary: draft.formatted_md.slice(0, 2000),
+      changes: typeof draft.notes_json === 'string' ? JSON.parse(draft.notes_json as string) : (draft.notes_json as any[]),
+      contributors: [],
+      formattedMd: draft.formatted_md,
+      formattedHtml: draft.formatted_html,
+    });
+  }
+
+  const updated = await dbUpdateDraftStatus(draftId, 'published');
+  json(res, 200, { draft: updated });
+}
+
+// --- Project Settings Endpoints ---
+
+async function handleGetProjectSettings(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+
+  const settings = await dbListProjectSettings(user.id, user.orgId);
+  json(res, 200, { settings });
+}
+
+async function handlePutProjectSettings(req: IncomingMessage, res: ServerResponse, project: string): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+
+  if (!/^[a-zA-Z0-9_-]{1,64}$/.test(project)) {
+    json(res, 400, { error: 'Invalid project slug' }); return;
+  }
+
+  const raw = await readBody(req);
+  let body: any;
+  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
+
+  const existing = await dbGetProjectSettings(user.id, project, user.orgId);
+
+  const settings = await dbUpsertProjectSettings({
+    id: existing?.id || randomBytes(12).toString('hex'),
+    orgId: user.orgId,
+    userId: user.id,
+    project,
+    defaultSource: body.defaultSource,
+    defaultProvider: body.defaultProvider,
+    defaultModel: body.defaultModel,
+    defaultAudience: body.defaultAudience,
+    defaultTone: body.defaultTone,
+    categoriesJson: Array.isArray(body.categories) ? body.categories.slice(0, 20) : undefined,
+    publishTargetsJson: Array.isArray(body.publishTargets) ? body.publishTargets.slice(0, 10) : undefined,
+    widgetConfigJson: body.widgetConfig || undefined,
+  });
+
+  json(res, 200, { settings });
+}
+
+// --- Org Invite Endpoints ---
+
+async function handleCreateOrgInvite(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  if (!user.orgId || (user.role !== 'owner' && user.role !== 'admin')) {
+    json(res, 403, { error: 'Must be org owner or admin to create invites' }); return;
+  }
+
+  const raw = await readBody(req);
+  let body: { email?: string; role?: string };
+  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
+
+  if (!body.email || typeof body.email !== 'string' || !body.email.includes('@')) {
+    json(res, 400, { error: 'Valid email is required' }); return;
+  }
+
+  const role = body.role === 'admin' ? 'admin' : 'member';
+  if (role === 'admin' && user.role !== 'owner') {
+    json(res, 403, { error: 'Only the org owner can create admin invites' }); return;
+  }
+
+  const invite = await dbCreateOrgInvite({
+    id: randomBytes(12).toString('hex'),
+    orgId: user.orgId,
+    email: body.email.toLowerCase().trim(),
+    role,
+    token: randomBytes(24).toString('hex'),
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+    createdBy: user.id,
+  });
+
+  json(res, 201, { invite: { id: invite.id, email: invite.email, role: invite.role, expiresAt: invite.expires_at } });
+}
+
+async function handleListOrgInvites(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  if (!user.orgId || (user.role !== 'owner' && user.role !== 'admin')) {
+    json(res, 403, { error: 'Must be org owner or admin to list invites' }); return;
+  }
+
+  const invites = await dbListOrgInvites(user.orgId);
+  json(res, 200, {
+    invites: invites.map(i => ({
+      id: i.id, email: i.email, role: i.role, expiresAt: i.expires_at, createdAt: i.created_at,
+    })),
+  });
+}
+
+async function handleDeleteOrgInvite(req: IncomingMessage, res: ServerResponse, inviteId: string): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  if (!user.orgId || (user.role !== 'owner' && user.role !== 'admin')) {
+    json(res, 403, { error: 'Must be org owner or admin to revoke invites' }); return;
+  }
+
+  const ok = await dbDeleteOrgInvite(inviteId);
+  if (!ok) { json(res, 404, { error: 'Invite not found' }); return; }
+  json(res, 200, { ok: true });
+}
+
+async function handleUpdateOrgMemberRole(req: IncomingMessage, res: ServerResponse, memberId: string): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  if (!user.orgId || user.role !== 'owner') {
+    json(res, 403, { error: 'Only the org owner can change member roles' }); return;
+  }
+
+  const raw = await readBody(req);
+  let body: { role?: string };
+  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
+
+  const role = body.role;
+  if (role !== 'admin' && role !== 'member') {
+    json(res, 400, { error: 'Role must be "admin" or "member"' }); return;
+  }
+
+  // Can't change own role
+  if (memberId === user.id) {
+    json(res, 409, { error: 'Cannot change your own role' }); return;
+  }
+
+  // Update the member's role via the org_members table directly
+  if (useDb) {
+    await sql!`UPDATE org_members SET role = ${role} WHERE org_id = ${user.orgId} AND user_id = ${memberId}`;
+    await sql!`UPDATE users SET role = ${role} WHERE id = ${memberId} AND org_id = ${user.orgId}`;
+  }
+
+  json(res, 200, { ok: true, userId: memberId, role });
+}
+
+async function handleGetOrgUsage(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  if (!user.orgId) { json(res, 200, { usage: null }); return; }
+
+  const stats = await getUsageStats(user.orgId, 30);
+  const monthlyCount = await getMonthlyGenerationCount(user.orgId);
+  const members = await getOrgMembers(user.orgId);
+  const org = await getOrg(user.orgId);
+  const limits = getTierLimits(org?.tier || 'team');
+
+  json(res, 200, {
+    usage: {
+      ...stats,
+      monthlyGenerations: monthlyCount,
+      limits,
+      seats: { used: members.length, max: org?.maxSeats || 10 },
+    },
+  });
+}
+
 // --- Router ---
 
 const server = createServer(async (req, res) => {
@@ -769,7 +1135,7 @@ const server = createServer(async (req, res) => {
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
       'Access-Control-Allow-Origin': currentCorsOrigin,
-      'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Allow-Credentials': 'true',
       'Access-Control-Max-Age': '86400',
@@ -861,6 +1227,48 @@ const server = createServer(async (req, res) => {
       await handleOrgInvite(req, res);
     } else if (path === '/v1/org/members' && req.method === 'DELETE') {
       await handleOrgRemoveMember(req, res);
+
+    // --- Draft workflow routes ---
+    } else if (path === '/v1/drafts' && req.method === 'POST') {
+      await handleCreateDraft(req, res);
+    } else if (path === '/v1/drafts' && req.method === 'GET') {
+      await handleListDrafts(req, res);
+    } else if (req.method === 'GET' && path.match(/^\/v1\/drafts\/[^/]+$/) && !path.includes('/submit') && !path.includes('/approve') && !path.includes('/publish')) {
+      const draftId = path.split('/')[3];
+      await handleGetDraft(req, res, draftId);
+    } else if (req.method === 'PATCH' && path.match(/^\/v1\/drafts\/[^/]+$/)) {
+      const draftId = path.split('/')[3];
+      await handleUpdateDraft(req, res, draftId);
+    } else if (req.method === 'POST' && path.match(/^\/v1\/drafts\/[^/]+\/submit$/)) {
+      const draftId = path.split('/')[3];
+      await handleDraftSubmit(req, res, draftId);
+    } else if (req.method === 'POST' && path.match(/^\/v1\/drafts\/[^/]+\/approve$/)) {
+      const draftId = path.split('/')[3];
+      await handleDraftApprove(req, res, draftId);
+    } else if (req.method === 'POST' && path.match(/^\/v1\/drafts\/[^/]+\/publish$/)) {
+      const draftId = path.split('/')[3];
+      await handleDraftPublish(req, res, draftId);
+
+    // --- Project settings routes ---
+    } else if (path === '/v1/projects/settings' && req.method === 'GET') {
+      await handleGetProjectSettings(req, res);
+    } else if (req.method === 'PUT' && path.match(/^\/v1\/projects\/[^/]+\/settings$/)) {
+      const project = path.split('/')[3];
+      await handlePutProjectSettings(req, res, project);
+
+    // --- Org invite routes ---
+    } else if (path === '/v1/org/invites' && req.method === 'POST') {
+      await handleCreateOrgInvite(req, res);
+    } else if (path === '/v1/org/invites' && req.method === 'GET') {
+      await handleListOrgInvites(req, res);
+    } else if (req.method === 'DELETE' && path.match(/^\/v1\/org\/invites\/[^/]+$/)) {
+      const inviteId = path.split('/')[4];
+      await handleDeleteOrgInvite(req, res, inviteId);
+    } else if (req.method === 'PATCH' && path.match(/^\/v1\/org\/members\/[^/]+$/)) {
+      const memberId = path.split('/')[4];
+      await handleUpdateOrgMemberRole(req, res, memberId);
+    } else if (path === '/v1/org/usage' && req.method === 'GET') {
+      await handleGetOrgUsage(req, res);
 
     // --- History & Analytics ---
     } else if (path === '/v1/history' && req.method === 'GET') {
