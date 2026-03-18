@@ -285,6 +285,19 @@ jira:
 | `GITHUB_APP_PRIVATE_KEY` | GitHub App (base64 PEM or raw) |
 | `GITHUB_WEBHOOK_SECRET` | GitHub App webhook verification |
 | `CULLIT_APP_PORT` | GitHub App server port (default: 3001) |
+| `CULLIT_API_TOKEN` | Optional bearer token for API auth |
+| `ALLOWED_ORIGINS` | API CORS allowlist |
+| `DATABASE_URL` | Enable PostgreSQL mode for API/dashboard |
+| `GITHUB_CLIENT_ID` | Dashboard GitHub OAuth client id |
+| `GITHUB_CLIENT_SECRET` | Dashboard GitHub OAuth secret |
+| `CULLIT_JWT_SECRET` | Dashboard session signing secret |
+| `CULLIT_BASE_URL` | Public base URL for OAuth callbacks |
+| `CULLIT_TRIAL_DAYS` | Trial duration override (default 14) |
+| `STRIPE_SECRET_KEY` | Stripe billing API key |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature verification |
+| `STRIPE_PRICE_PRO_MONTHLY` | Stripe price id for Pro plan |
+| `STRIPE_PRICE_TEAM_MONTHLY` | Stripe price id for Team plan |
+| `RESEND_API_KEY` | Transactional email delivery |
 
 ## API Endpoints
 
@@ -293,6 +306,36 @@ jira:
 | `GET` | `/health` | Health check (status, version, uptime) |
 | `GET` | `/openapi.json` | OpenAPI 3.1 specification |
 | `POST` | `/generate` | Generate release notes |
+| `POST` | `/v1/generate` | Generate notes with usage and tier enforcement |
+| `GET` | `/auth/me` | Current authenticated dashboard user |
+| `POST` | `/auth/logout` | End dashboard session |
+| `GET` | `/v1/history` | Paginated generation history |
+| `GET` | `/v1/analytics/usage` | Usage analytics and provider breakdown |
+| `POST` | `/v1/drafts` | Create draft (Team+) |
+| `GET` | `/v1/drafts` | List drafts (Team+) |
+| `GET` | `/v1/drafts/:id` | Draft details with revisions |
+| `PATCH` | `/v1/drafts/:id` | Update draft |
+| `DELETE` | `/v1/drafts/:id` | Delete draft |
+| `POST` | `/v1/drafts/:id/submit` | Submit draft for review |
+| `POST` | `/v1/drafts/:id/approve` | Approve draft (owner/admin) |
+| `POST` | `/v1/drafts/:id/publish` | Publish draft to changelog |
+| `GET` | `/v1/projects/settings` | List saved project defaults |
+| `PUT` | `/v1/projects/:project/settings` | Save project defaults |
+| `POST` | `/v1/org/invites` | Create org invite by email |
+| `GET` | `/v1/org/invites` | List pending org invites |
+| `DELETE` | `/v1/org/invites/:id` | Revoke pending org invite |
+| `PATCH` | `/v1/org/members/:userId` | Update org member role |
+| `GET` | `/v1/org/usage` | Team usage and seat summary |
+
+## Dashboard & Tutorials
+
+Cullit includes a hosted dashboard experience with authentication, billing, trial handling, analytics, and team workflows:
+
+- Dashboard: `site/dashboard.html`
+- Docs: `site/docs.html`
+- Interactive tutorial: `site/tutorial.html`
+- Setup guide: `site/setup.html`
+- Pricing: `site/pricing.html`
 
 ## Roadmap
 
@@ -324,6 +367,12 @@ PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 ## Security
 
 See [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
+
+## Legal
+
+- [PRIVACY.md](PRIVACY.md)
+- [TERMS.md](TERMS.md)
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 
 ## License
 

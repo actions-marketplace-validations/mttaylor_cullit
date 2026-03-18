@@ -1029,7 +1029,7 @@ formats, and several performance improvements.</span>
 
 <h2 id="team-dashboard">Team Dashboard</h2>
 
-<p>The Cullit Dashboard (v1.6.0+) provides GitHub OAuth login, persistent generation history, usage analytics, and team/org management.</p>
+<p>The Cullit Dashboard (v1.8.0+) provides GitHub OAuth login, persistent generation history, usage analytics, team/org management, release drafts, and project templates.</p>
 
 <h3 id="team-auth">Authentication</h3>
 <p>The dashboard uses <strong>GitHub OAuth 2.0</strong> for authentication. To enable it:</p>
@@ -1049,7 +1049,7 @@ formats, and several performance improvements.</span>
 <ul>
   <li>Source range (from/to), provider, change count, and timestamp</li>
   <li>Paginated browsing with clickable entries to replay a generation</li>
-  <li>Up to 200 entries per user</li>
+  <li>Per-user history outside orgs and org-shared visibility inside teams</li>
 </ul>
 <p>API: <code>GET /v1/history?limit=20&amp;offset=0</code> (requires authentication)</p>
 
@@ -1067,12 +1067,36 @@ formats, and several performance improvements.</span>
 <ul>
   <li><code>POST /v1/org</code> &mdash; create an org (you become the owner)</li>
   <li><code>GET /v1/org</code> &mdash; view your org and members</li>
-  <li><code>POST /v1/org/invite</code> &mdash; add a member (owner/admin only)</li>
+  <li><code>POST /v1/org/invite</code> &mdash; add a member directly by user id (owner/admin only)</li>
+  <li><code>POST /v1/org/invites</code> &mdash; create email invite (owner/admin only)</li>
+  <li><code>GET /v1/org/invites</code> &mdash; list pending invites</li>
+  <li><code>DELETE /v1/org/invites/:id</code> &mdash; revoke invite</li>
+  <li><code>PATCH /v1/org/members/:userId</code> &mdash; update member role (owner only)</li>
   <li><code>DELETE /v1/org/members</code> &mdash; remove a member (owner/admin only)</li>
+  <li><code>GET /v1/org/usage</code> &mdash; org usage and seat snapshot</li>
 </ul>
 <p>Team tier supports up to 10 seats. All org members share analytics and usage limits.</p>
 
-<div class="tip">The Team Dashboard is available on the <strong>Team</strong> tier ($49/mo). Individual users can access history and analytics on the <strong>Pro</strong> tier ($9/mo).</div>
+<h3 id="team-drafts">Release Draft Workflow</h3>
+<p>Team plans unlock collaborative release drafting and approvals:</p>
+<ul>
+  <li><code>POST /v1/drafts</code> &mdash; create a draft from generated output</li>
+  <li><code>GET /v1/drafts</code> &mdash; list drafts with status filter and pagination</li>
+  <li><code>GET /v1/drafts/:id</code> &mdash; retrieve draft detail plus revisions</li>
+  <li><code>PATCH /v1/drafts/:id</code> &mdash; update draft content</li>
+  <li><code>DELETE /v1/drafts/:id</code> &mdash; delete non-published draft</li>
+  <li><code>POST /v1/drafts/:id/submit</code>, <code>/approve</code>, <code>/publish</code> &mdash; workflow transitions</li>
+</ul>
+<p>Publishing a draft writes the approved result to hosted changelog entries.</p>
+
+<h3 id="team-settings">Project Templates</h3>
+<p>Save project-level defaults for faster generation:</p>
+<ul>
+  <li><code>GET /v1/projects/settings</code> &mdash; list project defaults</li>
+  <li><code>PUT /v1/projects/:project/settings</code> &mdash; upsert defaults (source, provider, audience, tone, categories)</li>
+</ul>
+
+<div class="tip">The Team Dashboard workflow is available on the <strong>Team</strong> tier ($19/seat/month). Individual users can access history and analytics on the <strong>Pro</strong> tier ($9/month), and new users receive a 14-day Pro trial.</div>
 
 <div class="section-divider"></div>
 

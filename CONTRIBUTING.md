@@ -121,6 +121,17 @@ Prefixes: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `perf`, `ci`, `bui
 - Use conventional commit format for PR titles
 - Fill out the PR description explaining what changed and why
 
+### Documentation and Legal Updates
+
+When behavior, pricing, tier limits, endpoints, or auth flows change, update docs in the same PR:
+
+- Root docs: `README.md`, `CONTRIBUTING.md`, `SECURITY.md`
+- Website docs/tutorial: `site/docs.html`, `site/tutorial.html`, `site/setup.html`
+- Legal markdown: `PRIVACY.md`, `TERMS.md`
+- Website legal pages: `site/privacy.html`, `site/terms.html`
+
+Avoid shipping feature changes without matching docs/legal updates.
+
 ## Issues
 
 Found a bug or have a feature request? Open an issue on GitHub.

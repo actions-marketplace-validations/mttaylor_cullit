@@ -1,6 +1,6 @@
 {
   "name": "cullit",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "type": "module",
   "description": "Cull the noise from your releases. AI-powered release notes from the CLI.",
   "license": "MIT",
@@ -15,7 +15,7 @@
     "cullit": "./dist/index.js"
   },
   "main": "./dist/index.js",
-  "files": ["dist"],
+  "files": ["dist", "README.md"],
   "engines": { "node": ">=18" },
   "scripts": {
     "build": "tsup src/index.ts --format esm --clean",

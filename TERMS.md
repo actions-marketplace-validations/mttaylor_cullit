@@ -1,47 +1,71 @@
 # Terms of Service
 
-**Last updated:** March 12, 2026
+**Last updated:** March 18, 2026
 
 ## 1. Acceptance
 
-By using Cullit ("the Software"), you agree to these terms. Cullit is open-source software provided under the MIT License.
+By using Cullit (the "Service"), you agree to these Terms.
 
-## 2. License
+Cullit includes open-source packages and hosted services (such as the dashboard and billing flows). Open-source code is provided under MIT; hosted service usage is governed by these Terms.
 
-Cullit is licensed under the [MIT License](LICENSE). You are free to use, modify, and distribute the software in accordance with that license.
+## 2. Open-Source License
 
-## 3. BYOK (Bring Your Own Key)
+Cullit source code is licensed under the [MIT License](LICENSE). Your rights to use, modify, and distribute source code are governed by MIT.
 
-Cullit requires API keys from third-party AI providers (Anthropic, OpenAI, Google, etc.). You are responsible for:
+## 3. Account and Access
 
-- Obtaining and managing your own API keys
-- Complying with the terms of service of your chosen AI provider
-- Any costs incurred from API usage with those providers
+When using hosted features (for example dashboard login, billing, and team workflows), you are responsible for:
 
-## 4. No Warranty
+- Maintaining access to your GitHub account used for authentication
+- Protecting API keys and credentials associated with your environment
+- Keeping team membership and permissions accurate
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+## 4. BYOK (Bring Your Own Key)
 
-## 5. Limitation of Liability
+Cullit supports AI provider keys you supply (Anthropic, OpenAI, Google, and others). You are responsible for:
 
-IN NO EVENT SHALL THE AUTHORS, COPYRIGHT HOLDERS, OR CULLIT BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+- Obtaining and managing your own provider credentials
+- Complying with provider terms and policies
+- All provider-side usage fees and charges
 
-## 6. Data Processing
+## 5. Billing and Subscriptions
 
-- Cullit processes data locally on your machine or infrastructure
-- Data is sent only to AI providers you explicitly configure
-- See our [Privacy Policy](PRIVACY.md) for full details
+Paid plans (such as Pro, Team, and Enterprise) may include recurring billing through Stripe.
 
-## 7. Enterprise Licensing
+- You authorize recurring charges for selected paid plans
+- Subscription changes, cancellations, and renewals are managed via Stripe/customer portal flows
+- Plan limits, seat limits, and feature access may vary by tier
 
-For enterprise licensing, SLAs, or custom agreements, contact **matt@cullit.io**.
+## 6. Acceptable Use
 
-## 8. Changes
+You agree not to use Cullit for unlawful activity, abuse of third-party APIs, or any behavior that violates applicable law or third-party platform terms.
 
-We reserve the right to modify these terms. Changes will be reflected in this document with an updated date.
+## 7. No Warranty
+
+THE SOFTWARE AND SERVICE ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+## 8. Limitation of Liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, CULLIT, ITS AUTHORS, AND CONTRIBUTORS SHALL NOT BE LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR EXEMPLARY DAMAGES, OR FOR LOSS OF PROFITS, DATA, OR GOODWILL.
+
+## 9. Data Processing
+
+Cullit processes data from your configured sources and selected AI providers.
+
+- Data handling differs across local CLI, self-hosted API, and hosted dashboard modes
+- See [PRIVACY.md](PRIVACY.md) for current details
+
+## 10. Enterprise Terms
+
+Enterprise plans may be governed by separate agreements (for example SLA, security questionnaire terms, procurement terms).
+
+## 11. Changes
+
+We may update these Terms from time to time. Continued use after updates constitutes acceptance of the revised Terms.
 
 ## Contact
 
 **Cullit**
-matt@cullit.io
-https://cullit.io
+
+- matt@cullit.io
+- https://cullit.io

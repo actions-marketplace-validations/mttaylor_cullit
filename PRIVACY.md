@@ -1,57 +1,85 @@
 # Privacy Policy
 
-**Last updated:** March 12, 2026
+**Last updated:** March 18, 2026
 
 ## Overview
 
-Cullit is an open-source CLI tool and GitHub Action for generating AI-powered release notes. This policy describes how Cullit handles data.
+Cullit is an open-source release notes platform (CLI, API server, GitHub Action, GitHub App, and web dashboard). This policy explains what data is processed, where it is processed, and when Cullit stores data.
 
 ## What Data Cullit Processes
 
-When you run Cullit, it processes:
+Depending on the features you enable, Cullit may process:
 
-- **Git commit messages** — author names, commit messages, SHAs, and timestamps from your local repository
-- **Jira/Linear metadata** — issue titles, descriptions, labels, and statuses (only when you explicitly configure these sources)
-- **AI API calls** — the above data is sent to your configured AI provider to generate release notes
+- **Source control metadata**: commit messages, SHAs, author names, tags, and timestamps
+- **Issue tracker metadata**: Jira/Linear issue titles, descriptions, labels, and statuses
+- **Generated release content**: summaries, categorized notes, formatted markdown/html output
+- **Team workflow metadata**: drafts, revisions, project settings, org membership and invites
+- **Billing/account metadata**: subscription state and customer identifiers from Stripe
 
-## What Cullit Does NOT Collect
+Cullit only processes data you explicitly provide through configured sources and API calls.
 
-- **No telemetry** — Cullit does not phone home, track usage, or collect analytics
-- **No user accounts** — There are no accounts, logins, or user profiles
-- **No data storage** — Cullit does not store your data on any server. All processing is local or directly between you and your AI provider
-- **No cookies or tracking** — The cullit.io website is a static landing page with no tracking scripts
+## Product Modes and Storage Behavior
+
+### CLI / local mode
+
+- Runs on your machine
+- Uses your local files, environment variables, and configured provider endpoints
+- Does not require a Cullit-hosted account
+
+### Self-hosted API mode
+
+- You control infrastructure, logs, and retention
+- Data is stored in your configured database when enabled (`DATABASE_URL`)
+- You are responsible for access control, backup, and compliance for your deployment
+
+### Hosted dashboard mode
+
+- Uses GitHub OAuth login and session cookies for authentication
+- Stores account, usage, team, and draft workflow records required for app functionality
+- Uses Stripe for subscription and billing state
+
+## Cookies and Local Storage
+
+- Cullit uses an authentication session cookie (`cullit_session`) for dashboard login
+- Cullit uses browser local storage for non-sensitive UX preferences (for example API URL defaults)
+- Cullit does not use advertising or third-party tracking cookies
 
 ## Third-Party AI Providers
 
-Cullit sends your commit/ticket data to the AI provider you configure. Each provider has its own privacy policy:
+Cullit sends release input data to the provider you configure. Each provider has its own privacy policy:
 
 | Provider | Privacy Policy |
 |----------|---------------|
 | Anthropic (Claude) | [anthropic.com/privacy](https://www.anthropic.com/privacy) |
 | OpenAI | [openai.com/privacy](https://openai.com/privacy) |
 | Google (Gemini) | [ai.google/privacy](https://ai.google/responsibility/privacy/) |
-| Ollama | Self-hosted — data stays on your machine |
-| OpenClaw | Self-hosted — data stays on your infrastructure |
+| Ollama | Self-hosted (your environment) |
+| OpenClaw | Self-hosted (your infrastructure) |
 
-**Your choice of provider determines where your data goes.** For maximum privacy, use Ollama or OpenClaw to keep everything on-premise.
+Your provider choice determines where model inference data is processed.
 
-## API Keys
+## Billing and Payment Data
 
-- API keys are loaded from environment variables or local config files
-- Keys are used only for the duration of the API call and are never persisted, logged, or transmitted elsewhere
-- In CI/CD environments, use encrypted secrets (e.g., GitHub Actions secrets)
+- Billing is processed through Stripe
+- Cullit stores subscription state and Stripe identifiers needed to manage plans
+- Full payment card data is handled by Stripe, not stored by Cullit
 
-## Self-Hosted API Server
+## API Keys and Secrets
 
-If you deploy the Cullit API server:
+- Secrets are loaded from environment variables or local config
+- Do not commit secrets into source control
+- In CI/CD, use secret managers or encrypted repository secrets
 
-- You are responsible for securing the server and any data it processes
-- The API server does not include authentication by default — add it via a reverse proxy or middleware for production use
-- No data is sent to Cullit from your self-hosted instance
+## Security and Retention
 
-## Open Source
+- Access controls and retention depend on deployment mode (local, self-hosted, or hosted dashboard)
+- We recommend least-privilege tokens and short retention windows for logs containing operational metadata
 
-Cullit is fully open source under the MIT license. You can audit the entire codebase at [github.com/mttaylor/cullit](https://github.com/mttaylor/cullit).
+For vulnerability reporting, see [SECURITY.md](SECURITY.md).
+
+## Open Source Transparency
+
+Cullit is open source under MIT. You can audit implementation details at [github.com/mttaylor/cullit](https://github.com/mttaylor/cullit).
 
 ## Contact
 
@@ -59,4 +87,4 @@ For privacy questions: **matt@cullit.io**
 
 ## Changes
 
-We may update this policy as Cullit evolves. Changes will be committed to the repository with a clear changelog.
+We may update this policy as Cullit evolves. Material updates will be reflected by updating the date above.
