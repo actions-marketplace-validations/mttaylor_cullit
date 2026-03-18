@@ -1,8 +1,8 @@
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import type { CullConfig, PublishTarget, RepoSource } from './types';
+import type { CullConfig, PublishTarget, RepoSource, TemplateProfile } from './types';
 
-export type { AIProvider, Audience, Tone, OutputFormat, PublisherType, EnrichmentType, AIConfig, SourceConfig, PublishTarget, JiraConfig, LinearConfig, OpenClawConfig, GitLabConfig, BitbucketConfig, ConfluenceConfig, NotionConfig, CullConfig, RepoSource } from './types';
+export type { AIProvider, Audience, Tone, OutputFormat, PublisherType, EnrichmentType, AIConfig, SourceConfig, PublishTarget, JiraConfig, LinearConfig, OpenClawConfig, GitLabConfig, BitbucketConfig, ConfluenceConfig, NotionConfig, CullConfig, RepoSource, TemplateProfile, TemplateConfig } from './types';
 
 const DEFAULT_CATEGORIES = ['features', 'fixes', 'breaking', 'improvements', 'chores'];
 
@@ -187,6 +187,7 @@ function resolveEnvVars(obj: any): any {
 }
 
 function mergeWithDefaults(parsed: Record<string, any>): CullConfig {
+  const normalizedTemplates = normalizeTemplateProfiles(parsed.templates);
   return {
     ai: {
       ...DEFAULT_CONFIG.ai,
@@ -197,6 +198,8 @@ function mergeWithDefaults(parsed: Record<string, any>): CullConfig {
       ...(parsed.source || {}),
     },
     publish: normalizePublishTargets(parsed.publish || DEFAULT_CONFIG.publish),
+    template: normalizeTemplateConfig(parsed.template),
+    ...(normalizedTemplates.length ? { templates: normalizedTemplates } : {}),
     jira: parsed.jira,
     linear: parsed.linear,
     openclaw: parsed.openclaw,
@@ -253,6 +256,71 @@ function normalizePublishTargets(targets: any[]): PublishTarget[] {
       normalized.databaseId = t.database_id;
       delete normalized['database_id'];
     }
+    if (t.template_profile && !t.templateProfile) {
+      normalized.templateProfile = t.template_profile;
+      delete normalized['template_profile'];
+    }
+    if (Array.isArray(t.section_order) && !t.sectionOrder) {
+      normalized.sectionOrder = t.section_order;
+      delete normalized['section_order'];
+    }
     return normalized;
   });
+}
+
+function normalizeTemplateConfig(template: any): CullConfig['template'] {
+  if (!template || typeof template !== 'object' || Array.isArray(template)) return undefined;
+  return {
+    default: typeof template.default === 'string' ? template.default : undefined,
+    sectionOrder: Array.isArray(template.sectionOrder)
+      ? template.sectionOrder
+      : Array.isArray(template.section_order)
+        ? template.section_order
+        : undefined,
+    includeContributors: typeof template.includeContributors === 'boolean'
+      ? template.includeContributors
+      : typeof template.include_contributors === 'boolean'
+        ? template.include_contributors
+        : undefined,
+    includeMetadata: typeof template.includeMetadata === 'boolean'
+      ? template.includeMetadata
+      : typeof template.include_metadata === 'boolean'
+        ? template.include_metadata
+        : undefined,
+    summaryPrefix: typeof template.summaryPrefix === 'string'
+      ? template.summaryPrefix
+      : typeof template.summary_prefix === 'string'
+        ? template.summary_prefix
+        : undefined,
+  };
+}
+
+function normalizeTemplateProfiles(templates: any): TemplateProfile[] {
+  if (!Array.isArray(templates)) return [];
+  return templates
+    .filter(t => t && typeof t === 'object' && typeof t.name === 'string')
+    .map(t => ({
+      name: t.name,
+      format: typeof t.format === 'string' ? t.format : undefined,
+      sectionOrder: Array.isArray(t.sectionOrder)
+        ? t.sectionOrder
+        : Array.isArray(t.section_order)
+          ? t.section_order
+          : undefined,
+      includeContributors: typeof t.includeContributors === 'boolean'
+        ? t.includeContributors
+        : typeof t.include_contributors === 'boolean'
+          ? t.include_contributors
+          : undefined,
+      includeMetadata: typeof t.includeMetadata === 'boolean'
+        ? t.includeMetadata
+        : typeof t.include_metadata === 'boolean'
+          ? t.include_metadata
+          : undefined,
+      summaryPrefix: typeof t.summaryPrefix === 'string'
+        ? t.summaryPrefix
+        : typeof t.summary_prefix === 'string'
+          ? t.summary_prefix
+          : undefined,
+    }));
 }

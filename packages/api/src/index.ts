@@ -1060,6 +1060,25 @@ async function handlePutProjectSettings(req: IncomingMessage, res: ServerRespons
     publishTargets = publishTargetsInput.slice(0, 10);
   }
 
+  const templateInput = body.template || {};
+  const templateDefaultFormat = templateInput.defaultFormat ?? templateInput.default_format ?? body.defaultFormat ?? body.default_format;
+  const templateProfile = templateInput.profile ?? templateInput.templateProfile ?? templateInput.template_profile ?? body.templateProfile ?? body.template_profile;
+  const sectionOrderInput = templateInput.sectionOrder ?? templateInput.section_order ?? body.sectionOrder ?? body.section_order;
+  const templateSectionOrder = Array.isArray(sectionOrderInput)
+    ? sectionOrderInput.slice(0, 20).filter((x: unknown) => typeof x === 'string')
+    : undefined;
+
+  const widgetConfig = (body.widgetConfig && typeof body.widgetConfig === 'object') ? { ...body.widgetConfig } : {};
+  const currentTemplate = (widgetConfig as any).template && typeof (widgetConfig as any).template === 'object'
+    ? { ...(widgetConfig as any).template }
+    : {};
+  if (typeof templateDefaultFormat === 'string') currentTemplate.defaultFormat = templateDefaultFormat;
+  if (typeof templateProfile === 'string') currentTemplate.profile = templateProfile;
+  if (templateSectionOrder) currentTemplate.sectionOrder = templateSectionOrder;
+  if (Object.keys(currentTemplate).length) {
+    (widgetConfig as any).template = currentTemplate;
+  }
+
   const existing = await dbGetProjectSettings(user.id, project, user.orgId);
 
   const settings = await dbUpsertProjectSettings({
@@ -1074,7 +1093,7 @@ async function handlePutProjectSettings(req: IncomingMessage, res: ServerRespons
     defaultTone,
     categoriesJson: categories,
     publishTargetsJson: publishTargets,
-    widgetConfigJson: body.widgetConfig || undefined,
+    widgetConfigJson: Object.keys(widgetConfig).length ? widgetConfig : undefined,
   });
 
   json(res, 200, { settings });

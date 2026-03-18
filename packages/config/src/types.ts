@@ -33,7 +33,27 @@ export interface PublishTarget {
   channel?: string;     // Slack channel
   webhookUrl?: string;  // Discord/Slack webhook
   path?: string;        // File output path
+  format?: OutputFormat; // Optional per-target format override
+  templateProfile?: string; // Optional named template profile override
+  sectionOrder?: string[]; // Optional per-target section order override
   [key: string]: unknown; // Extensible for custom publishers
+}
+
+export interface TemplateProfile {
+  name: string;
+  format?: OutputFormat;
+  sectionOrder?: string[];
+  includeContributors?: boolean;
+  includeMetadata?: boolean;
+  summaryPrefix?: string;
+}
+
+export interface TemplateConfig {
+  default?: string;
+  sectionOrder?: string[];
+  includeContributors?: boolean;
+  includeMetadata?: boolean;
+  summaryPrefix?: string;
 }
 
 export interface JiraConfig {
@@ -83,6 +103,8 @@ export interface CullConfig {
   ai: AIConfig;
   source: SourceConfig;
   publish: PublishTarget[];
+  template?: TemplateConfig;
+  templates?: TemplateProfile[];
   repos?: RepoSource[];  // multi-repo aggregation
   jira?: JiraConfig;
   linear?: LinearConfig;

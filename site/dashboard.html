@@ -1213,7 +1213,7 @@
               <div>
                 <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.25rem">Default Provider</label>
                 <select id="ps-provider" style="width:100%;padding:0.3rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
-                  <option value="openai">OpenAI</option><option value="anthropic">Anthropic</option><option value="ollama">Ollama</option>
+                  <option value="none">None (template)</option><option value="openai">OpenAI</option><option value="anthropic">Anthropic</option><option value="gemini">Gemini</option><option value="ollama">Ollama</option><option value="openclaw">OpenClaw</option>
                 </select>
               </div>
               <div>
@@ -1223,18 +1223,36 @@
               <div>
                 <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.25rem">Default Audience</label>
                 <select id="ps-audience" style="width:100%;padding:0.3rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
-                  <option value="developers">Developers</option><option value="users">End Users</option><option value="stakeholders">Stakeholders</option><option value="mixed">Mixed</option>
+                  <option value="developer">Developer</option><option value="end-user">End User</option><option value="executive">Executive</option>
                 </select>
               </div>
               <div>
                 <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.25rem">Default Tone</label>
                 <select id="ps-tone" style="width:100%;padding:0.3rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
-                  <option value="professional">Professional</option><option value="casual">Casual</option><option value="technical">Technical</option><option value="friendly">Friendly</option>
+                  <option value="professional">Professional</option><option value="casual">Casual</option><option value="terse">Terse</option><option value="edgy">Edgy</option><option value="hype">Hype</option><option value="snarky">Snarky</option>
                 </select>
               </div>
               <div>
                 <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.25rem">Categories (comma-separated)</label>
                 <input id="ps-categories" type="text" placeholder="Features, Bug Fixes, Performance" style="width:100%;padding:0.3rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
+              </div>
+              <div>
+                <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.25rem">Default Format</label>
+                <select id="ps-format" style="width:100%;padding:0.3rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
+                  <option value="markdown">Markdown</option><option value="html">HTML</option><option value="html-dark">HTML Dark</option><option value="html-minimal">HTML Minimal</option><option value="html-edgy">HTML Edgy</option><option value="json">JSON</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.25rem">Default Template Profile</label>
+                <input id="ps-template-profile" type="text" placeholder="customer-facing" style="width:100%;padding:0.3rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
+              </div>
+              <div style="grid-column:1 / -1">
+                <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.25rem">Default Section Order (comma-separated)</label>
+                <input id="ps-section-order" type="text" placeholder="breaking, features, improvements, fixes, chores, other" style="width:100%;padding:0.3rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
+              </div>
+              <div style="grid-column:1 / -1">
+                <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.25rem">Publish Targets JSON (optional endpoint overrides)</label>
+                <textarea id="ps-publish-targets" rows="6" placeholder='[{"type":"confluence","format":"html","templateProfile":"customer-facing"}]' style="width:100%;padding:0.45rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.78rem;font-family:'Space Mono',monospace;resize:vertical;box-sizing:border-box"></textarea>
               </div>
             </div>
             <div style="margin-top:1.25rem;display:flex;gap:0.5rem">
@@ -2157,11 +2175,15 @@ async function loadProjectSettings() {
   const project = select.value;
   if (!project || project === '__new__') {
     document.getElementById('ps-source').value = 'local';
-    document.getElementById('ps-provider').value = 'openai';
+    document.getElementById('ps-provider').value = 'none';
     document.getElementById('ps-model').value = '';
-    document.getElementById('ps-audience').value = 'developers';
+    document.getElementById('ps-audience').value = 'developer';
     document.getElementById('ps-tone').value = 'professional';
     document.getElementById('ps-categories').value = '';
+    document.getElementById('ps-format').value = 'markdown';
+    document.getElementById('ps-template-profile').value = '';
+    document.getElementById('ps-section-order').value = '';
+    document.getElementById('ps-publish-targets').value = '';
     return;
   }
   try {
@@ -2170,15 +2192,27 @@ async function loadProjectSettings() {
     const data = await res.json();
     const s = (data.settings || []).find(function(x) { return x.project === project; });
     if (s) {
+      var widgetConfig = typeof s.widget_config_json === 'string'
+        ? JSON.parse(s.widget_config_json)
+        : (s.widget_config_json || {});
+      var templateConfig = widgetConfig && typeof widgetConfig === 'object' ? (widgetConfig.template || {}) : {};
       document.getElementById('ps-source').value = s.default_source || 'local';
-      document.getElementById('ps-provider').value = s.default_provider || 'openai';
+      document.getElementById('ps-provider').value = s.default_provider || 'none';
       document.getElementById('ps-model').value = s.default_model || '';
-      document.getElementById('ps-audience').value = s.default_audience || 'developers';
+      document.getElementById('ps-audience').value = s.default_audience || 'developer';
       document.getElementById('ps-tone').value = s.default_tone || 'professional';
       var categories = Array.isArray(s.categories_json)
         ? s.categories_json
         : (typeof s.categories_json === 'string' ? JSON.parse(s.categories_json) : []);
       document.getElementById('ps-categories').value = categories.join(', ');
+      document.getElementById('ps-format').value = templateConfig.defaultFormat || 'markdown';
+      document.getElementById('ps-template-profile').value = templateConfig.profile || '';
+      var sectionOrder = Array.isArray(templateConfig.sectionOrder) ? templateConfig.sectionOrder : [];
+      document.getElementById('ps-section-order').value = sectionOrder.join(', ');
+      var publishTargets = Array.isArray(s.publish_targets_json)
+        ? s.publish_targets_json
+        : (typeof s.publish_targets_json === 'string' ? JSON.parse(s.publish_targets_json) : []);
+      document.getElementById('ps-publish-targets').value = publishTargets.length ? JSON.stringify(publishTargets, null, 2) : '';
     }
   } catch (e) {}
 }
@@ -2191,13 +2225,40 @@ async function saveProjectSettings() {
     if (!project) return;
   }
   const cats = document.getElementById('ps-categories').value.split(',').map(function(c) { return c.trim(); }).filter(Boolean);
+  const sectionOrder = document.getElementById('ps-section-order').value
+    .split(',')
+    .map(function(c) { return c.trim(); })
+    .filter(Boolean);
+  let publishTargets = [];
+  const publishTargetsRaw = document.getElementById('ps-publish-targets').value.trim();
+  if (publishTargetsRaw) {
+    try {
+      const parsedTargets = JSON.parse(publishTargetsRaw);
+      if (!Array.isArray(parsedTargets)) {
+        showToast('Publish Targets JSON must be an array');
+        return;
+      }
+      publishTargets = parsedTargets;
+    } catch (e) {
+      showToast('Publish Targets JSON is invalid');
+      return;
+    }
+  }
   const body = {
     defaultSource: document.getElementById('ps-source').value,
     defaultProvider: document.getElementById('ps-provider').value,
     defaultModel: document.getElementById('ps-model').value,
     defaultAudience: document.getElementById('ps-audience').value,
     defaultTone: document.getElementById('ps-tone').value,
-    categories: cats
+    categories: cats,
+    publishTargets: publishTargets,
+    widgetConfig: {
+      template: {
+        defaultFormat: document.getElementById('ps-format').value,
+        profile: document.getElementById('ps-template-profile').value.trim(),
+        sectionOrder: sectionOrder,
+      },
+    },
   };
   const status = document.getElementById('settingsSaveStatus');
   try {

@@ -6,7 +6,7 @@ export type {
   PipelineResult, OutputFormat, PublishTarget,
   OpenClawConfig, AIProvider, Audience, Tone,
   SourceConfig, PublisherType, EnrichmentType,
-  JiraConfig, LinearConfig, RepoSource,
+  JiraConfig, LinearConfig, RepoSource, TemplateProfile, TemplateConfig,
   GitLabConfig, BitbucketConfig, ConfluenceConfig, NotionConfig,
 } from './types';
 export {
@@ -37,7 +37,7 @@ export {
 export type { CollectorFactory, EnricherFactory, GeneratorFactory, PublisherFactory } from './registry';
 export { fetchWithTimeout } from './fetch';
 
-import type { CullConfig, EnrichedContext, PipelineResult, OutputFormat, EnrichedTicket } from './types';
+import type { CullConfig, EnrichedContext, PipelineResult, OutputFormat, EnrichedTicket, ReleaseNotes, TemplateProfile, TemplateConfig, PublishTarget } from './types';
 import { validateLicense, isProviderAllowed, isPublisherAllowed, isEnrichmentAllowed, upgradeMessage } from './gate';
 import { GitCollector } from './collectors/git';
 import { MultiRepoCollector } from './collectors/multi-repo';
@@ -50,7 +50,7 @@ import {
 } from './registry';
 
 // --- Register free (core) plugins ---
-import type { PublishTarget, CullConfig as CullConfigType } from './types';
+import type { CullConfig as CullConfigType } from './types';
 registerCollector('local', (config: CullConfigType) => new GitCollector(config.source?.repoPath));
 registerCollector('multi-repo', (config: CullConfigType) => {
   if (!config.repos?.length) throw new Error('Multi-repo source requires "repos" array in config');
@@ -60,6 +60,90 @@ registerGenerator('none', () => new TemplateGenerator());
 registerPublisher('stdout', (_target: PublishTarget) => new StdoutPublisher());
 registerPublisher('file', (target: PublishTarget) => new FilePublisher(target.path!));
 
+type ResolvedTemplate = {
+  name?: string;
+  format?: OutputFormat;
+  sectionOrder?: string[];
+  includeContributors?: boolean;
+  includeMetadata?: boolean;
+  summaryPrefix?: string;
+};
+
+function normalizeSectionOrder(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const order = value.filter((v): v is string => typeof v === 'string').map(v => v.trim()).filter(Boolean);
+  return order.length ? order : undefined;
+}
+
+function toResolvedTemplate(profile?: TemplateProfile | TemplateConfig | null): ResolvedTemplate {
+  if (!profile) return {};
+  const p = profile as Record<string, unknown>;
+  return {
+    format: typeof p.format === 'string' ? (p.format as OutputFormat) : undefined,
+    sectionOrder: normalizeSectionOrder(p.sectionOrder),
+    includeContributors: typeof p.includeContributors === 'boolean' ? p.includeContributors : undefined,
+    includeMetadata: typeof p.includeMetadata === 'boolean' ? p.includeMetadata : undefined,
+    summaryPrefix: typeof p.summaryPrefix === 'string' ? p.summaryPrefix : undefined,
+  };
+}
+
+function mergeTemplates(...templates: Array<ResolvedTemplate | undefined>): ResolvedTemplate {
+  const merged: ResolvedTemplate = {};
+  for (const template of templates) {
+    if (!template) continue;
+    if (template.name) merged.name = template.name;
+    if (template.format) merged.format = template.format;
+    if (template.sectionOrder) merged.sectionOrder = template.sectionOrder;
+    if (typeof template.includeContributors === 'boolean') merged.includeContributors = template.includeContributors;
+    if (typeof template.includeMetadata === 'boolean') merged.includeMetadata = template.includeMetadata;
+    if (typeof template.summaryPrefix === 'string') merged.summaryPrefix = template.summaryPrefix;
+  }
+  return merged;
+}
+
+function getTemplateProfileByName(config: CullConfig, name?: string): ResolvedTemplate | undefined {
+  if (!name) return undefined;
+  const profile = config.templates?.find(t => t.name === name);
+  if (!profile) return undefined;
+  return { name, ...toResolvedTemplate(profile) };
+}
+
+function applyTemplateToNotes(notes: ReleaseNotes, template: ResolvedTemplate): ReleaseNotes {
+  const next: ReleaseNotes = {
+    ...notes,
+    changes: [...notes.changes],
+  };
+
+  if (template.sectionOrder?.length) {
+    const index = new Map<string, number>();
+    template.sectionOrder.forEach((category, i) => index.set(category, i));
+    next.changes = next.changes
+      .map((change, i) => ({ change, i }))
+      .sort((a, b) => {
+        const ai = index.has(a.change.category) ? index.get(a.change.category)! : Number.MAX_SAFE_INTEGER;
+        const bi = index.has(b.change.category) ? index.get(b.change.category)! : Number.MAX_SAFE_INTEGER;
+        if (ai !== bi) return ai - bi;
+        return a.i - b.i;
+      })
+      .map(({ change }) => change);
+  }
+
+  if (template.summaryPrefix) {
+    const currentSummary = next.summary || '';
+    next.summary = `${template.summaryPrefix}${currentSummary ? ` ${currentSummary}` : ''}`.trim();
+  }
+
+  if (template.includeContributors === false) {
+    delete next.contributors;
+  }
+
+  if (template.includeMetadata === false) {
+    delete next.metadata;
+  }
+
+  return next;
+}
+
 /**
  * Main pipeline: Collect → Enrich → Generate → Format → Publish
  */
@@ -67,10 +151,9 @@ export async function runPipeline(
   from: string,
   to: string,
   config: CullConfig,
-  options: { format?: OutputFormat; dryRun?: boolean; logger?: Logger } = {}
+  options: { format?: OutputFormat; dryRun?: boolean; logger?: Logger; templateProfile?: string } = {}
 ): Promise<PipelineResult> {
   const startTime = Date.now();
-  const format = options.format || 'markdown';
   const log = options.logger || createLogger('normal');
 
   // LICENSE CHECK (async remote validation with cache)
@@ -166,11 +249,20 @@ export async function runPipeline(
   const notes = await generator.generate(context, config.ai);
   log.info(`» Generated ${notes.changes.length} change entries`);
 
+  const selectedTemplateName = options.templateProfile || config.template?.default;
+  const baseTemplate = mergeTemplates(
+    toResolvedTemplate(config.template),
+    getTemplateProfileByName(config, selectedTemplateName)
+  );
+  const format = options.format || baseTemplate.format || 'markdown';
+  const templatedNotes = applyTemplateToNotes(notes, baseTemplate);
+
   // 4. FORMAT
-  const formatted = formatNotes(notes, format);
+  const formatted = formatNotes(templatedNotes, format);
 
   // 5. PUBLISH
   const publishedTo: string[] = [];
+  const renderedCache = new Map<string, { notes: ReleaseNotes; output: string; format: OutputFormat }>();
 
   if (!options.dryRun) {
     for (const target of config.publish) {
@@ -188,7 +280,42 @@ export async function runPipeline(
 
         // Uniform factory pattern: factory(target)
         const publisher = publisherFactory(target);
-        await publisher.publish(notes, format, formatted);
+
+        const targetTemplate = mergeTemplates(
+          baseTemplate,
+          getTemplateProfileByName(config, typeof target.templateProfile === 'string' ? target.templateProfile : undefined),
+          {
+            format: typeof target.format === 'string' ? (target.format as OutputFormat) : undefined,
+            sectionOrder: normalizeSectionOrder(target.sectionOrder),
+          }
+        );
+        const targetFormat = targetTemplate.format || format;
+
+        const cacheKey = JSON.stringify({
+          f: targetFormat,
+          o: targetTemplate.sectionOrder || null,
+          c: targetTemplate.includeContributors,
+          m: targetTemplate.includeMetadata,
+          s: targetTemplate.summaryPrefix,
+        });
+
+        let cached = renderedCache.get(cacheKey);
+        if (!cached) {
+          const targetNotes = applyTemplateToNotes(notes, targetTemplate);
+          const targetOutput = cacheKey === JSON.stringify({
+            f: format,
+            o: baseTemplate.sectionOrder || null,
+            c: baseTemplate.includeContributors,
+            m: baseTemplate.includeMetadata,
+            s: baseTemplate.summaryPrefix,
+          })
+            ? formatted
+            : formatNotes(targetNotes, targetFormat);
+          cached = { notes: targetNotes, output: targetOutput, format: targetFormat };
+          renderedCache.set(cacheKey, cached);
+        }
+
+        await publisher.publish(cached.notes, cached.format, cached.output);
         publishedTo.push(target.type === 'file' ? `file:${target.path}` : target.type);
       } catch (err) {
         log.error(`✗ Failed to publish to ${target.type}: ${(err as Error).message}`);
@@ -203,5 +330,5 @@ export async function runPipeline(
   const duration = Date.now() - startTime;
   log.info(`\n✓ Done in ${(duration / 1000).toFixed(1)}s`);
 
-  return { notes, formatted, publishedTo, duration };
+  return { notes: templatedNotes, formatted, publishedTo, duration };
 }

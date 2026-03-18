@@ -31,6 +31,9 @@ cullit generate
 
 # no AI key needed (template mode)
 cullit generate --from HEAD~10 --provider none
+
+# select a named template profile from .cullit.yml
+cullit generate --from v1.8.0 --template customer-facing
 ```
 
 ## Common Flags
@@ -39,9 +42,10 @@ cullit generate --from HEAD~10 --provider none
 - `--to <ref>` target ref (defaults to `HEAD`)
 - `--provider <name>` `anthropic|openai|gemini|ollama|openclaw|none`
 - `--model <id>` override model
-- `--audience <type>` tune output for `developer|user|stakeholder`
+- `--audience <type>` tune output for `developer|end-user|executive`
 - `--tone <style>` tone controls for generated output
 - `--format <fmt>` output format
+- `--template <name>` select named template profile from config
 - `--quiet` minimal logs
 - `--verbose` detailed logs
 

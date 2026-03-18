@@ -44,6 +44,9 @@ cullit generate --from HEAD~5 --provider ollama --model llama3.1
 # No AI key? Use the template generator
 cullit generate --from HEAD~10 --provider none
 
+# Apply a named template profile from config
+cullit generate --from v1.8.0 --template customer-facing
+
 # From Jira or Linear
 cullit generate --source jira --from "project = PROJ" --provider anthropic
 cullit generate --source linear --from "team:ENG" --provider openai
@@ -226,14 +229,29 @@ publish:
   - type: github-release
   - type: slack
     webhook_url: $SLACK_WEBHOOK_URL
+  - type: confluence
+    format: html
+    template_profile: customer-facing
+  - type: teams
+    webhook_url: $TEAMS_WEBHOOK_URL
+    format: html-dark
   # - type: discord
   #   webhook_url: $DISCORD_WEBHOOK_URL
-  # - type: teams
-  #   webhook_url: $TEAMS_WEBHOOK_URL
-  # - type: confluence
   # - type: notion
   # - type: gitlab-release
   # - type: changelog
+
+template:
+  default: customer-facing
+  section_order: [features, improvements, fixes, breaking, chores, other]
+  include_metadata: false
+
+templates:
+  - name: customer-facing
+    format: html-minimal
+    section_order: [features, improvements, fixes, breaking, chores, other]
+    include_contributors: false
+    summary_prefix: "Customer-facing summary:"
 
 jira:
   domain: yourcompany.atlassian.net
@@ -359,6 +377,16 @@ Cullit includes a hosted dashboard experience with authentication, billing, tria
 - [x] GitHub App (Marketplace)
 - [x] Web dashboard
 - [x] Multi-repo aggregation
+
+## Release Notes
+
+### v1.9.0
+
+- Added template profiles in config (`template`, `templates`) with defaults and named profile selection.
+- Added destination-specific publish overrides (`publish[].format`, `publish[].templateProfile`, `publish[].sectionOrder`).
+- Added CLI `--template` flag for profile selection during generation.
+- Added dashboard project settings for format/profile/section ordering and JSON publish-target overrides.
+- Added API support for template defaults in project settings payloads.
 
 ## Contributing
 

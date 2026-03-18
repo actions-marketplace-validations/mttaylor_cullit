@@ -21,6 +21,8 @@ export type {
   BitbucketConfig,
   ConfluenceConfig,
   NotionConfig,
+  TemplateProfile,
+  TemplateConfig,
   RepoSource,
   CullConfig,
 } from '@cullit/config';

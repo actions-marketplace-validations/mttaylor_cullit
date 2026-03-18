@@ -12,7 +12,7 @@
  * https://cullit.io
  */
 
-import { runPipeline, VERSION, createLogger, analyzeReleaseReadiness, resolveLicense, AI_PROVIDERS, AUDIENCES, TONES, SOURCE_TYPES } from '@cullit/core';
+import { runPipeline, VERSION, createLogger, analyzeReleaseReadiness, resolveLicense, AI_PROVIDERS, AUDIENCES, TONES, SOURCE_TYPES, OUTPUT_FORMATS } from '@cullit/core';
 import { loadConfig } from '@cullit/config';
 import { getLatestTag, getRecentTags } from '@cullit/core';
 import type { OutputFormat, LogLevel } from '@cullit/core';
@@ -62,6 +62,7 @@ const HELP = `
     --to, -t      End ref (defaults to HEAD)
     --config, -c  Path to config file (default: .cullit.yml)
     --format      Output format: markdown, html, html-dark, html-minimal, html-edgy, json
+    --template    Template profile name from config.templates
     --dry-run     Generate but don't publish
     --provider    Override AI provider (anthropic, openai, gemini, ollama, openclaw, none)
     --source      Override source type (local, jira, linear, gitlab, bitbucket)
@@ -78,6 +79,7 @@ const HELP = `
     $ cullit generate --source jira --from "project = PROJ" --provider anthropic
     $ cullit generate --source linear --from "team:ENG" --provider openai
     $ cullit generate --source gitlab --from v1.0.0 --to v1.1.0
+    $ cullit generate --from v1.2.0 --template customer-facing
     $ cullit generate --from HEAD~5 --tone edgy --format html-edgy
     $ cullit init
 `;
@@ -96,6 +98,17 @@ source:
   type: local                  # local | jira | linear | gitlab | bitbucket
   # enrichment: [jira, linear] # uncomment to enable enrichment
 
+template:
+  # default: customer-facing   # optional: default named template profile
+  sectionOrder: [breaking, features, improvements, fixes, chores, other]
+
+templates:
+  - name: customer-facing
+    format: html-minimal
+    sectionOrder: [features, improvements, fixes, breaking, chores, other]
+    includeContributors: false
+    includeMetadata: false
+
 publish:
   - type: stdout               # always output to terminal
   # - type: file
@@ -107,7 +120,9 @@ publish:
   # - type: github-release
   # - type: teams
   #   webhook_url: $TEAMS_WEBHOOK_URL
+  #   format: html-dark
   # - type: confluence
+  #   template_profile: customer-facing
   # - type: notion
   # - type: gitlab-release
   # - type: changelog
@@ -276,10 +291,18 @@ async function runGenerate(from: string, to: string, opts: Record<string, string
     config.source.type = opts.source as any;
   }
 
-  const format = (opts.format || 'markdown') as OutputFormat;
+  if (opts.format && !(OUTPUT_FORMATS as readonly string[]).includes(opts.format)) {
+    console.error(`\n✗ Invalid format: ${opts.format}`);
+    console.error(`  Valid formats: ${(OUTPUT_FORMATS as readonly string[]).join(', ')}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const format = (opts.format as OutputFormat | undefined);
   const dryRun = 'dry-run' in opts || 'dryRun' in opts;
   const logLevel: LogLevel = 'verbose' in opts ? 'verbose' : 'quiet' in opts ? 'quiet' : 'normal';
   const logger = createLogger(logLevel);
+  const templateProfile = opts.template || opts.templateProfile || opts['template-profile'];
 
   // Show license tier
   const license = resolveLicense();
@@ -289,7 +312,7 @@ async function runGenerate(from: string, to: string, opts: Record<string, string
   }
 
   try {
-    const result = await runPipeline(from, to, config, { format, dryRun, logger });
+    const result = await runPipeline(from, to, config, { format, dryRun, logger, templateProfile });
 
     // Active release advisory — nudge after generating notes
     if (logLevel !== 'quiet') {

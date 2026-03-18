@@ -1,6 +1,6 @@
 {
   "name": "@cullit/app",
-  "version": "1.8.1",
+  "version": "1.9.0",
   "private": true,
   "type": "module",
   "description": "Cullit GitHub App — auto-generate release notes on tag push or release publish.",

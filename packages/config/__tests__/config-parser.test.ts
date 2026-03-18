@@ -216,6 +216,8 @@ notion:
 publish:
   - type: teams
     webhook_url: https://example.com/webhook
+    template_profile: customer-facing
+    section_order: [features, fixes, breaking]
   - type: confluence
     space_key: DEV
     parent_page_id: "999"
@@ -224,9 +226,36 @@ publish:
 `, (dir) => {
       const config = loadConfig(dir);
       expect(config.publish[0].webhookUrl).toBe('https://example.com/webhook');
+      expect(config.publish[0].templateProfile).toBe('customer-facing');
+      expect(config.publish[0].sectionOrder).toEqual(['features', 'fixes', 'breaking']);
       expect(config.publish[1].spaceKey).toBe('DEV');
       expect(config.publish[1].parentPageId).toBe('999');
       expect(config.publish[2].databaseId).toBe('abc-def');
+    });
+  });
+
+  it('parses template defaults and named template profiles', () => {
+    withConfigFile(`
+template:
+  default: customer-facing
+  section_order: [features, improvements, fixes, breaking, chores, other]
+  include_metadata: false
+
+templates:
+  - name: customer-facing
+    format: html-minimal
+    section_order: [features, improvements, fixes, breaking, chores, other]
+    include_contributors: false
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.template?.default).toBe('customer-facing');
+      expect(config.template?.sectionOrder).toEqual(['features', 'improvements', 'fixes', 'breaking', 'chores', 'other']);
+      expect(config.template?.includeMetadata).toBe(false);
+      expect(config.templates).toHaveLength(1);
+      expect(config.templates?.[0].name).toBe('customer-facing');
+      expect(config.templates?.[0].format).toBe('html-minimal');
+      expect(config.templates?.[0].includeContributors).toBe(false);
+      expect(config.templates?.[0].sectionOrder).toEqual(['features', 'improvements', 'fixes', 'breaking', 'chores', 'other']);
     });
   });
 
