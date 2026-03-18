@@ -146,7 +146,7 @@ describe('Gate — getTierLimits', () => {
   it('returns pro tier limits', () => {
     const limits = getTierLimits('pro');
     expect(limits.generationsPerMonth).toBe(500);
-    expect(limits.maxProjects).toBe(50);
+    expect(limits.maxProjects).toBe(100);
   });
 
   it('returns team tier limits', () => {
