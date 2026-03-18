@@ -119,13 +119,13 @@ export async function sendSubscriptionConfirmed(email: string, name: string, pla
       <ul style="color: #374151; line-height: 1.8; padding-left: 20px;">
         ${plan === 'team' ? `
           <li>2,000 generations/month</li>
-          <li>25 projects</li>
+          <li>250 projects</li>
           <li>Multi-repo, GitLab, Bitbucket</li>
           <li>Confluence & Notion publishing</li>
           <li>Team dashboard & analytics</li>
         ` : `
           <li>500 generations/month</li>
-          <li>Unlimited projects</li>
+          <li>100 projects</li>
           <li>AI generation (OpenAI, Anthropic, Gemini, Ollama)</li>
           <li>Jira & Linear enrichment</li>
           <li>All publishers (Slack, Discord, GitHub, Teams)</li>

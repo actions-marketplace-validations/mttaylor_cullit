@@ -4,16 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cullit — Release Notes in no time, anytime.</title>
-<meta name="description" content="Cullit — AI-powered release notes generated from your git history. Release notes in no time, anytime. Works as a CLI, GitHub Action, or API. Multi-provider AI with BYOK support.">
+<meta name="description" content="Cullit turns git history, Jira, and Linear context into AI-generated release notes for developers, customers, and executives. Works as a CLI, GitHub Action, dashboard, or API.">
 <meta name="keywords" content="cullit, cull, ai release notes, release notes generator, github action release notes, automated changelog, ai changelog generator, cullit.io">
 <meta property="og:title" content="Cullit — Release Notes in no time, anytime.">
-<meta property="og:description" content="Cullit — AI release notes from git commits. Release notes in no time, anytime. CLI + GitHub Action. & more.">
+<meta property="og:description" content="AI release notes grounded in code, tickets, and release context. CLI, GitHub Action, dashboard, and API.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://cullit.io">
 <meta property="og:image" content="https://cullit.io/og-image.svg">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Cullit — Release Notes in no time, anytime.">
-<meta name="twitter:description" content="AI release notes from git commits. CLI + GitHub Action + API.">
+<meta name="twitter:description" content="AI release notes grounded in code, tickets, and release context. CLI + GitHub Action + dashboard + API.">
 <meta name="twitter:image" content="https://cullit.io/og-image.svg">
 <link rel="canonical" href="https://cullit.io">
 <link rel="icon" href="/favicon.ico" sizes="any">
@@ -638,8 +638,8 @@
 <main>
 <section class="hero">
 
-  <h1>Cullit. <span class="accent">Release Notes</span><br>in no time, anytime.</h1>
-  <p class="hero-sub">Cullit reads your git history, Jira sprints, or Linear cycles, enriches with ticket context, and uses AI to generate categorized, human-readable release notes. Ship to Slack, Discord, Teams, GitHub &amp; GitLab Releases, Confluence, Notion, and more.</p>
+  <h1><span class="accent">AI Release Notes</span><br>grounded in code and tickets.</h1>
+  <p class="hero-sub">Cullit combines git history, Jira sprints, Linear cycles, and release context to generate audience-aware release notes with Claude, OpenAI, Gemini, Ollama, or OpenClaw. Publish polished updates everywhere your team and customers already look.</p>
   <div class="hero-actions">
     <a href="#cta" class="btn-primary">&#9889; Get Started Free</a>
     <a href="https://github.com/mttaylor/cullit" class="btn-secondary" target="_blank">&#9733; Star on GitHub</a>
@@ -681,6 +681,31 @@
 
 <div class="section-divider"></div>
 
+<!-- AI LAYER -->
+<section class="features" id="ai-layer">
+  <p class="section-label">// ai layer</p>
+  <h2 class="section-title">AI that understands what actually shipped.</h2>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <span class="feature-icon">&#129518;</span>
+      <h3>Grounded Inputs</h3>
+      <p>Cullit does not guess from a prompt alone. It pulls commits, pull-request references, Jira issues, Linear tickets, and release metadata so the model works from the same context your team ships from.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">&#127919;</span>
+      <h3>Audience-Aware Writing</h3>
+      <p>Generate technical notes for engineers, plain-language updates for customers, or executive summaries for leadership from the same release range without rewriting the release three times.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">&#129302;</span>
+      <h3>Model Choice, Your Rules</h3>
+      <p>Use Claude for quality, OpenAI for flexibility, Gemini for Google-native stacks, or Ollama for local/private inference. BYOK keeps the AI provider, cost, and data path under your control.</p>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
 <!-- FEATURES -->
 <section class="features" id="features">
   <p class="section-label">// capabilities</p>
@@ -689,12 +714,12 @@
     <div class="feature-card">
       <span class="feature-icon">&#x1f9e0;</span>
       <h3>AI-Powered Generation</h3>
-      <p>Not a commit log dump. Cullit uses Claude, OpenAI, Gemini, Ollama, or OpenClaw to write categorized, human-readable notes your team and users actually want to read.</p>
+      <p>Not a commit log dump. Cullit synthesizes commit history, ticket context, and release metadata into categorized notes that read like a polished product update instead of raw engineering exhaust.</p>
     </div>
     <div class="feature-card">
       <span class="feature-icon">&#x1f511;</span>
       <h3>Bring Your Own Key</h3>
-      <p>Use your own API key &mdash; Claude, OpenAI, Gemini, or run local with Ollama. Zero vendor lock-in. Zero surprise AI costs. You control the model, the cost, and the data.</p>
+      <p>Use your own API key &mdash; Claude, OpenAI, Gemini, or run local with Ollama. Zero vendor lock-in. Zero surprise AI costs. You control the provider, the model, the cost, and the data path.</p>
     </div>
     <div class="feature-card">
       <span class="feature-icon">&#x26a1;</span>
@@ -704,7 +729,7 @@
     <div class="feature-card">
       <span class="feature-icon">&#x1f50d;</span>
       <h3>Jira &amp; Linear Enrichment</h3>
-      <p>Cullit extracts ticket keys from commits, or queries Jira and Linear directly as the primary source &mdash; titles, descriptions, labels &mdash; so the AI has the full picture.</p>
+      <p>Cullit extracts ticket keys from commits, or queries Jira and Linear directly as the primary source &mdash; titles, descriptions, labels, and context &mdash; so the AI can explain why a change shipped, not just that it happened.</p>
     </div>
     <div class="feature-card">
       <span class="feature-icon">&#x1f4e4;</span>

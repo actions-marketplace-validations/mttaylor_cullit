@@ -22,9 +22,10 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import type { IncomingMessage, ServerResponse } from 'http';
 import {
-  sql, dbGetUser, dbUpdateUserTier, dbUpdateUserStripe,
+  sql, dbGetUser, dbUpdateUserTier, dbUpdateUserStripe, dbClearUserTrial,
   dbUpsertSubscription, dbGetSubscription, dbGetUserByStripeCustomer,
 } from './db.js';
+import { getEffectiveTier, getTrialStatus, getUser } from './auth.js';
 import { log } from './logger.js';
 
 const STRIPE_SECRET_KEY = process.env['STRIPE_SECRET_KEY'] || '';
@@ -177,9 +178,12 @@ export async function handleGetSubscription(
   jsonFn: (res: ServerResponse, status: number, body: unknown) => void,
   res: ServerResponse,
 ): Promise<void> {
+  const user = await getUser(userId);
+  const effectiveTier = user ? getEffectiveTier(user) : 'free';
+  const trial = user ? getTrialStatus(user) : { active: false, expired: false, tier: null, startsAt: null, endsAt: null, daysRemaining: 0 };
   const sub = await dbGetSubscription(userId);
   if (!sub) {
-    jsonFn(res, 200, { subscription: null, plan: 'free' });
+    jsonFn(res, 200, { subscription: null, plan: effectiveTier, tier: user?.tier || 'free', effectiveTier, trial });
     return;
   }
 
@@ -191,6 +195,9 @@ export async function handleGetSubscription(
       cancelAtPeriodEnd: sub.cancel_at_period_end,
     },
     plan: sub.plan,
+    tier: user?.tier || sub.plan,
+    effectiveTier,
+    trial,
   });
 }
 
@@ -254,6 +261,7 @@ async function handleCheckoutComplete(session: any): Promise<void> {
   // Update user tier
   const tier = planToTier(plan);
   await dbUpdateUserTier(userId, tier);
+  await dbClearUserTrial(userId);
 
   // Fetch full subscription details from Stripe
   const sub = await stripeRequest(`/subscriptions/${subscriptionId}`, 'GET');
@@ -284,6 +292,9 @@ async function handleSubscriptionUpdate(subscription: any): Promise<void> {
 
   // Update user tier
   await dbUpdateUserTier(user.id, tier);
+  if (tier !== 'free') {
+    await dbClearUserTrial(user.id);
+  }
 
   // Update subscription record
   await dbUpsertSubscription({

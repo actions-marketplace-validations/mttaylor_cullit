@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pricing — Cullit</title>
-<meta name="description" content="Cullit pricing plans — Free, Pro, Team, and Enterprise. AI-powered release notes from $0/mo. BYOK support, Jira & Linear enrichment, multi-provider AI.">
+<meta name="description" content="Cullit pricing — AI-generated release notes grounded in git, Jira, and Linear. Start free, upgrade for model choice, audience-aware output, and team release workflows.">
 <meta property="og:title" content="Pricing — Cullit">
 <meta property="og:description" content="Cullit pricing — AI release notes from $0/mo. Free, Pro, Team & Enterprise plans.">
 <meta property="og:type" content="website">
@@ -381,8 +381,23 @@
 <main class="pricing-container">
   <header class="pricing-header">
     <h1>Simple, transparent <span style="color: var(--accent)">pricing</span></h1>
-    <p>Start free. Upgrade when you need AI, integrations, or team features.</p>
+    <p>Start free. Upgrade when you need AI synthesis, model choice, richer integrations, or shared release workflows.</p>
   </header>
+
+  <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:2rem;">
+    <div class="pricing-card" style="padding:1.25rem;">
+      <div class="plan-name" style="font-size:1rem;">Grounded AI</div>
+      <p class="plan-desc" style="min-height:0;margin-bottom:0;">Cullit combines commits, ticket context, and release metadata before the model writes, so the output reads like a release note, not a prompt experiment.</p>
+    </div>
+    <div class="pricing-card" style="padding:1.25rem;">
+      <div class="plan-name" style="font-size:1rem;">Model Choice</div>
+      <p class="plan-desc" style="min-height:0;margin-bottom:0;">Bring your own Claude, OpenAI, Gemini, Ollama, or OpenClaw setup. Optimize for quality, cost, privacy, or local inference.</p>
+    </div>
+    <div class="pricing-card" style="padding:1.25rem;">
+      <div class="plan-name" style="font-size:1rem;">Audience Control</div>
+      <p class="plan-desc" style="min-height:0;margin-bottom:0;">Generate technical notes for engineers, cleaner language for customers, and summaries for leadership from the same release range.</p>
+    </div>
+  </section>
 
   <div class="pricing-grid">
 
@@ -390,7 +405,7 @@
     <div class="pricing-card">
       <div class="plan-name">Free</div>
       <div class="plan-price">$0 <span class="period">/ mo</span></div>
-      <p class="plan-desc">Get started with template-based release notes.</p>
+      <p class="plan-desc">Try the workflow with a built-in non-AI template engine.</p>
       <ul class="plan-features">
         <li><span class="check">&#10003;</span> 5 generations / month</li>
         <li><span class="check">&#10003;</span> 3 projects</li>
@@ -408,7 +423,7 @@
     <div class="pricing-card featured">
       <div class="plan-name">Pro</div>
       <div class="plan-price">$9 <span class="period">/ mo</span></div>
-      <p class="plan-desc">AI-powered notes with your own API keys.</p>
+      <p class="plan-desc">AI-generated notes with model choice, audience control, and enrichment.</p>
       <ul class="plan-features">
         <li><span class="check">&#10003;</span> 500 generations / month</li>
         <li><span class="check">&#10003;</span> 100 projects</li>
@@ -416,7 +431,7 @@
         <li><span class="check">&#10003;</span> AI generation (BYOK)</li>
         <li><span class="check">&#10003;</span> OpenAI, Anthropic, Gemini, Ollama</li>
         <li><span class="check">&#10003;</span> Jira &amp; Linear enrichment</li>
-        <li><span class="check">&#10003;</span> All publishers</li>
+        <li><span class="check">&#10003;</span> Audience-aware AI outputs</li>
         <li><span class="check">&#10003;</span> Styled HTML themes</li>
       </ul>
       <a href="mailto:sales@cullit.io?subject=Cullit%20Pro" class="plan-btn plan-btn-primary" onclick="startCheckout('pro', event)">Start Pro</a>
@@ -426,10 +441,10 @@
     <div class="pricing-card">
       <div class="plan-name">Team</div>
       <div class="plan-price">$19 <span class="period">/ seat / mo</span></div>
-      <p class="plan-desc">For teams shipping across multiple repos.</p>
+      <p class="plan-desc">Shared AI release workflow for teams shipping across multiple repos.</p>
       <ul class="plan-features">
         <li><span class="check">&#10003;</span> 2,000 generations / month</li>
-        <li><span class="check">&#10003;</span> 25 projects</li>
+        <li><span class="check">&#10003;</span> 250 projects</li>
         <li><span class="check">&#10003;</span> All Pro features</li>
         <li><span class="check">&#10003;</span> Multi-repo collectors</li>
         <li><span class="check">&#10003;</span> GitLab &amp; Bitbucket</li>

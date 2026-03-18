@@ -58,10 +58,19 @@ export async function migrate(): Promise<void> {
       api_key       TEXT UNIQUE NOT NULL,
       stripe_customer_id TEXT,
       stripe_subscription_id TEXT,
+      trial_tier    TEXT,
+      trial_starts_at TIMESTAMPTZ,
+      trial_ends_at TIMESTAMPTZ,
+      trial_converted_at TIMESTAMPTZ,
       created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       last_login_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `;
+
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_tier TEXT`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_starts_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_converted_at TIMESTAMPTZ`;
 
   await sql`CREATE INDEX IF NOT EXISTS idx_users_api_key ON users (api_key)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_users_stripe_customer ON users (stripe_customer_id) WHERE stripe_customer_id IS NOT NULL`;
@@ -172,6 +181,10 @@ export interface DbUser {
   api_key: string;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
+  trial_tier: string | null;
+  trial_starts_at: Date | null;
+  trial_ends_at: Date | null;
+  trial_converted_at: Date | null;
   created_at: Date;
   last_login_at: Date;
 }
@@ -194,10 +207,13 @@ export async function dbGetUserByStripeCustomer(customerId: string): Promise<DbU
 export async function dbUpsertUser(user: {
   id: string; login: string; name: string; email: string;
   avatarUrl: string; apiKey: string;
+  trialTier?: string | null;
+  trialStartsAt?: Date | null;
+  trialEndsAt?: Date | null;
 }): Promise<DbUser> {
   const rows = await sql<DbUser[]>`
-    INSERT INTO users (id, login, name, email, avatar_url, api_key)
-    VALUES (${user.id}, ${user.login}, ${user.name}, ${user.email}, ${user.avatarUrl}, ${user.apiKey})
+    INSERT INTO users (id, login, name, email, avatar_url, api_key, trial_tier, trial_starts_at, trial_ends_at)
+    VALUES (${user.id}, ${user.login}, ${user.name}, ${user.email}, ${user.avatarUrl}, ${user.apiKey}, ${user.trialTier || null}, ${user.trialStartsAt || null}, ${user.trialEndsAt || null})
     ON CONFLICT (id) DO UPDATE SET
       login = EXCLUDED.login,
       name = EXCLUDED.name,
@@ -219,6 +235,25 @@ export async function dbUpdateUserOrg(userId: string, orgId: string | null, role
 
 export async function dbUpdateUserStripe(userId: string, customerId: string, subscriptionId: string | null): Promise<void> {
   await sql`UPDATE users SET stripe_customer_id = ${customerId}, stripe_subscription_id = ${subscriptionId} WHERE id = ${userId}`;
+}
+
+export async function dbUpdateUserTrial(userId: string, trialTier: string | null, startsAt: Date | null, endsAt: Date | null): Promise<void> {
+  await sql`
+    UPDATE users
+    SET trial_tier = ${trialTier}, trial_starts_at = ${startsAt}, trial_ends_at = ${endsAt}
+    WHERE id = ${userId}
+  `;
+}
+
+export async function dbClearUserTrial(userId: string): Promise<void> {
+  await sql`
+    UPDATE users
+    SET trial_tier = NULL,
+        trial_starts_at = NULL,
+        trial_ends_at = NULL,
+        trial_converted_at = NOW()
+    WHERE id = ${userId}
+  `;
 }
 
 // --- Org DB operations ---

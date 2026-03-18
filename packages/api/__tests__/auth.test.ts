@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createJWT, verifyJWT } from '../src/auth.js';
+import { createJWT, verifyJWT, getEffectiveTier, getTrialStatus } from '../src/auth.js';
 
 describe('Auth Module — JWT', () => {
   it('createJWT returns a valid JWT string', () => {
@@ -42,5 +42,29 @@ describe('Auth Module — JWT', () => {
     const t1 = createJWT('user-1');
     const t2 = createJWT('user-2');
     expect(t1).not.toBe(t2);
+  });
+
+  it('getTrialStatus returns active trial details for a free user in trial', () => {
+    const endsAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+    const status = getTrialStatus({
+      id: '1', login: 'octo', name: 'Octo', email: '', avatarUrl: '',
+      tier: 'free', orgId: null, role: 'member', apiKey: 'clt_test',
+      trialTier: 'pro', trialStartsAt: new Date().toISOString(), trialEndsAt: endsAt,
+      createdAt: new Date().toISOString(), lastLoginAt: new Date().toISOString(),
+    });
+    expect(status.active).toBe(true);
+    expect(status.tier).toBe('pro');
+    expect(status.daysRemaining).toBeGreaterThan(0);
+  });
+
+  it('getEffectiveTier returns active trial tier before paid tier exists', () => {
+    const effective = getEffectiveTier({
+      id: '1', login: 'octo', name: 'Octo', email: '', avatarUrl: '',
+      tier: 'free', orgId: null, role: 'member', apiKey: 'clt_test',
+      trialTier: 'pro', trialStartsAt: new Date().toISOString(),
+      trialEndsAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      createdAt: new Date().toISOString(), lastLoginAt: new Date().toISOString(),
+    });
+    expect(effective).toBe('pro');
   });
 });

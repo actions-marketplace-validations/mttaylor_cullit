@@ -152,7 +152,7 @@ describe('Gate — getTierLimits', () => {
   it('returns team tier limits', () => {
     const limits = getTierLimits('team');
     expect(limits.generationsPerMonth).toBe(2000);
-    expect(limits.maxProjects).toBe(25);
+    expect(limits.maxProjects).toBe(250);
   });
 
   it('returns enterprise tier limits', () => {

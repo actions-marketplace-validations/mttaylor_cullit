@@ -25,7 +25,7 @@ import { openApiSpec } from './openapi.js';
 import {
   handleAuthRedirect, handleAuthCallback, handleAuthMe, handleAuthLogout,
   resolveUser, getUser, getOrg, createOrg, addOrgMember, removeOrgMember, getOrgMembers,
-  useDb,
+  useDb, getEffectiveTier,
 } from './auth.js';
 import {
   addHistoryEntry, getHistory, getHistoryCount,
@@ -376,13 +376,14 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
     if (user) {
       const key = user.orgId || user.id;
       const monthlyCount = await getMonthlyGenerationCount(key);
-      const limits = getTierLimits(user.tier);
+      const effectiveTier = getEffectiveTier(user);
+      const limits = getTierLimits(effectiveTier);
       if (monthlyCount >= limits.generationsPerMonth) {
         json(res, 402, {
           error: 'Monthly generation limit reached',
           used: monthlyCount,
           limit: limits.generationsPerMonth,
-          tier: user.tier,
+          tier: effectiveTier,
           upgrade: 'https://cullit.io/pricing',
         });
         return;

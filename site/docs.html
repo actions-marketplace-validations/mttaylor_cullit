@@ -325,6 +325,22 @@
 <span class="cmd">cullit</span> generate</code></pre>
 <p>Cullit collects commits, enriches with ticket context (if configured), runs them through AI, and outputs categorized release notes.</p>
 
+<h3 id="how-ai-works">How Cullit Uses AI</h3>
+<p>Cullit’s AI layer is grounded in shipping data. The model sees commit history first, then richer release context from Jira, Linear, GitHub, or GitLab when configured. That means the output is based on what changed, why it changed, and who the release is for.</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Stage</th><th>What Cullit adds</th><th>Why it matters</th></tr></thead>
+  <tbody>
+    <tr><td>Collect</td><td>Git commits, tags, PR references, multi-repo ranges</td><td>The model starts from real release inputs, not a blank prompt.</td></tr>
+    <tr><td>Enrich</td><td>Jira issues, Linear tickets, labels, descriptions, linked context</td><td>The AI can explain intent and impact, not just summarize messages.</td></tr>
+    <tr><td>Synthesize</td><td>Audience, tone, categories, and chosen AI provider/model</td><td>You get developer, end-user, or executive notes from the same source release.</td></tr>
+    <tr><td>Publish</td><td>Slack, Discord, GitHub Release, Confluence, Notion, changelog, widget</td><td>The same AI-generated release can be distributed where each audience already works.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="tip">Best results come from pairing AI generation with Jira or Linear enrichment. Richer context produces cleaner summaries, clearer categories, and fewer low-signal commit dumps.</div>
+
 <h3 id="pricing">Pricing &amp; Tiers</h3>
 <p>Cullit uses a <code>CULLIT_API_KEY</code> to unlock Pro features. Without a key, the free tier is fully functional for template-based notes.</p>
 
@@ -336,7 +352,7 @@
     <tr><td>Publish to stdout &amp; file</td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
     <tr><td><code>cullit status</code> &amp; <code>cullit tags</code></td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
     <tr><td>Generations per month</td><td>5</td><td>500</td><td>2,000</td><td>Unlimited</td></tr>
-    <tr><td>Projects</td><td>3</td><td>100</td><td>25</td><td>Unlimited</td></tr>
+    <tr><td>Projects</td><td>3</td><td>100</td><td>250</td><td>Unlimited</td></tr>
     <tr><td>AI providers (Anthropic, OpenAI, Gemini, Ollama)</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
     <tr><td>Web Dashboard</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
     <tr><td>GitHub App (AI mode)</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td></tr>

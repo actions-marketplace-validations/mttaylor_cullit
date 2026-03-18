@@ -1038,6 +1038,16 @@
       <button class="dash-tab" data-tab="billing" onclick="switchDashTab('billing')">&#128179; Billing</button>
     </div>
 
+    <div class="panel" id="trialBanner" style="display:none;margin-bottom:1rem;border-color:rgba(94,234,212,0.45)">
+      <div class="panel-body" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
+        <div>
+          <div style="font-size:0.75rem;color:var(--accent);font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.08em">Active Trial</div>
+          <div id="trialBannerText" style="font-size:0.95rem;color:var(--text-bright);margin-top:0.25rem"></div>
+        </div>
+        <button class="btn-small" onclick="switchDashTab('billing')">Upgrade Before Trial Ends</button>
+      </div>
+    </div>
+
     <!-- GENERATE TAB -->
     <div class="tab-content active" id="tab-generate">
       <div class="output-panel">
@@ -1233,7 +1243,7 @@
           <div class="plan-price">$19<span>/seat/mo</span></div>
           <ul class="plan-features">
             <li>2,000 generations / month</li>
-            <li>25 projects</li>
+            <li>250 projects</li>
             <li>Team management</li>
             <li>Priority support</li>
           </ul>
@@ -1296,6 +1306,10 @@ let currentOutput = '';
 let currentView = 'rendered';
 let currentUser = null;
 
+function capitalize(text) {
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : '';
+}
+
 // --- API helpers ---
 
 function apiUrl() {
@@ -1341,13 +1355,31 @@ function showDashboard() {
   nav.style.display = 'flex';
   document.getElementById('navAvatar').src = currentUser.avatarUrl || '';
   document.getElementById('navLogin').textContent = currentUser.login;
-  document.getElementById('navTier').textContent = currentUser.tier;
+  document.getElementById('navTier').textContent = currentUser.trial && currentUser.trial.active
+    ? (currentUser.effectiveTier || currentUser.tier) + ' trial'
+    : (currentUser.effectiveTier || currentUser.tier);
+
+  renderTrialBanner();
 
   checkHealth();
   loadHistory();
   loadAnalytics();
   loadTeam();
   loadBilling();
+}
+
+function renderTrialBanner() {
+  const banner = document.getElementById('trialBanner');
+  const text = document.getElementById('trialBannerText');
+  if (!currentUser || !currentUser.trial || !currentUser.trial.active) {
+    banner.style.display = 'none';
+    text.textContent = '';
+    return;
+  }
+  const tier = capitalize(currentUser.trial.tier || currentUser.effectiveTier || 'pro');
+  const days = currentUser.trial.daysRemaining || 0;
+  text.textContent = tier + ' trial active. ' + days + ' day' + (days === 1 ? '' : 's') + ' remaining to keep AI generation, integrations, and publishing unlocked.';
+  banner.style.display = '';
 }
 
 async function logout() {
@@ -1415,6 +1447,9 @@ async function generate() {
     });
 
     const data = await res.json();
+    if (res.status === 402) {
+      switchDashTab('billing');
+    }
     if (!res.ok) throw new Error(data.error || 'Generation failed');
 
     currentOutput = data.formatted || JSON.stringify(data, null, 2);
@@ -1857,7 +1892,7 @@ function copyWidgetSnippet() {
 }
 
 async function loadBilling() {
-  const tier = (currentUser && currentUser.tier) ? currentUser.tier : 'free';
+  const tier = (currentUser && (currentUser.effectiveTier || currentUser.tier)) ? (currentUser.effectiveTier || currentUser.tier) : 'free';
   const planName = tier.charAt(0).toUpperCase() + tier.slice(1);
   document.getElementById('billingPlanName').textContent = planName;
 
@@ -1888,10 +1923,10 @@ async function loadBilling() {
     const res = await apiFetch('/v1/billing/subscription');
     if (res.ok) {
       const sub = await res.json();
-      if (sub && sub.status) {
-        statusEl.textContent = sub.status === 'active' ? 'Active' : sub.status;
-        if (sub.currentPeriodEnd) {
-          const end = new Date(sub.currentPeriodEnd);
+      if (sub && sub.subscription) {
+        statusEl.textContent = sub.subscription.status === 'active' ? 'Active' : sub.subscription.status;
+        if (sub.subscription.currentPeriodEnd) {
+          const end = new Date(sub.subscription.currentPeriodEnd);
           statusEl.textContent += ' \u2014 renews ' + end.toLocaleDateString();
         }
         // Manage billing button
@@ -1900,6 +1935,13 @@ async function loadBilling() {
         portalBtn.textContent = 'Manage Billing';
         portalBtn.onclick = openBillingPortal;
         actionsEl.appendChild(portalBtn);
+      } else if (sub && sub.trial && sub.trial.active) {
+        statusEl.textContent = capitalize(sub.trial.tier || tier) + ' trial — ' + sub.trial.daysRemaining + ' day' + (sub.trial.daysRemaining === 1 ? '' : 's') + ' left';
+        const trialBtn = document.createElement('button');
+        trialBtn.className = 'btn-small';
+        trialBtn.textContent = 'Upgrade Now';
+        trialBtn.onclick = function() { upgradePlan('pro'); };
+        actionsEl.appendChild(trialBtn);
       } else {
         statusEl.textContent = tier === 'free' ? 'No active subscription' : '';
       }

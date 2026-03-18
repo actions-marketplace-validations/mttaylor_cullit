@@ -47,6 +47,7 @@ const BASE_URL = process.env['CULLIT_BASE_URL'] || 'http://localhost:3000';
 const JWT_EXPIRY = 7 * 24 * 60 * 60; // 7 days in seconds
 const SESSION_COOKIE_NAME = 'cullit_session';
 const COOKIE_SECURE = BASE_URL.startsWith('https') ? '; Secure' : '';
+const TRIAL_DAYS = Math.max(0, parseInt(process.env['CULLIT_TRIAL_DAYS'] || '14', 10) || 14);
 
 // --- Types ---
 
@@ -60,8 +61,21 @@ export interface User {
   orgId: string | null;  // null = no org membership
   role: 'owner' | 'admin' | 'member';
   apiKey: string;        // clt_<random> generated on first login
+  trialTier?: 'pro' | 'team' | null;
+  trialStartsAt?: string | null;
+  trialEndsAt?: string | null;
+  trialConvertedAt?: string | null;
   createdAt: string;
   lastLoginAt: string;
+}
+
+export interface TrialState {
+  active: boolean;
+  expired: boolean;
+  tier: 'pro' | 'team' | null;
+  startsAt: string | null;
+  endsAt: string | null;
+  daysRemaining: number;
 }
 
 export interface Org {
@@ -240,9 +254,49 @@ function dbUserToUser(row: DbUser): User {
     avatarUrl: row.avatar_url,
     tier: row.tier as User['tier'], orgId: row.org_id, role: row.role as User['role'],
     apiKey: row.api_key,
+    trialTier: (row.trial_tier === 'pro' || row.trial_tier === 'team') ? row.trial_tier : null,
+    trialStartsAt: row.trial_starts_at ? row.trial_starts_at.toISOString() : null,
+    trialEndsAt: row.trial_ends_at ? row.trial_ends_at.toISOString() : null,
+    trialConvertedAt: row.trial_converted_at ? row.trial_converted_at.toISOString() : null,
     createdAt: row.created_at.toISOString(),
     lastLoginAt: row.last_login_at.toISOString(),
   };
+}
+
+function getInitialTrialWindow(): { trialTier: 'pro'; trialStartsAt: Date; trialEndsAt: Date } | null {
+  if (TRIAL_DAYS <= 0) return null;
+  const start = new Date();
+  const end = new Date(start.getTime() + (TRIAL_DAYS * 24 * 60 * 60 * 1000));
+  return { trialTier: 'pro', trialStartsAt: start, trialEndsAt: end };
+}
+
+export function getTrialStatus(user: User): TrialState {
+  const tier = user.trialTier === 'pro' || user.trialTier === 'team' ? user.trialTier : null;
+  if (!tier || !user.trialEndsAt) {
+    return { active: false, expired: false, tier: null, startsAt: null, endsAt: null, daysRemaining: 0 };
+  }
+
+  const endTime = new Date(user.trialEndsAt).getTime();
+  const startTime = user.trialStartsAt ? new Date(user.trialStartsAt).getTime() : null;
+  const now = Date.now();
+  const active = user.tier === 'free' && endTime > now;
+  const expired = user.tier === 'free' && endTime <= now;
+  const daysRemaining = active ? Math.max(1, Math.ceil((endTime - now) / (24 * 60 * 60 * 1000))) : 0;
+
+  return {
+    active,
+    expired,
+    tier,
+    startsAt: startTime ? new Date(startTime).toISOString() : null,
+    endsAt: new Date(endTime).toISOString(),
+    daysRemaining,
+  };
+}
+
+export function getEffectiveTier(user: User): User['tier'] {
+  const trial = getTrialStatus(user);
+  if (trial.active && trial.tier) return trial.tier;
+  return user.tier;
 }
 
 function generateApiKey(): string {
@@ -253,10 +307,14 @@ async function createOrUpdateUser(ghUser: GitHubUser): Promise<User> {
   if (useDb) {
     const apiKey = generateApiKey();
     const isNew = !(await dbGetUser(ghUser.id));
+    const trial = isNew ? getInitialTrialWindow() : null;
     const row = await dbUpsertUser({
       id: ghUser.id, login: ghUser.login,
       name: ghUser.name || ghUser.login, email: ghUser.email || '',
       avatarUrl: ghUser.avatar_url, apiKey,
+      trialTier: trial?.trialTier || null,
+      trialStartsAt: trial?.trialStartsAt || null,
+      trialEndsAt: trial?.trialEndsAt || null,
     });
     const user = dbUserToUser(row);
     if (isNew && user.email) {
@@ -283,7 +341,13 @@ async function createOrUpdateUser(ghUser: GitHubUser): Promise<User> {
     name: ghUser.name || ghUser.login, email: ghUser.email || '',
     avatarUrl: ghUser.avatar_url, tier: 'free',
     orgId: null, role: 'member',
-    apiKey: generateApiKey(), createdAt: now, lastLoginAt: now,
+    apiKey: generateApiKey(),
+    ...(getInitialTrialWindow() ? {
+      trialTier: 'pro' as const,
+      trialStartsAt: now,
+      trialEndsAt: new Date(Date.now() + (TRIAL_DAYS * 24 * 60 * 60 * 1000)).toISOString(),
+    } : {}),
+    createdAt: now, lastLoginAt: now,
   };
 
   store.users[user.id] = user;
@@ -535,6 +599,9 @@ export async function handleAuthMe(req: IncomingMessage, res: ServerResponse, js
     return;
   }
 
+  const effectiveTier = getEffectiveTier(user);
+  const trial = getTrialStatus(user);
+
   jsonFn(res, 200, {
     id: user.id,
     login: user.login,
@@ -542,9 +609,11 @@ export async function handleAuthMe(req: IncomingMessage, res: ServerResponse, js
     email: user.email,
     avatarUrl: user.avatarUrl,
     tier: user.tier,
+    effectiveTier,
     orgId: user.orgId,
     role: user.role,
     apiKey: user.apiKey,
+    trial,
     createdAt: user.createdAt,
   });
 }
