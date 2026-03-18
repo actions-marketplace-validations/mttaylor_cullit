@@ -32,9 +32,10 @@ import {
   recordUsageEvent, getUsageStats, getMonthlyGenerationCount,
   type HistoryEntry,
 } from './store.js';
-import { migrate } from './db.js';
+import { migrate, dbPublishRelease, dbGetReleases, dbGetProjectCount, closeDb, sql } from './db.js';
 import { handleCheckout, handleBillingPortal, handleGetSubscription, handleStripeWebhook, isStripeConfigured } from './billing.js';
 import { sendSubscriptionConfirmed, sendPaymentFailed } from './email.js';
+import { log } from './logger.js';
 
 // Load pro plugins if installed
 try { await import('@cullit/pro'); } catch { /* pro not installed */ }
@@ -48,7 +49,7 @@ const API_TOKEN = process.env['CULLIT_API_TOKEN'] || ''; // optional bearer auth
 //   ALLOWED_ORIGINS=https://yourdomain.com (comma-separated for multiple)
 const ALLOWED_ORIGINS = process.env['ALLOWED_ORIGINS'] || '';
 if (!ALLOWED_ORIGINS) {
-  console.warn('⚠ WARNING: ALLOWED_ORIGINS is not set. CORS will reject cross-origin requests. Set ALLOWED_ORIGINS=* for local dev or specify your domain.');
+  log.warn('ALLOWED_ORIGINS is not set. CORS will reject cross-origin requests. Set ALLOWED_ORIGINS=* for local dev or specify your domain.');
 }
 const allowedOriginSet = new Set(ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean));
 
@@ -83,7 +84,15 @@ function checkRateLimit(req: IncomingMessage, res: ServerResponse): boolean {
   const timestamps = rateBuckets.get(ip) || [];
   const recent = timestamps.filter(t => now - t < RATE_WINDOW);
 
+  // Set rate limit headers on every response
+  const remaining = Math.max(0, RATE_LIMIT - recent.length);
+  const resetAt = recent.length > 0 ? Math.ceil((recent[0] + RATE_WINDOW) / 1000) : Math.ceil((now + RATE_WINDOW) / 1000);
+  res.setHeader('X-RateLimit-Limit', RATE_LIMIT);
+  res.setHeader('X-RateLimit-Remaining', remaining);
+  res.setHeader('X-RateLimit-Reset', resetAt);
+
   if (recent.length >= RATE_LIMIT) {
+    res.setHeader('Retry-After', Math.ceil(RATE_WINDOW / 1000));
     json(res, 429, { error: 'Too many requests. Try again later.' });
     return false;
   }
@@ -111,6 +120,9 @@ function json(res: ServerResponse, status: number, body: unknown): void {
     'Content-Length': Buffer.byteLength(payload),
     'Access-Control-Allow-Origin': currentCorsOrigin,
     'Access-Control-Allow-Credentials': 'true',
+    'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
   });
   res.end(payload);
 }
@@ -232,10 +244,10 @@ function loadChangelogStore(): void {
           changelogStore.set(project, releases as ChangelogRelease[]);
         }
       }
-      console.log(`Loaded changelog store: ${changelogStore.size} projects`);
+      log.info({ projects: changelogStore.size }, 'Loaded changelog store');
     }
   } catch (err) {
-    console.warn('Failed to load changelog store:', (err as Error).message);
+    log.warn({ err: (err as Error).message }, 'Failed to load changelog store');
   }
 }
 
@@ -247,7 +259,7 @@ function saveChangelogStore(): void {
     }
     writeFileSync(CHANGELOG_FILE, JSON.stringify(data, null, 2), 'utf-8');
   } catch (err) {
-    console.warn('Failed to save changelog store:', (err as Error).message);
+    log.warn({ err: (err as Error).message }, 'Failed to save changelog store');
   }
 }
 
@@ -260,6 +272,8 @@ async function handleHealth(_req: IncomingMessage, res: ServerResponse): Promise
     status: 'ok',
     version: VERSION,
     uptime: process.uptime(),
+    database: !!sql,
+    stripe: isStripeConfigured(),
   });
 }
 
@@ -427,7 +441,7 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
       }).catch(() => {});
     }
   } catch (err) {
-    console.error('Pipeline error:', (err as Error).message);
+    log.error({ err: (err as Error).message }, 'Pipeline error');
     json(res, 500, { error: 'Generation failed. Check server logs for details.' });
   }
 }
@@ -496,28 +510,48 @@ async function handleChangelogPublish(req: IncomingMessage, res: ServerResponse)
 
   // Cap total number of projects
   const MAX_PROJECTS = 1000;
-  if (!changelogStore.has(body.project) && changelogStore.size >= MAX_PROJECTS) {
-    json(res, 409, { error: 'Maximum number of projects reached' });
-    return;
-  }
 
-  // Store the release
-  const releases = changelogStore.get(body.project) || [];
-
-  // Check for duplicate version (update if exists)
-  const existingIdx = releases.findIndex(r => r.version === release.version);
-  if (existingIdx >= 0) {
-    releases[existingIdx] = release;
-  } else {
-    releases.unshift(release); // newest first
-    // Cap stored releases
-    if (releases.length > MAX_RELEASES_PER_PROJECT) {
-      releases.length = MAX_RELEASES_PER_PROJECT;
+  // DB-backed persistence when available
+  if (useDb) {
+    const projectCount = await dbGetProjectCount();
+    if (projectCount >= MAX_PROJECTS) {
+      json(res, 409, { error: 'Maximum number of projects reached' });
+      return;
     }
-  }
+    await dbPublishRelease(body.project, {
+      version: release.version,
+      date: release.date,
+      summary: release.summary,
+      changes: release.changes,
+      contributors: release.contributors,
+      metadata: release.metadata,
+      formattedMd: release.formatted.markdown,
+      formattedHtml: release.formatted.html,
+    });
+  } else {
+    if (!changelogStore.has(body.project) && changelogStore.size >= MAX_PROJECTS) {
+      json(res, 409, { error: 'Maximum number of projects reached' });
+      return;
+    }
 
-  changelogStore.set(body.project, releases);
-  saveChangelogStore();
+    // Store the release
+    const releases = changelogStore.get(body.project) || [];
+
+    // Check for duplicate version (update if exists)
+    const existingIdx = releases.findIndex(r => r.version === release.version);
+    if (existingIdx >= 0) {
+      releases[existingIdx] = release;
+    } else {
+      releases.unshift(release); // newest first
+      // Cap stored releases
+      if (releases.length > MAX_RELEASES_PER_PROJECT) {
+        releases.length = MAX_RELEASES_PER_PROJECT;
+      }
+    }
+
+    changelogStore.set(body.project, releases);
+    saveChangelogStore();
+  }
 
   json(res, 201, {
     ok: true,
@@ -531,6 +565,12 @@ async function handleChangelogLatest(req: IncomingMessage, res: ServerResponse, 
   const url = new URL(req.url || '/', `http://localhost:${PORT}`);
   const rawLimit = parseInt(url.searchParams.get('limit') || '20', 10);
   const limit = Math.max(1, Math.min(isNaN(rawLimit) ? 20 : rawLimit, 50));
+
+  if (useDb) {
+    const result = await dbGetReleases(project, limit);
+    json(res, 200, { project, releases: result });
+    return;
+  }
 
   const releases = changelogStore.get(project);
   if (!releases || releases.length === 0) {
@@ -710,7 +750,7 @@ const server = createServer(async (req, res) => {
 
   try {
     // --- Rate limit all non-system routes ---
-    if (path !== '/health' && path !== '/openapi.json' && path !== '/auth/callback' && path !== '/v1/billing/webhook') {
+    if (path !== '/health' && path !== '/healthz' && path !== '/openapi.json' && path !== '/auth/callback' && path !== '/v1/billing/webhook') {
       if (!checkRateLimit(req, res)) return;
     }
 
@@ -726,6 +766,8 @@ const server = createServer(async (req, res) => {
 
     // --- Public / system routes ---
     } else if (path === '/health' && req.method === 'GET') {
+      await handleHealth(req, res);
+    } else if (path === '/healthz' && req.method === 'GET') {
       await handleHealth(req, res);
     } else if (path === '/openapi.json' && req.method === 'GET') {
       await handleOpenAPI(req, res);
@@ -786,7 +828,7 @@ const server = createServer(async (req, res) => {
       json(res, 404, { error: 'Not found', docs: '/openapi.json' });
     }
   } catch (err) {
-    console.error('Unhandled error:', err);
+    log.error({ err }, 'Unhandled error');
     json(res, 500, { error: 'Internal server error' });
   }
 });
@@ -794,27 +836,22 @@ const server = createServer(async (req, res) => {
 const isDirectRun = process.argv[1]?.endsWith('index.js') || process.argv[1]?.endsWith('index.mjs');
 if (isDirectRun) {
   server.listen(PORT, () => {
-    console.log(`
-  ╔═══════════════════════════════════════════════╗
-  ║  Cullit API v${VERSION}                          ║
-  ║  http://localhost:${PORT}                        ║
-  ║                                               ║
-  ║  GET  /health                      Status     ║
-  ║  GET  /openapi.json                Spec       ║
-  ║  POST /v1/generate                 Notes      ║
-  ║  POST /v1/changelog                Publish    ║
-  ║  GET  /v1/changelog/:p/latest      Releases   ║
-  ║  GET  /auth/github                 Login      ║
-  ║  GET  /auth/me                     Profile    ║
-  ║  GET  /v1/org                      Team       ║
-  ║  GET  /v1/history                  History    ║
-  ║  GET  /v1/analytics/usage          Analytics  ║
-  ║  POST /v1/billing/checkout         Billing    ║
-  ║  POST /v1/billing/portal           Portal     ║
-  ║  GET  /v1/billing/subscription     Sub        ║
-  ╚═══════════════════════════════════════════════╝
-  `);
+    log.info({ version: VERSION, port: PORT, database: !!sql, stripe: isStripeConfigured() }, `Cullit API v${VERSION} listening on http://localhost:${PORT}`);
   });
 }
+
+// --- Graceful shutdown ---
+function shutdown(signal: string) {
+  log.info(`${signal} received — shutting down gracefully...`);
+  server.close(async () => {
+    await closeDb();
+    log.info('Server closed.');
+    process.exit(0);
+  });
+  // Force exit after 10s
+  setTimeout(() => { process.exit(1); }, 10_000).unref();
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 export { server };

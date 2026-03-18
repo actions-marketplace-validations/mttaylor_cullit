@@ -786,6 +786,132 @@
     align-items: flex-end;
   }
   .create-org-form .form-group { flex: 1; margin: 0; }
+
+  /* BILLING TAB */
+  .billing-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .billing-plan-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    min-width: 200px;
+  }
+  .billing-plan-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.3rem;
+  }
+  .billing-plan-name {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .billing-plan-status {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    font-family: 'Space Mono', monospace;
+    margin-top: 0.25rem;
+  }
+  .billing-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .billing-usage {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+  .billing-usage-body { padding: 1rem; }
+  .usage-bar-container { width: 100%; }
+  .usage-bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+  }
+  .usage-bar-labels span:first-child { color: var(--accent); font-weight: 700; }
+  .usage-bar-labels span:last-child { color: var(--text-dim); }
+  .usage-bar-track {
+    height: 8px;
+    background: var(--bg);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .usage-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+  }
+  .usage-bar-fill.warning { background: var(--terminal-yellow); }
+  .usage-bar-fill.danger { background: var(--terminal-red); }
+  .billing-plans-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+  }
+  .billing-plan-option {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.2s;
+  }
+  .billing-plan-option:hover { border-color: var(--accent-dim); }
+  .billing-plan-option.current { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .plan-tier {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-bright);
+    margin-bottom: 0.3rem;
+  }
+  .plan-price {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.5rem;
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+  }
+  .plan-price span { font-size: 0.7rem; color: var(--text-dim); font-weight: 400; }
+  .plan-features {
+    list-style: none;
+    padding: 0;
+    flex: 1;
+    margin-bottom: 0.75rem;
+  }
+  .plan-features li {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    padding: 0.2rem 0;
+    font-family: 'Space Mono', monospace;
+  }
+  .plan-features li::before {
+    content: '\2713 ';
+    color: var(--accent);
+  }
+  .plan-upgrade-btn {
+    width: 100%;
+    text-align: center;
+  }
 </style>
 </head>
 <body>
@@ -796,7 +922,7 @@
     <a href="index.html">Home</a>
     <a href="docs.html">Docs</a>
     <a href="dashboard.html" class="active">Dashboard</a>
-    <a href="https://github.com/mttaylor/cullit" target="_blank">GitHub</a>
+    <a href="https://www.npmjs.com/package/cullit" target="_blank">npm</a>
     <div class="nav-user" id="navUser" style="display:none">
       <img id="navAvatar" src="" alt="">
       <span id="navLogin"></span>
@@ -908,6 +1034,7 @@
       <button class="dash-tab" data-tab="history" onclick="switchDashTab('history')">&#128337; History</button>
       <button class="dash-tab" data-tab="analytics" onclick="switchDashTab('analytics')">&#128200; Analytics</button>
       <button class="dash-tab" data-tab="team" onclick="switchDashTab('team')">&#128101; Team</button>
+      <button class="dash-tab" data-tab="billing" onclick="switchDashTab('billing')">&#128179; Billing</button>
     </div>
 
     <!-- GENERATE TAB -->
@@ -1005,6 +1132,78 @@
       </div>
     </div>
 
+    <!-- BILLING TAB -->
+    <div class="tab-content" id="tab-billing">
+      <div class="billing-header">
+        <div class="billing-plan-card">
+          <div class="billing-plan-label">Current Plan</div>
+          <div class="billing-plan-name" id="billingPlanName">Free</div>
+          <div class="billing-plan-status" id="billingPlanStatus"></div>
+        </div>
+        <div class="billing-actions" id="billingActions"></div>
+      </div>
+
+      <div class="billing-usage">
+        <div class="panel-header">&#128200; Usage This Month</div>
+        <div class="billing-usage-body">
+          <div class="usage-bar-container">
+            <div class="usage-bar-labels">
+              <span id="usageCount">0</span>
+              <span id="usageLimit">/ 3 generations</span>
+            </div>
+            <div class="usage-bar-track">
+              <div class="usage-bar-fill" id="usageBarFill" style="width:0%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="billing-plans-grid">
+        <div class="billing-plan-option" id="planFree">
+          <div class="plan-tier">Free</div>
+          <div class="plan-price">$0<span>/mo</span></div>
+          <ul class="plan-features">
+            <li>3 generations / month</li>
+            <li>1 project</li>
+            <li>Template-based notes</li>
+          </ul>
+        </div>
+        <div class="billing-plan-option" id="planPro">
+          <div class="plan-tier">Pro</div>
+          <div class="plan-price">$9<span>/mo</span></div>
+          <ul class="plan-features">
+            <li>500 generations / month</li>
+            <li>5 projects</li>
+            <li>AI-powered notes</li>
+            <li>All integrations</li>
+          </ul>
+          <button class="btn-small plan-upgrade-btn" onclick="upgradePlan('pro')">Upgrade</button>
+        </div>
+        <div class="billing-plan-option" id="planTeam">
+          <div class="plan-tier">Team</div>
+          <div class="plan-price">$29<span>/seat/mo</span></div>
+          <ul class="plan-features">
+            <li>2,000 generations / month</li>
+            <li>25 projects</li>
+            <li>Team management</li>
+            <li>Priority support</li>
+          </ul>
+          <button class="btn-small plan-upgrade-btn" onclick="upgradePlan('team')">Upgrade</button>
+        </div>
+        <div class="billing-plan-option">
+          <div class="plan-tier">Enterprise</div>
+          <div class="plan-price">Custom</div>
+          <ul class="plan-features">
+            <li>Unlimited generations</li>
+            <li>Unlimited projects</li>
+            <li>SSO &amp; SAML</li>
+            <li>Dedicated support</li>
+          </ul>
+          <a href="mailto:sales@cullit.io" class="btn-small plan-upgrade-btn" style="text-decoration:none;text-align:center">Contact Sales</a>
+        </div>
+      </div>
+    </div>
+
     <!-- Status bar -->
     <div class="status-bar">
       <div>
@@ -1073,6 +1272,7 @@ function showDashboard() {
   loadHistory();
   loadAnalytics();
   loadTeam();
+  loadBilling();
 }
 
 async function logout() {
@@ -1231,6 +1431,7 @@ function switchDashTab(tab) {
   if (tab === 'history') loadHistory();
   if (tab === 'analytics') loadAnalytics();
   if (tab === 'team') loadTeam();
+  if (tab === 'billing') loadBilling();
 }
 
 // --- History (server-side) ---
@@ -1472,6 +1673,111 @@ function showToast(msg) {
   toast.textContent = msg;
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 5000);
+}
+
+// --- Billing ---
+
+const TIER_LIMITS = { free: 3, pro: 500, team: 2000, enterprise: Infinity };
+
+async function loadBilling() {
+  const tier = (currentUser && currentUser.tier) ? currentUser.tier : 'free';
+  const planName = tier.charAt(0).toUpperCase() + tier.slice(1);
+  document.getElementById('billingPlanName').textContent = planName;
+
+  // Highlight current plan card
+  document.querySelectorAll('.billing-plan-option').forEach(el => el.classList.remove('current'));
+  const planEl = document.getElementById('plan' + planName);
+  if (planEl) planEl.classList.add('current');
+
+  // Hide upgrade button for current plan
+  document.querySelectorAll('.plan-upgrade-btn').forEach(btn => btn.style.display = '');
+  if (planEl) {
+    const btn = planEl.querySelector('.plan-upgrade-btn');
+    if (btn) btn.style.display = 'none';
+  }
+
+  // Subscription details
+  const statusEl = document.getElementById('billingPlanStatus');
+  const actionsEl = document.getElementById('billingActions');
+  actionsEl.innerHTML = '';
+
+  try {
+    const res = await apiFetch('/v1/billing/subscription');
+    if (res.ok) {
+      const sub = await res.json();
+      if (sub && sub.status) {
+        statusEl.textContent = sub.status === 'active' ? 'Active' : sub.status;
+        if (sub.currentPeriodEnd) {
+          const end = new Date(sub.currentPeriodEnd);
+          statusEl.textContent += ' \u2014 renews ' + end.toLocaleDateString();
+        }
+        // Manage billing button
+        const portalBtn = document.createElement('button');
+        portalBtn.className = 'btn-small';
+        portalBtn.textContent = 'Manage Billing';
+        portalBtn.onclick = openBillingPortal;
+        actionsEl.appendChild(portalBtn);
+      } else {
+        statusEl.textContent = tier === 'free' ? 'No active subscription' : '';
+      }
+    }
+  } catch {
+    statusEl.textContent = '';
+  }
+
+  // Usage bar
+  try {
+    const res = await apiFetch('/v1/analytics/usage?days=30');
+    if (res.ok) {
+      const data = await res.json();
+      const used = data.monthlyGenerations || 0;
+      const limit = TIER_LIMITS[tier] || 3;
+      const pct = limit === Infinity ? 0 : Math.min(100, Math.round((used / limit) * 100));
+
+      document.getElementById('usageCount').textContent = used.toLocaleString();
+      document.getElementById('usageLimit').textContent = limit === Infinity
+        ? '/ unlimited'
+        : '/ ' + limit.toLocaleString() + ' generations';
+
+      const bar = document.getElementById('usageBarFill');
+      bar.style.width = pct + '%';
+      bar.className = 'usage-bar-fill' + (pct >= 90 ? ' danger' : pct >= 70 ? ' warning' : '');
+    }
+  } catch {}
+}
+
+async function upgradePlan(plan) {
+  try {
+    const res = await apiFetch('/v1/billing/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan }),
+    });
+    const data = await res.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      showToast(data.error || 'Unable to start checkout');
+    }
+  } catch {
+    showToast('Billing is not configured yet. Contact sales@cullit.io');
+  }
+}
+
+async function openBillingPortal() {
+  try {
+    const res = await apiFetch('/v1/billing/portal', {
+      method: 'POST',
+    });
+    const data = await res.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      showToast(data.error || 'Unable to open billing portal');
+    }
+  } catch {
+    showToast('Billing portal unavailable');
+  }
 }
 
 // --- Init ---
