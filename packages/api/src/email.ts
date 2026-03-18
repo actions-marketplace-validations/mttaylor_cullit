@@ -104,10 +104,10 @@ cullit generate --from v1.0.0</pre>
 }
 
 export async function sendSubscriptionConfirmed(email: string, name: string, plan: string): Promise<boolean> {
-  const planName = plan === 'enterprise' ? 'Enterprise ($19/seat/mo)' : plan === 'team' ? 'Team ($29/seat/mo)' : 'Pro ($9/mo)';
+  const planName = plan === 'team' ? 'Team ($19/seat/mo)' : 'Pro ($9/mo)';
   return send({
     to: email,
-    subject: `You're on Cullit ${plan === 'enterprise' ? 'Enterprise' : plan === 'team' ? 'Team' : 'Pro'}!`,
+    subject: `You're on Cullit ${plan === 'team' ? 'Team' : 'Pro'}!`,
     html: `${BRAND}
       <h2 style="color: #0f1117; margin-bottom: 16px;">Subscription confirmed</h2>
       <p style="color: #374151; line-height: 1.6;">
@@ -117,14 +117,7 @@ export async function sendSubscriptionConfirmed(email: string, name: string, pla
         You now have access to:
       </p>
       <ul style="color: #374151; line-height: 1.8; padding-left: 20px;">
-        ${plan === 'enterprise' ? `
-          <li>Unlimited generations</li>
-          <li>Unlimited projects</li>
-          <li>All Team features</li>
-          <li>SSO &amp; SAML</li>
-          <li>Self-hosted / on-prem</li>
-          <li>Dedicated support &amp; SLA</li>
-        ` : plan === 'team' ? `
+        ${plan === 'team' ? `
           <li>2,000 generations/month</li>
           <li>25 projects</li>
           <li>Multi-repo, GitLab, Bitbucket</li>

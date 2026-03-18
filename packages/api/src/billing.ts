@@ -11,8 +11,7 @@
  *   STRIPE_SECRET_KEY      — Stripe API secret key (sk_test_... or sk_live_...)
  *   STRIPE_WEBHOOK_SECRET  — Webhook endpoint signing secret (whsec_...)
  *   STRIPE_PRO_PRICE_ID         — Price ID for Pro plan ($9/mo)
- *   STRIPE_TEAM_PRICE_ID        — Price ID for Team plan ($29/seat/mo)
- *   STRIPE_ENTERPRISE_PRICE_ID  — Price ID for Enterprise plan ($19/seat/mo)
+ *   STRIPE_TEAM_PRICE_ID        — Price ID for Team plan ($19/seat/mo)
  *   CULLIT_BASE_URL             — Public base URL for success/cancel redirects
  *
  * NOTE: We use Stripe's REST API directly instead of the SDK
@@ -32,7 +31,6 @@ const STRIPE_SECRET_KEY = process.env['STRIPE_SECRET_KEY'] || '';
 const STRIPE_WEBHOOK_SECRET = process.env['STRIPE_WEBHOOK_SECRET'] || '';
 const STRIPE_PRO_PRICE_ID = process.env['STRIPE_PRO_PRICE_ID'] || '';
 const STRIPE_TEAM_PRICE_ID = process.env['STRIPE_TEAM_PRICE_ID'] || '';
-const STRIPE_ENTERPRISE_PRICE_ID = process.env['STRIPE_ENTERPRISE_PRICE_ID'] || '';
 const BASE_URL = process.env['CULLIT_BASE_URL'] || 'http://localhost:3000';
 
 // --- Stripe API helpers ---
@@ -90,14 +88,12 @@ function verifyWebhookSignature(payload: string, sigHeader: string): boolean {
 function priceToPlan(priceId: string): string {
   if (priceId === STRIPE_PRO_PRICE_ID) return 'pro';
   if (priceId === STRIPE_TEAM_PRICE_ID) return 'team';
-  if (priceId === STRIPE_ENTERPRISE_PRICE_ID) return 'enterprise';
   return 'free';
 }
 
 function planToTier(plan: string): string {
   if (plan === 'pro') return 'pro';
   if (plan === 'team') return 'team';
-  if (plan === 'enterprise') return 'enterprise';
   return 'free';
 }
 
@@ -105,7 +101,7 @@ function planToTier(plan: string): string {
 
 export async function handleCheckout(
   userId: string,
-  plan: 'pro' | 'team' | 'enterprise',
+  plan: 'pro' | 'team',
   jsonFn: (res: ServerResponse, status: number, body: unknown) => void,
   res: ServerResponse,
 ): Promise<void> {
@@ -120,9 +116,7 @@ export async function handleCheckout(
     return;
   }
 
-  const priceId = plan === 'enterprise' ? STRIPE_ENTERPRISE_PRICE_ID
-    : plan === 'team' ? STRIPE_TEAM_PRICE_ID
-    : STRIPE_PRO_PRICE_ID;
+  const priceId = plan === 'team' ? STRIPE_TEAM_PRICE_ID : STRIPE_PRO_PRICE_ID;
   if (!priceId) {
     jsonFn(res, 503, { error: `Price not configured for ${plan} plan` });
     return;

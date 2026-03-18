@@ -83,8 +83,8 @@ Required environment variables:
 |------|-------|--------------|
 | **Free** | $0 | Template-based release notes (no AI), 3 generations/month |
 | **Pro** | $9/mo | AI-powered notes (BYOK), Jira/Linear, Slack/Discord/GitHub Release, 500 gen/mo, 5 projects |
-| **Team** | $29/seat/mo | Multi-repo, Confluence/Notion/Teams, hosted changelog, 10 seats, 2000 gen/mo, 25 projects |
-| **Enterprise** | $19/seat/mo | SSO/SAML, SLA, on-prem, unlimited generations &amp; projects — [sales@cullit.io](mailto:sales@cullit.io) |
+| **Team** | $19/seat/mo | Multi-repo, Confluence/Notion/Teams, hosted changelog, 10 seats, 2000 gen/mo, 25 projects |
+| **Enterprise** | Custom | SSO/SAML, SLA, on-prem, unlimited generations &amp; projects — [sales@cullit.io](mailto:sales@cullit.io) |
 
 The GitHub App is **free** with template-based notes. Activate AI-powered generation with a `CULLIT_API_KEY` (Pro or above).
 

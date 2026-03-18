@@ -794,7 +794,7 @@ const server = createServer(async (req, res) => {
       const raw = await readBody(req);
       let body: { plan?: string };
       try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
-      const plan = body.plan === 'team' ? 'team' : body.plan === 'enterprise' ? 'enterprise' : 'pro';
+      const plan = body.plan === 'team' ? 'team' : 'pro';
       await handleCheckout(user.id, plan, json, res);
     } else if (path === '/v1/billing/portal' && req.method === 'POST') {
       const user = await resolveUser(req);
