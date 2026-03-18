@@ -13,6 +13,7 @@ import {
   dbRecordUsage, dbGetUsageStats, dbGetMonthlyGenerationCount,
 } from './db.js';
 import { useDb } from './auth.js';
+import { log } from './logger.js';
 
 // --- Config ---
 
@@ -70,10 +71,10 @@ export function loadHistoryStore(): void {
       if (data.history) store.history = data.history;
       if (data.dailyUsage) store.dailyUsage = data.dailyUsage;
       const userCount = Object.keys(store.history).length;
-      console.log(`Loaded history store: ${userCount} users with history`);
+      log.info({ users: userCount }, 'Loaded history store');
     }
   } catch (err) {
-    console.warn('Failed to load history store:', (err as Error).message);
+    log.warn({ err: (err as Error).message }, 'Failed to load history store');
   }
 }
 
@@ -81,7 +82,7 @@ function saveHistoryStore(): void {
   try {
     writeFileSync(HISTORY_FILE, JSON.stringify(store, null, 2), 'utf-8');
   } catch (err) {
-    console.warn('Failed to save history store:', (err as Error).message);
+    log.warn({ err: (err as Error).message }, 'Failed to save history store');
   }
 }
 

@@ -28,6 +28,7 @@ import {
   type DbUser, type DbOrg,
 } from './db.js';
 import { sendWelcome } from './email.js';
+import { log } from './logger.js';
 
 /** Whether PostgreSQL is available */
 export const useDb = !!process.env['DATABASE_URL'];
@@ -38,7 +39,7 @@ const GITHUB_CLIENT_ID = process.env['GITHUB_CLIENT_ID'] || '';
 const GITHUB_CLIENT_SECRET = process.env['GITHUB_CLIENT_SECRET'] || '';
 const JWT_SECRET = process.env['CULLIT_JWT_SECRET'] || (() => {
   const fallback = randomBytes(32).toString('hex');
-  console.warn('⚠ WARNING: CULLIT_JWT_SECRET is not set. Using random key — sessions will not survive restarts.');
+  log.warn('CULLIT_JWT_SECRET is not set — using random key. Sessions will not survive restarts.');
   return fallback;
 })();
 const AUTH_STORE_PATH = process.env['CULLIT_AUTH_STORE_PATH'] || './auth-store.json';
@@ -109,10 +110,10 @@ export function loadAuthStore(): void {
       if (data.users) store.users = data.users;
       if (data.orgs) store.orgs = data.orgs;
       if (data.apiKeyIndex) store.apiKeyIndex = data.apiKeyIndex;
-      console.log(`Loaded auth store: ${Object.keys(store.users).length} users, ${Object.keys(store.orgs).length} orgs`);
+      log.info({ users: Object.keys(store.users).length, orgs: Object.keys(store.orgs).length }, 'Loaded auth store');
     }
   } catch (err) {
-    console.warn('Failed to load auth store:', (err as Error).message);
+    log.warn({ err: (err as Error).message }, 'Failed to load auth store');
   }
 }
 
@@ -120,7 +121,7 @@ function saveAuthStore(): void {
   try {
     writeFileSync(AUTH_STORE_PATH, JSON.stringify(store, null, 2), 'utf-8');
   } catch (err) {
-    console.warn('Failed to save auth store:', (err as Error).message);
+    log.warn({ err: (err as Error).message }, 'Failed to save auth store');
   }
 }
 
@@ -518,7 +519,7 @@ export async function handleAuthCallback(req: IncomingMessage, res: ServerRespon
     });
     res.end();
   } catch (err) {
-    console.error('OAuth callback error:', (err as Error).message);
+    log.error({ err: (err as Error).message }, 'OAuth callback error');
     res.writeHead(500, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'OAuth flow failed' }));
   }

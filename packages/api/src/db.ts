@@ -21,11 +21,12 @@
  */
 
 import postgres from 'postgres';
+import { log } from './logger.js';
 
 const DATABASE_URL = process.env['DATABASE_URL'] || '';
 
 if (!DATABASE_URL) {
-  console.warn('⚠ WARNING: DATABASE_URL is not set. Database features are disabled.');
+  log.warn('DATABASE_URL is not set — database features are disabled.');
 }
 
 export const sql = DATABASE_URL
@@ -154,7 +155,7 @@ export async function migrate(): Promise<void> {
   await sql`CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions (user_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe ON subscriptions (stripe_subscription_id)`;
 
-  console.log('Database migrations complete');
+  log.info('Database migrations complete');
 }
 
 // --- User DB operations ---

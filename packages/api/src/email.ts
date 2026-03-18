@@ -12,6 +12,8 @@
 const RESEND_API_KEY = process.env['RESEND_API_KEY'] || '';
 const EMAIL_FROM = process.env['EMAIL_FROM'] || 'Cullit <noreply@cullit.io>';
 
+import { log } from './logger.js';
+
 interface EmailOptions {
   to: string;
   subject: string;
@@ -20,7 +22,7 @@ interface EmailOptions {
 
 async function send(options: EmailOptions): Promise<boolean> {
   if (!RESEND_API_KEY) {
-    console.warn('Email skipped (RESEND_API_KEY not set):', options.subject, '→', options.to);
+    log.warn({ subject: options.subject, to: options.to }, 'Email skipped (RESEND_API_KEY not set)');
     return false;
   }
 
@@ -41,12 +43,12 @@ async function send(options: EmailOptions): Promise<boolean> {
 
     if (!res.ok) {
       const err = await res.text();
-      console.error('Email send failed:', res.status, err);
+      log.error({ status: res.status, err }, 'Email send failed');
       return false;
     }
     return true;
   } catch (err) {
-    console.error('Email send error:', (err as Error).message);
+    log.error({ err: (err as Error).message }, 'Email send error');
     return false;
   }
 }
@@ -102,10 +104,10 @@ cullit generate --from v1.0.0</pre>
 }
 
 export async function sendSubscriptionConfirmed(email: string, name: string, plan: string): Promise<boolean> {
-  const planName = plan === 'team' ? 'Team ($29/seat/mo)' : 'Pro ($9/mo)';
+  const planName = plan === 'enterprise' ? 'Enterprise ($19/seat/mo)' : plan === 'team' ? 'Team ($29/seat/mo)' : 'Pro ($9/mo)';
   return send({
     to: email,
-    subject: `You're on Cullit ${plan === 'team' ? 'Team' : 'Pro'}!`,
+    subject: `You're on Cullit ${plan === 'enterprise' ? 'Enterprise' : plan === 'team' ? 'Team' : 'Pro'}!`,
     html: `${BRAND}
       <h2 style="color: #0f1117; margin-bottom: 16px;">Subscription confirmed</h2>
       <p style="color: #374151; line-height: 1.6;">
@@ -115,7 +117,14 @@ export async function sendSubscriptionConfirmed(email: string, name: string, pla
         You now have access to:
       </p>
       <ul style="color: #374151; line-height: 1.8; padding-left: 20px;">
-        ${plan === 'team' ? `
+        ${plan === 'enterprise' ? `
+          <li>Unlimited generations</li>
+          <li>Unlimited projects</li>
+          <li>All Team features</li>
+          <li>SSO &amp; SAML</li>
+          <li>Self-hosted / on-prem</li>
+          <li>Dedicated support &amp; SLA</li>
+        ` : plan === 'team' ? `
           <li>2,000 generations/month</li>
           <li>25 projects</li>
           <li>Multi-repo, GitLab, Bitbucket</li>

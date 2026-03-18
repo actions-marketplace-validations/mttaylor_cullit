@@ -10,9 +10,10 @@
  * Environment Variables:
  *   STRIPE_SECRET_KEY      — Stripe API secret key (sk_test_... or sk_live_...)
  *   STRIPE_WEBHOOK_SECRET  — Webhook endpoint signing secret (whsec_...)
- *   STRIPE_PRO_PRICE_ID    — Price ID for Pro plan ($9/mo)
- *   STRIPE_TEAM_PRICE_ID   — Price ID for Team plan ($29/seat/mo)
- *   CULLIT_BASE_URL        — Public base URL for success/cancel redirects
+ *   STRIPE_PRO_PRICE_ID         — Price ID for Pro plan ($9/mo)
+ *   STRIPE_TEAM_PRICE_ID        — Price ID for Team plan ($29/seat/mo)
+ *   STRIPE_ENTERPRISE_PRICE_ID  — Price ID for Enterprise plan ($19/seat/mo)
+ *   CULLIT_BASE_URL             — Public base URL for success/cancel redirects
  *
  * NOTE: We use Stripe's REST API directly instead of the SDK
  * to maintain our zero external runtime dependency principle
@@ -25,11 +26,13 @@ import {
   sql, dbGetUser, dbUpdateUserTier, dbUpdateUserStripe,
   dbUpsertSubscription, dbGetSubscription, dbGetUserByStripeCustomer,
 } from './db.js';
+import { log } from './logger.js';
 
 const STRIPE_SECRET_KEY = process.env['STRIPE_SECRET_KEY'] || '';
 const STRIPE_WEBHOOK_SECRET = process.env['STRIPE_WEBHOOK_SECRET'] || '';
 const STRIPE_PRO_PRICE_ID = process.env['STRIPE_PRO_PRICE_ID'] || '';
 const STRIPE_TEAM_PRICE_ID = process.env['STRIPE_TEAM_PRICE_ID'] || '';
+const STRIPE_ENTERPRISE_PRICE_ID = process.env['STRIPE_ENTERPRISE_PRICE_ID'] || '';
 const BASE_URL = process.env['CULLIT_BASE_URL'] || 'http://localhost:3000';
 
 // --- Stripe API helpers ---
@@ -87,12 +90,14 @@ function verifyWebhookSignature(payload: string, sigHeader: string): boolean {
 function priceToPlan(priceId: string): string {
   if (priceId === STRIPE_PRO_PRICE_ID) return 'pro';
   if (priceId === STRIPE_TEAM_PRICE_ID) return 'team';
+  if (priceId === STRIPE_ENTERPRISE_PRICE_ID) return 'enterprise';
   return 'free';
 }
 
 function planToTier(plan: string): string {
   if (plan === 'pro') return 'pro';
   if (plan === 'team') return 'team';
+  if (plan === 'enterprise') return 'enterprise';
   return 'free';
 }
 
@@ -100,7 +105,7 @@ function planToTier(plan: string): string {
 
 export async function handleCheckout(
   userId: string,
-  plan: 'pro' | 'team',
+  plan: 'pro' | 'team' | 'enterprise',
   jsonFn: (res: ServerResponse, status: number, body: unknown) => void,
   res: ServerResponse,
 ): Promise<void> {
@@ -115,7 +120,9 @@ export async function handleCheckout(
     return;
   }
 
-  const priceId = plan === 'team' ? STRIPE_TEAM_PRICE_ID : STRIPE_PRO_PRICE_ID;
+  const priceId = plan === 'enterprise' ? STRIPE_ENTERPRISE_PRICE_ID
+    : plan === 'team' ? STRIPE_TEAM_PRICE_ID
+    : STRIPE_PRO_PRICE_ID;
   if (!priceId) {
     jsonFn(res, 503, { error: `Price not configured for ${plan} plan` });
     return;
@@ -234,7 +241,7 @@ export async function handleStripeWebhook(
 
     jsonFn(res, 200, { received: true });
   } catch (err) {
-    console.error('Stripe webhook error:', (err as Error).message);
+    log.error({ err: (err as Error).message }, 'Stripe webhook error');
     jsonFn(res, 500, { error: 'Webhook processing failed' });
   }
 }
@@ -269,7 +276,7 @@ async function handleCheckoutComplete(session: any): Promise<void> {
     cancelAtPeriodEnd: sub.cancel_at_period_end || false,
   });
 
-  console.log(`Checkout complete: user=${userId} plan=${plan} customer=${customerId}`);
+  log.info({ userId, plan, customerId }, 'Checkout complete');
 }
 
 async function handleSubscriptionUpdate(subscription: any): Promise<void> {
@@ -297,7 +304,7 @@ async function handleSubscriptionUpdate(subscription: any): Promise<void> {
     cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
   });
 
-  console.log(`Subscription updated: user=${user.id} plan=${plan} status=${subscription.status}`);
+  log.info({ userId: user.id, plan, status: subscription.status }, 'Subscription updated');
 }
 
 async function handleSubscriptionDeleted(subscription: any): Promise<void> {
@@ -318,7 +325,7 @@ async function handleSubscriptionDeleted(subscription: any): Promise<void> {
     status: 'canceled',
   });
 
-  console.log(`Subscription canceled: user=${user.id} customer=${customerId}`);
+  log.info({ userId: user.id, customerId }, 'Subscription canceled');
 }
 
 async function handlePaymentFailed(invoice: any): Promise<void> {
@@ -343,7 +350,7 @@ async function handlePaymentFailed(invoice: any): Promise<void> {
     });
   }
 
-  console.log(`Payment failed: user=${user.id} customer=${customerId} invoice=${invoice.id}`);
+  log.info({ userId: user.id, customerId, invoiceId: invoice.id }, 'Payment failed');
 }
 
 /**
