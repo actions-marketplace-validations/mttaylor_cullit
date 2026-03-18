@@ -441,6 +441,76 @@ export const openApiSpec = {
         },
       },
     },
+    '/v1/drafts': {
+      get: {
+        operationId: 'listDrafts',
+        summary: 'List release drafts',
+        description: 'Returns paginated release drafts for the current team/user context.',
+        tags: ['Drafts'],
+        responses: {
+          '200': { description: 'Draft list returned' },
+          '401': { description: 'Not authenticated' },
+          '403': { description: 'Team plan required' },
+        },
+      },
+      post: {
+        operationId: 'createDraft',
+        summary: 'Create release draft',
+        description: 'Creates a release draft for collaborative review and publishing.',
+        tags: ['Drafts'],
+        responses: {
+          '201': { description: 'Draft created' },
+          '401': { description: 'Not authenticated' },
+          '403': { description: 'Team plan required' },
+        },
+      },
+    },
+    '/v1/projects/settings': {
+      get: {
+        operationId: 'listProjectSettings',
+        summary: 'List project settings',
+        description: 'Returns saved project defaults for the current team/user context.',
+        tags: ['Team'],
+        responses: {
+          '200': { description: 'Project settings returned' },
+          '401': { description: 'Not authenticated' },
+          '403': { description: 'Team plan required' },
+        },
+      },
+    },
+    '/v1/org/invites': {
+      get: {
+        operationId: 'listOrgInvites',
+        summary: 'List pending org invites',
+        tags: ['Team'],
+        responses: {
+          '200': { description: 'Invite list returned' },
+          '401': { description: 'Not authenticated' },
+          '403': { description: 'Insufficient permissions' },
+        },
+      },
+      post: {
+        operationId: 'createOrgInviteEmail',
+        summary: 'Create org invite by email',
+        tags: ['Team'],
+        responses: {
+          '201': { description: 'Invite created' },
+          '401': { description: 'Not authenticated' },
+          '403': { description: 'Insufficient permissions' },
+        },
+      },
+    },
+    '/v1/org/usage': {
+      get: {
+        operationId: 'getOrgUsage',
+        summary: 'Get org usage snapshot',
+        tags: ['Team'],
+        responses: {
+          '200': { description: 'Org usage returned' },
+          '401': { description: 'Not authenticated' },
+        },
+      },
+    },
     '/v1/generate': {
       post: {
         operationId: 'generateV1',

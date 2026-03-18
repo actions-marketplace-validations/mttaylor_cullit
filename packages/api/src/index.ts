@@ -769,13 +769,27 @@ async function handleGetAnalytics(req: IncomingMessage, res: ServerResponse): Pr
 
 const VALID_DRAFT_STATUSES = new Set(['draft', 'submitted', 'approved', 'published']);
 
+function isTeamTier(tier: string): boolean {
+  return tier === 'team' || tier === 'enterprise';
+}
+
+function hasDraftAccess(user: { id: string; orgId: string | null }, draft: { user_id: string; org_id: string | null }): boolean {
+  if (draft.user_id === user.id) return true;
+  return !!draft.org_id && !!user.orgId && draft.org_id === user.orgId;
+}
+
+function hasDraftAdminAccess(user: { id: string; orgId: string | null; role: string }, draft: { user_id: string; org_id: string | null }): boolean {
+  if (draft.user_id === user.id) return true;
+  return !!draft.org_id && !!user.orgId && draft.org_id === user.orgId && (user.role === 'owner' || user.role === 'admin');
+}
+
 async function handleCreateDraft(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const user = await resolveUser(req);
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
 
   // Team feature: require team or higher tier
   const tier = getEffectiveTier(user);
-  if (tier !== 'team' && tier !== 'enterprise') {
+  if (!isTeamTier(tier)) {
     json(res, 403, { error: 'Release drafts require a Team plan', upgrade: 'https://cullit.io/pricing' }); return;
   }
 
@@ -815,6 +829,11 @@ async function handleListDrafts(req: IncomingMessage, res: ServerResponse): Prom
   const user = await resolveUser(req);
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
 
+  const tier = getEffectiveTier(user);
+  if (!isTeamTier(tier)) {
+    json(res, 403, { error: 'Release drafts require a Team plan', upgrade: 'https://cullit.io/pricing' }); return;
+  }
+
   const url = new URL(req.url || '/', `http://localhost:${PORT}`);
   const rawLimit = parseInt(url.searchParams.get('limit') || '20', 10);
   const limit = Math.max(1, Math.min(isNaN(rawLimit) ? 20 : rawLimit, 100));
@@ -843,8 +862,7 @@ async function handleGetDraft(req: IncomingMessage, res: ServerResponse, draftId
   const draft = await dbGetDraft(draftId);
   if (!draft) { json(res, 404, { error: 'Draft not found' }); return; }
 
-  // Access check: own draft or same org
-  if (draft.user_id !== user.id && draft.org_id !== user.orgId) {
+  if (!hasDraftAccess(user, draft)) {
     json(res, 403, { error: 'Access denied' }); return;
   }
 
@@ -859,8 +877,7 @@ async function handleUpdateDraft(req: IncomingMessage, res: ServerResponse, draf
   const draft = await dbGetDraft(draftId);
   if (!draft) { json(res, 404, { error: 'Draft not found' }); return; }
 
-  // Only draft owner or org admin can edit
-  if (draft.user_id !== user.id && (draft.org_id !== user.orgId || user.role === 'member')) {
+  if (!hasDraftAdminAccess(user, draft)) {
     json(res, 403, { error: 'Access denied' }); return;
   }
 
@@ -902,7 +919,7 @@ async function handleDraftSubmit(req: IncomingMessage, res: ServerResponse, draf
 
   const draft = await dbGetDraft(draftId);
   if (!draft) { json(res, 404, { error: 'Draft not found' }); return; }
-  if (draft.user_id !== user.id && draft.org_id !== user.orgId) {
+  if (!hasDraftAccess(user, draft)) {
     json(res, 403, { error: 'Access denied' }); return;
   }
   if (draft.status !== 'draft') {
@@ -911,6 +928,24 @@ async function handleDraftSubmit(req: IncomingMessage, res: ServerResponse, draf
 
   const updated = await dbUpdateDraftStatus(draftId, 'submitted');
   json(res, 200, { draft: updated });
+}
+
+async function handleDeleteDraft(req: IncomingMessage, res: ServerResponse, draftId: string): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+
+  const draft = await dbGetDraft(draftId);
+  if (!draft) { json(res, 404, { error: 'Draft not found' }); return; }
+  if (!hasDraftAdminAccess(user, draft)) {
+    json(res, 403, { error: 'Access denied' }); return;
+  }
+  if (draft.status === 'published') {
+    json(res, 409, { error: 'Cannot delete a published draft' }); return;
+  }
+
+  const deleted = await dbDeleteDraft(draftId);
+  if (!deleted) { json(res, 404, { error: 'Draft not found' }); return; }
+  json(res, 200, { ok: true });
 }
 
 async function handleDraftApprove(req: IncomingMessage, res: ServerResponse, draftId: string): Promise<void> {
@@ -976,6 +1011,11 @@ async function handleGetProjectSettings(req: IncomingMessage, res: ServerRespons
   const user = await resolveUser(req);
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
 
+  const tier = getEffectiveTier(user);
+  if (!isTeamTier(tier)) {
+    json(res, 403, { error: 'Saved project settings require a Team plan', upgrade: 'https://cullit.io/pricing' }); return;
+  }
+
   const settings = await dbListProjectSettings(user.id, user.orgId);
   json(res, 200, { settings });
 }
@@ -983,6 +1023,11 @@ async function handleGetProjectSettings(req: IncomingMessage, res: ServerRespons
 async function handlePutProjectSettings(req: IncomingMessage, res: ServerResponse, project: string): Promise<void> {
   const user = await resolveUser(req);
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+
+  const tier = getEffectiveTier(user);
+  if (!isTeamTier(tier)) {
+    json(res, 403, { error: 'Saved project settings require a Team plan', upgrade: 'https://cullit.io/pricing' }); return;
+  }
 
   if (!/^[a-zA-Z0-9_-]{1,64}$/.test(project)) {
     json(res, 400, { error: 'Invalid project slug' }); return;
@@ -992,6 +1037,29 @@ async function handlePutProjectSettings(req: IncomingMessage, res: ServerRespons
   let body: any;
   try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
 
+  const defaultSource = body.defaultSource ?? body.default_source_type;
+  const defaultProvider = body.defaultProvider ?? body.default_provider;
+  const defaultModel = body.defaultModel ?? body.default_model;
+  const defaultAudience = body.defaultAudience ?? body.default_audience;
+  const defaultTone = body.defaultTone ?? body.default_tone;
+  const categoriesInput = body.categories ?? body.categories_json;
+  let categories: string[] | undefined;
+  if (Array.isArray(categoriesInput)) {
+    categories = categoriesInput.slice(0, 20);
+  } else if (typeof categoriesInput === 'string') {
+    try {
+      const parsed = JSON.parse(categoriesInput);
+      if (Array.isArray(parsed)) categories = parsed.slice(0, 20);
+    } catch {
+      categories = undefined;
+    }
+  }
+  const publishTargetsInput = body.publishTargets ?? body.publish_targets_json;
+  let publishTargets: unknown[] | undefined;
+  if (Array.isArray(publishTargetsInput)) {
+    publishTargets = publishTargetsInput.slice(0, 10);
+  }
+
   const existing = await dbGetProjectSettings(user.id, project, user.orgId);
 
   const settings = await dbUpsertProjectSettings({
@@ -999,13 +1067,13 @@ async function handlePutProjectSettings(req: IncomingMessage, res: ServerRespons
     orgId: user.orgId,
     userId: user.id,
     project,
-    defaultSource: body.defaultSource,
-    defaultProvider: body.defaultProvider,
-    defaultModel: body.defaultModel,
-    defaultAudience: body.defaultAudience,
-    defaultTone: body.defaultTone,
-    categoriesJson: Array.isArray(body.categories) ? body.categories.slice(0, 20) : undefined,
-    publishTargetsJson: Array.isArray(body.publishTargets) ? body.publishTargets.slice(0, 10) : undefined,
+    defaultSource,
+    defaultProvider,
+    defaultModel,
+    defaultAudience,
+    defaultTone,
+    categoriesJson: categories,
+    publishTargetsJson: publishTargets,
     widgetConfigJson: body.widgetConfig || undefined,
   });
 
@@ -1069,7 +1137,7 @@ async function handleDeleteOrgInvite(req: IncomingMessage, res: ServerResponse, 
     json(res, 403, { error: 'Must be org owner or admin to revoke invites' }); return;
   }
 
-  const ok = await dbDeleteOrgInvite(inviteId);
+  const ok = await dbDeleteOrgInvite(inviteId, user.orgId);
   if (!ok) { json(res, 404, { error: 'Invite not found' }); return; }
   json(res, 200, { ok: true });
 }
@@ -1239,6 +1307,9 @@ const server = createServer(async (req, res) => {
     } else if (req.method === 'PATCH' && path.match(/^\/v1\/drafts\/[^/]+$/)) {
       const draftId = path.split('/')[3];
       await handleUpdateDraft(req, res, draftId);
+    } else if (req.method === 'DELETE' && path.match(/^\/v1\/drafts\/[^/]+$/)) {
+      const draftId = path.split('/')[3];
+      await handleDeleteDraft(req, res, draftId);
     } else if (req.method === 'POST' && path.match(/^\/v1\/drafts\/[^/]+\/submit$/)) {
       const draftId = path.split('/')[3];
       await handleDraftSubmit(req, res, draftId);

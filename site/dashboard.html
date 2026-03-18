@@ -1078,6 +1078,7 @@
         <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
           <span>&#128221; Release Drafts</span>
           <div style="display:flex;gap:0.5rem;align-items:center">
+            <button class="btn-small" onclick="createDraftFromCurrentOutput()" style="font-size:0.7rem">+ New Draft</button>
             <select id="draftStatusFilter" onchange="loadDrafts()" style="padding:0.3rem 0.5rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.75rem">
               <option value="">All</option>
               <option value="draft">Draft</option>
@@ -1206,7 +1207,7 @@
               <div>
                 <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.25rem">Default Source</label>
                 <select id="ps-source" style="width:100%;padding:0.3rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
-                  <option value="commits">Commits</option><option value="prs">Pull Requests</option><option value="tags">Tags</option>
+                  <option value="local">Local Git</option><option value="jira">Jira</option><option value="linear">Linear</option><option value="gitlab">GitLab</option><option value="bitbucket">Bitbucket</option><option value="multi-repo">Multi-repo</option>
                 </select>
               </div>
               <div>
@@ -1922,13 +1923,18 @@ const TIER_LIMITS = { free: 5, pro: 500, team: 2000, enterprise: Infinity };
 let draftsOffset = 0;
 const DRAFTS_LIMIT = 20;
 
+function getEffectiveTierClient() {
+  const tier = currentUser?.effectiveTier || currentUser?.tier || 'free';
+  return tier;
+}
+
 function draftStatusBadge(status) {
   const colors = { draft: '#888', submitted: '#f5a623', approved: '#4ecdc4', published: 'var(--accent)' };
   return '<span style="display:inline-block;padding:0.15rem 0.5rem;border-radius:3px;font-size:0.7rem;font-family:\'Space Mono\',monospace;background:' + (colors[status] || '#888') + '20;color:' + (colors[status] || '#888') + ';border:1px solid ' + (colors[status] || '#888') + '40">' + status + '</span>';
 }
 
 async function loadDrafts() {
-  const userTier = window.__dashUser?.tier || 'free';
+  const userTier = getEffectiveTierClient();
   const isTeam = userTier === 'team' || userTier === 'enterprise';
   document.getElementById('draftTeamGate').style.display = isTeam ? 'none' : 'block';
   document.getElementById('draftList').parentElement.parentElement.style.display = isTeam ? 'block' : 'none';
@@ -1984,7 +1990,8 @@ async function loadDraftDetail(id) {
   try {
     const res = await apiFetch('/v1/drafts/' + id);
     if (!res.ok) throw new Error();
-    const d = await res.json();
+    const payload = await res.json();
+    const d = payload.draft;
 
     meta.innerHTML = draftStatusBadge(d.status)
       + '<span>' + escapeHtml(d.project) + ' ' + escapeHtml(d.version || '') + '</span>'
@@ -1999,16 +2006,20 @@ async function loadDraftDetail(id) {
       btns += '<button class="btn-small" onclick="deleteDraft(\'' + id + '\')" style="font-size:0.75rem;color:#e74c3c">Delete</button>';
     }
     if (d.status === 'submitted') {
-      btns += '<button class="btn-small" onclick="approveDraft(\'' + id + '\')" style="background:#4ecdc4;color:#000;border:none;font-size:0.75rem">Approve</button>';
+      if (currentUser && (currentUser.role === 'owner' || currentUser.role === 'admin')) {
+        btns += '<button class="btn-small" onclick="approveDraft(\'' + id + '\')" style="background:#4ecdc4;color:#000;border:none;font-size:0.75rem">Approve</button>';
+      }
     }
     if (d.status === 'approved') {
-      btns += '<button class="btn-small" onclick="publishDraft(\'' + id + '\')" style="background:var(--accent);color:#000;border:none;font-size:0.75rem">Publish</button>';
+      if (currentUser && (currentUser.role === 'owner' || currentUser.role === 'admin')) {
+        btns += '<button class="btn-small" onclick="publishDraft(\'' + id + '\')" style="background:var(--accent);color:#000;border:none;font-size:0.75rem">Publish</button>';
+      }
     }
     actions.innerHTML = btns;
 
-    if (d.revisions && d.revisions.length) {
+    if (payload.revisions && payload.revisions.length) {
       revisions.style.display = 'block';
-      document.getElementById('draftRevisionList').innerHTML = d.revisions.map(function(r) {
+      document.getElementById('draftRevisionList').innerHTML = payload.revisions.map(function(r) {
         return '<div style="padding:0.5rem;border-left:2px solid var(--border);margin-bottom:0.5rem;padding-left:0.75rem">'
           + '<div style="color:var(--text-dim);font-size:0.7rem">Revision ' + r.revision_number + ' &middot; ' + new Date(r.created_at).toLocaleString() + '</div>'
           + '</div>';
@@ -2023,6 +2034,50 @@ async function loadDraftDetail(id) {
 
 function closeDraftDetail() {
   document.getElementById('draftDetailPanel').style.display = 'none';
+}
+
+async function createDraftFromCurrentOutput() {
+  if (!currentOutput || !currentOutput.trim()) {
+    showToast('Generate release notes first, then create a draft.');
+    switchDashTab('generate');
+    return;
+  }
+
+  const project = prompt('Project slug (e.g. my-app):', 'my-app');
+  if (!project) return;
+  const version = prompt('Version (optional):', '') || '';
+  const body = {
+    project: project.trim(),
+    version: version.trim(),
+    sourceType: 'local',
+    provider: document.getElementById('provider').value || 'none',
+    model: '',
+    audience: document.getElementById('audience').value || 'developer',
+    tone: document.getElementById('tone').value || 'professional',
+    notes: [],
+    formattedMd: currentOutput,
+    formattedHtml: simpleMarkdown(currentOutput),
+    rawInputs: {
+      from: document.getElementById('fromRef').value.trim(),
+      to: document.getElementById('toRef').value.trim() || 'HEAD',
+    },
+  };
+
+  try {
+    const res = await apiFetch('/v1/drafts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create draft');
+    showToast('Draft created');
+    draftsOffset = 0;
+    await loadDrafts();
+    if (data.draft?.id) await loadDraftDetail(data.draft.id);
+  } catch (err) {
+    showToast(err.message || 'Failed to create draft');
+  }
 }
 
 async function submitDraft(id) {
@@ -2066,7 +2121,7 @@ async function deleteDraft(id) {
 // --- Project Settings ---
 
 async function loadSettingsTab() {
-  const userTier = window.__dashUser?.tier || 'free';
+  const userTier = getEffectiveTierClient();
   const isTeam = userTier === 'team' || userTier === 'enterprise';
   document.getElementById('settingsTeamGate').style.display = isTeam ? 'none' : 'block';
   document.getElementById('projectSettingsForm').parentElement.parentElement.style.display = isTeam ? 'block' : 'none';
@@ -2101,7 +2156,7 @@ async function loadProjectSettings() {
   const select = document.getElementById('settingsProjectSelect');
   const project = select.value;
   if (!project || project === '__new__') {
-    document.getElementById('ps-source').value = 'commits';
+    document.getElementById('ps-source').value = 'local';
     document.getElementById('ps-provider').value = 'openai';
     document.getElementById('ps-model').value = '';
     document.getElementById('ps-audience').value = 'developers';
@@ -2115,12 +2170,15 @@ async function loadProjectSettings() {
     const data = await res.json();
     const s = (data.settings || []).find(function(x) { return x.project === project; });
     if (s) {
-      document.getElementById('ps-source').value = s.default_source_type || 'commits';
+      document.getElementById('ps-source').value = s.default_source || 'local';
       document.getElementById('ps-provider').value = s.default_provider || 'openai';
       document.getElementById('ps-model').value = s.default_model || '';
       document.getElementById('ps-audience').value = s.default_audience || 'developers';
       document.getElementById('ps-tone').value = s.default_tone || 'professional';
-      document.getElementById('ps-categories').value = (s.categories_json ? JSON.parse(s.categories_json) : []).join(', ');
+      var categories = Array.isArray(s.categories_json)
+        ? s.categories_json
+        : (typeof s.categories_json === 'string' ? JSON.parse(s.categories_json) : []);
+      document.getElementById('ps-categories').value = categories.join(', ');
     }
   } catch (e) {}
 }
@@ -2134,12 +2192,12 @@ async function saveProjectSettings() {
   }
   const cats = document.getElementById('ps-categories').value.split(',').map(function(c) { return c.trim(); }).filter(Boolean);
   const body = {
-    default_source_type: document.getElementById('ps-source').value,
-    default_provider: document.getElementById('ps-provider').value,
-    default_model: document.getElementById('ps-model').value,
-    default_audience: document.getElementById('ps-audience').value,
-    default_tone: document.getElementById('ps-tone').value,
-    categories_json: JSON.stringify(cats)
+    defaultSource: document.getElementById('ps-source').value,
+    defaultProvider: document.getElementById('ps-provider').value,
+    defaultModel: document.getElementById('ps-model').value,
+    defaultAudience: document.getElementById('ps-audience').value,
+    defaultTone: document.getElementById('ps-tone').value,
+    categories: cats
   };
   const status = document.getElementById('settingsSaveStatus');
   try {

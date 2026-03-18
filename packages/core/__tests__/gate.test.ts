@@ -217,8 +217,15 @@ describe('Gate — getFeatureGating', () => {
     const gating = getFeatureGating('free');
     expect(gating.drafts).toBe(false);
     expect(gating.approvals).toBe(false);
+    expect(gating.hosted_changelog).toBe(false);
     expect(gating.sso).toBe(false);
     expect(gating.audit_logs).toBe(false);
+  });
+
+  it('returns hosted changelog enabled for pro tier', () => {
+    const gating = getFeatureGating('pro');
+    expect(gating.hosted_changelog).toBe(true);
+    expect(gating.drafts).toBe(false);
   });
 
   it('returns team features enabled for team tier', () => {

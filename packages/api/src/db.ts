@@ -899,7 +899,9 @@ export async function dbAcceptOrgInvite(id: string): Promise<boolean> {
   return result.count > 0;
 }
 
-export async function dbDeleteOrgInvite(id: string): Promise<boolean> {
-  const result = await sql`DELETE FROM org_invites WHERE id = ${id}`;
+export async function dbDeleteOrgInvite(id: string, orgId?: string): Promise<boolean> {
+  const result = orgId
+    ? await sql`DELETE FROM org_invites WHERE id = ${id} AND org_id = ${orgId}`
+    : await sql`DELETE FROM org_invites WHERE id = ${id}`;
   return result.count > 0;
 }

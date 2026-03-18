@@ -270,6 +270,21 @@ describe('API Server', () => {
     expect([401, 429]).toContain(status);
   });
 
+  it('DELETE /v1/drafts/:id returns 401 or 429 when not authenticated', async () => {
+    const { status } = await apiRequest('/v1/drafts/test-draft-id', { method: 'DELETE' });
+    expect([401, 429]).toContain(status);
+  });
+
+  it('GET /v1/projects/settings returns 401 or 429 when not authenticated', async () => {
+    const { status } = await apiRequest('/v1/projects/settings');
+    expect([401, 429]).toContain(status);
+  });
+
+  it('GET /v1/org/invites returns 401 or 429 when not authenticated', async () => {
+    const { status } = await apiRequest('/v1/org/invites');
+    expect([401, 429]).toContain(status);
+  });
+
   // --- OpenAPI spec includes new endpoints ---
 
   it('OpenAPI spec includes auth, team, history, and analytics paths', async () => {
@@ -280,6 +295,10 @@ describe('API Server', () => {
     expect(body.paths['/v1/org']).toBeDefined();
     expect(body.paths['/v1/history']).toBeDefined();
     expect(body.paths['/v1/analytics/usage']).toBeDefined();
+    expect(body.paths['/v1/drafts']).toBeDefined();
+    expect(body.paths['/v1/projects/settings']).toBeDefined();
+    expect(body.paths['/v1/org/invites']).toBeDefined();
+    expect(body.paths['/v1/org/usage']).toBeDefined();
   });
 
   it('OpenAPI spec includes new component schemas', async () => {
