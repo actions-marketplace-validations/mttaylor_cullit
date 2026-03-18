@@ -382,11 +382,29 @@ Cullit includes a hosted dashboard experience with authentication, billing, tria
 
 ### v1.9.0
 
-- Added template profiles in config (`template`, `templates`) with defaults and named profile selection.
-- Added destination-specific publish overrides (`publish[].format`, `publish[].templateProfile`, `publish[].sectionOrder`).
-- Added CLI `--template` flag for profile selection during generation.
-- Added dashboard project settings for format/profile/section ordering and JSON publish-target overrides.
-- Added API support for template defaults in project settings payloads.
+**Template Profiles & Target-Specific Layouts**
+
+- **🎨 Named Template Profiles**: Define reusable layout profiles in `.cullit.yml` with `template.default` and `templates[]` for different audiences (e.g., `customer-facing`, `internal`, `executive`).
+  ```yaml
+  template:
+    default: customer-facing
+    templates:
+      - name: customer-facing
+        format: markdown
+        sectionOrder: [features, fixes, breaking-changes]
+        includeContributors: false
+        summaryPrefix: "**What's New** — "
+  ```
+
+- **📍 Per-Destination Overrides**: Use `publish[].templateProfile`, `publish[].format`, and `publish[].sectionOrder` to customize what each channel (Slack, Confluence, GitHub, etc.) receives without managing separate configs.
+
+- **⚙️ CLI Profile Selection**: Run `cullit generate --template customer-facing` to apply a named profile, with fallback to config defaults.
+
+- **🎛️ Dashboard Template Settings**: Extended project settings UI with template profile selector, format picker, section ordering, and JSON publish-target override textarea for webhook targets.
+
+- **🔌 API Template Payload Support**: Enhanced `/v1/projects/:project/settings` endpoint to accept and merge template configuration into widget settings, enabling programmatic template management.
+
+- **✅ Zero-Config Defaults**: Template profiles are optional; generation works without config. Profiles layer on top of global format/audience settings for fine-grained control.
 
 ## Contributing
 
