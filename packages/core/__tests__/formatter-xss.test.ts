@@ -57,7 +57,7 @@ describe('HTML XSS prevention', () => {
     expect(md).not.toContain('<script>alert("xss")</script>');
     expect(md).toContain('&lt;script&gt;');
     expect(md).not.toContain('<img onerror=alert(1) src=x>');
-    expect(md).toContain('&lt;img onerror=alert\(1\) src=x&gt;');
+    expect(md).toContain('&lt;img onerror=alert(1) src=x&gt;');
   });
 
   it('handles ampersands correctly', () => {
