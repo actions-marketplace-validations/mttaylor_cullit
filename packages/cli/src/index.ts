@@ -12,7 +12,7 @@
  * https://cullit.io
  */
 
-import { runPipeline, VERSION, createLogger, analyzeReleaseReadiness, resolveLicense, AI_PROVIDERS, AUDIENCES, TONES, SOURCE_TYPES, OUTPUT_FORMATS } from '@cullit/core';
+import { runPipeline, VERSION, createLogger, analyzeReleaseReadiness, resolveLicense, reportUsage, AI_PROVIDERS, AUDIENCES, TONES, SOURCE_TYPES, OUTPUT_FORMATS } from '@cullit/core';
 import { loadConfig } from '@cullit/config';
 import { getLatestTag, getRecentTags } from '@cullit/core';
 import type { OutputFormat, LogLevel } from '@cullit/core';
@@ -313,6 +313,9 @@ async function runGenerate(from: string, to: string, opts: Record<string, string
 
   try {
     const result = await runPipeline(from, to, config, { format, dryRun, logger, templateProfile });
+
+    // Metering — best-effort, never blocks the pipeline
+    reportUsage(from).catch(() => {});
 
     // Active release advisory — nudge after generating notes
     if (logLevel !== 'quiet') {
