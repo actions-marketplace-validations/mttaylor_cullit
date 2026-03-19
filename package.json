@@ -1,6 +1,6 @@
 {
   "name": "cullit",
-  "version": "1.9.1",
+  "version": "1.9.2",
   "private": true,
   "description": "Cull the noise from your releases. AI-powered release notes.",
   "author": "Cullit <matt@cullit.io>",
@@ -21,7 +21,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "pnpm -r build",
+    "build": "pnpm -r build && pnpm build:action",
     "build:action": "tsup src/action.ts --format cjs --out-dir dist --no-splitting --target node22",
     "build:widget": "esbuild site/widget.ts --bundle --minify --format=iife --outfile=site/widget.js --target=es2020",
     "test": "vitest run",
@@ -29,6 +29,11 @@
     "dev:api": "pnpm --filter @cullit/api dev",
     "lint": "eslint packages/",
     "cullit": "node packages/cli/dist/index.js"
+  },
+  "dependencies": {
+    "@cullit/config": "workspace:*",
+    "@cullit/core": "workspace:*",
+    "@cullit/pro": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",

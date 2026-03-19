@@ -38,6 +38,9 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Verify GitHub Action bundle is up to date
+        run: git diff --exit-code -- dist/action.js
+
       - name: Lint
         run: pnpm lint
 

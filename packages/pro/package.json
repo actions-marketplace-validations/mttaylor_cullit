@@ -1,6 +1,6 @@
 {
   "name": "@cullit/pro",
-  "version": "1.9.1",
+  "version": "1.9.2",
   "private": true,
   "type": "module",
   "description": "Cullit Pro — AI generators, Jira/Linear integrations, Slack/Discord/GitHub publishers.",
@@ -13,6 +13,9 @@
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": {
       "import": "./dist/index.js",

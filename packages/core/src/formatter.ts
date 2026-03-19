@@ -35,14 +35,19 @@ export function formatNotes(notes: ReleaseNotes, format: OutputFormat): string {
   return fn(notes);
 }
 
+function escapeMarkdown(text: string): string {
+  return escapeHtml(text)
+    .replace(/\r?\n/g, ' ');
+}
+
 function formatMarkdown(notes: ReleaseNotes): string {
   const lines: string[] = [];
 
-  lines.push(`## ${notes.version} — ${notes.date}`);
+  lines.push(`## ${escapeMarkdown(notes.version)} — ${escapeMarkdown(notes.date)}`);
   lines.push('');
 
   if (notes.summary) {
-    lines.push(notes.summary);
+    lines.push(escapeMarkdown(notes.summary));
     lines.push('');
   }
 
@@ -57,8 +62,8 @@ function formatMarkdown(notes: ReleaseNotes): string {
     lines.push('');
 
     for (const entry of entries) {
-      let line = `- ${entry.description}`;
-      if (entry.ticketKey) line += ` (${entry.ticketKey})`;
+      let line = `- ${escapeMarkdown(entry.description)}`;
+      if (entry.ticketKey) line += ` (${escapeMarkdown(entry.ticketKey)})`;
       lines.push(line);
     }
     lines.push('');
@@ -67,7 +72,7 @@ function formatMarkdown(notes: ReleaseNotes): string {
   if (notes.contributors?.length) {
     lines.push('### Contributors');
     lines.push('');
-    lines.push(notes.contributors.map(c => `@${c}`).join(', '));
+    lines.push(notes.contributors.map(c => `@${escapeMarkdown(c)}`).join(', '));
     lines.push('');
   }
 

@@ -380,6 +380,24 @@ Cullit includes a hosted dashboard experience with authentication, billing, tria
 
 ## Release Notes
 
+### v1.9.2
+
+**Integrity, Build, and Release Hardening**
+
+- **🛡️ Release workflow integrity**: Reordered tag-based publishing so package versions are updated before build and test steps run, preventing stale version metadata from leaking into published artifacts.
+
+- **🔁 Action bundle drift protection**: Added a CI guard that rebuilds the GitHub Action and fails if [dist/action.js](dist/action.js) is out of sync with [src/action.ts](src/action.ts), so reviewed source and shipped action stay aligned.
+
+- **⚙️ GitHub Action consistency**: Aligned the Action input defaults with runtime behavior by defaulting the provider to `none`, matching the free-first template flow documented elsewhere in the product.
+
+- **🏗️ Action build reliability**: Fixed the Action bundle path by removing top-level await from the entrypoint, loading Pro plugins lazily, and wiring root workspace dependencies so `pnpm build:action` succeeds consistently in CI and local builds.
+
+- **📱 Free trial mobile navigation fix**: Reworked the standalone free-trial page so mobile navigation and the docs sidebar use separate controls, eliminating the broken shared-toggle behavior.
+
+- **🔒 Safer markdown output**: Hardened markdown rendering to escape raw HTML while preserving readable Markdown output, reducing integrity risk when notes are rendered downstream by external consumers.
+
+- **📦 Packaging hygiene**: Added an explicit publish whitelist to the Pro package and rebuilt the committed GitHub Action bundle as part of the normal build path.
+
 ### v1.9.0
 
 **Template Profiles & Target-Specific Layouts**

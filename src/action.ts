@@ -13,8 +13,17 @@ import { DEFAULT_CATEGORIES } from '@cullit/core';
 import { appendFileSync } from 'fs';
 import { resolveActionRefs } from './action-refs';
 
-// Load pro plugins (AI generators, enrichers, publishers)
-try { await import('@cullit/pro'); } catch { /* pro not installed */ }
+let proPluginsLoaded = false;
+
+async function loadProPlugins(): Promise<void> {
+  if (proPluginsLoaded) return;
+  try {
+    await import('@cullit/pro');
+  } catch {
+    // Pro features are optional in local/test environments.
+  }
+  proPluginsLoaded = true;
+}
 
 // --- GitHub Actions helpers (no @actions/core dependency) ---
 
@@ -38,6 +47,8 @@ function setFailed(message: string): void {
 
 export async function run(): Promise<void> {
   try {
+    await loadProPlugins();
+
     // Read inputs
     const inputFrom = getInput('from');
     const inputTo = getInput('to') || 'HEAD';

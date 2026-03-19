@@ -50,12 +50,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build
-        run: pnpm build
-
-      - name: Test
-        run: pnpm test
-
       # Extract version from tag (v0.2.0 → 0.2.0)
       - name: Set version from tag
         id: version
@@ -69,6 +63,12 @@ jobs:
             jq --arg v "$VERSION" '.version = $v' "$pkg/package.json" > tmp.json && mv tmp.json "$pkg/package.json"
           done
           sed -i "s/VERSION = '.*'/VERSION = '$VERSION'/" packages/core/src/constants.ts
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test
 
       # Publish packages in dependency order (skip if version already exists)
       - name: Publish @cullit/config
