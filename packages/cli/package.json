@@ -2,7 +2,7 @@
   "name": "cullit",
   "version": "1.9.2",
   "type": "module",
-  "description": "Cull the noise from your releases. AI-powered release notes from the CLI.",
+  "description": "Public Cullit CLI for local, template-based release notes. Licensed AI and integrations are delivered separately.",
   "license": "MIT",
   "author": "Cullit <matt@cullit.io>",
   "repository": {

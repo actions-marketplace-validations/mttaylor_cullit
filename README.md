@@ -4,9 +4,9 @@
 [![CI](https://github.com/mttaylor/cullit/actions/workflows/ci.yml/badge.svg)](https://github.com/mttaylor/cullit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**AI release notes that write themselves.**
+**Release notes that scale from a free local CLI to licensed hosted workflows.**
 
-Cullit reads your git history, enriches from Jira & Linear, and uses AI to generate categorized, human-readable release notes. Ships to Slack, Discord, Teams, GitHub & GitLab Releases, Confluence, Notion, and more.
+Cullit reads your git history, enriches from Jira & Linear, and can generate categorized release notes for developers, customers, and executives. The public npm package is the free local/template CLI. AI providers, premium integrations, dashboard workflows, and private deployment surfaces are licensed separately.
 
 > Built by [Matt](https://cullit.io).
 
@@ -15,15 +15,21 @@ Cullit reads your git history, enriches from Jira & Linear, and uses AI to gener
 ## Install
 
 ```bash
-# Use directly with npx (no install needed)
-npx cullit generate --from v1.0.0 --to v1.1.0
+# Use the public CLI directly with npx
+npx cullit generate --from v1.0.0 --to v1.1.0 --provider none
 
-# Or install globally
+# Or install globally for local/template workflows
 npm install -g cullit
 
 # Or as a dev dependency
 npm install -D cullit
 ```
+
+## Distribution Model
+
+- Public npm package `cullit`: local git, template generation with `--provider none`, stdout/file output
+- Licensed Cullit Pro and Team surfaces: AI providers, Jira/Linear enrichment, premium publishers, dashboard, API, GitHub App, and private deployment flows
+- npm is the delivery channel for the CLI runtime, not the paid entitlement layer
 
 ## Quick Start
 
@@ -32,24 +38,16 @@ npm install -D cullit
 cullit init
 
 # Generate release notes between two tags
-cullit generate --from v1.0.0 --to v1.1.0
+cullit generate --from v1.0.0 --to v1.1.0 --provider none
 
 # Auto-detect latest two tags
-cullit generate
+cullit generate --provider none
 
-# Different AI providers
-cullit generate --from HEAD~10 --provider gemini
-cullit generate --from HEAD~5 --provider ollama --model llama3.1
-
-# No AI key? Use the template generator
+# Use the built-in template generator
 cullit generate --from HEAD~10 --provider none
 
 # Apply a named template profile from config
 cullit generate --from v1.8.0 --template customer-facing
-
-# From Jira or Linear
-cullit generate --source jira --from "project = PROJ" --provider anthropic
-cullit generate --source linear --from "team:ENG" --provider openai
 
 # Control output verbosity
 cullit generate --from v1.0.0 --verbose
@@ -187,7 +185,7 @@ docker compose up api
 | Feature | Description |
 |---------|-------------|
 | 🧠 **6 AI Providers** | Anthropic Claude, OpenAI, Gemini, Ollama, OpenClaw, or none (template) |
-| 🔑 **BYOK** | Bring your own API key. Zero vendor lock-in. |
+| 🔑 **Licensed AI** | Paid AI and premium integrations are available through licensed hosted/private Cullit surfaces. |
 | ⚡ **Flexible Sources** | Git, Jira, Linear, GitLab, or Bitbucket as primary data source |
 | 🔍 **Enrichment** | Cross-reference Jira & Linear tickets from commits |
 | 📤 **Multi-Publish** | Slack, Discord, Teams, GitHub Release, GitLab Release, Confluence, Notion, Hosted Changelog, Embed Widget, file, stdout |
@@ -202,7 +200,7 @@ docker compose up api
 
 | Package | Description |
 |---------|-------------|
-| [`cullit`](https://www.npmjs.com/package/cullit) | CLI — `npx cullit generate` |
+| [`cullit`](https://www.npmjs.com/package/cullit) | Public CLI installer — local/template workflow with `--provider none` |
 | [`@cullit/core`](https://www.npmjs.com/package/@cullit/core) | Core engine — pipeline, generators, publishers |
 | [`@cullit/config`](https://www.npmjs.com/package/@cullit/config) | Config loader — YAML parsing with env var resolution |
 | `@cullit/pro` | Pro integrations (private) — GitLab, Bitbucket, Teams, Confluence, Notion, AI generators |

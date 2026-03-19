@@ -674,7 +674,7 @@
       <span class="t-output">- Fixed timezone rendering in scheduled reports (PROJ-149)</span><br>
       <span class="t-output">- Resolved memory leak in WebSocket connection pool (PROJ-155)</span><br><br>
       <span class="t-cat">&#x26a0;&#xfe0f; Breaking Changes</span><br>
-      <span class="t-output">- /api/v1/export endpoint deprecated, use /api/v2/export (PROJ-160)</span><br><br>
+      <span class="t-output">- No breaking changes in this sample release</span><br><br>
       <span class="t-output">&raquo; Published to: GitHub Release, #releases (Slack)</span><br>
       <span class="t-accent">&check; Done in 4.2s</span>
     </div>
@@ -769,13 +769,13 @@
         <div style="font-weight:600;color:var(--accent);font-size:0.95rem;">Release v2.4.0 &mdash; March 10, 2026</div>
         <div style="margin-top:0.75rem;font-weight:600;color:var(--terminal-green);">&#10024; Features</div>
         <div>&#8226; <strong>Real-time collaboration</strong> &mdash; Multiple team members can now edit shared dashboards simultaneously with live cursors and conflict resolution.</div>
-        <div>&#8226; <strong>Export API</strong> &mdash; Download reports in CSV or PDF directly from the dashboard or via the new <code style="font-size:0.75rem;background:var(--bg);padding:0.1rem 0.3rem;border-radius:3px">/api/v2/export</code> endpoint.</div>
+        <div>&#8226; <strong>Exports</strong> &mdash; Download reports in CSV or PDF directly from the dashboard without hand-building release summaries.</div>
         <div>&#8226; <strong>Webhook configuration</strong> &mdash; Set up and test webhooks through the UI instead of editing config files. Includes a test-send button.</div>
         <div style="margin-top:0.75rem;font-weight:600;color:var(--terminal-yellow);">&#128027; Bug Fixes</div>
         <div>&#8226; Fixed timezone rendering in scheduled reports that caused shifted dates for UTC-negative zones.</div>
         <div>&#8226; Resolved a WebSocket connection pool memory leak under sustained load.</div>
         <div style="margin-top:0.75rem;font-weight:600;color:var(--terminal-red);">&#9888;&#65039; Breaking Changes</div>
-        <div>&#8226; The <code style="font-size:0.75rem;background:var(--bg);padding:0.1rem 0.3rem;border-radius:3px">/api/v1/export</code> endpoint is deprecated. Migrate to <code style="font-size:0.75rem;background:var(--bg);padding:0.1rem 0.3rem;border-radius:3px">/api/v2/export</code> before v2.6.</div>
+        <div>&#8226; No breaking changes in this sample comparison release.</div>
       </div>
     </div>
   </div>
@@ -1047,7 +1047,7 @@
     <a href="pricing.html" class="cta-btn-outline" style="display: inline-block; border: 2px solid var(--accent); color: var(--accent); padding: 0.85rem 2rem; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 1rem;">View Pricing</a>
   </div>
   <p style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.5rem;">
-    Install in seconds: <code style="background: var(--bg-card); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem; cursor: pointer;" onclick="navigator.clipboard.writeText('npx cullit generate'); this.textContent='✓ Copied!'; setTimeout(()=>this.textContent='npx cullit generate', 2000)">npx cullit generate</code>
+    Try the free local CLI in seconds: <code style="background: var(--bg-card); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem; cursor: pointer;" onclick="navigator.clipboard.writeText('npx cullit generate --provider none'); this.textContent='✓ Copied!'; setTimeout(()=>this.textContent='npx cullit generate --provider none', 2000)">npx cullit generate --provider none</code>
   </p>
   <p class="email-note">Pro plans start at $9/mo &mdash; <a href="mailto:sales@cullit.io" style="color: var(--accent)">sales@cullit.io</a></p>
 </section>

@@ -66,7 +66,23 @@
   .nav-links { display: flex; gap: 1.5rem; align-items: center; }
   .nav-links a { color: var(--text-dim); text-decoration: none; font-size: 0.85rem; font-family: 'Space Mono', monospace; transition: color 0.2s; }
   .nav-links a:hover, .nav-links a.active { color: var(--accent); }
-  .nav-cta { background: var(--accent) !important; color: var(--bg) !important; padding: 0.4rem 1rem; border-radius: 4px; font-weight: 600; }
+  .nav-cta {
+    background: var(--accent) !important;
+    color: var(--bg) !important;
+    padding: 0.5rem 1.2rem !important;
+    border-radius: 4px;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    line-height: 1.2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s, box-shadow 0.2s !important;
+  }
+  .nav-cta:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(94,234,212,0.25);
+  }
 
   /* SIDEBAR */
   .sidebar {
@@ -343,7 +359,7 @@
 <div class="tip">Best results come from pairing AI generation with Jira or Linear enrichment. Richer context produces cleaner summaries, clearer categories, and fewer low-signal commit dumps.</div>
 
 <h3 id="pricing">Pricing &amp; Tiers</h3>
-<p>Cullit uses a <code>CULLIT_API_KEY</code> to unlock Pro features. Without a key, the free tier is fully functional for template-based notes.</p>
+<p>The public npm package is the free local CLI surface: local git, template generation with <code>--provider none</code>, and stdout/file output. Licensed Pro and Team capabilities are delivered through Cullit-hosted surfaces and private distributions.</p>
 
 <div class="table-wrap">
 <table>
@@ -424,7 +440,7 @@
   <span class="cmt"># Set LINEAR_API_KEY in your environment</span></code></pre>
 
 <h3 id="ai-providers">AI Providers</h3>
-<p>Cullit supports six providers. Set the relevant API key in your environment:</p>
+<p>Cullit supports six providers in licensed Pro and Team surfaces. The public npm CLI uses <code>--provider none</code> unless you are running a hosted/private Cullit distribution with premium providers enabled.</p>
 
 <div class="table-wrap">
 <table>
@@ -449,7 +465,7 @@
 <table>
   <thead><tr><th>Variable</th><th>Purpose</th></tr></thead>
   <tbody>
-    <tr><td><code>CULLIT_API_KEY</code></td><td>Cullit Pro license key (enables AI, integrations, advanced publishing)</td></tr>
+    <tr><td><code>CULLIT_API_KEY</code></td><td>Cullit license key for hosted/private Pro flows and advanced publishing surfaces</td></tr>
     <tr><td><code>ANTHROPIC_API_KEY</code></td><td>Anthropic API key</td></tr>
     <tr><td><code>OPENAI_API_KEY</code></td><td>OpenAI API key</td></tr>
     <tr><td><code>GOOGLE_API_KEY</code></td><td>Google Gemini API key</td></tr>
@@ -812,7 +828,7 @@ console.log(result.duration);      <span class="cmt">// pipeline duration in ms<
 <table>
   <thead><tr><th>Package</th><th>Purpose</th></tr></thead>
   <tbody>
-    <tr><td><code>cullit</code></td><td>CLI tool &mdash; <code>npx cullit generate</code></td></tr>
+    <tr><td><code>cullit</code></td><td>Public CLI package &mdash; local/template workflow via <code>npx cullit generate --provider none</code></td></tr>
     <tr><td><code>@cullit/core</code></td><td>Core engine: pipeline, collectors, generators, publishers</td></tr>
     <tr><td><code>@cullit/config</code></td><td>Config loader: YAML parsing, env var resolution, type exports</td></tr>
   </tbody>
@@ -1022,7 +1038,7 @@ formats, and several performance improvements.</span>
 <span class="val">- Resolved memory leak in WebSocket pool (DASH-155)</span>
 
 <span class="val">⚠️ Breaking Changes</span>
-<span class="val">- /api/v1/export deprecated, use /api/v2/export (DASH-160)</span></code></pre>
+<span class="val">- No breaking changes in this example release</span></code></pre>
 
 <div class="tip">The AI generates human-readable descriptions from raw commit messages and ticket data &mdash; not just a commit log dump. Different <code>audience</code> modes produce different output from the same data.</div>
 

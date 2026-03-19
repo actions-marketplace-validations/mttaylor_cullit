@@ -52,7 +52,7 @@ const HELP = `
     $ cullit <command> [options]
 
   COMMANDS
-    generate    Generate release notes from git, Jira, or Linear
+    generate    Generate release notes from git or licensed sources
     status      Release readiness check — should you release?
     init        Create a .cullit.yml config file
     tags        List recent tags in the current repo
@@ -71,14 +71,13 @@ const HELP = `
     --verbose     Show detailed output
     --quiet       Suppress all output except errors
 
+  NOTES
+    Public npm package: local git + template mode + stdout/file
+    Licensed/private Cullit surfaces add AI, enrichments, and premium publishers
+
   EXAMPLES
     $ cullit generate --from v1.0.0 --to v1.1.0
-    $ cullit generate --from HEAD~10 --provider gemini
-    $ cullit generate --from HEAD~5 --provider ollama --model llama3.1
     $ cullit generate --from HEAD~5 --provider none         # no AI key needed
-    $ cullit generate --source jira --from "project = PROJ" --provider anthropic
-    $ cullit generate --source linear --from "team:ENG" --provider openai
-    $ cullit generate --source gitlab --from v1.0.0 --to v1.1.0
     $ cullit generate --from v1.2.0 --template customer-facing
     $ cullit generate --from HEAD~5 --tone edgy --format html-edgy
     $ cullit init
@@ -88,7 +87,7 @@ const DEFAULT_YML = `# Cullit Configuration
 # https://cullit.io/docs/config
 
 ai:
-  provider: anthropic          # anthropic | openai | gemini | ollama | openclaw | none
+  provider: none               # public npm default; licensed/private surfaces may use anthropic | openai | gemini | ollama | openclaw
   # model: claude-sonnet-4-20250514  # optional: override default model
   audience: developer          # developer | end-user | executive
   tone: professional           # professional | casual | terse | edgy | hype | snarky
@@ -113,6 +112,7 @@ publish:
   - type: stdout               # always output to terminal
   # - type: file
   #   path: RELEASE_NOTES.md
+  # Premium publishers below require licensed/private Cullit surfaces.
   # - type: slack
   #   webhook_url: $SLACK_WEBHOOK_URL
   # - type: discord
@@ -411,7 +411,7 @@ async function interactiveInit() {
 
   console.log('\n  Cullit — Project Setup\n');
 
-  const provider = await ask(rl, '  AI provider (anthropic/openai/gemini/ollama/openclaw/none) [anthropic]: ') || 'anthropic';
+  const provider = await ask(rl, '  AI provider (anthropic/openai/gemini/ollama/openclaw/none) [none]: ') || 'none';
   if (!VALID_PROVIDERS.includes(provider)) {
     console.error(`\n  ✗ Invalid provider: ${provider}. Must be one of: ${VALID_PROVIDERS.join(', ')}`);
     rl.close();

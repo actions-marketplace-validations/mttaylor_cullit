@@ -898,7 +898,7 @@
       <h2>Install Cullit</h2>
     </div>
     <div class="step-body">
-      <p>Install globally so you can run <code>cullit</code> from any repo.</p>
+      <p>Install globally so you can run the free local/template CLI from any repo.</p>
 
       <div class="terminal">
         <div class="terminal-bar">
@@ -927,13 +927,13 @@
           <span class="terminal-title">terminal</span>
         </div>
         <div class="terminal-body">
-<span class="t-prompt">$</span> <span class="t-cmd">npx cullit generate</span> <span class="t-flag">--from</span> <span class="t-val">v1.0.0</span>
+<span class="t-prompt">$</span> <span class="t-cmd">npx cullit generate</span> <span class="t-flag">--from</span> <span class="t-val">v1.0.0</span> <span class="t-flag">--provider</span> <span class="t-val">none</span>
         </div>
       </div>
 
       <div class="callout callout-info">
         <span class="callout-icon">&#x1f4e6;</span>
-        <div><strong>Package managers:</strong> Also works with <code>pnpm add -g cullit</code> or <code>yarn global add cullit</code></div>
+        <div><strong>Package managers:</strong> Also works with <code>pnpm add -g cullit</code> or <code>yarn global add cullit</code>. This public package is the free local/template CLI surface.</div>
       </div>
     </div>
   </div>
@@ -1172,7 +1172,7 @@
 
       <div class="callout callout-info">
         <span class="callout-icon">&#x1f511;</span>
-        <div><strong>Pro license required</strong> for AI providers. Set your <code>CULLIT_API_KEY</code> (format: <code>clt_...</code>) to unlock AI, Jira enrichment, Linear enrichment, and all publishers. <a href="index.html#cta" style="color: var(--accent)">Get your key &rarr;</a></div>
+        <div><strong>Pro flows are separate from the public npm package.</strong> The npm CLI stays in local/template mode. AI providers, Jira/Linear enrichment, and premium publishers run through licensed Cullit-hosted or private distributions using <code>CULLIT_API_KEY</code>. <a href="index.html#cta" style="color: var(--accent)">View pricing &rarr;</a></div>
       </div>
 
       <p>Now generate with AI:</p>

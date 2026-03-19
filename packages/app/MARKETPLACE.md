@@ -29,7 +29,7 @@ and several performance improvements.
 - Resolved memory leak in WebSocket pool
 
 ⚠️ Breaking Changes
-- /api/v1/export deprecated, use /api/v2/export
+- No breaking changes in this release
 ```
 
 ## Features

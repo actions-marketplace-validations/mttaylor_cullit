@@ -90,9 +90,19 @@
   .nav-cta {
     background: var(--accent) !important;
     color: var(--bg) !important;
-    padding: 0.5rem 1rem !important;
-    border-radius: 6px;
+    padding: 0.5rem 1.2rem !important;
+    border-radius: 4px;
     font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    line-height: 1.2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s, box-shadow 0.2s !important;
+  }
+  .nav-cta:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(94,234,212,0.25);
   }
 
   /* LEGAL CONTENT */
