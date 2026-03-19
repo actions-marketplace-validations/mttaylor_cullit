@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Free Trial — Cullit Release Notes Generator</title>
+<meta name="description" content="Get started with Cullit free — template-based release notes generator. No API key required. CLI setup and guides for the free tier.">
+<meta property="og:title" content="Free Trial - Cullit">
+<meta property="og:description" content="Start generating release notes free with Cullit's template engine.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cullit.io/free-trial">
+<meta property="og:image" content="https://cullit.io/og-image.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Free Trial - Cullit">
+<meta name="twitter:description" content="Start generating release notes free with Cullit.">
+<meta name="twitter:image" content="https://cullit.io/og-image.svg">
+<link rel="canonical" href="https://cullit.io/free-trial">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Chakra+Petch:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg-card: #161822;
+    --bg-card-hover: #1e2030;
+    --accent: #5eead4;
+    --accent-dim: #2dd4bf;
+    --text: #d4d4e0;
+    --text-dim: #7e819a;
+    --text-bright: #f0f0f5;
+    --border: #282a3a;
+    --terminal-green: #4ade80;
+    --terminal-blue: #60a5fa;
+    --terminal-red: #f87171;
+    --terminal-yellow: #fbbf24;
+    --terminal-purple: #c084fc;
+    --sidebar-w: 260px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    padding: 0.8rem 2rem;
+    display: flex; justify-content: space-between; align-items: center;
+    z-index: 200;
+    background: rgba(15,17,23,0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo { font-family: 'Space Mono', monospace; font-size: 1.3rem; font-weight: 700; color: var(--accent); text-decoration: none; letter-spacing: -0.5px; display: flex; align-items: center; gap: 0.5rem; }
+  .logo-mark { width: 28px; height: 28px; flex-shrink: 0; }
+  .logo span { color: var(--text-dim); font-weight: 400; }
+  .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+  .nav-links a { color: var(--text-dim); text-decoration: none; font-size: 0.85rem; font-family: 'Space Mono', monospace; transition: color 0.2s; }
+  .nav-links a:hover, .nav-links a.active { color: var(--accent); }
+  .nav-cta { background: var(--accent) !important; color: var(--bg) !important; padding: 0.4rem 1rem; border-radius: 4px; font-weight: 600; }
+
+  /* SIDEBAR */
+  .sidebar {
+    position: fixed; top: 52px; left: 0; bottom: 0;
+    width: var(--sidebar-w); padding: 1.5rem 1rem;
+    background: var(--bg); border-right: 1px solid var(--border);
+    overflow-y: auto; z-index: 100;
+  }
+  .sidebar h4 {
+    font-family: 'Space Mono', monospace; font-size: 0.7rem;
+    color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px;
+    margin: 1.2rem 0 0.5rem; padding-left: 0.5rem;
+  }
+  .sidebar h4:first-child { margin-top: 0; }
+  .sidebar a {
+    display: block; padding: 0.35rem 0.5rem; color: var(--text-dim);
+    text-decoration: none; font-size: 0.85rem; border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .sidebar a:hover { color: var(--text-bright); background: var(--bg-card); }
+  .sidebar a.active { color: var(--accent); background: rgba(94,234,212,0.08); }
+
+  /* MAIN */
+  .main {
+    margin-left: var(--sidebar-w); padding: 4.5rem 3rem 4rem;
+    max-width: 900px;
+  }
+
+  /* HEADINGS */
+  .main h1 {
+    font-family: 'Chakra Petch', sans-serif; font-size: 2.2rem;
+    font-weight: 700; color: var(--text-bright); margin: 2.5rem 0 0.5rem;
+  }
+  .main h1:first-child { margin-top: 0; }
+  .subtitle {
+    color: var(--text-dim); font-size: 1.05rem; margin-bottom: 2rem;
+  }
+  .main h2 {
+    font-family: 'Chakra Petch', sans-serif; font-size: 1.6rem;
+    font-weight: 600; color: var(--text-bright); margin: 2rem 0 1rem;
+  }
+  .main h3 {
+    font-family: 'Chakra Petch', sans-serif; font-size: 1.15rem;
+    font-weight: 600; color: var(--text-bright); margin: 1.5rem 0 0.75rem;
+  }
+
+  /* CODE & TERMINAL */
+  pre {
+    background: var(--bg-card); padding: 1rem; border-radius: 6px;
+    border: 1px solid var(--border);
+    overflow-x: auto; margin: 1.5rem 0;
+    font-family: 'Space Mono', monospace; font-size: 0.9rem; line-height: 1.5;
+  }
+  code {
+    font-family: 'Space Mono', monospace;
+    color: var(--text);
+  }
+  .cmt { color: var(--text-dim); }
+  .cmd { color: var(--terminal-blue); font-weight: 600; }
+  .flag { color: var(--terminal-purple); }
+  .val { color: var(--terminal-green); }
+  .str { color: var(--terminal-green); }
+  .key { color: var(--accent); }
+
+  /* TIP BOX */
+  .tip {
+    background: rgba(94,234,212,0.05); border-left: 3px solid var(--accent);
+    padding: 1rem; border-radius: 4px; margin: 1.5rem 0;
+    color: var(--text-dim); font-size: 0.95rem;
+  }
+  .tip strong { color: var(--accent); }
+  .tip a { color: var(--accent); text-decoration: none; }
+  .tip a:hover { text-decoration: underline; }
+
+  /* TABLE */
+  .table-wrap {
+    overflow-x: auto; margin: 1.5rem 0;
+  }
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  thead { background: var(--bg-card); }
+  th, td {
+    padding: 0.75rem; text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    font-family: 'Space Mono', monospace; font-size: 0.75rem;
+    text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim);
+  }
+
+  /* UPGRADE BANNER */
+  .upgrade-banner {
+    background: linear-gradient(135deg, rgba(94,234,212,0.1), rgba(45,212,191,0.05));
+    border: 1px solid var(--border); border-left: 3px solid var(--accent);
+    padding: 1.25rem; border-radius: 6px; margin: 2rem 0;
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  }
+  .upgrade-banner a {
+    background: var(--accent); color: var(--bg); padding: 0.5rem 1.2rem;
+    border-radius: 4px; text-decoration: none; font-weight: 600; font-size: 0.9rem;
+    white-space: nowrap;
+  }
+  .upgrade-banner a:hover {
+    background: var(--accent-dim);
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    nav { padding: 0.6rem 1rem; }
+    .hamburger { display: flex; }
+    .nav-links {
+      display: none; position: fixed; top: 48px; right: 0;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 0 0 0 8px; flex-direction: column; padding: 1rem;
+      gap: 0.8rem; box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .nav-links.open { display: flex; }
+    .sidebar { width: 100%; top: 48px; max-height: 50vh; }
+    .main {
+      margin-left: 0; padding: 3.5rem 1.5rem 2rem;
+    }
+    .sidebar-toggle { display: flex; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo"><svg class="logo-mark" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#0f1117"/><path d="M42 22A17 17 0 1 0 42 42" stroke="#5eead4" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="50" cy="32" r="3.5" fill="#2dd4bf"/></svg>cullit<span>.io</span></a>
+  <div class="nav-links" id="navLinks">
+    <a href="index.html">Home</a>
+    <a href="docs.html">Full Docs</a>
+    <a href="free-trial.html" class="active">Free Trial</a>
+    <a href="pricing.html">Pricing</a>
+    <a href="https://github.com/mttaylor/cullit" target="_blank">GitHub</a>
+    <a href="dashboard.html">Dashboard</a>
+  </div>
+</nav>
+
+<!-- SIDEBAR TOGGLE (mobile FAB) -->
+<button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle navigation">☰</button>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <h4>Getting Started</h4>
+  <a href="#quick-start">Quick Start</a>
+  <a href="#installation">Installation</a>
+  <a href="#first-run">Your First Run</a>
+  <a href="#what-is-free">What's Free</a>
+
+  <h4>Free Features</h4>
+  <a href="#template-engine">Template Engine</a>
+  <a href="#cli-commands">CLI Commands</a>
+  <a href="#publishing-free">Publishing Options</a>
+
+  <h4>Next Steps</h4>
+  <a href="#upgrade-benefits">Upgrade Benefits</a>
+  <a href="#documentation">Full Documentation</a>
+</aside>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+<!-- ============================================ -->
+<h1 id="quick-start">Getting Started Free</h1>
+<p class="subtitle">Generate release notes with Cullit's template engine — no API key or credit card required.</p>
+
+<h3 id="installation">Installation</h3>
+<p>Get Cullit up and running in seconds:</p>
+<pre><code><span class="cmt"># Option 1: Run without installing (recommended)</span>
+<span class="cmd">npx</span> cullit generate <span class="flag">--from</span> <span class="val">HEAD~10</span> <span class="flag">--provider</span> <span class="val">none</span>
+
+<span class="cmt"># Option 2: Install globally</span>
+<span class="cmd">npm</span> install -g cullit
+<span class="cmd">cullit</span> generate <span class="flag">--from</span> <span class="val">HEAD~10</span> <span class="flag">--provider</span> <span class="val">none</span>
+
+<span class="cmt"># Option 3: Install with pnpm</span>
+<span class="cmd">pnpm</span> add -g cullit</code></pre>
+
+<div class="tip">The free tier uses a built-in template engine&mdash;no AI model or API key needed. Perfect for getting familiar with Cullit before exploring AI-powered features.</div>
+
+<h3 id="first-run">Your First Run</h3>
+<p>Navigate to any Git repository and run:</p>
+<pre><code><span class="cmt"># Generate from the last 10 commits (template-based)</span>
+<span class="cmd">cullit</span> generate <span class="flag">--from</span> <span class="val">HEAD~10</span>
+
+<span class="cmt"># Generate between two tags</span>
+<span class="cmd">cullit</span> generate <span class="flag">--from</span> <span class="val">v1.0.0</span> <span class="flag">--to</span> <span class="val">v1.1.0</span>
+
+<span class="cmt"># Auto-detect: uses the two most recent tags</span>
+<span class="cmd">cullit</span> generate</code></pre>
+
+<p>Cullit collects your commits and formats them into clean, categorized release notes using the template engine.</p>
+
+<!-- ============================================ -->
+<h2 id="what-is-free">What's Free</h2>
+
+<p>The free tier includes everything you need to generate and publish templated release notes:</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th>Free</th>
+      <th>Paid Tiers</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Template Engine</strong> (<code>--provider none</code>)</td><td>✅</td><td>✅</td></tr>
+    <tr><td>Publish to stdout &amp; files</td><td>✅</td><td>✅</td></tr>
+    <tr><td>CLI commands: generate, status, tags</td><td>✅</td><td>✅</td></tr>
+    <tr><td>Custom categories &amp; formatting</td><td>✅</td><td>✅</td></tr>
+    <tr><td>Jira / Linear enrichment</td><td>❌</td><td>✅ (Pro+)</td></tr>
+    <tr><td>AI generation (Claude, GPT, Gemini)</td><td>❌</td><td>✅ (Pro+)</td></tr>
+    <tr><td>Web Dashboard</td><td>❌</td><td>✅ (Pro+)</td></tr>
+    <tr><td>GitHub App (AI mode)</td><td>❌</td><td>✅ (Pro+)</td></tr>
+    <tr><td>Slack / Discord / Teams publishing</td><td>❌</td><td>✅ (Pro+)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ============================================ -->
+<h2 id="template-engine">Template Engine</h2>
+
+<p>The free template engine provides structured, categorized release notes based on commit messages and metadata. Create a <code>.cullit.yml</code> file in your project root to customize it:</p>
+
+<pre><code><span class="cmt"># .cullit.yml</span>
+
+<span class="key">ai</span>:
+  <span class="key">provider</span>: <span class="str">none</span>              <span class="cmt"># Use the template engine</span>
+  <span class="key">audience</span>: <span class="str">developer</span>       <span class="cmt"># developer | end-user | executive</span>
+  <span class="key">categories</span>:
+    - <span class="str">features</span>
+    - <span class="str">fixes</span>
+    - <span class="str">breaking</span>
+
+<span class="key">publish</span>:
+  - <span class="key">type</span>: <span class="str">stdout</span>          <span class="cmt"># Print to terminal</span>
+  - <span class="key">type</span>: <span class="str">file</span>
+    <span class="key">path</span>: <span class="str">RELEASE_NOTES.md</span>  <span class="cmt"># Save to file</span></code></pre>
+
+<p>Then generate notes:</p>
+<pre><code><span class="cmd">cullit</span> generate <span class="flag">--from</span> <span class="val">v1.0.0</span> <span class="flag">--to</span> <span class="val">v1.1.0</span></code></pre>
+
+<div class="tip">Commit messages are parsed by type prefix: <code>feat:</code> (features), <code>fix:</code> (fixes), <code>BREAKING:</code> (breaking changes). This follows conventional commits.</div>
+
+<!-- ============================================ -->
+<h2 id="cli-commands">CLI Commands</h2>
+
+<h3>cullit generate</h3>
+<p>Generate release notes between two refs:</p>
+<pre><code><span class="cmd">cullit</span> generate <span class="flag">--from</span> <span class="val">v1.0.0</span> <span class="flag">--to</span> <span class="val">HEAD</span></code></pre>
+<p>Options:</p>
+<pre><code><span class="flag">--from</span> <span class="val">&lt;ref&gt;</span>           Starting commit/tag
+<span class="flag">--to</span> <span class="val">&lt;ref&gt;</span>             Ending commit/tag (default: HEAD)
+<span class="flag">--provider</span> <span class="val">none</span>         Use template engine (free)
+<span class="flag">--format</span> <span class="val">markdown|json</span>  Output format</code></pre>
+
+<h3>cullit status</h3>
+<p>Check account status and remaining generations:</p>
+<pre><code><span class="cmd">cullit</span> status</code></pre>
+
+<h3>cullit tags</h3>
+<p>List available tags in your repository:</p>
+<pre><code><span class="cmd">cullit</span> tags</code></pre>
+
+<h3>cullit init</h3>
+<p>Create a <code>.cullit.yml</code> interactively:</p>
+<pre><code><span class="cmd">cullit</span> init</code></pre>
+
+<!-- ============================================ -->
+<h2 id="publishing-free">Publishing Options (Free)</h2>
+
+<h3>stdout (Terminal)</h3>
+<p>Print release notes to your terminal:</p>
+<pre><code><span class="cmd">cullit</span> generate <span class="flag">--from</span> <span class="val">v1.0.0</span> <span class="flag">--to</span> <span class="val">v1.1.0</span></code></pre>
+
+<h3>Save to File</h3>
+<p>Write release notes to a Markdown or JSON file:</p>
+<pre><code><span class="key">publish</span>:
+  - <span class="key">type</span>: <span class="str">file</span>
+    <span class="key">path</span>: <span class="str">CHANGELOG.md</span>
+    <span class="key">format</span>: <span class="str">markdown</span></code></pre>
+
+<p>Then run:</p>
+<pre><code><span class="cmd">cullit</span> generate</code></pre>
+
+<!-- ============================================ -->
+<h2 id="upgrade-benefits">Upgrade Benefits</h2>
+
+<p>The free tier is perfect for getting started. When you're ready to unlock AI-powered features:</p>
+
+<div class="upgrade-banner">
+  <div>
+    <strong>Unlock AI-powered release notes</strong> with Anthropic Claude, OpenAI GPT, Google Gemini, or local Ollama. Enrich with Jira and Linear tickets. Publish to Slack, Discord, Teams, GitHub, Confluence, Notion, and more.
+  </div>
+  <div style="flex-shrink: 0;">
+    <a href="pricing.html">View Pricing</a>
+  </div>
+</div>
+
+<h3>Pro ($9/mo)</h3>
+<ul style="list-style: none; padding: 0;">
+  <li>✅ 500 generations per month</li>
+  <li>✅ AI providers: Claude, GPT, Gemini, Ollama</li>
+  <li>✅ Jira / Linear enrichment</li>
+  <li>✅ 100 projects</li>
+  <li>✅ Slack, Discord, GitHub Release publishing</li>
+  <li>✅ Web Dashboard</li>
+</ul>
+
+<h3>Team ($19/seat/mo)</h3>
+<ul style="list-style: none; padding: 0;">
+  <li>✅ Everything in Pro</li>
+  <li>✅ 2,000 generations/month</li>
+  <li>✅ Up to 10 team seats</li>
+  <li>✅ 250 projects</li>
+  <li>✅ Confluence, Notion, Teams publishing</li>
+  <li>✅ Hosted changelog pages</li>
+  <li>✅ White-label embed widgets</li>
+</ul>
+
+<h3>Enterprise (Custom)</h3>
+<ul style="list-style: none; padding: 0;">
+  <li>✅ Unlimited generations</li>
+  <li>✅ Multi-repo aggregation</li>
+  <li>✅ SSO / SAML authentication</li>
+  <li>✅ On-premises / self-hosted</li>
+  <li>✅ Dedicated support &amp; SLA</li>
+  <li>✅ Custom integrations</li>
+</ul>
+
+<p style="margin-top: 1.5rem; color: var(--text-dim);">
+  <strong>Ready to upgrade?</strong> Visit <a href="pricing.html" style="color: var(--accent);">pricing.html</a> or email <a href="mailto:sales@cullit.io" style="color: var(--accent);">sales@cullit.io</a>
+</p>
+
+<!-- ============================================ -->
+<h2 id="documentation">Full Documentation</h2>
+
+<p>Want to dive deeper? Check out the <strong><a href="docs.html" style="color: var(--accent);">full documentation</a></strong> for:</p>
+<ul style="list-style: none; padding: 0; margin: 1rem 0;">
+  <li>✓ Complete configuration reference</li>
+  <li>✓ Advanced usage patterns</li>
+  <li>✓ GitHub Action setup</li>
+  <li>✓ Real-world examples</li>
+  <li>✓ API reference</li>
+  <li>✓ Team dashboard guide</li>
+</ul>
+
+<div class="tip">
+  <strong>Need help?</strong> Check out the <a href="tutorial.html">interactive tutorial</a>, browse <a href="https://github.com/mttaylor/cullit" target="_blank">GitHub</a>, or email <a href="mailto:support@cullit.io">support@cullit.io</a>.
+</div>
+
+</div>
+
+<!-- FOOTER -->
+<footer style="text-align: center; padding: 2rem 1rem; color: var(--text-dim); border-top: 1px solid var(--border); margin-top: 3rem;">
+  <p>&copy; 2026 Cullit &mdash; Built by <a href="https://github.com/mttaylor/cullit" target="_blank" style="color: var(--accent); text-decoration: none;">Cullit</a></p>
+  <div style="margin-top: 1rem; display: flex; gap: 1.5rem; justify-content: center; font-size: 0.9rem;">
+    <a href="https://github.com/mttaylor/cullit" target="_blank" style="color: var(--accent); text-decoration: none;">GitHub</a>
+    <a href="pricing.html" style="color: var(--accent); text-decoration: none;">Pricing</a>
+    <a href="terms.html" style="color: var(--accent); text-decoration: none;">Terms</a>
+    <a href="privacy.html" style="color: var(--accent); text-decoration: none;">Privacy</a>
+  </div>
+</footer>
+
+<script>
+// Sidebar toggle for mobile
+const sidebarToggle = document.getElementById('sidebarToggle');
+const sidebar = document.getElementById('sidebar');
+const navLinks = document.getElementById('navLinks');
+const hamburger = document.querySelector('.hamburger') || sidebarToggle;
+
+sidebarToggle.addEventListener('click', () => {
+  sidebar.style.display = sidebar.style.display === 'none' ? 'block' : 'none';
+});
+
+// Hamburger nav toggle
+if (hamburger) {
+  hamburger.addEventListener('click', () => {
+    navLinks.classList.toggle('open');
+  });
+}
+
+// Close menu when a nav link is clicked
+navLinks.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => {
+    navLinks.classList.remove('open');
+  });
+});
+
+// Mark active section
+document.querySelectorAll('.sidebar a').forEach(link => {
+  link.addEventListener('click', function() {
+    document.querySelectorAll('.sidebar a').forEach(l => l.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
