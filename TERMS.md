@@ -35,6 +35,13 @@ Paid plans (such as Pro, Team, and Enterprise) may include recurring billing thr
 - You authorize recurring charges for selected paid plans
 - Subscription changes, cancellations, and renewals are managed via Stripe/customer portal flows
 - Plan limits, seat limits, and feature access may vary by tier
+- All fees are non-refundable except as required by applicable law
+
+## 5.1 Cancellation
+
+- You may cancel at any time from the billing portal
+- Access to paid features continues through the current billing period
+- Partial billing periods are not prorated or refunded
 
 ## 6. Acceptable Use
 

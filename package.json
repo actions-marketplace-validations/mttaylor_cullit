@@ -24,12 +24,13 @@
     "build": "pnpm -r build && pnpm build:action",
     "build:action": "tsup src/action.ts --format cjs --out-dir dist --no-splitting --target node22",
     "build:widget": "esbuild site/widget.ts --bundle --minify --format=iife --outfile=site/widget.js --target=es2020",
+    "launch:ready": "pnpm build && pnpm lint && pnpm test && pnpm test:e2e",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "dev": "pnpm --filter @cullit/cli dev",
     "dev:api": "pnpm --filter @cullit/api dev",
-    "lint": "eslint packages/",
+    "lint": "eslint packages/ --max-warnings=250",
     "cullit": "node packages/cli/dist/index.js"
   },
   "dependencies": {

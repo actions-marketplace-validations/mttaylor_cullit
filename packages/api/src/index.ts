@@ -8,6 +8,7 @@
  *   GET  /health                           → Health check
  *   GET  /openapi.json                     → OpenAPI 3.1 spec
  *   POST /generate                         → Generate release notes
+ *   POST /v1/events                        → Funnel event tracking
  *   POST /v1/changelog                     → Publish a release to hosted changelog
  *   GET  /v1/changelog/:project/latest     → Get latest releases (widget/page)
  * 
@@ -285,6 +286,60 @@ async function handleHealth(_req: IncomingMessage, res: ServerResponse): Promise
 
 async function handleOpenAPI(_req: IncomingMessage, res: ServerResponse): Promise<void> {
   json(res, 200, openApiSpec);
+}
+
+const FUNNEL_EVENTS = new Set([
+  'landing_cta_clicked',
+  'pricing_viewed',
+  'checkout_started',
+  'checkout_redirected',
+  'checkout_failed',
+  'trial_started',
+  'paid_activated',
+  'first_generate_success',
+  'first_publish_success',
+]);
+
+async function handleTrackEvent(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const raw = await readBody(req);
+  let body: { event?: string; plan?: string; source?: string; metadata?: Record<string, unknown> };
+
+  try {
+    body = JSON.parse(raw);
+  } catch {
+    json(res, 400, { error: 'Invalid JSON body' });
+    return;
+  }
+
+  if (!body.event || typeof body.event !== 'string' || !FUNNEL_EVENTS.has(body.event)) {
+    json(res, 400, {
+      error: `Invalid event. Must be one of: ${Array.from(FUNNEL_EVENTS).join(', ')}`,
+    });
+    return;
+  }
+
+  if (body.plan && !['free', 'pro', 'team', 'enterprise'].includes(body.plan)) {
+    json(res, 400, { error: 'Invalid plan. Must be one of: free, pro, team, enterprise' });
+    return;
+  }
+
+  const user = await resolveUser(req);
+  const userAgent = req.headers['user-agent'];
+  const referer = req.headers['referer'];
+
+  log.info({
+    event: body.event,
+    plan: body.plan,
+    source: body.source,
+    metadata: body.metadata,
+    userId: user?.id,
+    orgId: user?.orgId,
+    userAgent,
+    referer,
+    timestamp: new Date().toISOString(),
+  }, 'funnel_event');
+
+  json(res, 202, { ok: true });
 }
 
 interface GenerateRequest {
@@ -1257,6 +1312,8 @@ const server = createServer(async (req, res) => {
       await handleHealth(req, res);
     } else if (path === '/openapi.json' && req.method === 'GET') {
       await handleOpenAPI(req, res);
+    } else if (path === '/v1/events' && req.method === 'POST') {
+      await handleTrackEvent(req, res);
 
     // --- Authenticated routes ---
     } else if ((path === '/generate' || path === '/v1/generate') && req.method === 'POST') {

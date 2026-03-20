@@ -441,6 +441,48 @@ export const openApiSpec = {
         },
       },
     },
+    '/v1/events': {
+      post: {
+        operationId: 'trackFunnelEvent',
+        summary: 'Track a funnel event',
+        description: 'Records lightweight conversion funnel events for launch and growth monitoring.',
+        tags: ['Analytics'],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['event'],
+                properties: {
+                  event: {
+                    type: 'string',
+                    enum: [
+                      'landing_cta_clicked',
+                      'pricing_viewed',
+                      'checkout_started',
+                      'checkout_redirected',
+                      'checkout_failed',
+                      'trial_started',
+                      'paid_activated',
+                      'first_generate_success',
+                      'first_publish_success',
+                    ],
+                  },
+                  plan: { type: 'string', enum: ['free', 'pro', 'team', 'enterprise'] },
+                  source: { type: 'string' },
+                  metadata: { type: 'object', additionalProperties: true },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '202': { description: 'Event accepted' },
+          '400': { description: 'Invalid request', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+        },
+      },
+    },
     '/v1/drafts': {
       get: {
         operationId: 'listDrafts',

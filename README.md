@@ -54,6 +54,21 @@ cullit generate --from v1.0.0 --verbose
 cullit generate --from v1.0.0 --quiet
 ```
 
+## Paid Upgrade In Under 10 Minutes
+
+```bash
+# 1) Install paid distribution from your private registry
+npm install -g @cullit/licensed
+
+# 2) Set your Cullit license key
+export CULLIT_API_KEY=clt_your_key_here
+
+# 3) Run your first AI generation
+cullit generate --from v1.0.0 --to v1.1.0 --provider anthropic
+```
+
+If you do not have a paid key yet, start at https://cullit.io/pricing.
+
 ## Multi-Repo Aggregation
 
 Merge commits from multiple repositories into a single changelog. Add a `repos` array to `.cullit.yml`:
@@ -166,6 +181,12 @@ curl -X POST http://localhost:3000/generate \
 # OpenAPI spec
 curl http://localhost:3000/openapi.json
 ```
+
+Production hardening defaults:
+
+- `ALLOWED_ORIGINS` should be set to your exact frontend origin(s)
+- `RATE_LIMIT` defaults to `30` requests/minute per IP
+- `/v1/events` accepts funnel events (`checkout_started`, `first_generate_success`, etc.) for launch conversion tracking
 
 ## Docker
 

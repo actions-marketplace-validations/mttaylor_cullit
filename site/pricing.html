@@ -395,6 +395,15 @@
     <p>Start free. Upgrade when you need AI synthesis, model choice, richer integrations, or shared release workflows.</p>
   </header>
 
+  <section style="max-width:900px;margin:0 auto 2rem;padding:1rem 1.25rem;border:1px solid var(--border);border-radius:10px;background:var(--bg-card)">
+    <h2 style="font-family:'Chakra Petch',sans-serif;font-size:1.2rem;margin-bottom:0.5rem">Upgrade in 3 steps</h2>
+    <ol style="margin:0;padding-left:1.2rem;color:var(--text-dim);line-height:1.7">
+      <li>Choose Pro or Team below and complete checkout.</li>
+      <li>Install <code style="background:#0d0d14;padding:0.1rem 0.35rem;border-radius:4px">@cullit/licensed</code> from your private registry.</li>
+      <li>Set your <code style="background:#0d0d14;padding:0.1rem 0.35rem;border-radius:4px">CULLIT_API_KEY</code> and run your first generation.</li>
+    </ol>
+  </section>
+
   <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:2rem;">
     <div class="pricing-card" style="padding:1.25rem;">
       <div class="plan-name" style="font-size:1rem;">Grounded AI</div>
@@ -512,7 +521,12 @@
 
     <div class="faq-item">
       <p class="faq-q">How do I cancel?</p>
-      <p class="faq-a">Cancel anytime from the <a href="dashboard.html">billing dashboard</a> or email <a href="mailto:sales@cullit.io">sales@cullit.io</a>. No lock-in, no questions asked.</p>
+      <p class="faq-a">Cancel anytime from the <a href="dashboard.html">billing dashboard</a> or email <a href="mailto:sales@cullit.io">sales@cullit.io</a>. Access continues through your paid period; partial periods are not prorated.</p>
+    </div>
+
+    <div class="faq-item">
+      <p class="faq-q">What is your refund policy?</p>
+      <p class="faq-a">Fees are non-refundable except where required by applicable law. Full policy details are in <a href="terms.html">Terms</a>.</p>
     </div>
   </section>
 </main>
@@ -542,8 +556,24 @@ function getApiUrl() {
   return location.origin;
 }
 
+async function trackEvent(event, metadata = {}) {
+  try {
+    await fetch(getApiUrl() + '/v1/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ event, source: 'pricing', metadata }),
+    });
+  } catch {
+    // best effort only
+  }
+}
+
+trackEvent('pricing_viewed');
+
 async function startCheckout(plan, e) {
   e.preventDefault();
+  trackEvent('checkout_started', { plan });
   try {
     const res = await fetch(getApiUrl() + '/v1/billing/checkout', {
       method: 'POST',
@@ -553,13 +583,17 @@ async function startCheckout(plan, e) {
     });
     const data = await res.json();
     if (data.url) {
+      trackEvent('checkout_redirected', { plan });
       window.location.href = data.url;
     } else if (res.status === 401) {
+      trackEvent('checkout_failed', { plan, reason: 'unauthenticated' });
       window.location.href = 'dashboard.html';
     } else {
+      trackEvent('checkout_failed', { plan, reason: data.error || 'unknown' });
       alert(data.error || 'Could not start checkout. Please try again.');
     }
   } catch {
+    trackEvent('checkout_failed', { plan, reason: 'network_error' });
     // Fallback to mailto if API isn't available
     window.location.href = 'mailto:sales@cullit.io?subject=Cullit%20' + plan.charAt(0).toUpperCase() + plan.slice(1);
   }
