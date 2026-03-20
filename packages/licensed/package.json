@@ -1,0 +1,34 @@
+{
+  "name": "@cullit/licensed",
+  "version": "1.9.2",
+  "type": "module",
+  "description": "Private registry distribution for Cullit paid tiers (Pro, Team, Enterprise).",
+  "license": "UNLICENSED",
+  "author": "Cullit <matt@cullit.io>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mttaylor/cullit",
+    "directory": "packages/licensed"
+  },
+  "publishConfig": {
+    "access": "restricted"
+  },
+  "bin": {
+    "cullit": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --clean"
+  },
+  "dependencies": {
+    "@cullit/pro": "workspace:*",
+    "cullit": "workspace:*"
+  }
+}

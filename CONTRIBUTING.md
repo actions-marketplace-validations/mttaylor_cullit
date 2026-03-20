@@ -51,6 +51,7 @@ packages/
   core/     — Pipeline orchestration, git collector, template generator,
               formatting, license gating, constants
   cli/      — CLI entry point (parseArgs, commands)
+  licensed/ — Private paid-tier distribution package (wraps CLI + pro plugins)
   api/      — REST API server (zero-dependency, Node http module)
   pro/      — Pro features: AI generators (Anthropic, OpenAI, Gemini,
               Ollama, OpenClaw), source collectors (Jira, Linear, GitLab,

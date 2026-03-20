@@ -173,7 +173,7 @@ export async function runPipeline(
     throw new Error(
       `Source type "${config.source.type}" is not available. ` +
       (config.source.type !== 'local'
-        ? 'Install @cullit/pro to use this source.'
+        ? 'Install @cullit/licensed (private distribution) to use this source.'
         : 'Valid sources: local')
     );
   }
@@ -206,7 +206,7 @@ export async function runPipeline(
 
     const enricherFactory = getEnricher(source);
     if (!enricherFactory) {
-      log.info(`» Skipping ${source} enrichment — install @cullit/pro to enable`);
+      log.info(`» Skipping ${source} enrichment — install @cullit/licensed to enable`);
       continue;
     }
 
@@ -234,7 +234,7 @@ export async function runPipeline(
     throw new Error(
       `AI provider "${config.ai.provider}" is not available. ` +
       (config.ai.provider !== 'none'
-        ? 'Install @cullit/pro to use AI providers.'
+        ? 'Install @cullit/licensed (private distribution) to use AI providers.'
         : '')
     );
   }
@@ -274,7 +274,7 @@ export async function runPipeline(
 
         const publisherFactory = getPublisher(target.type);
         if (!publisherFactory) {
-          log.info(`» Skipping ${target.type} — install @cullit/pro to enable`);
+          log.info(`» Skipping ${target.type} — install @cullit/licensed to enable`);
           continue;
         }
 

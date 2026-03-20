@@ -28,7 +28,7 @@ npm install -D cullit
 ## Distribution Model
 
 - Public npm package `cullit`: local git, template generation with `--provider none`, stdout/file output
-- Licensed Cullit Pro and Team surfaces: AI providers, Jira/Linear enrichment, premium publishers, dashboard, API, GitHub App, and private deployment flows
+- Private registry package `@cullit/licensed`: paid tiers (Pro, Team, Enterprise) with AI providers, Jira/Linear enrichment, premium publishers, dashboard, API, GitHub App, and private deployment flows
 - npm is the delivery channel for the CLI runtime, not the paid entitlement layer
 
 ## Quick Start
@@ -201,6 +201,7 @@ docker compose up api
 | Package | Description |
 |---------|-------------|
 | [`cullit`](https://www.npmjs.com/package/cullit) | Public CLI installer — local/template workflow with `--provider none` |
+| `@cullit/licensed` | Private registry package for paid tiers (Pro, Team, Enterprise) |
 | [`@cullit/core`](https://www.npmjs.com/package/@cullit/core) | Core engine — pipeline, generators, publishers |
 | [`@cullit/config`](https://www.npmjs.com/package/@cullit/config) | Config loader — YAML parsing with env var resolution |
 | `@cullit/pro` | Pro integrations (private) — GitLab, Bitbucket, Teams, Confluence, Notion, AI generators |

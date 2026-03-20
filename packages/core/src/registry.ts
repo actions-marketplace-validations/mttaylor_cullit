@@ -4,7 +4,7 @@
  * Core registers: git collector, template generator, stdout/file publishers.
  * Pro registers:  AI generator, Jira/Linear collectors + enrichers, Slack/Discord/GitHub publishers.
  *
- * The CLI calls `await import('@cullit/pro')` to load pro plugins if installed.
+ * Paid plugin registration is preloaded by the licensed distribution package.
  */
 
 import type { Collector, Enricher, Generator, Publisher, OutputFormat, ReleaseNotes } from './types';
