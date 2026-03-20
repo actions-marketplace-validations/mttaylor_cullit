@@ -1,4 +1,4 @@
-name: EA Docs Audit
+name: Architecture Docs Audit
 
 on:
   push:
@@ -50,16 +50,16 @@ jobs:
       - name: Summarise
         if: steps.changes.outputs.needs_review == 'true'
         run: |
-          echo "## ⚠️ cullit-ea review needed" >> $GITHUB_STEP_SUMMARY
+          echo "## ⚠️ architecture-docs review needed" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "This commit touched source areas that may require updates to the **cullit-ea** internal docs:" >> $GITHUB_STEP_SUMMARY
+          echo "This commit touched source areas that may require updates to the **architecture-docs** internal docs:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo -e "${{ steps.changes.outputs.areas }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Review \`cullit-ea/ARCHITECTURE_INTERNAL.md\` and \`cullit-ea/architecture-visual.html\` and update any affected diagrams or sections." >> $GITHUB_STEP_SUMMARY
+          echo "Review \`architecture-docs/ARCHITECTURE_INTERNAL.md\` and \`architecture-docs/architecture-visual.html\` and update any affected diagrams or sections." >> $GITHUB_STEP_SUMMARY
 
       - name: All clear
         if: steps.changes.outputs.needs_review != 'true'
         run: |
-          echo "## ✅ cullit-ea up to date" >> $GITHUB_STEP_SUMMARY
-          echo "No source areas requiring cullit-ea doc review were changed in this commit." >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ architecture-docs up to date" >> $GITHUB_STEP_SUMMARY
+          echo "No source areas requiring architecture-docs review were changed in this commit." >> $GITHUB_STEP_SUMMARY

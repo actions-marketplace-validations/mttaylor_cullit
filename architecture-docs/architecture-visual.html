@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cullit Architecture Visualizer</title>
+  <meta name="description" content="Dynamic architecture diagrams for Cullit." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121a2f;
+      --panel-2: #0f1630;
+      --text: #e9eef9;
+      --muted: #9eb0d5;
+      --accent: #65e6c6;
+      --line: #253353;
+      --active: #1a2644;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 600px at -10% -20%, #1b2d58 0%, transparent 60%),
+        radial-gradient(800px 500px at 110% 10%, #20396a 0%, transparent 60%),
+        var(--bg);
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--line);
+      background: rgba(9, 14, 28, 0.75);
+      backdrop-filter: blur(8px);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    .title {
+      font-family: 'Space Mono', monospace;
+      font-size: 1rem;
+      color: var(--accent);
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 0.25rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 1rem;
+      padding: 1rem;
+    }
+
+    .panel {
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--line);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.82rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .list {
+      padding: 0.5rem;
+      display: grid;
+      gap: 0.35rem;
+      max-height: calc(100vh - 180px);
+      overflow: auto;
+    }
+
+    .item {
+      width: 100%;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 0.7rem 0.75rem;
+      color: var(--text);
+      text-align: left;
+      background: transparent;
+      cursor: pointer;
+      font: 500 0.92rem/1.25 'DM Sans', sans-serif;
+      transition: 120ms ease;
+    }
+
+    .item:hover {
+      border-color: var(--line);
+      background: #101a34;
+    }
+
+    .item.active {
+      background: var(--active);
+      border-color: #34508d;
+    }
+
+    .item .hint {
+      display: block;
+      color: var(--muted);
+      font-size: 0.76rem;
+      margin-top: 0.2rem;
+      font-family: 'Space Mono', monospace;
+    }
+
+    .viewer {
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      min-height: calc(100vh - 130px);
+    }
+
+    .meta {
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .meta h2 {
+      margin: 0;
+      font: 700 1.1rem/1.2 'DM Sans', sans-serif;
+    }
+
+    .meta p {
+      margin: 0.35rem 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .toolbar {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: 1px solid #3a538c;
+      background: #122040;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 0.45rem 0.65rem;
+      cursor: pointer;
+      font: 700 0.8rem/1 'Space Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .btn:hover { background: #18305f; }
+
+    .canvas {
+      overflow: auto;
+      padding: 1rem;
+      min-height: 420px;
+    }
+
+    #diagram {
+      min-width: 760px;
+    }
+
+    .foot {
+      padding: 0.65rem 1rem 0.95rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+      border-top: 1px solid var(--line);
+      font-family: 'Space Mono', monospace;
+    }
+
+    .error-box {
+      border: 1px solid #7f3052;
+      background: #241326;
+      color: #ffd7e5;
+      border-radius: 10px;
+      padding: 1rem;
+      font-family: 'Space Mono', monospace;
+      white-space: pre-wrap;
+    }
+
+    @media (max-width: 1024px) {
+      .layout { grid-template-columns: 1fr; }
+      .list { max-height: none; }
+      .viewer { min-height: auto; }
+      #diagram { min-width: 640px; }
+    }
+  </style>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
+    const diagrams = [
+      {
+        id: 'topology',
+        title: 'Package Topology',
+        hint: 'Monorepo package boundaries',
+        description: 'How config, core, CLI, paid plugins, API, and app are connected.',
+        code: `flowchart TD
+        Cfg["@cullit/config"]
+        Core["@cullit/core"]
+        Cli["cullit public npm CLI"]
+        Pro["@cullit/pro private plugin package"]
+        Lic["@cullit/licensed private paid distribution"]
+        Api["@cullit/api private API server"]
+        App["@cullit/app private GitHub App"]
+
+  Cfg --> Core
+  Core --> Cli
+  Core --> Pro
+  Pro --> Lic
+  Cli --> Lic
+  Core --> Api
+  Pro --> Api
+  Core --> App
+  Pro --> App`
+      },
+      {
+        id: 'distribution',
+        title: 'Distribution Model',
+        hint: 'Public vs private registry',
+        description: 'Free users install public CLI, paid users install private licensed package.',
+        code: `flowchart LR
+        PublicUser["Free user"]
+        PaidUser["Paid user: Pro Team Enterprise"]
+        NpmPublic["npm public registry"]
+        NpmPrivate["private npm registry"]
+        PublicPkg["cullit"]
+        LicensedPkg["@cullit/licensed"]
+
+  PublicUser --> NpmPublic --> PublicPkg
+  PaidUser --> NpmPrivate --> LicensedPkg
+  LicensedPkg --> PublicPkg`
+      },
+      {
+        id: 'plugins',
+        title: 'Runtime Plugin Registration',
+        hint: 'CLI startup and plugin load',
+        description: 'How paid plugins are registered before the pipeline resolves collectors, generators, and publishers.',
+        code: `sequenceDiagram
+  participant U as User
+  participant CLI as cullit CLI runtime
+  participant REG as core registry
+  participant PRO as @cullit/pro plugins
+  participant PIPE as runPipeline
+
+  U->>CLI: cullit generate ...
+  CLI->>PRO: import plugins if available
+  PRO->>REG: register collectors enrichers generators publishers
+  CLI->>PIPE: runPipeline from to config
+  PIPE->>REG: resolve factories by source provider publisher
+  REG-->>PIPE: factory functions
+  PIPE-->>U: formatted notes and publish results`
+      },
+      {
+        id: 'gating',
+        title: 'Gating and Tier Controls',
+        hint: 'License checks and allowlists',
+        description: 'License validation controls provider, enrichment, and publisher access at runtime.',
+        code: `flowchart TD
+  Start[runPipeline]
+  Validate[validateLicense]
+  Provider{provider allowed}
+  Enrich{enrichment allowed}
+  Publisher{publisher allowed}
+  End[Pipeline completed]
+
+  Start --> Validate --> Provider
+  Provider -- no --> Stop1[throw upgrade message]
+  Provider -- yes --> Enrich
+  Enrich -- no --> Skip1[skip enrichment]
+  Enrich -- yes --> DoEnrich[run enrichment]
+  Skip1 --> Publisher
+  DoEnrich --> Publisher
+  Publisher -- no --> Skip2[skip publisher]
+  Publisher -- yes --> DoPub[publish]
+  Skip2 --> End
+  DoPub --> End`
+      },
+      {
+        id: 'api-dashboard',
+        title: 'API and Dashboard Flow',
+        hint: 'Auth, tier, generation, usage',
+        description: 'Dashboard calls auth and generation endpoints; server enforces effective-tier limits and records usage.',
+        code: `sequenceDiagram
+  participant B as Browser dashboard
+  participant A as API server
+  participant AU as auth module
+  participant DB as data store
+
+  B->>A: GET auth me
+  A->>AU: resolveUser cookie or Bearer clt key
+  AU-->>A: user or null
+  A-->>B: tier effectiveTier trial
+
+  B->>A: POST generate
+  A->>AU: resolveUser
+  A->>A: check monthly limits by effective tier
+  A->>A: runPipeline
+  A->>DB: record history and usage
+  A-->>B: generated notes and metadata`
+      },
+      {
+        id: 'quality',
+        title: 'Quality Gates',
+        hint: 'Build, unit, e2e chain',
+        description: 'Required validation chain before merge and release.',
+        code: `flowchart LR
+  Code[Code changes]
+  Build[pnpm build]
+  Unit[pnpm test]
+  E2E[pnpm test:e2e]
+  Ready[Ready to merge]
+
+  Code --> Build --> Unit --> E2E --> Ready`
+      }
+    ];
+
+    let current = 0;
+
+    function safeName(title) {
+      return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    }
+
+    function download(filename, content, mime = 'text/plain') {
+      const blob = new Blob([content], { type: mime });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    async function renderDiagram(index) {
+      current = index;
+      const diagram = diagrams[index];
+
+      document.querySelectorAll('.item').forEach((el, i) => {
+        el.classList.toggle('active', i === index);
+      });
+
+      document.getElementById('title').textContent = diagram.title;
+      document.getElementById('desc').textContent = diagram.description;
+      document.getElementById('index').textContent = `${index + 1}/${diagrams.length}`;
+
+      const target = document.getElementById('diagram');
+      target.innerHTML = '';
+      try {
+        const { svg } = await mermaid.render(`m-${diagram.id}-${Date.now()}`, diagram.code);
+        target.innerHTML = svg;
+      } catch (error) {
+        target.innerHTML = `<div class="error-box">Diagram render failed for ${diagram.title}\n\n${String(error && error.message ? error.message : error)}</div>`;
+      }
+    }
+
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: 'dark',
+      themeVariables: {
+        primaryColor: '#1b2b4d',
+        primaryTextColor: '#e9eef9',
+        primaryBorderColor: '#3f5d99',
+        lineColor: '#7a93c8',
+        secondaryColor: '#10203f',
+        tertiaryColor: '#0f1a33',
+        background: '#121a2f',
+        mainBkg: '#1a2644',
+        textColor: '#e9eef9',
+        fontFamily: 'DM Sans, sans-serif'
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const list = document.getElementById('list');
+
+      diagrams.forEach((d, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'item';
+        btn.type = 'button';
+        btn.innerHTML = `${d.title}<span class="hint">${d.hint}</span>`;
+        btn.addEventListener('click', () => renderDiagram(i));
+        list.appendChild(btn);
+      });
+
+      document.getElementById('prev').addEventListener('click', () => {
+        renderDiagram((current - 1 + diagrams.length) % diagrams.length);
+      });
+
+      document.getElementById('next').addEventListener('click', () => {
+        renderDiagram((current + 1) % diagrams.length);
+      });
+
+      document.getElementById('copy').addEventListener('click', async () => {
+        await navigator.clipboard.writeText(diagrams[current].code);
+      });
+
+      document.getElementById('download-code').addEventListener('click', () => {
+        const d = diagrams[current];
+        download(`${safeName(d.title)}.mmd`, d.code, 'text/plain');
+      });
+
+      document.getElementById('download-svg').addEventListener('click', () => {
+        const d = diagrams[current];
+        const svg = document.querySelector('#diagram svg');
+        if (!svg) return;
+        download(`${safeName(d.title)}.svg`, svg.outerHTML, 'image/svg+xml');
+      });
+
+      renderDiagram(0);
+    });
+  </script>
+</head>
+<body>
+  <header>
+    <div class="title">Cullit Architecture Visualizer</div>
+    <div class="subtitle">Interactive diagrams generated from ARCHITECTURE.md flows</div>
+  </header>
+
+  <main class="layout">
+    <section class="panel">
+      <div class="panel-head">Flows</div>
+      <div id="list" class="list"></div>
+    </section>
+
+    <section class="panel viewer">
+      <div class="meta">
+        <h2 id="title"></h2>
+        <p id="desc"></p>
+      </div>
+
+      <div class="toolbar">
+        <button id="prev" class="btn" type="button">Prev</button>
+        <button id="next" class="btn" type="button">Next</button>
+        <button id="copy" class="btn" type="button">Copy Mermaid</button>
+        <button id="download-code" class="btn" type="button">Download .mmd</button>
+        <button id="download-svg" class="btn" type="button">Download SVG</button>
+      </div>
+
+      <div class="canvas">
+        <div id="diagram"></div>
+      </div>
+
+      <div class="foot">Diagram <span id="index">1/6</span> | Source of truth: ARCHITECTURE.md</div>
+    </section>
+  </main>
+</body>
+</html>
