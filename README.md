@@ -31,8 +31,6 @@ npm install -D cullit
 - Private registry package `@cullit/licensed`: paid tiers (Pro, Team, Enterprise) with AI providers, Jira/Linear enrichment, premium publishers, dashboard, API, GitHub App, and private deployment flows
 - npm is the delivery channel for the CLI runtime, not the paid entitlement layer
 
-Architecture details and flow diagrams: see [ARCHITECTURE.md](ARCHITECTURE.md).
-
 ## Quick Start
 
 ```bash
