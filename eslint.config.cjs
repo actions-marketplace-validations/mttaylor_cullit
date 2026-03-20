@@ -36,4 +36,12 @@ module.exports = [
       eqeqeq: ['error', 'always'],
     },
   },
+  {
+    files: ['packages/**/__tests__/**/*.ts', 'packages/**/*.test.ts', 'src/**/*.test.ts'],
+    rules: {
+      // Keep runtime code strict; allow test fixtures/mocks to be pragmatic.
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+    },
+  },
 ];
