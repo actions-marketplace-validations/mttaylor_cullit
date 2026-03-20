@@ -435,7 +435,7 @@ async function interactiveInit() {
     process.exit(1);
   }
 
-  const tone = await ask(rl, '  Tone (professional/casual/terse) [professional]: ') || 'professional';
+  const tone = await ask(rl, '  Tone (professional/casual/terse/edgy/hype/snarky) [professional]: ') || 'professional';
   if (!VALID_TONES.includes(tone)) {
     console.error(`\n  ✗ Invalid tone: ${tone}. Must be one of: ${VALID_TONES.join(', ')}`);
     rl.close();

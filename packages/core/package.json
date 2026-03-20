@@ -11,6 +11,8 @@
     "directory": "packages/core"
   },
   "keywords": ["release-notes", "changelog", "ai", "automation"],
+  "homepage": "https://cullit.io",
+  "bugs": { "url": "https://github.com/mttaylor/cullit/issues" },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -20,7 +22,8 @@
     }
   },
   "files": ["dist"],
-  "engines": { "node": ">=18" },
+  "engines": { "node": ">=22" },
+  "publishConfig": { "access": "public" },
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean",
     "dev": "tsup src/index.ts --format esm --dts --watch",

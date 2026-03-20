@@ -107,8 +107,8 @@ export async function validateLicense(): Promise<LicenseStatus> {
     if (cachedValidation && cachedValidation.key === key) {
       return cachedValidation.status;
     }
-    // No cached result — fall back to format-only (offline-friendly, first run)
-    return { tier: 'pro', valid: true, message: 'Offline validation — using cached license.' };
+    // No cached result — fall back to free tier; connect to the internet to activate your license
+    return { tier: 'free', valid: true, message: 'License validation unavailable offline. Run while connected to activate your Pro license.' };
   }
 }
 

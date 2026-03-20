@@ -160,7 +160,11 @@ export async function runPipeline(
   const license = await validateLicense();
 
   if (!license.valid) {
-    throw new Error(license.message || 'Invalid CULLIT_API_KEY');
+    if (!isProviderAllowed(config.ai.provider, license)) {
+      throw new Error(license.message || 'Invalid CULLIT_API_KEY');
+    }
+    // Invalid key but provider is free-compatible — warn and continue in free mode
+    log.warn(`⚠ ${license.message || 'Invalid CULLIT_API_KEY — running in free mode.'}`);
   }
 
   if (!isProviderAllowed(config.ai.provider, license)) {

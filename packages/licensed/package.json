@@ -17,12 +17,15 @@
     "cullit": "./dist/index.js"
   },
   "main": "./dist/index.js",
+  "exports": { ".": { "import": "./dist/index.js" } },
+  "homepage": "https://cullit.io",
+  "bugs": { "url": "https://github.com/mttaylor/cullit/issues" },
   "files": [
     "dist",
     "README.md"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm --clean"

@@ -10,6 +10,8 @@
     "url": "https://github.com/mttaylor/cullit",
     "directory": "packages/config"
   },
+  "homepage": "https://cullit.io",
+  "bugs": { "url": "https://github.com/mttaylor/cullit/issues" },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -19,7 +21,9 @@
     }
   },
   "files": ["dist"],
-  "engines": { "node": ">=18" },
+  "keywords": ["cullit", "config", "yaml", "release-notes", "changelog"],
+  "engines": { "node": ">=22" },
+  "publishConfig": { "access": "public" },
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean",
     "dev": "tsup src/index.ts --format esm --watch",

@@ -11,12 +11,14 @@
     "directory": "packages/cli"
   },
   "keywords": ["release-notes", "changelog", "ai", "cli", "devops", "automation"],
+  "homepage": "https://cullit.io",
+  "bugs": { "url": "https://github.com/mttaylor/cullit/issues" },
   "bin": {
     "cullit": "./dist/index.js"
   },
   "main": "./dist/index.js",
   "files": ["dist", "README.md"],
-  "engines": { "node": ">=18" },
+  "engines": { "node": ">=22" },
   "scripts": {
     "build": "tsup src/index.ts --format esm --clean",
     "dev": "tsup src/index.ts --format esm --watch"

@@ -204,7 +204,6 @@ docker compose up api
 | `@cullit/licensed` | Private registry package for paid tiers (Pro, Team, Enterprise) |
 | [`@cullit/core`](https://www.npmjs.com/package/@cullit/core) | Core engine — pipeline, generators, publishers |
 | [`@cullit/config`](https://www.npmjs.com/package/@cullit/config) | Config loader — YAML parsing with env var resolution |
-| `@cullit/pro` | Pro integrations (private) — GitLab, Bitbucket, Teams, Confluence, Notion, AI generators |
 | `@cullit/api` | REST API server (private) — OpenAPI 3.1, rate limiting, pipeline cache |
 | `@cullit/app` | GitHub App (private) — auto-generate release notes on tag push or release publish |
 

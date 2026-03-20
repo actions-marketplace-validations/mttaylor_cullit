@@ -7,6 +7,7 @@
   "license": "MIT",
   "author": "Cullit <matt@cullit.io>",
   "main": "./dist/index.js",
+  "engines": { "node": ">=22" },
   "scripts": {
     "build": "tsup src/index.ts --format esm --clean",
     "dev": "tsup src/index.ts --format esm --watch --onSuccess 'node dist/index.js'",
@@ -17,7 +18,7 @@
     "@cullit/core": "workspace:*"
   },
   "peerDependencies": {
-    "@cullit/pro": "workspace:*"
+    "@cullit/pro": ">=1.9.0"
   },
   "peerDependenciesMeta": {
     "@cullit/pro": {
