@@ -1,0 +1,65 @@
+name: EA Docs Audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/**'
+      - 'src/**'
+      - 'action.yml'
+      - 'site/**'
+      - 'package.json'
+      - 'pnpm-workspace.yaml'
+
+jobs:
+  audit:
+    name: Check if cullit-ea needs updating
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed areas
+        id: changes
+        run: |
+          CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          echo "Changed files:"
+          echo "$CHANGED"
+
+          NEEDS_REVIEW=""
+
+          echo "$CHANGED" | grep -qE '^packages/core/' && NEEDS_REVIEW="$NEEDS_REVIEW\n- **Architecture / pipeline** (packages/core changed)"
+          echo "$CHANGED" | grep -qE '^packages/cli/' && NEEDS_REVIEW="$NEEDS_REVIEW\n- **CLI / distribution** (packages/cli changed)"
+          echo "$CHANGED" | grep -qE '^packages/licensed/' && NEEDS_REVIEW="$NEEDS_REVIEW\n- **Distribution model** (packages/licensed changed)"
+          echo "$CHANGED" | grep -qE '^packages/pro/' && NEEDS_REVIEW="$NEEDS_REVIEW\n- **Pro feature set** (packages/pro changed)"
+          echo "$CHANGED" | grep -qE '^packages/api/' && NEEDS_REVIEW="$NEEDS_REVIEW\n- **API / backend** (packages/api changed)"
+          echo "$CHANGED" | grep -qE '^packages/app/' && NEEDS_REVIEW="$NEEDS_REVIEW\n- **GitHub App** (packages/app changed)"
+          echo "$CHANGED" | grep -qE '^action\.yml' && NEEDS_REVIEW="$NEEDS_REVIEW\n- **GitHub Action interface** (action.yml changed)"
+          echo "$CHANGED" | grep -qE '^site/' && NEEDS_REVIEW="$NEEDS_REVIEW\n- **Site / pricing / docs** (site/ changed)"
+
+          if [ -n "$NEEDS_REVIEW" ]; then
+            echo "needs_review=true" >> $GITHUB_OUTPUT
+            echo "areas<<EOF" >> $GITHUB_OUTPUT
+            echo -e "$NEEDS_REVIEW" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "needs_review=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Summarise
+        if: steps.changes.outputs.needs_review == 'true'
+        run: |
+          echo "## ⚠️ cullit-ea review needed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "This commit touched source areas that may require updates to the **cullit-ea** internal docs:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo -e "${{ steps.changes.outputs.areas }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Review \`cullit-ea/ARCHITECTURE_INTERNAL.md\` and \`cullit-ea/architecture-visual.html\` and update any affected diagrams or sections." >> $GITHUB_STEP_SUMMARY
+
+      - name: All clear
+        if: steps.changes.outputs.needs_review != 'true'
+        run: |
+          echo "## ✅ cullit-ea up to date" >> $GITHUB_STEP_SUMMARY
+          echo "No source areas requiring cullit-ea doc review were changed in this commit." >> $GITHUB_STEP_SUMMARY
