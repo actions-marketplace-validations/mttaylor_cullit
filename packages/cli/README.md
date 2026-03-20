@@ -9,7 +9,7 @@ The `cullit` package on npm is intentionally limited to the free local surface:
 - stdout and file publishing
 - config, status, and tag helpers
 
-Installing from npm does not grant Pro access by itself. Licensed AI providers, Jira/Linear enrichment, premium publishers, dashboard workflows, and other paid surfaces are delivered through Cullit-hosted or private Pro distributions.
+Installing from npm does not grant paid access by itself. Licensed AI providers, Jira/Linear enrichment, premium publishers, dashboard workflows, and other paid surfaces are delivered through Cullit-hosted or private licensed distributions.
 
 ## Install
 

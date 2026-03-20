@@ -127,6 +127,7 @@ Prefixes: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `perf`, `ci`, `bui
 When behavior, pricing, tier limits, endpoints, or auth flows change, update docs in the same PR:
 
 - Root docs: `README.md`, `CONTRIBUTING.md`, `SECURITY.md`
+- Architecture docs: `ARCHITECTURE.md` (required for topology, distribution, auth/gating, or runtime-flow changes)
 - Website docs/tutorial: `site/docs.html`, `site/tutorial.html`, `site/setup.html`
 - Legal markdown: `PRIVACY.md`, `TERMS.md`
 - Website legal pages: `site/privacy.html`, `site/terms.html`
