@@ -25,6 +25,8 @@
     "build:action": "tsup src/action.ts --format cjs --out-dir dist --no-splitting --target node22",
     "build:widget": "esbuild site/widget.ts --bundle --minify --format=iife --outfile=site/widget.js --target=es2020",
     "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "dev": "pnpm --filter @cullit/cli dev",
     "dev:api": "pnpm --filter @cullit/api dev",
     "lint": "eslint packages/",
@@ -36,6 +38,7 @@
     "@cullit/pro": "workspace:*"
   },
   "devDependencies": {
+    "@playwright/test": "^1.53.2",
     "@eslint/js": "^10.0.1",
     "@types/node": "^25.5.0",
     "@typescript-eslint/eslint-plugin": "^8.57.1",
