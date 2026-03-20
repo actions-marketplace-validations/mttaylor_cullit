@@ -44,4 +44,18 @@ module.exports = [
       '@typescript-eslint/no-unused-vars': 'off',
     },
   },
+  {
+    files: ['packages/config/src/**/*.ts'],
+    rules: {
+      // Config parsing consumes untyped user YAML/JSON; strict narrowing here is low ROI.
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+  {
+    files: ['packages/core/src/registry.ts'],
+    rules: {
+      // Registry factory signatures intentionally accept plugin-specific constructors.
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
 ];

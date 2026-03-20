@@ -9,7 +9,7 @@
 
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import {
-  sql, dbAddGeneration, dbGetGenerations, dbGetGenerationCount,
+  dbAddGeneration, dbGetGenerations, dbGetGenerationCount,
   dbRecordUsage, dbGetUsageStats, dbGetMonthlyGenerationCount,
 } from './db.js';
 import { useDb } from './auth.js';

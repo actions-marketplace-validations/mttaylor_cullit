@@ -45,7 +45,6 @@ const SLACK_WEBHOOK = process.env['CULLIT_APP_SLACK_WEBHOOK'] || '';
 const DISCORD_WEBHOOK = process.env['CULLIT_APP_DISCORD_WEBHOOK'] || '';
 const TEAMS_WEBHOOK = process.env['CULLIT_APP_TEAMS_WEBHOOK'] || '';
 const CHANGELOG_ENABLED = process.env['CULLIT_APP_CHANGELOG_ENABLED'] === 'true';
-const CHANGELOG_API_KEY = process.env['CULLIT_APP_CHANGELOG_API_KEY'] || '';
 
 // --- Rate limiter (per-IP sliding window) ---
 const ipTimestamps = new Map<string, number[]>();

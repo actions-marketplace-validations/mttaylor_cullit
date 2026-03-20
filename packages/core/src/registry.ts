@@ -7,7 +7,7 @@
  * Paid plugin registration is preloaded by the licensed distribution package.
  */
 
-import type { Collector, Enricher, Generator, Publisher, OutputFormat, ReleaseNotes } from './types';
+import type { Collector, Enricher, Generator, Publisher } from './types';
 
 // --- Factory types ---
 

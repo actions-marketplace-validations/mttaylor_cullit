@@ -22,9 +22,9 @@ import { createHmac, randomBytes } from 'crypto';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import type { IncomingMessage, ServerResponse } from 'http';
 import {
-  sql, dbGetUser, dbGetUserByApiKey, dbUpsertUser, dbUpdateUserTier,
+  dbGetUser, dbGetUserByApiKey, dbUpsertUser,
   dbUpdateUserOrg, dbGetOrg, dbGetOrgBySlug, dbCreateOrg, dbGetOrgMemberCount,
-  dbAddOrgMember, dbRemoveOrgMember, dbGetOrgMembers, dbUpdateUserStripe,
+  dbAddOrgMember, dbRemoveOrgMember, dbGetOrgMembers,
   type DbUser, type DbOrg,
 } from './db.js';
 import { sendWelcome } from './email.js';

@@ -1,6 +1,6 @@
 import { execFileSync } from 'child_process';
 import type { GitCommit } from './types';
-import { getCommitsSince, getLatestTag, getRecentTags } from './collectors/git';
+import { getCommitsSince, getLatestTag } from './collectors/git';
 
 export type SemverBump = 'patch' | 'minor' | 'major';
 

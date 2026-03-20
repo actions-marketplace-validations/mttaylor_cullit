@@ -562,7 +562,7 @@ export async function dbDeleteRelease(project: string, version: string): Promise
   return result.count > 0;
 }
 
-export async function dbGetUserProjects(userId: string): Promise<string[]> {
+export async function dbGetUserProjects(_userId: string): Promise<string[]> {
   const rows = await sql`SELECT DISTINCT project FROM changelog_releases ORDER BY project`;
   return rows.map((r: any) => r.project);
 }

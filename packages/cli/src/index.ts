@@ -14,7 +14,7 @@
 
 import { runPipeline, VERSION, createLogger, analyzeReleaseReadiness, resolveLicense, reportUsage, AI_PROVIDERS, AUDIENCES, TONES, SOURCE_TYPES, OUTPUT_FORMATS } from '@cullit/core';
 import { loadConfig } from '@cullit/config';
-import { getLatestTag, getRecentTags } from '@cullit/core';
+import { getRecentTags } from '@cullit/core';
 import type { OutputFormat, LogLevel } from '@cullit/core';
 import { writeFileSync, readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
@@ -83,7 +83,7 @@ const HELP = `
     $ cullit init
 `;
 
-const DEFAULT_YML = `# Cullit Configuration
+const _DEFAULT_YML = `# Cullit Configuration
 # https://cullit.io/docs/config
 
 ai:
@@ -312,7 +312,7 @@ async function runGenerate(from: string, to: string, opts: Record<string, string
   }
 
   try {
-    const result = await runPipeline(from, to, config, { format, dryRun, logger, templateProfile });
+    await runPipeline(from, to, config, { format, dryRun, logger, templateProfile });
 
     // Metering — best-effort, never blocks the pipeline
     reportUsage(from).catch(() => {});
