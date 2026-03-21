@@ -54,7 +54,7 @@ jobs:
       - name: Validate legal trust links
         run: |
           grep -q 'Cancel anytime from the <a href="dashboard.html">billing dashboard</a>' site/pricing.html
-          grep -q 'All fees are non-refundable except as required by law' TERMS.md
+          grep -q 'All fees are non-refundable except as required by applicable law' TERMS.md
 
       - name: Summarize launch gate
         run: |
