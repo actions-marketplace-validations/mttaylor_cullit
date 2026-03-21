@@ -1,6 +1,7 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY .npmrc ./
 COPY packages/core/package.json packages/core/
 COPY packages/config/package.json packages/config/
 COPY packages/cli/package.json packages/cli/
