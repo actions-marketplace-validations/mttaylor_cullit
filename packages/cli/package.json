@@ -1,6 +1,6 @@
 {
   "name": "cullit",
-  "version": "1.9.2",
+  "version": "1.9.3",
   "type": "module",
   "description": "Public Cullit CLI for local, template-based release notes. Licensed AI and integrations are delivered separately.",
   "license": "MIT",

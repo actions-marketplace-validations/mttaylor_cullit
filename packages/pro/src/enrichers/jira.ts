@@ -1,6 +1,16 @@
 import type { Enricher, GitDiff, EnrichedTicket, JiraConfig } from '@cullit/core';
 import { fetchWithTimeout } from '@cullit/core';
 
+interface JiraIssueResponse {
+  fields?: {
+    summary?: string;
+    issuetype?: { name?: string };
+    labels?: string[];
+    priority?: { name?: string };
+    status?: { name?: string };
+  };
+}
+
 /**
  * Enriches git diff with Jira ticket details.
  * Extracts PROJ-123 style keys from commit messages and fetches from Jira REST API.
@@ -64,8 +74,8 @@ export class JiraEnricher implements Enricher {
       throw new Error(`Jira API error (${response.status})`);
     }
 
-    const data = await response.json() as any;
-    const fields = data.fields;
+    const data = await response.json() as JiraIssueResponse;
+    const fields = data.fields || {};
 
     return {
       key,

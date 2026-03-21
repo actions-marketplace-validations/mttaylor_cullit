@@ -16,7 +16,7 @@ import {
   registerGenerator,
   registerPublisher,
 } from '@cullit/core';
-import type { CullConfig, PublishTarget } from '@cullit/core';
+import type { CullConfig, PublishTarget, OpenClawConfig } from '@cullit/core';
 
 import { AIGenerator } from './generators/ai';
 import { JiraCollector } from './collectors/jira';
@@ -37,7 +37,7 @@ import { BitbucketCollector } from './collectors/bitbucket';
 // --- Register pro generators ---
 const AI_PROVIDERS = ['anthropic', 'openai', 'gemini', 'ollama', 'openclaw'] as const;
 for (const provider of AI_PROVIDERS) {
-  registerGenerator(provider, (openclawConfig?: any) => new AIGenerator(openclawConfig));
+  registerGenerator(provider, (openclawConfig?: OpenClawConfig) => new AIGenerator(openclawConfig));
 }
 
 // --- Register pro collectors (uniform: factory(config: CullConfig)) ---

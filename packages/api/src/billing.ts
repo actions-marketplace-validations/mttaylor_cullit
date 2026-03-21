@@ -22,7 +22,7 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import type { IncomingMessage, ServerResponse } from 'http';
 import {
-  sql, dbGetUser, dbUpdateUserTier, dbUpdateUserStripe, dbClearUserTrial,
+  dbGetUser, dbUpdateUserTier, dbUpdateUserStripe, dbClearUserTrial,
   dbUpsertSubscription, dbGetSubscription, dbGetUserByStripeCustomer,
 } from './db.js';
 import { getEffectiveTier, getTrialStatus, getUser } from './auth.js';
@@ -36,7 +36,94 @@ const BASE_URL = process.env['CULLIT_BASE_URL'] || 'http://localhost:3000';
 
 // --- Stripe API helpers ---
 
-async function stripeRequest(path: string, method: string, body?: Record<string, string>): Promise<any> {
+interface StripeErrorResponse {
+  error?: { message?: string };
+}
+
+interface StripeEvent {
+  type: string;
+  data?: { object?: unknown };
+}
+
+interface StripeCheckoutSession {
+  client_reference_id?: string;
+  metadata?: { user_id?: string; plan?: string };
+  customer?: string;
+  subscription?: string;
+}
+
+interface StripeSubscription {
+  id: string;
+  customer: string;
+  status: string;
+  current_period_start?: number;
+  current_period_end?: number;
+  cancel_at_period_end?: boolean;
+  items?: { data?: Array<{ price?: { id?: string } }> };
+}
+
+interface StripeInvoice {
+  id?: string;
+  customer: string;
+  subscription?: string;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function toStripeEvent(value: unknown): StripeEvent | null {
+  if (!isRecord(value) || typeof value.type !== 'string') return null;
+  const data = isRecord(value.data) ? value.data : undefined;
+  const object = data && 'object' in data ? data.object : undefined;
+  return { type: value.type, data: { object } };
+}
+
+function toStripeCheckoutSession(value: unknown): StripeCheckoutSession | null {
+  if (!isRecord(value)) return null;
+  return {
+    client_reference_id: typeof value.client_reference_id === 'string' ? value.client_reference_id : undefined,
+    metadata: isRecord(value.metadata)
+      ? {
+          user_id: typeof value.metadata.user_id === 'string' ? value.metadata.user_id : undefined,
+          plan: typeof value.metadata.plan === 'string' ? value.metadata.plan : undefined,
+        }
+      : undefined,
+    customer: typeof value.customer === 'string' ? value.customer : undefined,
+    subscription: typeof value.subscription === 'string' ? value.subscription : undefined,
+  };
+}
+
+function toStripeSubscription(value: unknown): StripeSubscription | null {
+  if (!isRecord(value) || typeof value.id !== 'string' || typeof value.customer !== 'string') {
+    return null;
+  }
+
+  const items = isRecord(value.items) && Array.isArray(value.items.data)
+    ? { data: value.items.data.filter(isRecord).map(item => ({ price: isRecord(item.price) ? { id: typeof item.price.id === 'string' ? item.price.id : undefined } : undefined })) }
+    : undefined;
+
+  return {
+    id: value.id,
+    customer: value.customer,
+    status: typeof value.status === 'string' ? value.status : 'active',
+    current_period_start: typeof value.current_period_start === 'number' ? value.current_period_start : undefined,
+    current_period_end: typeof value.current_period_end === 'number' ? value.current_period_end : undefined,
+    cancel_at_period_end: typeof value.cancel_at_period_end === 'boolean' ? value.cancel_at_period_end : undefined,
+    items,
+  };
+}
+
+function toStripeInvoice(value: unknown): StripeInvoice | null {
+  if (!isRecord(value) || typeof value.customer !== 'string') return null;
+  return {
+    id: typeof value.id === 'string' ? value.id : undefined,
+    customer: value.customer,
+    subscription: typeof value.subscription === 'string' ? value.subscription : undefined,
+  };
+}
+
+async function stripeRequest<T>(path: string, method: string, body?: Record<string, string>): Promise<T> {
   const res = await fetch(`https://api.stripe.com/v1${path}`, {
     method,
     headers: {
@@ -46,7 +133,7 @@ async function stripeRequest(path: string, method: string, body?: Record<string,
     body: body ? new URLSearchParams(body).toString() : undefined,
   });
 
-  const data = await res.json();
+  const data = await res.json() as StripeErrorResponse & T;
   if (!res.ok) {
     throw new Error(`Stripe API error: ${data.error?.message || res.statusText}`);
   }
@@ -216,9 +303,15 @@ export async function handleStripeWebhook(
     return;
   }
 
-  let event: any;
+  let event: StripeEvent;
   try {
-    event = JSON.parse(rawBody);
+    const parsed = JSON.parse(rawBody) as unknown;
+    const normalized = toStripeEvent(parsed);
+    if (!normalized) {
+      jsonFn(res, 400, { error: 'Invalid Stripe event payload' });
+      return;
+    }
+    event = normalized;
   } catch {
     jsonFn(res, 400, { error: 'Invalid JSON' });
     return;
@@ -227,16 +320,16 @@ export async function handleStripeWebhook(
   try {
     switch (event.type) {
       case 'checkout.session.completed':
-        await handleCheckoutComplete(event.data.object);
+        await handleCheckoutComplete(event.data?.object);
         break;
       case 'customer.subscription.updated':
-        await handleSubscriptionUpdate(event.data.object);
+        await handleSubscriptionUpdate(event.data?.object);
         break;
       case 'customer.subscription.deleted':
-        await handleSubscriptionDeleted(event.data.object);
+        await handleSubscriptionDeleted(event.data?.object);
         break;
       case 'invoice.payment_failed':
-        await handlePaymentFailed(event.data.object);
+        await handlePaymentFailed(event.data?.object);
         break;
     }
 
@@ -247,7 +340,10 @@ export async function handleStripeWebhook(
   }
 }
 
-async function handleCheckoutComplete(session: any): Promise<void> {
+async function handleCheckoutComplete(sessionPayload: unknown): Promise<void> {
+  const session = toStripeCheckoutSession(sessionPayload);
+  if (!session) return;
+
   const userId = session.client_reference_id || session.metadata?.user_id;
   const customerId = session.customer;
   const subscriptionId = session.subscription;
@@ -264,7 +360,7 @@ async function handleCheckoutComplete(session: any): Promise<void> {
   await dbClearUserTrial(userId);
 
   // Fetch full subscription details from Stripe
-  const sub = await stripeRequest(`/subscriptions/${subscriptionId}`, 'GET');
+  const sub = await stripeRequest<StripeSubscription>(`/subscriptions/${subscriptionId}`, 'GET');
 
   await dbUpsertSubscription({
     id: subscriptionId,
@@ -281,7 +377,10 @@ async function handleCheckoutComplete(session: any): Promise<void> {
   log.info({ userId, plan, customerId }, 'Checkout complete');
 }
 
-async function handleSubscriptionUpdate(subscription: any): Promise<void> {
+async function handleSubscriptionUpdate(subscriptionPayload: unknown): Promise<void> {
+  const subscription = toStripeSubscription(subscriptionPayload);
+  if (!subscription) return;
+
   const customerId = subscription.customer;
   const user = await dbGetUserByStripeCustomer(customerId);
   if (!user) return;
@@ -312,7 +411,10 @@ async function handleSubscriptionUpdate(subscription: any): Promise<void> {
   log.info({ userId: user.id, plan, status: subscription.status }, 'Subscription updated');
 }
 
-async function handleSubscriptionDeleted(subscription: any): Promise<void> {
+async function handleSubscriptionDeleted(subscriptionPayload: unknown): Promise<void> {
+  const subscription = toStripeSubscription(subscriptionPayload);
+  if (!subscription) return;
+
   const customerId = subscription.customer;
   const user = await dbGetUserByStripeCustomer(customerId);
   if (!user) return;
@@ -333,7 +435,10 @@ async function handleSubscriptionDeleted(subscription: any): Promise<void> {
   log.info({ userId: user.id, customerId }, 'Subscription canceled');
 }
 
-async function handlePaymentFailed(invoice: any): Promise<void> {
+async function handlePaymentFailed(invoicePayload: unknown): Promise<void> {
+  const invoice = toStripeInvoice(invoicePayload);
+  if (!invoice) return;
+
   const customerId = invoice.customer;
   const user = await dbGetUserByStripeCustomer(customerId);
   if (!user) return;
@@ -341,7 +446,7 @@ async function handlePaymentFailed(invoice: any): Promise<void> {
   // Mark subscription as past_due but don't downgrade yet (Stripe will retry)
   const subscriptionId = invoice.subscription;
   if (subscriptionId) {
-    const sub = await stripeRequest(`/subscriptions/${subscriptionId}`, 'GET');
+    const sub = await stripeRequest<StripeSubscription>(`/subscriptions/${subscriptionId}`, 'GET');
     const priceId = sub.items?.data?.[0]?.price?.id || '';
     const plan = priceToPlan(priceId);
 

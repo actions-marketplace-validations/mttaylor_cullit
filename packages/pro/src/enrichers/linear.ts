@@ -1,6 +1,23 @@
 import type { Enricher, GitDiff, EnrichedTicket } from '@cullit/core';
 import { fetchWithTimeout } from '@cullit/core';
 
+interface LinearIssueNode {
+  identifier: string;
+  title: string;
+  description?: string;
+  priority?: number;
+  state?: { name?: string };
+  labels?: { nodes?: Array<{ name: string }> };
+}
+
+interface LinearBatchResponse {
+  data?: { issues?: { nodes?: LinearIssueNode[] } };
+}
+
+interface LinearSingleResponse {
+  data?: { issueSearch?: { nodes?: LinearIssueNode[] } };
+}
+
 /**
  * Enriches git diff with Linear issue details.
  * Extracts issue identifiers from commit messages and branch names.
@@ -83,19 +100,19 @@ export class LinearEnricher implements Enricher {
       throw new Error(`Linear API error (${response.status})`);
     }
 
-    const data = await response.json() as any;
+    const data = await response.json() as LinearBatchResponse;
     const issues = data.data?.issues?.nodes || [];
 
     const priorityMap: Record<number, string> = {
       0: 'none', 1: 'urgent', 2: 'high', 3: 'medium', 4: 'low'
     };
 
-    return issues.map((issue: any) => ({
+    return issues.map(issue => ({
       key: issue.identifier,
       title: issue.title,
       description: issue.description?.substring(0, 500),
-      labels: issue.labels?.nodes?.map((l: any) => l.name) || [],
-      priority: priorityMap[issue.priority] || undefined,
+      labels: issue.labels?.nodes?.map(l => l.name) || [],
+      priority: issue.priority !== undefined ? priorityMap[issue.priority] : undefined,
       status: issue.state?.name,
       source: 'linear' as const,
     }));
@@ -130,7 +147,7 @@ export class LinearEnricher implements Enricher {
       throw new Error(`Linear API error (${response.status})`);
     }
 
-    const data = await response.json() as any;
+    const data = await response.json() as LinearSingleResponse;
     const issue = data.data?.issueSearch?.nodes?.[0];
 
     if (!issue) return null;
@@ -143,8 +160,8 @@ export class LinearEnricher implements Enricher {
       key: issue.identifier,
       title: issue.title,
       description: issue.description?.substring(0, 500),
-      labels: issue.labels?.nodes?.map((l: any) => l.name) || [],
-      priority: priorityMap[issue.priority] || undefined,
+      labels: issue.labels?.nodes?.map(l => l.name) || [],
+      priority: issue.priority !== undefined ? priorityMap[issue.priority] : undefined,
       status: issue.state?.name,
       source: 'linear',
     };

@@ -158,7 +158,7 @@ async function readBody(req: IncomingMessage): Promise<string> {
 // --- Pipeline result cache (LRU + TTL) ---
 
 interface CacheEntry {
-  result: any;
+  result: unknown;
   expiresAt: number;
 }
 
@@ -202,7 +202,7 @@ export function getCacheKey(from: string, to: string, format: OutputFormat, conf
   return createHash('sha256').update(fingerprint).digest('hex');
 }
 
-function getCachedResult(key: string): any | null {
+function getCachedResult(key: string): unknown | null {
   const entry = pipelineCache.get(key);
   if (!entry) return null;
   if (Date.now() > entry.expiresAt) {
@@ -212,7 +212,7 @@ function getCachedResult(key: string): any | null {
   return entry.result;
 }
 
-function setCachedResult(key: string, result: any): void {
+function setCachedResult(key: string, result: unknown): void {
   // LRU eviction: remove oldest entry if at capacity
   if (pipelineCache.size >= MAX_CACHE_SIZE && !pipelineCache.has(key)) {
     const oldest = pipelineCache.keys().next().value;
@@ -233,6 +233,26 @@ interface ChangelogRelease {
   metadata?: Record<string, unknown>;
   formatted: { markdown: string; html: string };
   publishedAt: string;
+}
+
+type JsonObject = Record<string, unknown>;
+
+function isRecord(value: unknown): value is JsonObject {
+  return typeof value === 'object' && value !== null;
+}
+
+function parseJsonObject(raw: string): JsonObject | null {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return isRecord(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function toStringArray(value: unknown, limit: number): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return value.slice(0, limit).filter((v): v is string => typeof v === 'string');
 }
 
 const CHANGELOG_FILE = process.env['CHANGELOG_STORE_PATH'] || './changelog-store.json';
@@ -510,33 +530,33 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
 
 async function handleChangelogPublish(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const raw = await readBody(req);
-  let body: any;
-
-  try {
-    body = JSON.parse(raw);
-  } catch {
+  const body = parseJsonObject(raw);
+  if (!body) {
     json(res, 400, { error: 'Invalid JSON body' });
     return;
   }
 
+  const project = typeof body.project === 'string' ? body.project : '';
+  const version = typeof body.version === 'string' ? body.version : '';
+
   // Validate required fields
-  if (!body.project || typeof body.project !== 'string') {
+  if (!project) {
     json(res, 400, { error: '"project" is required (string)' });
     return;
   }
-  if (!body.version || typeof body.version !== 'string') {
+  if (!version) {
     json(res, 400, { error: '"version" is required (string)' });
     return;
   }
 
   // Validate project slug (alphanumeric, hyphens, underscores)
-  if (!/^[a-zA-Z0-9_-]{1,64}$/.test(body.project)) {
+  if (!/^[a-zA-Z0-9_-]{1,64}$/.test(project)) {
     json(res, 400, { error: '"project" must be 1-64 alphanumeric characters, hyphens, or underscores' });
     return;
   }
 
   // Validate version format
-  if (body.version.length > 64) {
+  if (version.length > 64) {
     json(res, 400, { error: '"version" must be under 64 characters' });
     return;
   }
@@ -546,20 +566,23 @@ async function handleChangelogPublish(req: IncomingMessage, res: ServerResponse)
     return;
   }
 
+  const contributors = toStringArray(body.contributors, 50) || [];
+
   const release: ChangelogRelease = {
-    version: body.version,
-    date: /^\d{4}-\d{2}-\d{2}$/.test(body.date) ? body.date : new Date().toISOString().split('T')[0],
+    version,
+    date: typeof body.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.date) ? body.date : new Date().toISOString().split('T')[0],
     summary: String(body.summary || '').slice(0, 2000),
-    changes: body.changes.slice(0, 50).map((c: any) => ({
-      description: String(c.description || '').slice(0, 500),
-      category: String(c.category || 'chores').slice(0, 50),
-      ticketKey: c.ticketKey ? String(c.ticketKey).slice(0, 32) : undefined,
-    })),
-    contributors: Array.isArray(body.contributors)
-      ? body.contributors.slice(0, 50).map((c: any) => String(c).slice(0, 100))
-      : [],
+    changes: body.changes.slice(0, 50).map(c => {
+      const item = isRecord(c) ? c : {};
+      return {
+        description: String(item.description || '').slice(0, 500),
+        category: String(item.category || 'chores').slice(0, 50),
+        ticketKey: item.ticketKey ? String(item.ticketKey).slice(0, 32) : undefined,
+      };
+    }),
+    contributors,
     metadata: body.metadata
-      ? JSON.parse(JSON.stringify(body.metadata, (k, v) => k === '__proto__' || k === 'constructor' || k === 'prototype' ? undefined : v))
+      ? JSON.parse(JSON.stringify(body.metadata, (k: string, v: unknown) => k === '__proto__' || k === 'constructor' || k === 'prototype' ? undefined : v))
       : undefined,
     formatted: {
       markdown: String(body.formatted?.markdown || '').slice(0, 50_000),
@@ -578,7 +601,7 @@ async function handleChangelogPublish(req: IncomingMessage, res: ServerResponse)
       json(res, 409, { error: 'Maximum number of projects reached' });
       return;
     }
-    await dbPublishRelease(body.project, {
+    await dbPublishRelease(project, {
       version: release.version,
       date: release.date,
       summary: release.summary,
@@ -589,13 +612,13 @@ async function handleChangelogPublish(req: IncomingMessage, res: ServerResponse)
       formattedHtml: release.formatted.html,
     });
   } else {
-    if (!changelogStore.has(body.project) && changelogStore.size >= MAX_PROJECTS) {
+    if (!changelogStore.has(project) && changelogStore.size >= MAX_PROJECTS) {
       json(res, 409, { error: 'Maximum number of projects reached' });
       return;
     }
 
     // Store the release
-    const releases = changelogStore.get(body.project) || [];
+    const releases = changelogStore.get(project) || [];
 
     // Check for duplicate version (update if exists)
     const existingIdx = releases.findIndex(r => r.version === release.version);
@@ -609,15 +632,15 @@ async function handleChangelogPublish(req: IncomingMessage, res: ServerResponse)
       }
     }
 
-    changelogStore.set(body.project, releases);
+    changelogStore.set(project, releases);
     saveChangelogStore();
   }
 
   json(res, 201, {
     ok: true,
-    url: `https://cullit.io/changelog/${body.project}`,
+    url: `https://cullit.io/changelog/${project}`,
     version: release.version,
-    project: body.project,
+    project,
   });
 }
 
@@ -676,8 +699,8 @@ async function handleChangelogListProjects(req: IncomingMessage, res: ServerResp
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
 
   if (useDb) {
-    const rows = await sql`SELECT DISTINCT project FROM changelog_releases ORDER BY project`;
-    json(res, 200, { projects: rows.map((r: any) => r.project) });
+    const rows = await sql<Array<{ project: string }>>`SELECT DISTINCT project FROM changelog_releases ORDER BY project`;
+    json(res, 200, { projects: rows.map(r => r.project) });
   } else {
     json(res, 200, { projects: Array.from(changelogStore.keys()).sort() });
   }
@@ -847,13 +870,15 @@ async function handleCreateDraft(req: IncomingMessage, res: ServerResponse): Pro
   }
 
   const raw = await readBody(req);
-  let body: any;
-  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
+  const body = parseJsonObject(raw);
+  if (!body) { json(res, 400, { error: 'Invalid JSON' }); return; }
 
-  if (!body.project || typeof body.project !== 'string') {
+  const project = typeof body.project === 'string' ? body.project : '';
+
+  if (!project) {
     json(res, 400, { error: '"project" is required' }); return;
   }
-  if (!/^[a-zA-Z0-9_-]{1,64}$/.test(body.project)) {
+  if (!/^[a-zA-Z0-9_-]{1,64}$/.test(project)) {
     json(res, 400, { error: '"project" must be 1-64 alphanumeric characters, hyphens, or underscores' }); return;
   }
 
@@ -861,13 +886,13 @@ async function handleCreateDraft(req: IncomingMessage, res: ServerResponse): Pro
     id: randomBytes(12).toString('hex'),
     orgId: user.orgId,
     userId: user.id,
-    project: body.project,
+    project,
     version: String(body.version || '').slice(0, 64),
-    sourceType: body.sourceType || 'local',
-    provider: body.provider || 'none',
-    model: body.model || '',
-    audience: body.audience || 'developer',
-    tone: body.tone || 'professional',
+    sourceType: typeof body.sourceType === 'string' ? body.sourceType : 'local',
+    provider: typeof body.provider === 'string' ? body.provider : 'none',
+    model: typeof body.model === 'string' ? body.model : '',
+    audience: typeof body.audience === 'string' ? body.audience : 'developer',
+    tone: typeof body.tone === 'string' ? body.tone : 'professional',
     notesJson: Array.isArray(body.notes) ? body.notes.slice(0, 200) : [],
     formattedMd: String(body.formattedMd || '').slice(0, 50_000),
     formattedHtml: String(body.formattedHtml || '').slice(0, 100_000),
@@ -939,8 +964,8 @@ async function handleUpdateDraft(req: IncomingMessage, res: ServerResponse, draf
   }
 
   const raw = await readBody(req);
-  let body: any;
-  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
+  const body = parseJsonObject(raw);
+  if (!body) { json(res, 400, { error: 'Invalid JSON' }); return; }
 
   // Save revision before updating
   const revisionNum = await dbGetRevisionCount(draftId);
@@ -1047,7 +1072,7 @@ async function handleDraftPublish(req: IncomingMessage, res: ServerResponse, dra
       version: draft.version,
       date: new Date().toISOString().split('T')[0],
       summary: draft.formatted_md.slice(0, 2000),
-      changes: typeof draft.notes_json === 'string' ? JSON.parse(draft.notes_json as string) : (draft.notes_json as any[]),
+      changes: typeof draft.notes_json === 'string' ? JSON.parse(draft.notes_json as string) : (draft.notes_json as unknown[]),
       contributors: [],
       formattedMd: draft.formatted_md,
       formattedHtml: draft.formatted_html,
@@ -1087,8 +1112,8 @@ async function handlePutProjectSettings(req: IncomingMessage, res: ServerRespons
   }
 
   const raw = await readBody(req);
-  let body: any;
-  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
+  const body = parseJsonObject(raw);
+  if (!body) { json(res, 400, { error: 'Invalid JSON' }); return; }
 
   const defaultSource = body.defaultSource ?? body.default_source_type;
   const defaultProvider = body.defaultProvider ?? body.default_provider;
@@ -1121,15 +1146,16 @@ async function handlePutProjectSettings(req: IncomingMessage, res: ServerRespons
     ? sectionOrderInput.slice(0, 20).filter((x: unknown) => typeof x === 'string')
     : undefined;
 
-  const widgetConfig = (body.widgetConfig && typeof body.widgetConfig === 'object') ? { ...body.widgetConfig } : {};
-  const currentTemplate = (widgetConfig as any).template && typeof (widgetConfig as any).template === 'object'
-    ? { ...(widgetConfig as any).template }
+  type WidgetConfig = { template?: { defaultFormat?: string; profile?: string; sectionOrder?: string[] } } & JsonObject;
+  const widgetConfig: WidgetConfig = (isRecord(body.widgetConfig)) ? { ...body.widgetConfig } : {};
+  const currentTemplate = isRecord(widgetConfig.template)
+    ? { ...widgetConfig.template }
     : {};
   if (typeof templateDefaultFormat === 'string') currentTemplate.defaultFormat = templateDefaultFormat;
   if (typeof templateProfile === 'string') currentTemplate.profile = templateProfile;
   if (templateSectionOrder) currentTemplate.sectionOrder = templateSectionOrder;
   if (Object.keys(currentTemplate).length) {
-    (widgetConfig as any).template = currentTemplate;
+    widgetConfig.template = currentTemplate;
   }
 
   const existing = await dbGetProjectSettings(user.id, project, user.orgId);

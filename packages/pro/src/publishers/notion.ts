@@ -51,7 +51,7 @@ export class NotionPublisher implements Publisher {
     console.log(`✓ Published to Notion database`);
   }
 
-  private buildProperties(notes: ReleaseNotes): Record<string, any> {
+  private buildProperties(notes: ReleaseNotes): Record<string, unknown> {
     return {
       // "Name" / "Title" property — most Notion databases have this
       Name: {
@@ -69,8 +69,8 @@ export class NotionPublisher implements Publisher {
     };
   }
 
-  private buildBlocks(notes: ReleaseNotes): any[] {
-    const blocks: any[] = [];
+  private buildBlocks(notes: ReleaseNotes): Array<Record<string, unknown>> {
+    const blocks: Array<Record<string, unknown>> = [];
 
     // Summary
     if (notes.summary) {

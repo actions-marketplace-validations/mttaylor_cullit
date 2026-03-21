@@ -95,7 +95,7 @@ export class GitLabCollector implements Collector {
       const res = await fetchWithTimeout(url.toString(), { headers: this.headers() });
       if (!res.ok) return [];
 
-      const data = await res.json() as any[];
+      const data = await res.json() as GitLabMergeRequestResponse[];
       return data.map(mr => ({
         iid: mr.iid,
         title: mr.title,
@@ -138,4 +138,10 @@ interface MRInfo {
   iid: number;
   title: string;
   mergeCommitSha?: string;
+}
+
+interface GitLabMergeRequestResponse {
+  iid: number;
+  title: string;
+  merge_commit_sha?: string;
 }

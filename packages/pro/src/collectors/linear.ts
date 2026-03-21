@@ -128,14 +128,14 @@ export class LinearCollector implements Collector {
       throw new Error(`Linear API error (${response.status}): ${error}`);
     }
 
-    const data = await response.json() as any;
+    const data = await response.json() as LinearIssuesResponse;
     const nodes = data.data?.issues?.nodes || [];
 
     const priorityMap: Record<number, string> = {
       0: 'none', 1: 'urgent', 2: 'high', 3: 'medium', 4: 'low'
     };
 
-    return nodes.map((issue: any) => ({
+    return nodes.map(issue => ({
       identifier: issue.identifier,
       title: issue.title,
       description: issue.description?.substring(0, 500),
@@ -144,8 +144,8 @@ export class LinearCollector implements Collector {
       status: issue.state?.name,
       completedAt: issue.completedAt,
       updatedAt: issue.updatedAt,
-      labels: issue.labels?.nodes?.map((l: any) => l.name) || [],
-      priority: priorityMap[issue.priority],
+      labels: issue.labels?.nodes?.map(l => l.name) || [],
+      priority: issue.priority !== undefined ? priorityMap[issue.priority] : undefined,
     }));
   }
 
@@ -171,6 +171,24 @@ export class LinearCollector implements Collector {
 interface LinearFilter {
   type: 'team' | 'project' | 'cycle' | 'label';
   value: string;
+}
+
+interface LinearIssuesResponse {
+  data?: {
+    issues?: {
+      nodes?: Array<{
+        identifier: string;
+        title: string;
+        description?: string;
+        priority?: number;
+        completedAt?: string;
+        updatedAt?: string;
+        assignee?: { displayName?: string };
+        state?: { name?: string; type?: string };
+        labels?: { nodes?: Array<{ name: string }> };
+      }>;
+    };
+  };
 }
 
 interface LinearIssue {

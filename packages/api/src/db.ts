@@ -463,7 +463,15 @@ export async function dbGetUsageStats(key: string, days: number): Promise<{
   totals: { generations: number; totalChanges: number; avgDuration: number };
   topProviders: { provider: string; count: number }[];
 }> {
-  const rows = await sql`
+  interface UsageDailyRow {
+    date: string;
+    generations: number;
+    total_changes: number;
+    avg_duration: number;
+    providers: string | Record<string, number>;
+  }
+
+  const rows = await sql<UsageDailyRow[]>`
     SELECT date::text, generations, total_changes, avg_duration, providers
     FROM usage_daily
     WHERE key = ${key} AND date >= CURRENT_DATE - ${days}::int
@@ -472,7 +480,7 @@ export async function dbGetUsageStats(key: string, days: number): Promise<{
 
   let totalGens = 0, totalChanges = 0, totalDuration = 0;
   const providerMap: Record<string, number> = {};
-  const daily = rows.map((r: any) => {
+  const daily = rows.map(r => {
     totalGens += r.generations;
     totalChanges += r.total_changes;
     totalDuration += r.avg_duration * r.generations;
@@ -535,14 +543,24 @@ export async function dbGetReleases(project: string, limit: number): Promise<{
   changes: unknown[]; contributors: string[];
   formatted: { markdown: string; html: string };
 }[]> {
-  const rows = await sql`
+  interface ChangelogReleaseRow {
+    version: string;
+    date: string;
+    summary: string;
+    changes: string | unknown[];
+    contributors: string | string[];
+    formatted_md: string;
+    formatted_html: string;
+  }
+
+  const rows = await sql<ChangelogReleaseRow[]>`
     SELECT version, date::text, summary, changes, contributors, formatted_md, formatted_html
     FROM changelog_releases
     WHERE project = ${project}
     ORDER BY published_at DESC
     LIMIT ${limit}
   `;
-  return rows.map((r: any) => ({
+  return rows.map(r => ({
     version: r.version,
     date: r.date,
     summary: r.summary,
@@ -563,8 +581,8 @@ export async function dbDeleteRelease(project: string, version: string): Promise
 }
 
 export async function dbGetUserProjects(_userId: string): Promise<string[]> {
-  const rows = await sql`SELECT DISTINCT project FROM changelog_releases ORDER BY project`;
-  return rows.map((r: any) => r.project);
+  const rows = await sql<Array<{ project: string }>>`SELECT DISTINCT project FROM changelog_releases ORDER BY project`;
+  return rows.map(r => r.project);
 }
 
 // --- Subscription DB operations ---

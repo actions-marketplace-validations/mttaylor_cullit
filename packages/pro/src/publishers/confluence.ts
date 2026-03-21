@@ -1,6 +1,20 @@
 import type { Publisher, ReleaseNotes, OutputFormat } from '@cullit/core';
 import { formatNotes, fetchWithTimeout } from '@cullit/core';
 
+interface ConfluenceSearchResponse {
+  results?: Array<{ id: string; version: { number: number } }>;
+}
+
+interface ConfluencePagePayload {
+  type: 'page';
+  title: string;
+  space: { key: string };
+  body: {
+    storage: { value: string; representation: 'storage' };
+  };
+  ancestors?: Array<{ id: string }>;
+}
+
 /**
  * Publishes release notes as a Confluence page.
  * Requires CONFLUENCE_EMAIL, CONFLUENCE_API_TOKEN, and a publish target with:
@@ -103,14 +117,14 @@ export class ConfluencePublisher implements Publisher {
     const res = await fetchWithTimeout(url.toString(), { headers: this.headers() });
     if (!res.ok) return null;
 
-    const data = await res.json() as any;
+    const data = await res.json() as ConfluenceSearchResponse;
     const page = data.results?.[0];
     if (!page) return null;
     return { id: page.id, version: page.version.number };
   }
 
   private async createPage(title: string, body: string): Promise<void> {
-    const payload: any = {
+    const payload: ConfluencePagePayload = {
       type: 'page',
       title,
       space: { key: this.spaceKey },

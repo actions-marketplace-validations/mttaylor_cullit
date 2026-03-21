@@ -92,10 +92,10 @@ export class JiraCollector implements Collector {
         throw new Error(`Jira API error (${response.status}): ${error}`);
       }
 
-      const data = await response.json() as any;
-      const batch = (data.issues || []).map((issue: any) => ({
+      const data = await response.json() as JiraSearchResponse;
+      const batch = (data.issues || []).map(issue => ({
         key: issue.key,
-        summary: issue.fields.summary,
+        summary: issue.fields.summary || '',
         type: issue.fields.issuetype?.name?.toLowerCase(),
         assignee: issue.fields.assignee?.displayName,
         status: issue.fields.status?.name,
@@ -130,4 +130,22 @@ interface JiraIssue {
   description?: string;
   labels?: string[];
   priority?: string;
+}
+
+interface JiraSearchResponse {
+  total: number;
+  issues: Array<{
+    key: string;
+    fields: {
+      summary?: string;
+      issuetype?: { name?: string };
+      assignee?: { displayName?: string };
+      status?: { name?: string };
+      resolutiondate?: string;
+      updated?: string;
+      description?: { content?: Array<{ content?: Array<{ text?: string }> }> };
+      labels?: string[];
+      priority?: { name?: string };
+    };
+  }>;
 }

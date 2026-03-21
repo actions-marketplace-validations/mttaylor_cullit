@@ -232,9 +232,38 @@ function buildPublishTargets(): PublishTarget[] {
   return targets;
 }
 
+interface GitHubRepositoryPayload {
+  name: string;
+  owner: { login: string };
+}
+
+interface GitHubInstallationPayload {
+  id: number;
+  account?: { login?: string };
+}
+
+interface GitHubReleasePayload {
+  action?: string;
+  release?: { tag_name?: string };
+  repository?: GitHubRepositoryPayload;
+  installation?: GitHubInstallationPayload;
+}
+
+interface GitHubPushPayload {
+  ref?: string;
+  repository?: GitHubRepositoryPayload;
+  installation?: GitHubInstallationPayload;
+}
+
+interface GitHubInstallationEventPayload {
+  action?: string;
+  installation?: GitHubInstallationPayload;
+  repositories?: Array<{ full_name?: string }>;
+}
+
 // --- Event Handlers ---
 
-async function handleRelease(payload: any): Promise<void> {
+async function handleRelease(payload: GitHubReleasePayload): Promise<void> {
   const { release, repository, installation } = payload;
   if (!release || !repository || !installation) return;
 
@@ -274,7 +303,7 @@ async function handleRelease(payload: any): Promise<void> {
   }
 }
 
-async function handlePush(payload: any): Promise<void> {
+async function handlePush(payload: GitHubPushPayload): Promise<void> {
   const { ref, repository, installation } = payload;
   if (!ref || !repository || !installation) return;
 
@@ -313,10 +342,10 @@ async function handlePush(payload: any): Promise<void> {
   }
 }
 
-function handleInstallation(payload: any): void {
+function handleInstallation(payload: GitHubInstallationEventPayload): void {
   const action = payload.action;
   const account = payload.installation?.account?.login || 'unknown';
-  const repos = payload.repositories?.map((r: any) => r.full_name) || [];
+  const repos = payload.repositories?.map(r => r.full_name || '').filter(Boolean) || [];
 
   console.log(`Installation ${action}: ${account} (${repos.length} repos)`);
   metrics.installations++;

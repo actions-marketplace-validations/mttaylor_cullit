@@ -4,6 +4,26 @@ import type {
 } from '@cullit/core';
 import { fetchWithTimeout } from '@cullit/core';
 
+interface AnthropicResponse {
+  content?: Array<{ text?: string }>;
+}
+
+interface OpenAIResponse {
+  choices?: Array<{ message?: { content?: string } }>;
+}
+
+interface GeminiResponse {
+  candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+}
+
+interface OllamaResponse {
+  message?: { content?: string };
+}
+
+interface OpenClawResponse {
+  choices?: Array<{ message?: { content?: string } }>;
+}
+
 /**
  * Generates release notes using AI.
  * Supports Anthropic, OpenAI, Gemini, Ollama, OpenClaw — BYOK.
@@ -171,8 +191,8 @@ Rules:
       throw new Error(`Anthropic API error (${response.status}): ${error}`);
     }
 
-    const data = await response.json() as any;
-    return data.content[0]?.text || '';
+    const data = await response.json() as AnthropicResponse;
+    return data.content?.[0]?.text || '';
   }
 
   private async callOpenAI(prompt: string, apiKey: string, model?: string, maxTokens: number = 4096): Promise<string> {
@@ -195,8 +215,8 @@ Rules:
       throw new Error(`OpenAI API error (${response.status}): ${error}`);
     }
 
-    const data = await response.json() as any;
-    return data.choices[0]?.message?.content || '';
+    const data = await response.json() as OpenAIResponse;
+    return data.choices?.[0]?.message?.content || '';
   }
 
   private async callGemini(prompt: string, apiKey: string, model?: string, maxTokens: number = 4096): Promise<string> {
@@ -221,7 +241,7 @@ Rules:
       throw new Error(`Gemini API error (${response.status}): ${error}`);
     }
 
-    const data = await response.json() as any;
+    const data = await response.json() as GeminiResponse;
     return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
   }
 
@@ -243,7 +263,7 @@ Rules:
       throw new Error(`Ollama API error (${response.status}): ${error}`);
     }
 
-    const data = await response.json() as any;
+    const data = await response.json() as OllamaResponse;
     return data.message?.content || '';
   }
 
@@ -270,7 +290,7 @@ Rules:
       throw new Error(`OpenClaw API error (${response.status}): ${error}`);
     }
 
-    const data = await response.json() as any;
+    const data = await response.json() as OpenClawResponse;
     return data.choices?.[0]?.message?.content || '';
   }
 

@@ -52,7 +52,10 @@ export class GitCollector implements Collector {
         { cwd: this.cwd, encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 }
       );
     } catch (error) {
-      const stderr = (error as any)?.stderr?.toString?.() || '';
+      const errWithStderr = typeof error === 'object' && error !== null && 'stderr' in error
+        ? (error as { stderr?: { toString?: () => string } })
+        : undefined;
+      const stderr = errWithStderr?.stderr?.toString?.() || '';
       const hint = stderr.includes('unknown revision')
         ? 'Check that both refs exist (run "cullit tags" to see tags).'
         : stderr.includes('not a git repository')

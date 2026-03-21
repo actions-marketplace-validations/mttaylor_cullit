@@ -252,6 +252,10 @@ async function runGenerate(from: string, to: string, opts: Record<string, string
   const VALID_AUDIENCES = AUDIENCES as readonly string[];
   const VALID_SOURCES = SOURCE_TYPES as readonly string[];
   const VALID_TONES = TONES as readonly string[];
+  type ProviderValue = (typeof AI_PROVIDERS)[number];
+  type AudienceValue = (typeof AUDIENCES)[number];
+  type SourceValue = (typeof SOURCE_TYPES)[number];
+  type ToneValue = (typeof TONES)[number];
 
   if (opts.provider) {
     if (!VALID_PROVIDERS.includes(opts.provider)) {
@@ -260,7 +264,7 @@ async function runGenerate(from: string, to: string, opts: Record<string, string
       process.exitCode = 1;
       return;
     }
-    config.ai.provider = opts.provider as any;
+    config.ai.provider = opts.provider as ProviderValue;
   }
   if (opts.audience) {
     if (!VALID_AUDIENCES.includes(opts.audience)) {
@@ -269,7 +273,7 @@ async function runGenerate(from: string, to: string, opts: Record<string, string
       process.exitCode = 1;
       return;
     }
-    config.ai.audience = opts.audience as any;
+    config.ai.audience = opts.audience as AudienceValue;
   }
   if (opts.tone) {
     if (!VALID_TONES.includes(opts.tone)) {
@@ -278,7 +282,7 @@ async function runGenerate(from: string, to: string, opts: Record<string, string
       process.exitCode = 1;
       return;
     }
-    config.ai.tone = opts.tone as any;
+    config.ai.tone = opts.tone as ToneValue;
   }
   if (opts.model) config.ai.model = opts.model;
   if (opts.source) {
@@ -288,7 +292,7 @@ async function runGenerate(from: string, to: string, opts: Record<string, string
       process.exitCode = 1;
       return;
     }
-    config.source.type = opts.source as any;
+    config.source.type = opts.source as SourceValue;
   }
 
   if (opts.format && !(OUTPUT_FORMATS as readonly string[]).includes(opts.format)) {
