@@ -62,22 +62,23 @@
     justify-content: space-between;
     align-items: center;
     background: rgba(15, 17, 23, 0.85);
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border);
     z-index: 100;
   }
   .logo {
-    font-family: 'Chakra Petch', sans-serif;
-    font-size: 1.4rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 1.3rem;
     font-weight: 700;
-    color: var(--text-bright);
+    color: var(--accent);
     text-decoration: none;
+    letter-spacing: -0.5px;
     display: flex;
     align-items: center;
     gap: 0.5rem;
   }
   .logo-mark { width: 28px; height: 28px; flex-shrink: 0; }
-  .logo span { color: var(--accent); }
+  .logo span { color: var(--text-dim); font-weight: 400; }
   .nav-links { display: flex; gap: 2rem; align-items: center; }
   .nav-links a {
     font-family: 'Space Mono', monospace;
@@ -86,7 +87,7 @@
     text-decoration: none;
     transition: color 0.2s;
   }
-  .nav-links a:hover { color: var(--accent); }
+  .nav-links a:hover, .nav-links a.active { color: var(--accent); }
   .nav-cta {
     background: var(--accent) !important;
     color: var(--bg) !important;
@@ -397,8 +398,7 @@
 
   <section style="max-width:900px;margin:0 auto 2rem;padding:1rem 1.25rem;border:1px solid var(--border);border-radius:10px;background:var(--bg-card)">
     <h2 style="font-family:'Chakra Petch',sans-serif;font-size:1.2rem;margin-bottom:0.5rem">Upgrade in 3 steps</h2>
-    <ol style="margin:0;padding-left:1.2rem;color:var(--text-dim);line-height:1.7">
-      <li>Choose Pro or Team below and complete checkout.</li>
+    <ol style="margin:0;padding-left:1.2rem;color:var(--text-dim);line-height:1.7">      <li>Sign in with <strong>GitHub</strong> &mdash; no email or password required.</li>      <li>Choose Pro or Team below and complete checkout.</li>
       <li>Install <code style="background:#0d0d14;padding:0.1rem 0.35rem;border-radius:4px">@cullit/licensed</code> from your private registry.</li>
       <li>Set your <code style="background:#0d0d14;padding:0.1rem 0.35rem;border-radius:4px">CULLIT_API_KEY</code> and run your first generation.</li>
     </ol>
@@ -527,6 +527,21 @@
     <div class="faq-item">
       <p class="faq-q">What is your refund policy?</p>
       <p class="faq-a">Fees are non-refundable except where required by applicable law. Full policy details are in <a href="terms.html">Terms</a>.</p>
+    </div>
+
+    <div class="faq-item">
+      <p class="faq-q">What happens when my trial ends?</p>
+      <p class="faq-a">Your account reverts to the Free tier automatically &mdash; no charge, no data loss. Your history, drafts, and project settings are preserved. Upgrade anytime from the <a href="dashboard.html">billing dashboard</a> to restore Pro or Team features instantly.</p>
+    </div>
+
+    <div class="faq-item">
+      <p class="faq-q">How do I recover a lost API key?</p>
+      <p class="faq-a">Your <code style="background:var(--bg-card);padding:0.15rem 0.4rem;border-radius:4px">CULLIT_API_KEY</code> is always visible in the <a href="dashboard.html#billing">Billing tab</a> of your dashboard. If you are locked out, email <a href="mailto:support@cullit.io">support@cullit.io</a> and we will verify ownership and resend it.</p>
+    </div>
+
+    <div class="faq-item">
+      <p class="faq-q">How do I sign in?</p>
+      <p class="faq-a">Cullit uses <strong>GitHub OAuth</strong> &mdash; click <em>Sign in with GitHub</em> on the <a href="dashboard.html">dashboard</a>. No separate email or password is required. Your GitHub account is the only credential you need.</p>
     </div>
   </section>
 </main>
