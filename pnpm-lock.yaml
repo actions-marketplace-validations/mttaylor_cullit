@@ -1,7 +1,7 @@
 lockfileVersion: '9.0'
 
 settings:
-  autoInstallPeers: true
+  autoInstallPeers: false
   excludeLinksFromLockfile: false
 
 importers:
@@ -69,9 +69,6 @@ importers:
       '@cullit/core':
         specifier: workspace:*
         version: link:../core
-      '@cullit/pro':
-        specifier: workspace:*
-        version: link:../pro
 
   packages/cli:
     dependencies:
@@ -89,6 +86,15 @@ importers:
       '@cullit/config':
         specifier: workspace:*
         version: link:../config
+
+  packages/licensed:
+    dependencies:
+      '@cullit/pro':
+        specifier: workspace:*
+        version: link:../pro
+      cullit:
+        specifier: workspace:*
+        version: link:../cli
 
   packages/pro:
     dependencies:

@@ -21,6 +21,9 @@ pnpm test
 # Lint
 pnpm lint
 
+# Verify lockfile consistency (CI parity)
+pnpm lockfile:check
+
 # Run CLI locally
 node packages/cli/dist/index.js generate --from <tag1> --to <tag2>
 ```
@@ -119,6 +122,7 @@ Prefixes: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `perf`, `ci`, `bui
 - Keep PRs focused on a single change
 - Add tests for new features or bug fixes
 - Run `pnpm test` and `pnpm lint` before submitting
+- Run `pnpm lockfile:check` after any `package.json` change
 - Use conventional commit format for PR titles
 - Fill out the PR description explaining what changed and why
 
