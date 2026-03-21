@@ -44,8 +44,10 @@ jobs:
 
       - name: Validate pricing consistency
         run: |
-          grep -q 'Pro (\$9/mo)' site/pricing.html
-          grep -q 'Team (\$19/seat/mo)' site/pricing.html
+          grep -q '<div class="plan-name">Pro</div>' site/pricing.html
+          grep -q '\$9 <span class="period">/ mo</span>' site/pricing.html
+          grep -q '<div class="plan-name">Team</div>' site/pricing.html
+          grep -q '\$19 <span class="period">/ seat / mo</span>' site/pricing.html
           grep -q 'Pro (\$9/mo)' site/free-trial.html
           grep -q 'Team (\$19/seat/mo)' site/free-trial.html
 
