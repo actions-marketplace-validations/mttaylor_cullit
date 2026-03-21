@@ -925,7 +925,7 @@
     <a href="https://www.npmjs.com/package/cullit" target="_blank">npm</a>
     <a href="pricing.html">Pricing</a>
     <div class="nav-user" id="navUser" style="display:none">
-      <img id="navAvatar" src="" alt="">
+      <img id="navAvatar" alt="User avatar" hidden>
       <span id="navLogin"></span>
       <span class="tier-badge" id="navTier"></span>
       <button class="btn-logout" onclick="logout()">Logout</button>
@@ -1482,7 +1482,11 @@ function showDashboard() {
   // Nav user
   const nav = document.getElementById('navUser');
   nav.style.display = 'flex';
-  document.getElementById('navAvatar').src = currentUser.avatarUrl || '';
+  const avatarEl = document.getElementById('navAvatar');
+  if (currentUser.avatarUrl) {
+    avatarEl.src = currentUser.avatarUrl;
+    avatarEl.hidden = false;
+  }
   document.getElementById('navLogin').textContent = currentUser.login;
   document.getElementById('navTier').textContent = currentUser.trial && currentUser.trial.active
     ? (currentUser.effectiveTier || currentUser.tier) + ' trial'

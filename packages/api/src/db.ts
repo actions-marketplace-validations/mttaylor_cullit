@@ -139,9 +139,12 @@ export async function migrate(): Promise<void> {
       formatted_md TEXT NOT NULL DEFAULT '',
       formatted_html TEXT NOT NULL DEFAULT '',
       published_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      user_id      TEXT,
       PRIMARY KEY (project, version)
     )
   `;
+
+  await sql`ALTER TABLE changelog_releases ADD COLUMN IF NOT EXISTS user_id TEXT`.catch(() => {});
 
   await sql`CREATE INDEX IF NOT EXISTS idx_changelog_project ON changelog_releases (project, published_at DESC)`;
 
@@ -519,13 +522,14 @@ export async function dbPublishRelease(project: string, release: {
   changes: { description: string; category: string; ticketKey?: string }[];
   contributors: string[]; metadata?: Record<string, unknown>;
   formattedMd: string; formattedHtml: string;
+  userId?: string;
 }): Promise<void> {
   await sql`
-    INSERT INTO changelog_releases (project, version, date, summary, changes, contributors, metadata, formatted_md, formatted_html)
+    INSERT INTO changelog_releases (project, version, date, summary, changes, contributors, metadata, formatted_md, formatted_html, user_id)
     VALUES (${project}, ${release.version}, ${release.date}, ${release.summary},
             ${JSON.stringify(release.changes)}::jsonb, ${JSON.stringify(release.contributors)}::jsonb,
             ${release.metadata ? JSON.stringify(release.metadata) : null}::jsonb,
-            ${release.formattedMd}, ${release.formattedHtml})
+            ${release.formattedMd}, ${release.formattedHtml}, ${release.userId || null})
     ON CONFLICT (project, version) DO UPDATE SET
       date = EXCLUDED.date,
       summary = EXCLUDED.summary,
@@ -534,6 +538,7 @@ export async function dbPublishRelease(project: string, release: {
       metadata = EXCLUDED.metadata,
       formatted_md = EXCLUDED.formatted_md,
       formatted_html = EXCLUDED.formatted_html,
+      user_id = EXCLUDED.user_id,
       published_at = NOW()
   `;
 }
@@ -575,13 +580,15 @@ export async function dbGetProjectCount(): Promise<number> {
   return parseInt(rows[0].count, 10);
 }
 
-export async function dbDeleteRelease(project: string, version: string): Promise<boolean> {
-  const result = await sql`DELETE FROM changelog_releases WHERE project = ${project} AND version = ${version}`;
+export async function dbDeleteRelease(project: string, version: string, userId?: string): Promise<boolean> {
+  const result = userId
+    ? await sql`DELETE FROM changelog_releases WHERE project = ${project} AND version = ${version} AND user_id = ${userId}`
+    : await sql`DELETE FROM changelog_releases WHERE project = ${project} AND version = ${version}`;
   return result.count > 0;
 }
 
-export async function dbGetUserProjects(_userId: string): Promise<string[]> {
-  const rows = await sql<Array<{ project: string }>>`SELECT DISTINCT project FROM changelog_releases ORDER BY project`;
+export async function dbGetUserProjects(userId: string): Promise<string[]> {
+  const rows = await sql<Array<{ project: string }>>`SELECT DISTINCT project FROM changelog_releases WHERE user_id = ${userId} ORDER BY project`;
   return rows.map(r => r.project);
 }
 
@@ -683,10 +690,6 @@ export async function dbGetDraft(id: string): Promise<DbDraft | null> {
 export async function dbListDrafts(opts: {
   userId?: string; orgId?: string; status?: string; limit: number; offset: number;
 }): Promise<{ drafts: DbDraft[]; total: number }> {
-  const conditions: string[] = [];
-  if (opts.orgId) conditions.push('org_id');
-  else if (opts.userId) conditions.push('user_id');
-
   // Build query dynamically based on whether we filter by org or user
   let drafts: DbDraft[];
   let total: number;

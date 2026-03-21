@@ -9,6 +9,11 @@
 <meta property="og:description" content="See what's new in every release. AI-powered release notes from git history.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://cullit.io/changelog">
+<meta property="og:image" content="https://cullit.io/og-image.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Changelog — Cullit">
+<meta name="twitter:description" content="See what's new in every release. AI-powered release notes from git history.">
+<meta name="twitter:image" content="https://cullit.io/og-image.svg">
 <link rel="canonical" href="https://cullit.io/changelog">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -51,28 +56,72 @@
     justify-content: space-between;
     padding: 1rem 2rem;
     border-bottom: 1px solid var(--border);
-    background: rgba(15, 17, 23, 0.95);
-    backdrop-filter: blur(10px);
+    background: rgba(15, 17, 23, 0.85);
+    backdrop-filter: blur(20px);
     position: sticky;
     top: 0;
     z-index: 100;
   }
-  .nav-logo {
-    font-family: 'Chakra Petch', sans-serif;
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.4rem;
     font-weight: 700;
-    font-size: 1.3rem;
     color: var(--accent);
     text-decoration: none;
-    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
-  .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+  .logo-mark { width: 28px; height: 28px; flex-shrink: 0; }
+  .logo span { color: var(--text-dim); }
+  .nav-links { display: flex; gap: 2rem; align-items: center; }
   .nav-links a {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
     color: var(--text-dim);
     text-decoration: none;
-    font-size: 0.9rem;
     transition: color 0.2s;
   }
-  .nav-links a:hover { color: var(--accent); }
+  .nav-links a:hover, .nav-links a.active { color: var(--accent); }
+  .nav-cta {
+    background: var(--accent) !important;
+    color: var(--bg) !important;
+    padding: 0.5rem 1.2rem !important;
+    border-radius: 4px;
+    font-weight: 600 !important;
+  }
+  .hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+  }
+  .hamburger span {
+    display: block;
+    width: 24px;
+    height: 2px;
+    background: var(--text-dim);
+    transition: 0.3s;
+  }
+  @media (max-width: 768px) {
+    .hamburger { display: flex; }
+    .nav-links {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      flex-direction: column;
+      background: var(--bg-card);
+      padding: 1rem 2rem;
+      gap: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-links.open { display: flex; }
+  }
 
   /* --- Header --- */
   .changelog-header {
@@ -310,13 +359,17 @@
 <body>
 
 <nav>
-  <a href="/" class="nav-logo">cullit</a>
-  <div class="nav-links">
-    <a href="/docs.html">Docs</a>
-    <a href="/pricing.html">Pricing</a>
-    <a href="/changelog.html" style="color: var(--accent)">Changelog</a>
+  <a href="index.html" class="logo"><svg class="logo-mark" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#0f1117"/><path d="M42 22A17 17 0 1 0 42 42" stroke="#5eead4" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="50" cy="32" r="3.5" fill="#2dd4bf"/></svg>cullit<span>.io</span></a>
+  <div class="nav-links" id="navLinks">
+    <a href="index.html">Home</a>
+    <a href="docs.html">Docs</a>
+    <a href="tutorial.html">Tutorial</a>
     <a href="https://www.npmjs.com/package/cullit" target="_blank" rel="noopener">npm</a>
+    <a href="pricing.html">Pricing</a>
+    <a href="changelog.html" class="active">Changelog</a>
+    <a href="free-trial.html" class="nav-cta">Get Started Free</a>
   </div>
+  <button class="hamburger" id="hamburger" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
 </nav>
 
 <div class="changelog-header">
@@ -475,6 +528,13 @@
 
   // --- Init ---
   loadReleases();
+
+  // --- Hamburger ---
+  var hamburger = document.getElementById('hamburger');
+  var navLinks = document.getElementById('navLinks');
+  if (hamburger && navLinks) {
+    hamburger.addEventListener('click', function () { navLinks.classList.toggle('open'); });
+  }
 })();
 </script>
 

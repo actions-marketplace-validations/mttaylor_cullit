@@ -1,5 +1,5 @@
 import type { Publisher, ReleaseNotes, OutputFormat } from '@cullit/core';
-import { formatNotes, fetchWithTimeout } from '@cullit/core';
+import { formatNotes, fetchWithTimeout, escapeHtml } from '@cullit/core';
 
 interface ConfluenceSearchResponse {
   results?: Array<{ id: string; version: { number: number } }>;
@@ -75,7 +75,7 @@ export class ConfluencePublisher implements Publisher {
 
     let html = '';
     if (notes.summary) {
-      html += `<p>${this.escapeHtml(notes.summary)}</p>`;
+      html += `<p>${escapeHtml(notes.summary)}</p>`;
     }
 
     const grouped = new Map<string, typeof notes.changes>();
@@ -90,8 +90,8 @@ export class ConfluencePublisher implements Publisher {
       if (!entries?.length) continue;
       html += `<h3>${categoryLabels[cat] || cat}</h3><ul>`;
       for (const e of entries) {
-        html += `<li>${this.escapeHtml(e.description)}`;
-        if (e.ticketKey) html += ` <code>${this.escapeHtml(e.ticketKey)}</code>`;
+        html += `<li>${escapeHtml(e.description)}`;
+        if (e.ticketKey) html += ` <code>${escapeHtml(e.ticketKey)}</code>`;
         html += `</li>`;
       }
       html += `</ul>`;
@@ -102,10 +102,6 @@ export class ConfluencePublisher implements Publisher {
     }
 
     return html;
-  }
-
-  private escapeHtml(str: string): string {
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   private async findPage(title: string): Promise<{ id: string; version: number } | null> {

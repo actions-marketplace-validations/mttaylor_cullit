@@ -559,6 +559,17 @@
 <span class="val">    → 8 commit(s) since v1.2.0 — consider releasing</span></code></pre>
 <p>The advisor also runs automatically after <code>cullit generate</code> and nudges you when thresholds are met (suppressed in <code>--quiet</code> mode).</p>
 
+<h4 style="margin:1rem 0 0.4rem;font-size:0.9rem;color:var(--text-dim)">Release advisor signals</h4>
+<p>The advisor emits one of three signals based on commit volume, time since last release, and change type mix:</p>
+<pre><code><span class="val">  Should you release? &#x1F7E2; Yes &#x2013; time to release</span>
+<span class="cmt">  # 1+ feature, fix or breaking change; &ge;3 unreleased commits; &ge;3 days since last release.</span>
+
+<span class="val">  Should you release? &#x1F7E1; Maybe &#x2013; a few changes ready</span>
+<span class="cmt">  # Changes exist but thresholds not fully met (e.g. only chores/docs, or &lt; 3 commits).</span>
+
+<span class="val">  Should you release? &#x1F534; Not yet &#x2013; nothing worth releasing</span>
+<span class="cmt">  # Zero unreleased commits, or only automated bumps / dependency updates.</span></code></pre>
+
 <h3 id="cli-init"><code>cullit init</code></h3>
 <p>Interactive config setup. Creates a <code>.cullit.yml</code> with your preferences:</p>
 <pre><code><span class="cmd">cullit</span> init

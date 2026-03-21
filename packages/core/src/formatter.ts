@@ -35,7 +35,7 @@ export function formatNotes(notes: ReleaseNotes, format: OutputFormat): string {
   return fn(notes);
 }
 
-function escapeMarkdown(text: string): string {
+function sanitizeForMarkdown(text: string): string {
   return escapeHtml(text)
     .replace(/\r?\n/g, ' ');
 }
@@ -43,11 +43,11 @@ function escapeMarkdown(text: string): string {
 function formatMarkdown(notes: ReleaseNotes): string {
   const lines: string[] = [];
 
-  lines.push(`## ${escapeMarkdown(notes.version)} — ${escapeMarkdown(notes.date)}`);
+  lines.push(`## ${sanitizeForMarkdown(notes.version)} — ${sanitizeForMarkdown(notes.date)}`);
   lines.push('');
 
   if (notes.summary) {
-    lines.push(escapeMarkdown(notes.summary));
+    lines.push(sanitizeForMarkdown(notes.summary));
     lines.push('');
   }
 
@@ -62,8 +62,8 @@ function formatMarkdown(notes: ReleaseNotes): string {
     lines.push('');
 
     for (const entry of entries) {
-      let line = `- ${escapeMarkdown(entry.description)}`;
-      if (entry.ticketKey) line += ` (${escapeMarkdown(entry.ticketKey)})`;
+      let line = `- ${sanitizeForMarkdown(entry.description)}`;
+      if (entry.ticketKey) line += ` (${sanitizeForMarkdown(entry.ticketKey)})`;
       lines.push(line);
     }
     lines.push('');
@@ -72,7 +72,7 @@ function formatMarkdown(notes: ReleaseNotes): string {
   if (notes.contributors?.length) {
     lines.push('### Contributors');
     lines.push('');
-    lines.push(notes.contributors.map(c => `@${escapeMarkdown(c)}`).join(', '));
+    lines.push(notes.contributors.map(c => `@${sanitizeForMarkdown(c)}`).join(', '));
     lines.push('');
   }
 
@@ -84,7 +84,7 @@ function formatMarkdown(notes: ReleaseNotes): string {
   return lines.join('\n');
 }
 
-function escapeHtml(str: string): string {
+export function escapeHtml(str: string): string {
   return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

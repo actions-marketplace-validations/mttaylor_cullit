@@ -22,7 +22,7 @@ import { createLogger, type Logger } from './logger';
 export { GitCollector, getRecentTags, getLatestTag } from './collectors/git';
 export { MultiRepoCollector } from './collectors/multi-repo';
 export { TemplateGenerator } from './generators/template';
-export { formatNotes, registerFormatter, getFormatter, listFormatters } from './formatter';
+export { formatNotes, registerFormatter, getFormatter, listFormatters, escapeHtml } from './formatter';
 export { StdoutPublisher, FilePublisher } from './publishers/index';
 export { analyzeReleaseReadiness } from './advisor';
 export type { ReleaseAdvisory, SemverBump } from './advisor';
@@ -50,9 +50,8 @@ import {
 } from './registry';
 
 // --- Register free (core) plugins ---
-import type { CullConfig as CullConfigType } from './types';
-registerCollector('local', (config: CullConfigType) => new GitCollector(config.source?.repoPath));
-registerCollector('multi-repo', (config: CullConfigType) => {
+registerCollector('local', (config: CullConfig) => new GitCollector(config.source?.repoPath));
+registerCollector('multi-repo', (config: CullConfig) => {
   if (!config.repos?.length) throw new Error('Multi-repo source requires "repos" array in config');
   return new MultiRepoCollector(config.repos);
 });

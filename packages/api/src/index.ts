@@ -17,9 +17,12 @@
  */
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
-import { createHash } from 'crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'crypto';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { randomBytes } from 'crypto';
+
+/** ServerResponse with per-request CORS origin attached. */
+interface CorsResponse extends ServerResponse { _corsOrigin?: string; }
+
 import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS, getTierLimits } from '@cullit/core';
 import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget } from '@cullit/core';
 import { openApiSpec } from './openapi.js';
@@ -48,11 +51,20 @@ try { await import('@cullit/pro'); } catch { /* pro not installed */ }
 // Run database migrations (no-op if DATABASE_URL not set)
 await migrate();
 
+// Warn at startup if Stripe is not configured so operators know billing is disabled.
+if (!isStripeConfigured()) {
+  log.warn(
+    'Stripe is not configured (STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET missing). ' +
+    'Billing endpoints will return errors. Set these environment variables to enable payments.',
+  );
+}
+
 const PORT = parseInt(process.env['PORT'] || '3000', 10);
 const API_TOKEN = process.env['CULLIT_API_TOKEN'] || ''; // optional bearer auth
 // SECURITY: Restrict to specific origins in production.
 //   ALLOWED_ORIGINS=https://yourdomain.com (comma-separated for multiple)
 const ALLOWED_ORIGINS = process.env['ALLOWED_ORIGINS'] || '';
+const IS_HTTPS = (process.env['CULLIT_BASE_URL'] || '').startsWith('https');
 if (!ALLOWED_ORIGINS) {
   log.warn('ALLOWED_ORIGINS is not set. CORS will reject cross-origin requests. Set ALLOWED_ORIGINS=* for local dev or specify your domain.');
 }
@@ -115,19 +127,23 @@ function checkRateLimit(req: IncomingMessage, res: ServerResponse): boolean {
 
 // --- Helpers ---
 
-// Per-request resolved CORS origin (set at top of each request handler)
-let currentCorsOrigin = '';
+/** Shared security headers applied to every response. */
+const SECURITY_HEADERS: Record<string, string> = {
+  'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  ...(IS_HTTPS ? { 'Strict-Transport-Security': 'max-age=63072000; includeSubDomains' } : {}),
+};
 
-function json(res: ServerResponse, status: number, body: unknown): void {
+function json(res: CorsResponse, status: number, body: unknown): void {
   const payload = JSON.stringify(body);
   res.writeHead(status, {
     'Content-Type': 'application/json',
     'Content-Length': Buffer.byteLength(payload),
-    'Access-Control-Allow-Origin': currentCorsOrigin,
+    'Access-Control-Allow-Origin': res._corsOrigin || '',
     'Access-Control-Allow-Credentials': 'true',
-    'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
-    'X-Content-Type-Options': 'nosniff',
-    'X-Frame-Options': 'DENY',
+    ...SECURITY_HEADERS,
   });
   res.end(payload);
 }
@@ -135,7 +151,9 @@ function json(res: ServerResponse, status: number, body: unknown): void {
 function checkAuth(req: IncomingMessage, res: ServerResponse): boolean {
   if (!API_TOKEN) return true; // no auth configured
   const header = req.headers['authorization'] || '';
-  if (header === `Bearer ${API_TOKEN}`) return true;
+  const expected = `Bearer ${API_TOKEN}`;
+  if (header.length === expected.length &&
+      timingSafeEqual(Buffer.from(header), Buffer.from(expected))) return true;
   json(res, 401, { error: 'Unauthorized — set Authorization: Bearer <token>' });
   return false;
 }
@@ -233,6 +251,19 @@ interface ChangelogRelease {
   metadata?: Record<string, unknown>;
   formatted: { markdown: string; html: string };
   publishedAt: string;
+  userId?: string;
+}
+
+/** Strip dangerous HTML tags and attributes to prevent stored XSS. */
+function sanitizeHtml(html: string): string {
+  return html
+    .replace(/<script[\s>].*?<\/script>/gis, '')
+    .replace(/<iframe[\s>].*?<\/iframe>/gis, '')
+    .replace(/<object[\s>].*?<\/object>/gis, '')
+    .replace(/<embed[^>]*>/gi, '')
+    .replace(/<link[^>]*>/gi, '')
+    .replace(/\s+on\w+\s*=\s*(["']?).*?\1/gi, '')
+    .replace(/href\s*=\s*(["']?)\s*javascript:/gi, 'href=$1');
 }
 
 type JsonObject = Record<string, unknown>;
@@ -452,7 +483,11 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
   try {
     // Usage enforcement: check monthly limit before running pipeline
     const user = await resolveUser(req);
-    if (user) {
+    if (!user) {
+      json(res, 401, { error: 'Authentication required for generation' });
+      return;
+    }
+    {
       const key = user.orgId || user.id;
       const monthlyCount = await getMonthlyGenerationCount(key);
       const effectiveTier = getEffectiveTier(user);
@@ -529,6 +564,9 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
 // --- Changelog Endpoints ---
 
 async function handleChangelogPublish(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+
   const raw = await readBody(req);
   const body = parseJsonObject(raw);
   if (!body) {
@@ -586,9 +624,10 @@ async function handleChangelogPublish(req: IncomingMessage, res: ServerResponse)
       : undefined,
     formatted: {
       markdown: String(body.formatted?.markdown || '').slice(0, 50_000),
-      html: String(body.formatted?.html || '').slice(0, 100_000),
+      html: sanitizeHtml(String(body.formatted?.html || '').slice(0, 100_000)),
     },
     publishedAt: new Date().toISOString(),
+    userId: user.id,
   };
 
   // Cap total number of projects
@@ -610,6 +649,7 @@ async function handleChangelogPublish(req: IncomingMessage, res: ServerResponse)
       metadata: release.metadata,
       formattedMd: release.formatted.markdown,
       formattedHtml: release.formatted.html,
+      userId: user.id,
     });
   } else {
     if (!changelogStore.has(project) && changelogStore.size >= MAX_PROJECTS) {
@@ -679,13 +719,13 @@ async function handleChangelogDelete(req: IncomingMessage, res: ServerResponse, 
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
 
   if (useDb) {
-    const deleted = await dbDeleteRelease(project, version);
-    if (!deleted) { json(res, 404, { error: 'Release not found' }); return; }
+    const deleted = await dbDeleteRelease(project, version, user.id);
+    if (!deleted) { json(res, 404, { error: 'Release not found or not owned by you' }); return; }
   } else {
     const releases = changelogStore.get(project);
     if (!releases) { json(res, 404, { error: 'Release not found' }); return; }
-    const idx = releases.findIndex(r => r.version === version);
-    if (idx < 0) { json(res, 404, { error: 'Release not found' }); return; }
+    const idx = releases.findIndex(r => r.version === version && r.userId === user.id);
+    if (idx < 0) { json(res, 404, { error: 'Release not found or not owned by you' }); return; }
     releases.splice(idx, 1);
     if (releases.length === 0) changelogStore.delete(project);
     saveChangelogStore();
@@ -1293,18 +1333,19 @@ async function handleGetOrgUsage(req: IncomingMessage, res: ServerResponse): Pro
 
 // --- Router ---
 
-const server = createServer(async (req, res) => {
-  // Resolve CORS origin for this request
-  currentCorsOrigin = getCorsOrigin(req);
+const server = createServer(async (req, res: CorsResponse) => {
+  // Resolve CORS origin for this request (stored on res to avoid cross-request races)
+  res._corsOrigin = getCorsOrigin(req);
 
   // CORS preflight
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
-      'Access-Control-Allow-Origin': currentCorsOrigin,
+      'Access-Control-Allow-Origin': res._corsOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Allow-Credentials': 'true',
       'Access-Control-Max-Age': '86400',
+      ...SECURITY_HEADERS,
     });
     res.end();
     return;
@@ -1315,7 +1356,7 @@ const server = createServer(async (req, res) => {
 
   try {
     // --- Rate limit all non-system routes ---
-    if (path !== '/health' && path !== '/healthz' && path !== '/openapi.json' && path !== '/auth/callback' && path !== '/v1/billing/webhook') {
+    if (path !== '/health' && path !== '/healthz' && path !== '/openapi.json' && path !== '/v1/billing/webhook') {
       if (!checkRateLimit(req, res)) return;
     }
 

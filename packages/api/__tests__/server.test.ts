@@ -1,8 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawn, type ChildProcess } from 'child_process';
 import { join } from 'path';
+import { writeFileSync, unlinkSync } from 'fs';
 
 const PORT = 13579; // unlikely to conflict
+const TEST_API_KEY = 'clt_testkey123';
+const TEST_AUTH_STORE = join(__dirname, '.test-auth-store.json');
 let serverProcess: ChildProcess;
 
 async function apiRequest(path: string, opts: RequestInit = {}): Promise<{ status: number; body: any }> {
@@ -11,12 +14,30 @@ async function apiRequest(path: string, opts: RequestInit = {}): Promise<{ statu
   return { status: res.status, body };
 }
 
+/** Make an authenticated API request using the test API key. */
+async function authedRequest(path: string, opts: RequestInit = {}): Promise<{ status: number; body: any }> {
+  const headers = { ...(opts.headers as Record<string, string> || {}), Authorization: `Bearer ${TEST_API_KEY}` };
+  return apiRequest(path, { ...opts, headers });
+}
+
 describe('API Server', () => {
   beforeAll(async () => {
+    // Pre-seed auth store with a test user
+    writeFileSync(TEST_AUTH_STORE, JSON.stringify({
+      users: {
+        '99999': {
+          id: '99999', login: 'testbot', name: 'Test Bot', email: 'test@test.com',
+          avatarUrl: '', tier: 'free', apiKey: TEST_API_KEY, createdAt: new Date().toISOString(),
+        },
+      },
+      orgs: {},
+      apiKeyIndex: { [TEST_API_KEY]: '99999' },
+    }));
+
     // Start the API server as a child process
     const serverPath = join(__dirname, '..', 'dist', 'index.js');
     serverProcess = spawn('node', [serverPath], {
-      env: { ...process.env, PORT: String(PORT), RATE_LIMIT: '15', CULLIT_API_TOKEN: '' },
+      env: { ...process.env, PORT: String(PORT), RATE_LIMIT: '15', CULLIT_API_TOKEN: '', CULLIT_AUTH_STORE_PATH: TEST_AUTH_STORE },
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 
@@ -38,6 +59,7 @@ describe('API Server', () => {
 
   afterAll(() => {
     serverProcess?.kill('SIGTERM');
+    try { unlinkSync(TEST_AUTH_STORE); } catch {}
   });
 
   it('GET /health returns status ok', async () => {
@@ -131,7 +153,7 @@ describe('API Server', () => {
   // --- Changelog API ---
 
   it('POST /v1/changelog rejects missing project', async () => {
-    const { status, body } = await apiRequest('/v1/changelog', {
+    const { status, body } = await authedRequest('/v1/changelog', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ version: 'v1.0.0', changes: [] }),
@@ -141,7 +163,7 @@ describe('API Server', () => {
   });
 
   it('POST /v1/changelog rejects invalid project slug', async () => {
-    const { status, body } = await apiRequest('/v1/changelog', {
+    const { status, body } = await authedRequest('/v1/changelog', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ project: 'bad slug!', version: 'v1.0.0', changes: [] }),
@@ -151,7 +173,7 @@ describe('API Server', () => {
   });
 
   it('POST /v1/changelog accepts and stores a release', async () => {
-    const { status, body } = await apiRequest('/v1/changelog', {
+    const { status, body } = await authedRequest('/v1/changelog', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -187,7 +209,7 @@ describe('API Server', () => {
   });
 
   it('POST /v1/changelog updates existing version', async () => {
-    const { status } = await apiRequest('/v1/changelog', {
+    const { status } = await authedRequest('/v1/changelog', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

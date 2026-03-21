@@ -13,6 +13,7 @@ const RESEND_API_KEY = process.env['RESEND_API_KEY'] || '';
 const EMAIL_FROM = process.env['EMAIL_FROM'] || 'Cullit <noreply@cullit.io>';
 
 import { log } from './logger.js';
+import { escapeHtml } from '@cullit/core';
 
 interface EmailOptions {
   to: string;
@@ -178,10 +179,6 @@ export async function sendUsageAlert(email: string, name: string, used: number, 
       </p>
     ${FOOTER}`,
   });
-}
-
-function escapeHtml(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 export function isEmailConfigured(): boolean {

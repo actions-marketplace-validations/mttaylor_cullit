@@ -27,7 +27,7 @@
     "hooks:install": "git config core.hooksPath .githooks",
     "lockfile:check": "pnpm install --frozen-lockfile",
     "lockfile:sync": "pnpm install --no-frozen-lockfile",
-    "launch:ready": "pnpm lockfile:check && pnpm build && pnpm lint && pnpm test && pnpm test:e2e",
+    "launch:ready": "pnpm lockfile:check && pnpm build && pnpm lint && pnpm test && pnpm test:e2e && pnpm validate:guards",
     "validate:guards": "node scripts/validate-guards.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test",

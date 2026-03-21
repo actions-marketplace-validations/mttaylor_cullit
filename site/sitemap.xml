@@ -21,6 +21,14 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://cullit.io/free-trial.html</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://cullit.io/changelog.html</loc>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://cullit.io/setup.html</loc>
     <priority>0.3</priority>
   </url>

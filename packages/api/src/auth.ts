@@ -47,7 +47,16 @@ const BASE_URL = process.env['CULLIT_BASE_URL'] || 'http://localhost:3000';
 const JWT_EXPIRY = 7 * 24 * 60 * 60; // 7 days in seconds
 const SESSION_COOKIE_NAME = 'cullit_session';
 const COOKIE_SECURE = BASE_URL.startsWith('https') ? '; Secure' : '';
+const IS_HTTPS = BASE_URL.startsWith('https');
 const TRIAL_DAYS = Math.max(0, parseInt(process.env['CULLIT_TRIAL_DAYS'] || '14', 10) || 14);
+
+/** Security headers for auth endpoint responses (mirrors index.ts SECURITY_HEADERS). */
+const AUTH_SECURITY_HEADERS: Record<string, string> = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  ...(IS_HTTPS ? { 'Strict-Transport-Security': 'max-age=63072000; includeSubDomains' } : {}),
+};
 
 // --- Types ---
 
@@ -104,6 +113,7 @@ interface AuthStore {
 // --- OAuth State CSRF protection ---
 const pendingStates = new Map<string, number>(); // state → timestamp
 const STATE_TTL = 600_000; // 10 minutes
+const MAX_PENDING_STATES = 50_000;
 
 // Prune expired states periodically
 setInterval(() => {
@@ -492,8 +502,14 @@ interface GitHubUser {
  */
 export function handleAuthRedirect(_req: IncomingMessage, res: ServerResponse): void {
   if (!GITHUB_CLIENT_ID) {
-    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.writeHead(500, { 'Content-Type': 'application/json', ...AUTH_SECURITY_HEADERS });
     res.end(JSON.stringify({ error: 'GitHub OAuth not configured (GITHUB_CLIENT_ID missing)' }));
+    return;
+  }
+
+  if (pendingStates.size >= MAX_PENDING_STATES) {
+    res.writeHead(503, { 'Content-Type': 'application/json', ...AUTH_SECURITY_HEADERS });
+    res.end(JSON.stringify({ error: 'Too many pending OAuth requests. Try again later.' }));
     return;
   }
 
@@ -521,14 +537,14 @@ export async function handleAuthCallback(req: IncomingMessage, res: ServerRespon
 
   // Validate CSRF state
   if (!state || !pendingStates.has(state)) {
-    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.writeHead(400, { 'Content-Type': 'application/json', ...AUTH_SECURITY_HEADERS });
     res.end(JSON.stringify({ error: 'Invalid or expired OAuth state' }));
     return;
   }
   pendingStates.delete(state);
 
   if (!code) {
-    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.writeHead(400, { 'Content-Type': 'application/json', ...AUTH_SECURITY_HEADERS });
     res.end(JSON.stringify({ error: 'Missing authorization code' }));
     return;
   }
@@ -547,8 +563,9 @@ export async function handleAuthCallback(req: IncomingMessage, res: ServerRespon
 
     const tokenData = await tokenRes.json() as { access_token?: string; error?: string };
     if (!tokenData.access_token) {
-      res.writeHead(401, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'GitHub OAuth failed: ' + (tokenData.error || 'no token') }));
+      log.warn({ error: tokenData.error }, 'GitHub OAuth token exchange failed');
+      res.writeHead(401, { 'Content-Type': 'application/json', ...AUTH_SECURITY_HEADERS });
+      res.end(JSON.stringify({ error: 'GitHub OAuth failed' }));
       return;
     }
 
@@ -562,7 +579,7 @@ export async function handleAuthCallback(req: IncomingMessage, res: ServerRespon
     });
 
     if (!userRes.ok) {
-      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.writeHead(502, { 'Content-Type': 'application/json', ...AUTH_SECURITY_HEADERS });
       res.end(JSON.stringify({ error: 'Failed to fetch GitHub user profile' }));
       return;
     }
@@ -580,11 +597,12 @@ export async function handleAuthCallback(req: IncomingMessage, res: ServerRespon
     res.writeHead(302, {
       Location: `${BASE_URL}/dashboard.html`,
       'Set-Cookie': `${SESSION_COOKIE_NAME}=${jwt}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAge}${COOKIE_SECURE}`,
+      ...AUTH_SECURITY_HEADERS,
     });
     res.end();
   } catch (err) {
     log.error({ err: (err as Error).message }, 'OAuth callback error');
-    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.writeHead(500, { 'Content-Type': 'application/json', ...AUTH_SECURITY_HEADERS });
     res.end(JSON.stringify({ error: 'OAuth flow failed' }));
   }
 }

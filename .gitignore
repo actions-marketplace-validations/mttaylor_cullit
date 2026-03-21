@@ -6,6 +6,7 @@ dist/
 *.log
 .DS_Store
 coverage/
+test-results/
 .turbo/
 .cache/
 *.tgz
