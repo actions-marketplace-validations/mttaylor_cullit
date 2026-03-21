@@ -1447,7 +1447,7 @@ function apiUrl() {
   if (input) return input.replace(/\/+$/, '');
   // Auto-detect: same origin in production, localhost for dev
   if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return 'http://localhost:3000';
-  return location.origin;
+  return 'https://api.cullit.io';
 }
 
 async function apiFetch(path, opts = {}) {

@@ -204,6 +204,26 @@ for (const { from, to } of pairs) {
     providers: providerResults,
   };
 
+  // Post-process: fix dates in generated content — AI providers embed today's date
+  // but it should be the tag date
+  const today = new Date().toISOString().split('T')[0];
+  if (date !== today) {
+    for (const [, prov] of Object.entries(release.providers)) {
+      if (prov.markdown) {
+        prov.markdown = prov.markdown.replace(
+          new RegExp(`(##\\s+${to.replace('.', '\\.')}\\s+—\\s+)\\d{4}-\\d{2}-\\d{2}`),
+          `$1${date}`
+        );
+      }
+      if (prov.html) {
+        prov.html = prov.html.replace(
+          new RegExp(`(${to.replace('.', '\\.')}\\s+—\\s+)\\d{4}-\\d{2}-\\d{2}`),
+          `$1${date}`
+        );
+      }
+    }
+  }
+
   writeFileSync(outPath, JSON.stringify(release, null, 2) + '\n');
   console.log(`  💾 ${outPath.replace(ROOT, '.')}\n`);
 }

@@ -37,9 +37,14 @@ export class TemplateGenerator implements Generator {
 
     const contributors = [...new Set(diff.commits.map(c => c.author))];
 
+    // Use the latest commit's date (the tag target), not today's date
+    const tagDate = diff.commits.length > 0
+      ? new Date(diff.commits[0].date).toISOString().split('T')[0]
+      : new Date().toISOString().split('T')[0];
+
     return {
       version: diff.to,
-      date: new Date().toISOString().split('T')[0],
+      date: tagDate,
       summary: this.buildSummary(deduped, diff.commits.length, config.tone),
       changes: deduped.slice(0, 20),
       contributors,
