@@ -1,0 +1,102 @@
+[
+  {
+    "version": "v1.10.0",
+    "date": "2026-03-21",
+    "commits": 26,
+    "filesChanged": 76,
+    "providers": [
+      "none",
+      "template"
+    ]
+  },
+  {
+    "version": "v1.9.2",
+    "date": "2026-03-19",
+    "commits": 24,
+    "filesChanged": 49,
+    "providers": [
+      "none",
+      "template"
+    ]
+  },
+  {
+    "version": "v1.8.0",
+    "date": "2026-03-17",
+    "commits": 1,
+    "filesChanged": 20,
+    "providers": [
+      "none",
+      "template"
+    ]
+  },
+  {
+    "version": "v1.7.0",
+    "date": "2026-03-17",
+    "commits": 4,
+    "filesChanged": 27,
+    "providers": [
+      "none",
+      "template"
+    ]
+  },
+  {
+    "version": "v1.6.0",
+    "date": "2026-03-17",
+    "commits": 3,
+    "filesChanged": 25,
+    "providers": [
+      "none",
+      "template"
+    ]
+  },
+  {
+    "version": "v1.5.0",
+    "date": "2026-03-16",
+    "commits": 2,
+    "filesChanged": 23,
+    "providers": [
+      "none",
+      "template"
+    ]
+  },
+  {
+    "version": "v1.4.0",
+    "date": "2026-03-16",
+    "commits": 10,
+    "filesChanged": 55,
+    "providers": [
+      "none",
+      "template"
+    ]
+  },
+  {
+    "version": "v1.3.0",
+    "date": "2026-03-15",
+    "commits": 1,
+    "filesChanged": 14,
+    "providers": [
+      "none",
+      "template"
+    ]
+  },
+  {
+    "version": "v1.2.0",
+    "date": "2026-03-15",
+    "commits": 9,
+    "filesChanged": 48,
+    "providers": [
+      "none",
+      "template"
+    ]
+  },
+  {
+    "version": "v1.0.0",
+    "date": "2026-03-14",
+    "commits": 1,
+    "filesChanged": 23,
+    "providers": [
+      "none",
+      "template"
+    ]
+  }
+]
