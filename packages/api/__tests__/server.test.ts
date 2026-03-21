@@ -59,7 +59,7 @@ describe('API Server', () => {
 
   afterAll(() => {
     serverProcess?.kill('SIGTERM');
-    try { unlinkSync(TEST_AUTH_STORE); } catch {}
+    try { unlinkSync(TEST_AUTH_STORE); } catch { /* cleanup best-effort */ }
   });
 
   it('GET /health returns status ok', async () => {
