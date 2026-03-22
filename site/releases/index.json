@@ -8,7 +8,8 @@
       "template",
       "anthropic",
       "ollama",
-      "openai"
+      "openai",
+      "gemini"
     ]
   },
   {
@@ -21,7 +22,8 @@
       "template",
       "anthropic",
       "ollama",
-      "openai"
+      "openai",
+      "gemini"
     ]
   },
   {
@@ -34,7 +36,8 @@
       "template",
       "anthropic",
       "ollama",
-      "openai"
+      "openai",
+      "gemini"
     ]
   },
   {
@@ -47,7 +50,8 @@
       "template",
       "anthropic",
       "ollama",
-      "openai"
+      "openai",
+      "gemini"
     ]
   },
   {
@@ -60,7 +64,8 @@
       "template",
       "anthropic",
       "ollama",
-      "openai"
+      "openai",
+      "gemini"
     ]
   },
   {
@@ -73,7 +78,8 @@
       "template",
       "anthropic",
       "ollama",
-      "openai"
+      "openai",
+      "gemini"
     ]
   },
   {
@@ -86,7 +92,8 @@
       "template",
       "anthropic",
       "ollama",
-      "openai"
+      "openai",
+      "gemini"
     ]
   },
   {
@@ -99,7 +106,8 @@
       "template",
       "anthropic",
       "ollama",
-      "openai"
+      "openai",
+      "gemini"
     ]
   },
   {
@@ -112,7 +120,8 @@
       "template",
       "anthropic",
       "ollama",
-      "openai"
+      "openai",
+      "gemini"
     ]
   },
   {
@@ -125,7 +134,8 @@
       "template",
       "anthropic",
       "ollama",
-      "openai"
+      "openai",
+      "gemini"
     ]
   },
   {
@@ -138,7 +148,8 @@
       "template",
       "anthropic",
       "ollama",
-      "openai"
+      "openai",
+      "gemini"
     ]
   }
 ]

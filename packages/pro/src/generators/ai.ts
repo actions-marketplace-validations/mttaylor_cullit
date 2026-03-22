@@ -220,7 +220,7 @@ Rules:
   }
 
   private async callGemini(prompt: string, apiKey: string, model?: string, maxTokens: number = 4096): Promise<string> {
-    const modelId = model || 'gemini-2.0-flash';
+    const modelId = model || 'gemini-2.5-flash';
     const response = await this.fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent`,
       {
