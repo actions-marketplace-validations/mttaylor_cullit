@@ -41,7 +41,7 @@ loadEnv();
 // --- Parse args ---
 const args = process.argv.slice(2);
 let targetTag = null;
-let providers = ['anthropic', 'openai'];
+let providers = ['anthropic', 'openai', 'gemini', 'ollama'];
 
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--providers' && args[i + 1]) {
@@ -88,7 +88,8 @@ function getFilesChanged(from, to) {
 // --- Generate with cullit ---
 function generateNotes(from, to, provider, format) {
   try {
-    const cmd = `node "${CULLIT}" generate --from ${from} --to ${to} --provider ${provider} --format ${format} --dry-run`;
+    const modelFlag = provider === 'ollama' ? ' --model llama3.2' : '';
+    const cmd = `node "${CULLIT}" generate --from ${from} --to ${to} --provider ${provider}${modelFlag} --format ${format} --dry-run`;
     const output = execSync(cmd, {
       cwd: ROOT,
       encoding: 'utf-8',

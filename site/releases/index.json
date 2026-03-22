@@ -7,7 +7,8 @@
     "providers": [
       "none",
       "template",
-      "anthropic"
+      "anthropic",
+      "ollama"
     ]
   },
   {
@@ -18,7 +19,8 @@
     "providers": [
       "none",
       "template",
-      "anthropic"
+      "anthropic",
+      "ollama"
     ]
   },
   {
@@ -29,7 +31,8 @@
     "providers": [
       "none",
       "template",
-      "anthropic"
+      "anthropic",
+      "ollama"
     ]
   },
   {
@@ -40,7 +43,8 @@
     "providers": [
       "none",
       "template",
-      "anthropic"
+      "anthropic",
+      "ollama"
     ]
   },
   {
@@ -51,7 +55,8 @@
     "providers": [
       "none",
       "template",
-      "anthropic"
+      "anthropic",
+      "ollama"
     ]
   },
   {
@@ -62,7 +67,8 @@
     "providers": [
       "none",
       "template",
-      "anthropic"
+      "anthropic",
+      "ollama"
     ]
   },
   {
@@ -73,7 +79,8 @@
     "providers": [
       "none",
       "template",
-      "anthropic"
+      "anthropic",
+      "ollama"
     ]
   },
   {
@@ -84,7 +91,8 @@
     "providers": [
       "none",
       "template",
-      "anthropic"
+      "anthropic",
+      "ollama"
     ]
   },
   {
@@ -95,7 +103,8 @@
     "providers": [
       "none",
       "template",
-      "anthropic"
+      "anthropic",
+      "ollama"
     ]
   },
   {
@@ -106,7 +115,8 @@
     "providers": [
       "none",
       "template",
-      "anthropic"
+      "anthropic",
+      "ollama"
     ]
   }
 ]
