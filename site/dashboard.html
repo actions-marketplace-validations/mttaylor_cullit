@@ -942,7 +942,12 @@
     <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
     Sign in with GitHub
   </a>
-  <p style="font-size:0.75rem;margin-top:1rem;color:var(--text-dim)">Free users: use the CLI with <code style="font-size:0.75rem">cullit generate --provider none</code></p>
+  <div id="apiStatus" style="display:none;margin-top:1.25rem;padding:1rem 1.25rem;border-radius:8px;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.25);max-width:420px;">
+    <p style="font-size:0.82rem;color:#eab308;margin:0 0 0.4rem;font-weight:600;">API not available</p>
+    <p style="font-size:0.75rem;color:var(--text-dim);margin:0;">The Cullit API (<code style="font-size:0.72rem">api.cullit.io</code>) is not deployed yet. GitHub login will be available once the backend is live. In the meantime, use the CLI:</p>
+    <pre style="margin:0.6rem 0 0;padding:0.5rem 0.75rem;background:var(--bg-card);border-radius:4px;font-size:0.72rem;color:var(--teal);overflow-x:auto;">npx cullit generate --from v1.0.0 --provider none</pre>
+  </div>
+  <p id="cliHint" style="font-size:0.75rem;margin-top:1rem;color:var(--text-dim)">Free users: use the CLI with <code style="font-size:0.75rem">cullit generate --provider none</code></p>
 </div>
 
 <div class="dashboard" id="dashApp" style="display:none">
@@ -1466,14 +1471,29 @@ async function checkAuth() {
       return;
     }
   } catch {}
-  showAuthWall();
+  await showAuthWall();
 }
 
-function showAuthWall() {
+async function showAuthWall() {
   document.getElementById('authWall').style.display = '';
   document.getElementById('dashApp').style.display = 'none';
   document.getElementById('navUser').style.display = 'none';
-  document.getElementById('loginBtn').href = apiUrl() + '/auth/github';
+
+  // Check if API is reachable before enabling login
+  const btn = document.getElementById('loginBtn');
+  try {
+    const health = await fetch(apiUrl() + '/health', { mode: 'cors' });
+    if (health.ok) {
+      btn.href = apiUrl() + '/auth/github';
+      return;
+    }
+  } catch {}
+  // API unreachable — show status banner, disable login link
+  btn.style.opacity = '0.5';
+  btn.style.pointerEvents = 'none';
+  btn.removeAttribute('href');
+  document.getElementById('apiStatus').style.display = 'block';
+  document.getElementById('cliHint').style.display = 'none';
 }
 
 function showDashboard() {
