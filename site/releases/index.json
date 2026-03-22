@@ -5,7 +5,9 @@
     "commits": 6,
     "filesChanged": 33,
     "providers": [
-      "template"
+      "template",
+      "anthropic",
+      "ollama"
     ]
   },
   {
