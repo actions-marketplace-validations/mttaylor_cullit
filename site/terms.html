@@ -153,6 +153,13 @@
     margin-bottom: 1rem;
   }
 
+  .legal-nav h3 .toc-toggle {
+    display: none;
+    margin-left: 0.5rem;
+    font-size: 0.7rem;
+    transition: transform 0.3s;
+  }
+
   .legal-nav ol {
     columns: 2;
     column-gap: 2rem;
@@ -307,7 +314,11 @@
   @media (max-width: 768px) {
     .legal-container { padding: 6rem 1.25rem 3rem; }
     .legal-header h1 { font-size: 1.8rem; }
-    .legal-nav ol { columns: 1; }
+    .legal-nav h3 { cursor: pointer; margin-bottom: 0; }
+    .legal-nav h3 .toc-toggle { display: inline-block; }
+    .legal-nav ol { columns: 1; display: none; margin-top: 1rem; }
+    .legal-nav.open ol { display: block; }
+    .legal-nav.open h3 .toc-toggle { transform: rotate(180deg); }
     .hamburger { display: flex; }
     .nav-links {
       display: none; position: fixed; top: 52px; right: 0;
@@ -342,8 +353,8 @@
     <p class="meta"><span>cullit.io</span> &mdash; Last Updated: March 2026</p>
   </header>
 
-  <nav class="legal-nav">
-    <h3>Contents</h3>
+  <nav class="legal-nav" id="legalNav">
+    <h3 onclick="document.getElementById('legalNav').classList.toggle('open')">Contents <span class="toc-toggle">&#9660;</span></h3>
     <ol>
       <li><a href="#agreement">Agreement to Terms</a></li>
       <li><a href="#description">Description of Service</a></li>
