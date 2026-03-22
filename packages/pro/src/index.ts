@@ -11,6 +11,7 @@
  */
 
 import {
+  AI_PROVIDERS,
   registerCollector,
   registerEnricher,
   registerGenerator,
@@ -34,9 +35,9 @@ import { ChangelogPublisher } from './publishers/changelog';
 import { GitLabCollector } from './collectors/gitlab';
 import { BitbucketCollector } from './collectors/bitbucket';
 
-// --- Register pro generators ---
-const AI_PROVIDERS = ['anthropic', 'openai', 'gemini', 'ollama'] as const;
+// --- Register pro generators (skip 'none' — handled by core's template generator) ---
 for (const provider of AI_PROVIDERS) {
+  if (provider === 'none') continue;
   registerGenerator(provider, () => new AIGenerator());
 }
 
