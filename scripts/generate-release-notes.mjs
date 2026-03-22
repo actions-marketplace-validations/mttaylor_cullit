@@ -88,7 +88,7 @@ function getFilesChanged(from, to) {
 // --- Generate with cullit ---
 function generateNotes(from, to, provider, format) {
   try {
-    const modelFlag = provider === 'ollama' ? ' --model llama3.2' : '';
+    const modelFlag = provider === 'ollama' ? ' --model llama3.3' : '';
     const cmd = `node "${CULLIT}" generate --from ${from} --to ${to} --provider ${provider}${modelFlag} --format ${format} --dry-run`;
     const output = execSync(cmd, {
       cwd: ROOT,

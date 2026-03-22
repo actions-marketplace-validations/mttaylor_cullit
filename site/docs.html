@@ -450,7 +450,7 @@
     <tr><td><strong>Anthropic</strong></td><td><code>ANTHROPIC_API_KEY</code></td><td>claude-sonnet-4-20250514</td><td>Best quality. Recommended.</td></tr>
     <tr><td><strong>OpenAI</strong></td><td><code>OPENAI_API_KEY</code></td><td>gpt-4o</td><td>Great alternative.</td></tr>
     <tr><td><strong>Gemini</strong></td><td><code>GOOGLE_API_KEY</code></td><td>gemini-2.5-flash</td><td>Google AI.</td></tr>
-    <tr><td><strong>Ollama</strong></td><td><code>OLLAMA_HOST</code> (optional)</td><td>llama3.1</td><td>Local inference. Free. Private.</td></tr>
+    <tr><td><strong>Ollama</strong></td><td><code>OLLAMA_HOST</code> (optional)</td><td>llama3.3</td><td>Local inference. Free. Private.</td></tr>
     <tr><td><strong>OpenClaw</strong></td><td><code>OPENCLAW_TOKEN</code></td><td>routes to best model</td><td>AI gateway / router.</td></tr>
     <tr><td><strong>none</strong></td><td>&mdash;</td><td>built-in template</td><td>No AI key needed. Categorizes by conventional commits.</td></tr>
   </tbody>
@@ -534,7 +534,7 @@
 <span class="cmd">cullit</span> generate <span class="flag">--from</span> <span class="val">HEAD~5</span> <span class="flag">--provider</span> <span class="val">none</span>
 
 <span class="cmt"># Local Ollama</span>
-<span class="cmd">cullit</span> generate <span class="flag">--from</span> <span class="val">v1.0.0</span> <span class="flag">--provider</span> <span class="val">ollama</span> <span class="flag">--model</span> <span class="val">llama3.1</span></code></pre>
+<span class="cmd">cullit</span> generate <span class="flag">--from</span> <span class="val">v1.0.0</span> <span class="flag">--provider</span> <span class="val">ollama</span> <span class="flag">--model</span> <span class="val">llama3.3</span></code></pre>
 
 <h3 id="cli-status"><code>cullit status</code></h3>
 <p>Release readiness check. Analyzes unreleased commits and recommends whether it's time to release, what semver bump to use, and why.</p>
