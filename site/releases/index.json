@@ -7,7 +7,8 @@
     "providers": [
       "template",
       "anthropic",
-      "ollama"
+      "ollama",
+      "openai"
     ]
   },
   {
@@ -19,7 +20,8 @@
       "none",
       "template",
       "anthropic",
-      "ollama"
+      "ollama",
+      "openai"
     ]
   },
   {
@@ -31,7 +33,8 @@
       "none",
       "template",
       "anthropic",
-      "ollama"
+      "ollama",
+      "openai"
     ]
   },
   {
@@ -43,7 +46,8 @@
       "none",
       "template",
       "anthropic",
-      "ollama"
+      "ollama",
+      "openai"
     ]
   },
   {
@@ -55,7 +59,8 @@
       "none",
       "template",
       "anthropic",
-      "ollama"
+      "ollama",
+      "openai"
     ]
   },
   {
@@ -67,7 +72,8 @@
       "none",
       "template",
       "anthropic",
-      "ollama"
+      "ollama",
+      "openai"
     ]
   },
   {
@@ -79,7 +85,8 @@
       "none",
       "template",
       "anthropic",
-      "ollama"
+      "ollama",
+      "openai"
     ]
   },
   {
@@ -91,7 +98,8 @@
       "none",
       "template",
       "anthropic",
-      "ollama"
+      "ollama",
+      "openai"
     ]
   },
   {
@@ -103,7 +111,8 @@
       "none",
       "template",
       "anthropic",
-      "ollama"
+      "ollama",
+      "openai"
     ]
   },
   {
@@ -115,7 +124,8 @@
       "none",
       "template",
       "anthropic",
-      "ollama"
+      "ollama",
+      "openai"
     ]
   },
   {
@@ -127,7 +137,8 @@
       "none",
       "template",
       "anthropic",
-      "ollama"
+      "ollama",
+      "openai"
     ]
   }
 ]
