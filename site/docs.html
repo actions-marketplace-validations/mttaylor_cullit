@@ -407,7 +407,7 @@
 <pre><code><span class="cmt"># .cullit.yml</span>
 
 <span class="key">ai</span>:
-  <span class="key">provider</span>: <span class="str">anthropic</span>        <span class="cmt"># anthropic | openai | gemini | ollama | openclaw | none</span>
+  <span class="key">provider</span>: <span class="str">anthropic</span>        <span class="cmt"># anthropic | openai | gemini | ollama | none</span>
   <span class="key">model</span>: <span class="str">claude-sonnet-4-6-20250514</span>  <span class="cmt"># optional: override default model</span>
   <span class="key">audience</span>: <span class="str">developer</span>       <span class="cmt"># developer | end-user | executive</span>
   <span class="key">tone</span>: <span class="str">professional</span>        <span class="cmt"># professional | casual | terse | edgy | hype | snarky</span>
@@ -451,7 +451,6 @@
     <tr><td><strong>OpenAI</strong></td><td><code>OPENAI_API_KEY</code></td><td>gpt-4o</td><td>Great alternative.</td></tr>
     <tr><td><strong>Gemini</strong></td><td><code>GOOGLE_API_KEY</code></td><td>gemini-2.5-flash</td><td>Google AI.</td></tr>
     <tr><td><strong>Ollama</strong></td><td><code>OLLAMA_HOST</code> (optional)</td><td>llama3.3</td><td>Local inference. Free. Private.</td></tr>
-    <tr><td><strong>OpenClaw</strong></td><td><code>OPENCLAW_TOKEN</code></td><td>routes to best model</td><td>AI gateway / router.</td></tr>
     <tr><td><strong>none</strong></td><td>&mdash;</td><td>built-in template</td><td>No AI key needed. Categorizes by conventional commits.</td></tr>
   </tbody>
 </table>
@@ -471,8 +470,6 @@
     <tr><td><code>OPENAI_API_KEY</code></td><td>OpenAI API key</td></tr>
     <tr><td><code>GOOGLE_API_KEY</code></td><td>Google Gemini API key</td></tr>
     <tr><td><code>OLLAMA_HOST</code></td><td>Ollama server URL (default: http://localhost:11434)</td></tr>
-    <tr><td><code>OPENCLAW_TOKEN</code></td><td>OpenClaw gateway auth token</td></tr>
-    <tr><td><code>OPENCLAW_URL</code></td><td>OpenClaw gateway URL (default: http://localhost:18789)</td></tr>
     <tr><td><code>JIRA_EMAIL</code></td><td>Jira account email for API auth</td></tr>
     <tr><td><code>JIRA_API_TOKEN</code></td><td>Jira API token</td></tr>
     <tr><td><code>LINEAR_API_KEY</code></td><td>Linear API key</td></tr>

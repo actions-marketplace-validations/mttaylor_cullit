@@ -209,7 +209,6 @@ export function getCacheKey(from: string, to: string, format: OutputFormat, conf
     source: config.source,
     jira: config.jira,
     linear: config.linear,
-    openclaw: config.openclaw,
     gitlab: config.gitlab,
     bitbucket: config.bitbucket,
     confluence: config.confluence,

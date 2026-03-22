@@ -2,7 +2,7 @@
  * @cullit/pro — Premium features for Cullit.
  *
  * Importing this module registers all pro plugins with @cullit/core:
- *   - AI generators (Anthropic, OpenAI, Gemini, Ollama, OpenClaw)
+ *   - AI generators (Anthropic, OpenAI, Gemini, Ollama)
  *   - Jira/Linear collectors and enrichers
  *   - Slack, Discord, GitHub Release publishers
  *
@@ -16,7 +16,7 @@ import {
   registerGenerator,
   registerPublisher,
 } from '@cullit/core';
-import type { CullConfig, PublishTarget, OpenClawConfig } from '@cullit/core';
+import type { CullConfig, PublishTarget } from '@cullit/core';
 
 import { AIGenerator } from './generators/ai';
 import { JiraCollector } from './collectors/jira';
@@ -35,9 +35,9 @@ import { GitLabCollector } from './collectors/gitlab';
 import { BitbucketCollector } from './collectors/bitbucket';
 
 // --- Register pro generators ---
-const AI_PROVIDERS = ['anthropic', 'openai', 'gemini', 'ollama', 'openclaw'] as const;
+const AI_PROVIDERS = ['anthropic', 'openai', 'gemini', 'ollama'] as const;
 for (const provider of AI_PROVIDERS) {
-  registerGenerator(provider, (openclawConfig?: OpenClawConfig) => new AIGenerator(openclawConfig));
+  registerGenerator(provider, () => new AIGenerator());
 }
 
 // --- Register pro collectors (uniform: factory(config: CullConfig)) ---

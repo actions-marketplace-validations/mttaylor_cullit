@@ -4,7 +4,7 @@ export type {
   EnrichedTicket, EnrichedContext,
   Collector, Enricher, Generator, Publisher,
   PipelineResult, OutputFormat, PublishTarget,
-  OpenClawConfig, AIProvider, Audience, Tone,
+  AIProvider, Audience, Tone,
   SourceConfig, PublisherType, EnrichmentType,
   JiraConfig, LinearConfig, RepoSource, TemplateProfile, TemplateConfig,
   GitLabConfig, BitbucketConfig, ConfluenceConfig, NotionConfig,
@@ -225,7 +225,7 @@ export async function runPipeline(
 
   // 3. GENERATE
   const providerNames: Record<string, string> = {
-    anthropic: 'Claude', openai: 'OpenAI', gemini: 'Gemini', ollama: 'Ollama', openclaw: 'OpenClaw', none: 'Template',
+    anthropic: 'Claude', openai: 'OpenAI', gemini: 'Gemini', ollama: 'Ollama', none: 'Template',
   };
 
   const providerName = providerNames[config.ai.provider] || config.ai.provider;
@@ -246,7 +246,7 @@ export async function runPipeline(
   if (config.ai.provider === 'none') {
     generator = generatorFactory();
   } else {
-    generator = generatorFactory(config.openclaw);
+    generator = generatorFactory();
   }
 
   const notes = await generator.generate(context, config.ai);

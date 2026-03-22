@@ -16,7 +16,7 @@ export type {
   PublishTarget,
   JiraConfig,
   LinearConfig,
-  OpenClawConfig,
+
   GitLabConfig,
   BitbucketConfig,
   ConfluenceConfig,

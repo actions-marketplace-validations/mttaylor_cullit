@@ -1,6 +1,6 @@
 import type {
   Generator, EnrichedContext, AIConfig, ReleaseNotes,
-  ChangeEntry, ChangeCategory, OpenClawConfig
+  ChangeEntry, ChangeCategory
 } from '@cullit/core';
 import { fetchWithTimeout } from '@cullit/core';
 
@@ -20,20 +20,14 @@ interface OllamaResponse {
   message?: { content?: string };
 }
 
-interface OpenClawResponse {
-  choices?: Array<{ message?: { content?: string } }>;
-}
-
 /**
  * Generates release notes using AI.
- * Supports Anthropic, OpenAI, Gemini, Ollama, OpenClaw — BYOK.
+ * Supports Anthropic, OpenAI, Gemini, Ollama — BYOK.
  */
 export class AIGenerator implements Generator {
-  private openclawConfig?: OpenClawConfig;
   private timeoutMs: number;
 
-  constructor(openclawConfig?: OpenClawConfig, timeoutMs: number = 60_000) {
-    this.openclawConfig = openclawConfig;
+  constructor(timeoutMs: number = 60_000) {
     this.timeoutMs = timeoutMs;
   }
 
@@ -56,8 +50,6 @@ export class AIGenerator implements Generator {
       rawResponse = await this.callGemini(prompt, apiKey, config.model, maxTokens);
     } else if (config.provider === 'ollama') {
       rawResponse = await this.callOllama(prompt, config.model);
-    } else if (config.provider === 'openclaw') {
-      rawResponse = await this.callOpenClaw(prompt, config.model, maxTokens);
     } else {
       throw new Error(`Unsupported AI provider: ${config.provider}`);
     }
@@ -68,8 +60,8 @@ export class AIGenerator implements Generator {
   private resolveApiKey(config: AIConfig): string {
     if (config.apiKey) return config.apiKey;
 
-    // Ollama and OpenClaw don't require API keys
-    if (config.provider === 'ollama' || config.provider === 'openclaw') return '';
+    // Ollama doesn't require API keys
+    if (config.provider === 'ollama') return '';
 
     const envVarMap: Record<string, string> = {
       anthropic: 'ANTHROPIC_API_KEY',
@@ -265,33 +257,6 @@ Rules:
 
     const data = await response.json() as OllamaResponse;
     return data.message?.content || '';
-  }
-
-  private async callOpenClaw(prompt: string, model?: string, maxTokens: number = 4096): Promise<string> {
-    const baseUrl = this.openclawConfig?.baseUrl || process.env.OPENCLAW_URL || 'http://localhost:18789';
-    const token = this.openclawConfig?.token || process.env.OPENCLAW_TOKEN || '';
-
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    const response = await this.fetch(`${baseUrl}/v1/chat/completions`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        model: model || 'anthropic/claude-opus-4-5',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: maxTokens,
-        temperature: 0.3,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`OpenClaw API error (${response.status}): ${error}`);
-    }
-
-    const data = await response.json() as OpenClawResponse;
-    return data.choices?.[0]?.message?.content || '';
   }
 
   private parseResponse(raw: string, context: EnrichedContext): ReleaseNotes {

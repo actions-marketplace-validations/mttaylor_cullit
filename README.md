@@ -205,7 +205,7 @@ docker compose up api
 
 | Feature | Description |
 |---------|-------------|
-| 🧠 **6 AI Providers** | Anthropic Claude, OpenAI, Gemini, Ollama, OpenClaw, or none (template) |
+| 🧠 **5 AI Providers** | Anthropic Claude, OpenAI, Gemini, Ollama, or none (template) |
 | 🔑 **Licensed AI** | Paid AI and premium integrations are available through licensed hosted/private Cullit surfaces. |
 | ⚡ **Flexible Sources** | Git, Jira, Linear, GitLab, or Bitbucket as primary data source |
 | 🔍 **Enrichment** | Cross-reference Jira & Linear tickets from commits |
@@ -234,7 +234,7 @@ Create `.cullit.yml` in your repo root (or run `cullit init`):
 
 ```yaml
 ai:
-  provider: anthropic         # anthropic | openai | gemini | ollama | openclaw | none
+  provider: anthropic         # anthropic | openai | gemini | ollama | none
   audience: developer
   tone: professional
   categories: [features, fixes, breaking, improvements, chores]
@@ -302,8 +302,6 @@ jira:
 | `OPENAI_API_KEY` | OpenAI |
 | `GOOGLE_API_KEY` | Google Gemini |
 | `OLLAMA_HOST` | Ollama (defaults to localhost:11434) |
-| `OPENCLAW_URL` | OpenClaw gateway |
-| `OPENCLAW_TOKEN` | OpenClaw auth |
 | `JIRA_EMAIL` | Jira enrichment |
 | `JIRA_API_TOKEN` | Jira enrichment |
 | `LINEAR_API_KEY` | Linear enrichment |
@@ -377,7 +375,7 @@ Cullit includes a hosted dashboard experience with authentication, billing, tria
 ## Roadmap
 
 - [x] Core CLI with interactive init
-- [x] Claude, OpenAI, Gemini, Ollama, OpenClaw + template generator
+- [x] Claude, OpenAI, Gemini, Ollama + template generator
 - [x] Jira & Linear as primary sources
 - [x] Jira & Linear enrichment (batched)
 - [x] Slack, Discord, GitHub Release publishers

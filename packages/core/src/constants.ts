@@ -9,11 +9,10 @@ export const DEFAULT_MODELS: Record<string, string> = {
   openai: 'gpt-4o',
   gemini: 'gemini-2.5-flash',
   ollama: 'llama3.3',
-  openclaw: 'anthropic/claude-opus-4-5',
 };
 
 // Well-known values for open types (extensible — plugins can register additional values)
-export const AI_PROVIDERS = ['anthropic', 'openai', 'gemini', 'ollama', 'openclaw', 'none'] as const;
+export const AI_PROVIDERS = ['anthropic', 'openai', 'gemini', 'ollama', 'none'] as const;
 export const OUTPUT_FORMATS = ['markdown', 'html', 'html-dark', 'html-minimal', 'html-edgy', 'json'] as const;
 export const PUBLISHER_TYPES = ['stdout', 'file', 'slack', 'discord', 'github-release', 'teams', 'confluence', 'notion', 'gitlab-release', 'changelog'] as const;
 export const ENRICHMENT_TYPES = ['jira', 'linear'] as const;

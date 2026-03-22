@@ -2,7 +2,7 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import type { CullConfig, PublishTarget, RepoSource, TemplateProfile } from './types';
 
-export type { AIProvider, Audience, Tone, OutputFormat, PublisherType, EnrichmentType, AIConfig, SourceConfig, PublishTarget, JiraConfig, LinearConfig, OpenClawConfig, GitLabConfig, BitbucketConfig, ConfluenceConfig, NotionConfig, CullConfig, RepoSource, TemplateProfile, TemplateConfig } from './types';
+export type { AIProvider, Audience, Tone, OutputFormat, PublisherType, EnrichmentType, AIConfig, SourceConfig, PublishTarget, JiraConfig, LinearConfig, GitLabConfig, BitbucketConfig, ConfluenceConfig, NotionConfig, CullConfig, RepoSource, TemplateProfile, TemplateConfig } from './types';
 
 const DEFAULT_CATEGORIES = ['features', 'fixes', 'breaking', 'improvements', 'chores'];
 
@@ -202,7 +202,6 @@ function mergeWithDefaults(parsed: Record<string, any>): CullConfig {
     ...(normalizedTemplates.length ? { templates: normalizedTemplates } : {}),
     jira: parsed.jira,
     linear: parsed.linear,
-    openclaw: parsed.openclaw,
     gitlab: parsed.gitlab,
     bitbucket: parsed.bitbucket,
     confluence: parsed.confluence,

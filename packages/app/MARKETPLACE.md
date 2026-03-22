@@ -73,7 +73,7 @@ Required environment variables:
 | `GITHUB_APP_PRIVATE_KEY` | PEM private key (base64-encoded) |
 | `GITHUB_WEBHOOK_SECRET` | Webhook signature verification secret |
 | `CULLIT_APP_PORT` | Server port (default: 3001) |
-| `CULLIT_AI_PROVIDER` | AI provider: `anthropic`, `openai`, `gemini`, `ollama`, `openclaw`, or `none` (default: `none`) |
+| `CULLIT_AI_PROVIDER` | AI provider: `anthropic`, `openai`, `gemini`, `ollama`, or `none` (default: `none`) |
 | `CULLIT_AI_MODEL` | Model override (e.g. `gpt-4o`, `claude-sonnet-4-6-20250514`) |
 | `CULLIT_AI_API_KEY` | API key for the chosen AI provider |
 

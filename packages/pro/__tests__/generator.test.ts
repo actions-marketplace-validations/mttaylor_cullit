@@ -47,11 +47,6 @@ describe('AIGenerator', () => {
     expect(gen).toBeDefined();
   });
 
-  it('can be instantiated with OpenClaw config', () => {
-    const gen = new AIGenerator({ baseUrl: 'http://localhost:18789', token: 'test' });
-    expect(gen).toBeDefined();
-  });
-
   it('throws on missing API key', async () => {
     const savedKey = process.env['ANTHROPIC_API_KEY'];
     delete process.env['ANTHROPIC_API_KEY'];

@@ -63,7 +63,7 @@ packages/
   licensed/ — Private paid-tier distribution package (wraps CLI + pro plugins)
   api/      — REST API server (zero-dependency, Node http module)
   pro/      — Pro features: AI generators (Anthropic, OpenAI, Gemini,
-              Ollama, OpenClaw), source collectors (Jira, Linear, GitLab,
+              Ollama), source collectors (Jira, Linear, GitLab,
               Bitbucket), enrichers (Jira, Linear), publishers (Slack,
               Discord, Teams, GitHub Release, GitLab Release, Confluence,
               Notion, Changelog)

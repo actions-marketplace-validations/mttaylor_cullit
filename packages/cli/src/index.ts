@@ -64,7 +64,7 @@ const HELP = `
     --format      Output format: markdown, html, html-dark, html-minimal, html-edgy, json
     --template    Template profile name from config.templates
     --dry-run     Generate but don't publish
-    --provider    Override AI provider (anthropic, openai, gemini, ollama, openclaw, none)
+    --provider    Override AI provider (anthropic, openai, gemini, ollama, none)
     --source      Override source type (local, jira, linear, gitlab, bitbucket)
     --audience    Override audience (developer, end-user, executive)
     --tone        Override tone (professional, casual, terse, edgy, hype, snarky)
@@ -346,7 +346,7 @@ async function interactiveInit() {
 
   console.log('\n  Cullit — Project Setup\n');
 
-  const provider = await ask(rl, '  AI provider (anthropic/openai/gemini/ollama/openclaw/none) [none]: ') || 'none';
+  const provider = await ask(rl, '  AI provider (anthropic/openai/gemini/ollama/none) [none]: ') || 'none';
   if (!VALID_PROVIDERS.includes(provider)) {
     console.error(`\n  ✗ Invalid provider: ${provider}. Must be one of: ${VALID_PROVIDERS.join(', ')}`);
     rl.close();

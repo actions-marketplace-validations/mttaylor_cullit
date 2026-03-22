@@ -54,7 +54,7 @@ Cullit sends release input data to the provider you configure. Each provider has
 | OpenAI | [openai.com/privacy](https://openai.com/privacy) |
 | Google (Gemini) | [ai.google/privacy](https://ai.google/responsibility/privacy/) |
 | Ollama | Self-hosted (your environment) |
-| OpenClaw | Self-hosted (your infrastructure) |
+
 
 Your provider choice determines where model inference data is processed.
 

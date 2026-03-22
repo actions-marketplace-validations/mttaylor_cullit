@@ -994,7 +994,6 @@
             <option value="openai">OpenAI (GPT)</option>
             <option value="gemini">Google Gemini</option>
             <option value="ollama">Ollama (local)</option>
-            <option value="openclaw">OpenClaw</option>
           </select>
         </div>
         <div class="form-row">
@@ -1220,7 +1219,7 @@
               <div>
                 <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.25rem">Default Provider</label>
                 <select id="ps-provider" style="width:100%;padding:0.3rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
-                  <option value="none">None (template)</option><option value="openai">OpenAI</option><option value="anthropic">Anthropic</option><option value="gemini">Gemini</option><option value="ollama">Ollama</option><option value="openclaw">OpenClaw</option>
+                  <option value="none">None (template)</option><option value="openai">OpenAI</option><option value="anthropic">Anthropic</option><option value="gemini">Gemini</option><option value="ollama">Ollama</option>
                 </select>
               </div>
               <div>
@@ -1784,7 +1783,7 @@ function timeAgo(ts) {
 
 const PROVIDER_COLORS = {
   anthropic: '#d97706', openai: '#10b981', gemini: '#3b82f6',
-  ollama: '#8b5cf6', openclaw: '#ec4899', none: '#6b7280',
+  ollama: '#8b5cf6', none: '#6b7280',
 };
 
 async function loadAnalytics() {

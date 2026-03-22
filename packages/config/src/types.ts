@@ -66,10 +66,6 @@ export interface LinearConfig {
   apiKey?: string;      // resolved from env
 }
 
-export interface OpenClawConfig {
-  baseUrl?: string;     // gateway URL, default http://localhost:18789
-  token?: string;       // gateway auth token
-}
 
 export interface GitLabConfig {
   domain?: string;      // default: gitlab.com
@@ -108,7 +104,6 @@ export interface CullConfig {
   repos?: RepoSource[];  // multi-repo aggregation
   jira?: JiraConfig;
   linear?: LinearConfig;
-  openclaw?: OpenClawConfig;
   gitlab?: GitLabConfig;
   bitbucket?: BitbucketConfig;
   confluence?: ConfluenceConfig;

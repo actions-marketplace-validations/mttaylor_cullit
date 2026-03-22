@@ -42,10 +42,10 @@ We take security seriously. If you discover a vulnerability, please report it re
 ### Data Handling
 
 - Cullit processes git commit messages and ticket metadata locally
-- Data is sent only to the AI provider you configure (Anthropic, OpenAI, Gemini, Ollama, or OpenClaw)
+- Data is sent only to the AI provider you configure (Anthropic, OpenAI, Gemini, or Ollama)
 - **Pro/Team users:** Anonymous usage metering (generation count, project name) is sent to the Cullit metering service when `CULLIT_API_KEY` and `CULLIT_METER_URL` are configured. No commit data, code, or personally identifiable information is included. Metering is non-blocking and best-effort.
 - **Free users / self-hosted:** No telemetry or data collection is performed
-- Self-hosted options (Ollama, OpenClaw) keep all data on your infrastructure
+- Self-hosted options (Ollama) keep all data on your infrastructure
 
 ### Dependencies
 

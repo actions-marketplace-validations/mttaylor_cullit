@@ -54,7 +54,7 @@ cullit generate --from v1.8.0 --provider none --template customer-facing
 
 - `--from <ref>` source git ref / tag / query
 - `--to <ref>` target ref (defaults to `HEAD`)
-- `--provider <name>` `anthropic|openai|gemini|ollama|openclaw|none`
+- `--provider <name>` `anthropic|openai|gemini|ollama|none`
 - `--model <id>` override model
 - `--audience <type>` tune output for `developer|end-user|executive`
 - `--tone <style>` tone controls for generated output
