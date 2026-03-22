@@ -278,7 +278,7 @@ Rules:
       method: 'POST',
       headers,
       body: JSON.stringify({
-        model: model || 'anthropic/claude-sonnet-4-6',
+        model: model || 'anthropic/claude-opus-4-5',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: maxTokens,
         temperature: 0.3,

@@ -9,7 +9,7 @@ export const DEFAULT_MODELS: Record<string, string> = {
   openai: 'gpt-4o',
   gemini: 'gemini-2.5-flash',
   ollama: 'llama3.3',
-  openclaw: 'anthropic/claude-sonnet-4-6',
+  openclaw: 'anthropic/claude-opus-4-5',
 };
 
 // Well-known values for open types (extensible — plugins can register additional values)
