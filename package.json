@@ -34,6 +34,8 @@
     "test:e2e:ui": "playwright test --ui",
     "dev": "pnpm --filter @cullit/cli dev",
     "dev:api": "pnpm --filter @cullit/api dev",
+    "start:api": "node --env-file=.env packages/api/dist/index.js",
+    "dev:site": "node scripts/serve-site.mjs",
     "lint": "eslint packages/ --max-warnings=250",
     "cullit": "node packages/cli/dist/index.js"
   },

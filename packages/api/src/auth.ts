@@ -16,6 +16,7 @@
  *   CULLIT_JWT_SECRET       — Secret for signing JWTs (min 32 chars)
  *   CULLIT_AUTH_STORE_PATH  — Path to auth store JSON (default: ./auth-store.json)
  *   CULLIT_BASE_URL         — Public base URL for callbacks (default: http://localhost:3000)
+ *   CULLIT_DASHBOARD_URL    — Post-login redirect URL (default: CULLIT_BASE_URL)
  */
 
 import { createHmac, randomBytes } from 'crypto';
@@ -44,6 +45,7 @@ const JWT_SECRET = process.env['CULLIT_JWT_SECRET'] || (() => {
 })();
 const AUTH_STORE_PATH = process.env['CULLIT_AUTH_STORE_PATH'] || './auth-store.json';
 const BASE_URL = process.env['CULLIT_BASE_URL'] || 'http://localhost:3000';
+const DASHBOARD_URL = process.env['CULLIT_DASHBOARD_URL'] || BASE_URL;
 const JWT_EXPIRY = 7 * 24 * 60 * 60; // 7 days in seconds
 const SESSION_COOKIE_NAME = 'cullit_session';
 const COOKIE_SECURE = BASE_URL.startsWith('https') ? '; Secure' : '';
@@ -595,7 +597,7 @@ export async function handleAuthCallback(req: IncomingMessage, res: ServerRespon
     const maxAge = JWT_EXPIRY;
 
     res.writeHead(302, {
-      Location: `${BASE_URL}/dashboard.html`,
+      Location: `${DASHBOARD_URL}/dashboard.html`,
       'Set-Cookie': `${SESSION_COOKIE_NAME}=${jwt}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAge}${COOKIE_SECURE}`,
       ...AUTH_SECURITY_HEADERS,
     });
