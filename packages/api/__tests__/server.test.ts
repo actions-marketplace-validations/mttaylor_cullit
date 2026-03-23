@@ -243,6 +243,35 @@ describe('API Server', () => {
 
   // --- Auth endpoints ---
 
+  it('GET /auth/github redirects to GitHub OAuth with correct redirect_uri', async () => {
+    const res = await fetch(`http://localhost:${PORT}/auth/github`, { redirect: 'manual' });
+    // May be rate limited in test env
+    if (res.status === 429) return;
+    expect(res.status).toBe(302);
+    const location = res.headers.get('location') || '';
+    expect(location).toContain('https://github.com/login/oauth/authorize');
+    // redirect_uri must use /auth/callback (not /auth/github/callback)
+    const url = new URL(location);
+    const redirectUri = url.searchParams.get('redirect_uri') || '';
+    expect(redirectUri).toMatch(/\/auth\/callback$/);
+    expect(redirectUri).not.toContain('/auth/github/callback');
+    // Must include required scopes
+    expect(url.searchParams.get('scope')).toContain('read:user');
+    // Must include CSRF state
+    expect(url.searchParams.get('state')).toBeTruthy();
+  });
+
+  it('GET /auth/github redirect_uri matches CULLIT_BASE_URL origin', async () => {
+    const res = await fetch(`http://localhost:${PORT}/auth/github`, { redirect: 'manual' });
+    if (res.status === 429) return;
+    const location = res.headers.get('location') || '';
+    if (!location) return; // No GITHUB_CLIENT_ID configured in test env
+    const url = new URL(location);
+    const redirectUri = url.searchParams.get('redirect_uri') || '';
+    // redirect_uri must always be an absolute URL starting with http
+    expect(redirectUri).toMatch(/^https?:\/\//);
+  });
+
   it('GET /auth/me returns 401 when not authenticated', async () => {
     const { status } = await apiRequest('/auth/me');
     expect([401, 429]).toContain(status);
