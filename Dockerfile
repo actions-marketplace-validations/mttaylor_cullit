@@ -25,7 +25,7 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS build
 COPY tsconfig.json ./
 COPY packages/ packages/
-RUN pnpm build
+RUN pnpm -r build
 
 # --- Production ---
 FROM node:22-alpine AS production
