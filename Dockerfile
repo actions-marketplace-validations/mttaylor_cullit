@@ -35,7 +35,7 @@ WORKDIR /app
 # Install git (needed for local source collector) and curl (healthcheck)
 RUN apk add --no-cache git curl tini
 
-COPY --from=build /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
+COPY --from=build /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/.npmrc ./
 COPY --from=build /app/packages/core/package.json packages/core/package.json
 COPY --from=build /app/packages/core/dist/ packages/core/dist/
 COPY --from=build /app/packages/config/package.json packages/config/package.json
