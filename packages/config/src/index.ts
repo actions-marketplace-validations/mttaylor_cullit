@@ -164,7 +164,9 @@ function parseValue(val: string): any {
 
 /**
  * Resolves $ENV_VAR references in config values.
+ * Only allows known-safe prefixes to prevent leaking sensitive env vars.
  */
+const SAFE_ENV_PREFIXES = ['CULLIT_', 'JIRA_', 'LINEAR_', 'GITHUB_', 'GITLAB_', 'BITBUCKET_', 'OPENAI_', 'ANTHROPIC_', 'GOOGLE_', 'SLACK_', 'CONFLUENCE_', 'NOTION_'];
 function resolveEnvVars(obj: any): any {
   if (typeof obj === 'string') {
     // Handle both $VAR and ${VAR} syntax
@@ -172,6 +174,7 @@ function resolveEnvVars(obj: any): any {
       const envKey = obj.startsWith('${') && obj.endsWith('}')
         ? obj.slice(2, -1)
         : obj.substring(1);
+      if (!SAFE_ENV_PREFIXES.some(p => envKey.startsWith(p))) return obj;
       return process.env[envKey] || obj;
     }
   }

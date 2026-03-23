@@ -7,7 +7,7 @@
  * Path: CULLIT_HISTORY_STORE_PATH (default: ./history-store.json)
  */
 
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, renameSync } from 'fs';
 import {
   dbAddGeneration, dbGetGenerations, dbGetGenerationCount,
   dbRecordUsage, dbGetUsageStats, dbGetMonthlyGenerationCount,
@@ -80,7 +80,9 @@ export function loadHistoryStore(): void {
 
 function saveHistoryStore(): void {
   try {
-    writeFileSync(HISTORY_FILE, JSON.stringify(store, null, 2), 'utf-8');
+    const tmp = HISTORY_FILE + '.tmp';
+    writeFileSync(tmp, JSON.stringify(store, null, 2), 'utf-8');
+    renameSync(tmp, HISTORY_FILE);
   } catch (err) {
     log.warn({ err: (err as Error).message }, 'Failed to save history store');
   }

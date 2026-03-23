@@ -20,7 +20,7 @@
  */
 
 import { createHmac, randomBytes } from 'crypto';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, renameSync } from 'fs';
 import type { IncomingMessage, ServerResponse } from 'http';
 import {
   dbGetUser, dbGetUserByApiKey, dbUpsertUser,
@@ -145,7 +145,9 @@ export function loadAuthStore(): void {
 
 function saveAuthStore(): void {
   try {
-    writeFileSync(AUTH_STORE_PATH, JSON.stringify(store, null, 2), 'utf-8');
+    const tmp = AUTH_STORE_PATH + '.tmp';
+    writeFileSync(tmp, JSON.stringify(store, null, 2), 'utf-8');
+    renameSync(tmp, AUTH_STORE_PATH);
   } catch (err) {
     log.warn({ err: (err as Error).message }, 'Failed to save auth store');
   }
@@ -197,8 +199,11 @@ export function verifyJWT(token: string): { sub: string } | null {
   if (diff !== 0) return null;
 
   try {
+    const headerData = JSON.parse(base64urlDecode(header));
+    if (headerData.alg !== 'HS256') return null;
     const data = JSON.parse(base64urlDecode(payload));
-    if (data.exp && data.exp < Math.floor(Date.now() / 1000)) return null;
+    if (!data.sub || typeof data.sub !== 'string') return null;
+    if (!data.exp || typeof data.exp !== 'number' || data.exp < Math.floor(Date.now() / 1000)) return null;
     return { sub: data.sub };
   } catch {
     return null;

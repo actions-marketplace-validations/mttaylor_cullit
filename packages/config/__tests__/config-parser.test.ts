@@ -292,3 +292,73 @@ repos:
     }).toThrow('repos[0] must have either "url" or "path"');
   });
 });
+
+describe('config security', () => {
+  it('resolves env vars with safe prefixes (CULLIT_, GITHUB_, JIRA_, etc.)', () => {
+    const key = `CULLIT_SAFE_${Date.now()}`;
+    process.env[key] = 'safe-value';
+
+    withConfigFile(`
+ai:
+  model: $${key}
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.ai.model).toBe('safe-value');
+    });
+
+    delete process.env[key];
+  });
+
+  it('blocks env vars with unsafe prefixes (e.g. DATABASE_, AWS_)', () => {
+    const key = `DATABASE_URL_TEST_${Date.now()}`;
+    process.env[key] = 'postgres://secret';
+
+    withConfigFile(`
+ai:
+  model: $${key}
+`, (dir) => {
+      const config = loadConfig(dir);
+      // Should NOT resolve — keeps the $REF as-is
+      expect(config.ai.model).toBe('$' + key);
+    });
+
+    delete process.env[key];
+  });
+
+  it('blocks env vars like AWS_ and SECRET_ from resolution', () => {
+    process.env['AWS_SECRET_KEY_TEST'] = 'aws-leaked';
+    process.env['SECRET_SAUCE_TEST'] = 'secret-leaked';
+
+    withConfigFile(`
+ai:
+  model: $AWS_SECRET_KEY_TEST
+  audience: $SECRET_SAUCE_TEST
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.ai.model).toBe('$AWS_SECRET_KEY_TEST');
+    });
+
+    delete process.env['AWS_SECRET_KEY_TEST'];
+    delete process.env['SECRET_SAUCE_TEST'];
+  });
+
+  it('rejects __proto__ as a config key (prototype pollution)', () => {
+    expect(() => {
+      withConfigFile(`__proto__:
+  polluted: true
+`, (dir) => {
+        loadConfig(dir);
+      });
+    }).toThrow(/reserved key/);
+  });
+
+  it('rejects constructor as a config key', () => {
+    expect(() => {
+      withConfigFile(`constructor:
+  polluted: true
+`, (dir) => {
+        loadConfig(dir);
+      });
+    }).toThrow(/reserved key/);
+  });
+});

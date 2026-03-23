@@ -1973,7 +1973,8 @@ function getEffectiveTierClient() {
 
 function draftStatusBadge(status) {
   const colors = { draft: '#888', submitted: '#f5a623', approved: '#4ecdc4', published: 'var(--accent)' };
-  return '<span style="display:inline-block;padding:0.15rem 0.5rem;border-radius:3px;font-size:0.7rem;font-family:\'Space Mono\',monospace;background:' + (colors[status] || '#888') + '20;color:' + (colors[status] || '#888') + ';border:1px solid ' + (colors[status] || '#888') + '40">' + status + '</span>';
+  const safe = escapeHtml(status);
+  return '<span style="display:inline-block;padding:0.15rem 0.5rem;border-radius:3px;font-size:0.7rem;font-family:\'Space Mono\',monospace;background:' + (colors[status] || '#888') + '20;color:' + (colors[status] || '#888') + ';border:1px solid ' + (colors[status] || '#888') + '40">' + safe + '</span>';
 }
 
 async function loadDrafts() {
@@ -1995,7 +1996,7 @@ async function loadDrafts() {
     const data = await res.json();
 
     if (!data.drafts.length) {
-      list.innerHTML = '<div class="empty-state" style="min-height:100px"><p>No drafts' + (statusFilter ? ' with status "' + statusFilter + '"' : '') + '</p></div>';
+      list.innerHTML = '<div class="empty-state" style="min-height:100px"><p>No drafts' + (statusFilter ? ' with status &quot;' + escapeHtml(statusFilter) + '&quot;' : '') + '</p></div>';
       pager.innerHTML = '';
       return;
     }
@@ -2007,7 +2008,7 @@ async function loadDrafts() {
         + draftStatusBadge(d.status)
         + '</div>'
         + '<div style="font-size:0.7rem;color:var(--text-dim);margin-top:0.35rem">'
-        + (d.provider ? d.provider + '/' + (d.model || '') + ' &middot; ' : '')
+        + (d.provider ? escapeHtml(d.provider) + '/' + escapeHtml(d.model || '') + ' &middot; ' : '')
         + new Date(d.created_at).toLocaleDateString()
         + '</div></div>';
     }).join('');
@@ -2038,10 +2039,10 @@ async function loadDraftDetail(id) {
 
     meta.innerHTML = draftStatusBadge(d.status)
       + '<span>' + escapeHtml(d.project) + ' ' + escapeHtml(d.version || '') + '</span>'
-      + (d.provider ? '<span>' + d.provider + '/' + (d.model || '') + '</span>' : '')
+      + (d.provider ? '<span>' + escapeHtml(d.provider) + '/' + escapeHtml(d.model || '') + '</span>' : '')
       + '<span>Created ' + new Date(d.created_at).toLocaleString() + '</span>';
 
-    content.innerHTML = d.formatted_html || ('<pre style="white-space:pre-wrap;font-size:0.8rem">' + escapeHtml(d.formatted_md || '') + '</pre>');
+    content.innerHTML = d.formatted_html ? simpleMarkdown(d.formatted_md || '') : ('<pre style="white-space:pre-wrap;font-size:0.8rem">' + escapeHtml(d.formatted_md || '') + '</pre>');
 
     let btns = '';
     if (d.status === 'draft') {

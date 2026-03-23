@@ -366,4 +366,54 @@ describe('API Server', () => {
     expect(res.headers.get('access-control-allow-methods')).toContain('DELETE');
     expect(res.headers.get('access-control-allow-credentials')).toBe('true');
   });
+
+  // --- Security headers ---
+
+  it('responses include security headers (X-Content-Type-Options, X-Frame-Options, Referrer-Policy)', async () => {
+    const res = await fetch(`http://localhost:${PORT}/health`);
+    expect(res.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(res.headers.get('x-frame-options')).toBe('DENY');
+    expect(res.headers.get('referrer-policy')).toBe('strict-origin-when-cross-origin');
+  });
+
+  it('responses include Content-Security-Policy', async () => {
+    const res = await fetch(`http://localhost:${PORT}/health`);
+    expect(res.headers.get('content-security-policy')).toContain("default-src 'none'");
+    expect(res.headers.get('content-security-policy')).toContain("frame-ancestors 'none'");
+  });
+
+  it('POST /v1/changelog rejects invalid project slug with special characters', async () => {
+    const { status, body } = await authedRequest('/v1/changelog', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        project: '../etc/passwd',
+        version: 'v1.0.0',
+        changes: [],
+      }),
+    });
+    expect([400, 429]).toContain(status);
+    if (status === 400) {
+      expect(body.error).toContain('project');
+    }
+  });
+
+  it('GET /v1/changelog rejects path traversal in project slug', async () => {
+    const res = await fetch(`http://localhost:${PORT}/v1/changelog/../../etc/latest`);
+    const body = await res.json().catch(() => null);
+    // Should either 400 (bad slug) or 404 — not traverse
+    expect([400, 404, 429]).toContain(res.status);
+  });
+
+  it('POST /v1/events validates event name against allowlist', async () => {
+    const { status, body } = await apiRequest('/v1/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'malicious_event_name' }),
+    });
+    expect([400, 429]).toContain(status);
+    if (status === 400) {
+      expect(body.error).toContain('Invalid event');
+    }
+  });
 });

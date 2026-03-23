@@ -242,12 +242,7 @@ export async function runPipeline(
     );
   }
 
-  let generator;
-  if (config.ai.provider === 'none') {
-    generator = generatorFactory();
-  } else {
-    generator = generatorFactory();
-  }
+  const generator = generatorFactory();
 
   const notes = await generator.generate(context, config.ai);
   log.info(`» Generated ${notes.changes.length} change entries`);

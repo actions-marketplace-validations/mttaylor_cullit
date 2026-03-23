@@ -18,7 +18,7 @@
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
 import { createHash, randomBytes, timingSafeEqual } from 'crypto';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, renameSync } from 'fs';
 
 /** ServerResponse with per-request CORS origin attached. */
 interface CorsResponse extends ServerResponse { _corsOrigin?: string; }
@@ -72,7 +72,14 @@ const allowedOriginSet = new Set(ALLOWED_ORIGINS.split(',').map(o => o.trim()).f
 
 function getCorsOrigin(req: IncomingMessage): string {
   const origin = req.headers['origin'] || '';
-  if (ALLOWED_ORIGINS === '*') return origin || '*';
+  if (ALLOWED_ORIGINS === '*') {
+    // In production, wildcard + credentials is dangerous — only allow in dev
+    if (IS_HTTPS) {
+      log.warn('ALLOWED_ORIGINS=* with HTTPS is insecure — set explicit origins');
+      return '';
+    }
+    return origin || '*';
+  }
   return allowedOriginSet.has(origin) ? origin : '';
 }
 const RATE_LIMIT = parseInt(process.env['RATE_LIMIT'] || '30', 10); // requests per window
@@ -114,10 +121,10 @@ function checkRateLimit(req: IncomingMessage, res: ServerResponse): boolean {
     return false;
   }
 
-  // Cap total tracked IPs to prevent memory exhaustion from IP rotation attacks
+  // Cap total tracked IPs — evict oldest bucket to prevent memory exhaustion
   if (!rateBuckets.has(ip) && rateBuckets.size >= MAX_RATE_BUCKETS) {
-    json(res, 503, { error: 'Server is busy. Try again later.' });
-    return false;
+    const oldestKey = rateBuckets.keys().next().value;
+    if (oldestKey) rateBuckets.delete(oldestKey);
   }
 
   recent.push(now);
@@ -312,7 +319,9 @@ function saveChangelogStore(): void {
     for (const [project, releases] of changelogStore) {
       data[project] = releases;
     }
-    writeFileSync(CHANGELOG_FILE, JSON.stringify(data, null, 2), 'utf-8');
+    const tmp = CHANGELOG_FILE + '.tmp';
+    writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf-8');
+    renameSync(tmp, CHANGELOG_FILE);
   } catch (err) {
     log.warn({ err: (err as Error).message }, 'Failed to save changelog store');
   }

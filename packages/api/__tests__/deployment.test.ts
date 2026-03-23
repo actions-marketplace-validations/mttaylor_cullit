@@ -81,3 +81,33 @@ describe('Deployment configuration', () => {
     });
   });
 });
+
+describe('Dashboard XSS hardening', () => {
+  const dashboard = readFileSync(join(ROOT, 'site', 'dashboard.html'), 'utf-8');
+
+  it('escapes d.provider and d.model in draft list view', () => {
+    // Draft list should use escapeHtml() on provider/model fields
+    expect(dashboard).toContain('escapeHtml(d.provider)');
+    expect(dashboard).toContain('escapeHtml(d.model');
+  });
+
+  it('escapes d.provider and d.model in draft detail view', () => {
+    // Draft detail span should escape provider/model
+    const detailSection = dashboard.slice(dashboard.indexOf('loadDraftDetail'));
+    expect(detailSection).toContain('escapeHtml(d.provider)');
+  });
+
+  it('does not render d.formatted_html directly via innerHTML (uses simpleMarkdown instead)', () => {
+    // formatted_html should not be the direct value assigned to innerHTML
+    // It can be used as a condition (truthy check), but `simpleMarkdown` on formatted_md should be rendered
+    const dashboardLine = dashboard.split('\n').find(l => l.includes('formatted_html'));
+    expect(dashboardLine).toBeDefined();
+    // Must use simpleMarkdown or escapeHtml to render, not raw formatted_html
+    expect(dashboardLine).toContain('simpleMarkdown');
+  });
+
+  it('draftStatusBadge escapes the status text', () => {
+    const badgeFn = dashboard.slice(dashboard.indexOf('function draftStatusBadge'), dashboard.indexOf('function draftStatusBadge') + 500);
+    expect(badgeFn).toContain('escapeHtml(status)');
+  });
+});
