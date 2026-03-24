@@ -1,14 +1,5 @@
 [
   {
-    "version": "v1.11.1",
-    "date": "2026-03-24",
-    "commits": 3,
-    "filesChanged": 20,
-    "providers": [
-      "template"
-    ]
-  },
-  {
     "version": "v1.11.0",
     "date": "2026-03-23",
     "commits": 22,
@@ -66,17 +57,32 @@
     ]
   },
   {
-    "version": "v1.9.2",
-    "date": "2026-03-19",
-    "commits": 24,
-    "filesChanged": 49,
+    "version": "v1.9.0",
+    "date": "2026-03-18",
+    "commits": 9,
+    "filesChanged": 38,
     "providers": [
-      "none",
-      "template",
       "anthropic",
-      "ollama",
       "openai",
-      "gemini"
+      "gemini",
+      "ollama",
+      "template"
+    ],
+    "patches": [
+      {
+        "version": "v1.9.2",
+        "date": "2026-03-19",
+        "commits": 15,
+        "filesChanged": 24,
+        "providers": [
+          "none",
+          "template",
+          "anthropic",
+          "ollama",
+          "openai",
+          "gemini"
+        ]
+      }
     ]
   },
   {
