@@ -9,7 +9,7 @@ Thanks for your interest in contributing! Cullit is open source and PRs are welc
 git clone https://github.com/mttaylor/cullit.git
 cd cullit
 
-# Install dependencies (requires pnpm 9+)
+# Install dependencies (requires pnpm 10+)
 pnpm install
 
 # Build all packages

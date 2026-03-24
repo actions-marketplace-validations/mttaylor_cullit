@@ -1,6 +1,6 @@
 # Cullit Architecture
 
-Last updated: 2026-03-19
+Last updated: 2026-06-27
 
 This document is the source of truth for Cullit's technical architecture, distribution model, runtime flows, and operational boundaries.
 
@@ -137,9 +137,11 @@ flowchart LR
   Build[pnpm build]
   Unit[pnpm test]
   E2E[pnpm test:e2e]
+  Guards[pnpm validate:guards]
+  Launch[pnpm launch:ready]
   Ready[Ready to merge]
 
-  Code --> Build --> Unit --> E2E --> Ready
+  Code --> Build --> Unit --> E2E --> Guards --> Launch --> Ready
 ```
 
 ## Operational Notes

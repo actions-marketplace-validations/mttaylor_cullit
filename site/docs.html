@@ -409,7 +409,7 @@
 
 <span class="key">ai</span>:
   <span class="key">provider</span>: <span class="str">anthropic</span>        <span class="cmt"># anthropic | openai | gemini | ollama | none</span>
-  <span class="key">model</span>: <span class="str">claude-sonnet-4-6-20250514</span>  <span class="cmt"># optional: override default model</span>
+  <span class="key">model</span>: <span class="str">claude-sonnet-4-20250514</span>  <span class="cmt"># optional: override default model</span>
   <span class="key">audience</span>: <span class="str">developer</span>       <span class="cmt"># developer | end-user | executive</span>
   <span class="key">tone</span>: <span class="str">professional</span>        <span class="cmt"># professional | casual | terse | edgy | hype | snarky</span>
   <span class="key">categories</span>:              <span class="cmt"># customize change categories</span>
@@ -442,16 +442,16 @@
   <span class="cmt"># Set LINEAR_API_KEY in your environment</span></code></pre>
 
 <h3 id="ai-providers">AI Providers</h3>
-<p>Cullit supports six providers in licensed Pro and Team surfaces. The public npm CLI uses <code>--provider none</code> unless you are running a hosted/private Cullit distribution with premium providers enabled.</p>
+<p>Cullit supports five providers in licensed Pro and Team surfaces. The public npm CLI uses <code>--provider none</code> unless you are running a hosted/private Cullit distribution with premium providers enabled.</p>
 
 <div class="table-wrap">
 <table>
   <thead><tr><th>Provider</th><th>Env Variable</th><th>Default Model</th><th>Notes</th></tr></thead>
   <tbody>
-    <tr><td><strong>Anthropic</strong></td><td><code>ANTHROPIC_API_KEY</code></td><td>claude-sonnet-4-6-20250514</td><td>Best quality. Recommended.</td></tr>
+    <tr><td><strong>Anthropic</strong></td><td><code>ANTHROPIC_API_KEY</code></td><td>claude-sonnet-4-20250514</td><td>Best quality. Recommended.</td></tr>
     <tr><td><strong>OpenAI</strong></td><td><code>OPENAI_API_KEY</code></td><td>gpt-4o</td><td>Great alternative.</td></tr>
     <tr><td><strong>Gemini</strong></td><td><code>GOOGLE_API_KEY</code></td><td>gemini-2.5-flash</td><td>Google AI.</td></tr>
-    <tr><td><strong>Ollama</strong></td><td><code>OLLAMA_HOST</code> (optional)</td><td>llama3.3</td><td>Local inference. Free. Private.</td></tr>
+    <tr><td><strong>Ollama</strong></td><td><code>OLLAMA_HOST</code> (optional)</td><td>llama3.2:3b</td><td>Local inference. Free. Private.</td></tr>
     <tr><td><strong>none</strong></td><td>&mdash;</td><td>built-in template</td><td>No AI key needed. Categorizes by conventional commits.</td></tr>
   </tbody>
 </table>
@@ -499,10 +499,10 @@
   <tbody>
     <tr><td><code>--from</code></td><td><code>-f</code></td><td>Start ref — tag, branch, SHA, JQL, or Linear filter</td><td>Auto-detect (2nd latest tag)</td></tr>
     <tr><td><code>--to</code></td><td><code>-t</code></td><td>End ref — tag, branch, or SHA</td><td><code>HEAD</code></td></tr>
-    <tr><td><code>--provider</code></td><td></td><td>AI provider to use</td><td>From config or <code>anthropic</code></td></tr>
+    <tr><td><code>--provider</code></td><td></td><td>AI provider to use</td><td>From config or <code>none</code></td></tr>
     <tr><td><code>--model</code></td><td></td><td>AI model override</td><td>Provider default</td></tr>
     <tr><td><code>--format</code></td><td></td><td>Output format: <code>markdown</code>, <code>html</code>, <code>html-dark</code>, <code>html-minimal</code>, <code>html-edgy</code>, <code>json</code></td><td><code>markdown</code></td></tr>
-    <tr><td><code>--source</code></td><td></td><td>Source type: <code>local</code>, <code>jira</code>, <code>linear</code>, <code>gitlab</code>, <code>bitbucket</code></td><td>From config or <code>local</code></td></tr>
+    <tr><td><code>--source</code></td><td></td><td>Source type: <code>local</code>, <code>jira</code>, <code>linear</code>, <code>gitlab</code>, <code>bitbucket</code>, <code>multi-repo</code></td><td>From config or <code>local</code></td></tr>
     <tr><td><code>--audience</code></td><td></td><td>Audience: <code>developer</code>, <code>end-user</code>, <code>executive</code></td><td>From config or <code>developer</code></td></tr>
     <tr><td><code>--tone</code></td><td></td><td>Tone: <code>professional</code>, <code>casual</code>, <code>terse</code>, <code>edgy</code>, <code>hype</code>, <code>snarky</code></td><td>From config or <code>professional</code></td></tr>
     <tr><td><code>--config</code></td><td><code>-c</code></td><td>Config file path</td><td><code>.cullit.yml</code></td></tr>
@@ -532,7 +532,7 @@
 <span class="cmd">cullit</span> generate <span class="flag">--from</span> <span class="val">HEAD~5</span> <span class="flag">--provider</span> <span class="val">none</span>
 
 <span class="cmt"># Local Ollama</span>
-<span class="cmd">cullit</span> generate <span class="flag">--from</span> <span class="val">v1.0.0</span> <span class="flag">--provider</span> <span class="val">ollama</span> <span class="flag">--model</span> <span class="val">llama3.3</span></code></pre>
+<span class="cmd">cullit</span> generate <span class="flag">--from</span> <span class="val">v1.0.0</span> <span class="flag">--provider</span> <span class="val">ollama</span> <span class="flag">--model</span> <span class="val">llama3.2:3b</span></code></pre>
 
 <h3 id="cli-status"><code>cullit status</code></h3>
 <p>Release readiness check. Analyzes unreleased commits and recommends whether it's time to release, what semver bump to use, and why.</p>
@@ -607,7 +607,7 @@
         <span class="key">with</span>:
           <span class="key">fetch-depth</span>: <span class="val">0</span>  <span class="cmt"># full history for tag comparison</span>
 
-      - <span class="key">uses</span>: <span class="str">mttaylor/cullit@main</span>
+      - <span class="key">uses</span>: <span class="str">mttaylor/cullit@v1</span>
         <span class="key">with</span>:
           <span class="key">provider</span>: <span class="str">anthropic</span>
           <span class="key">audience</span>: <span class="str">end-user</span>
@@ -623,7 +623,7 @@
   <tbody>
     <tr><td><code>from</code></td><td>Start ref (auto-detects previous tag if omitted)</td><td>previous tag</td></tr>
     <tr><td><code>to</code></td><td>End ref</td><td><code>HEAD</code></td></tr>
-    <tr><td><code>provider</code></td><td>AI provider</td><td><code>anthropic</code></td></tr>
+    <tr><td><code>provider</code></td><td>AI provider</td><td><code>none</code></td></tr>
     <tr><td><code>model</code></td><td>AI model override</td><td>provider default</td></tr>
     <tr><td><code>audience</code></td><td>Target audience</td><td><code>developer</code></td></tr>
     <tr><td><code>tone</code></td><td>Writing tone</td><td><code>professional</code></td></tr>
@@ -635,7 +635,11 @@
     <tr><td><code>publish-confluence</code></td><td>Publish to Confluence</td><td><code>false</code></td></tr>
     <tr><td><code>publish-notion</code></td><td>Publish to Notion</td><td><code>false</code></td></tr>
     <tr><td><code>publish-changelog</code></td><td>Push to hosted changelog</td><td><code>false</code></td></tr>
+    <tr><td><code>source</code></td><td>Source type (local, jira, linear, gitlab, bitbucket, multi-repo)</td><td><code>local</code></td></tr>
     <tr><td><code>jira-domain</code></td><td>Jira domain for enrichment</td><td></td></tr>
+    <tr><td><code>config</code></td><td>Path to config file</td><td><code>.cullit.yml</code></td></tr>
+    <tr><td><code>publish-gitlab-release</code></td><td>Publish to GitLab Release</td><td><code>false</code></td></tr>
+    <tr><td><code>api-key</code></td><td>Cullit API key for licensed features</td><td></td></tr>
   </tbody>
 </table>
 </div>
@@ -703,7 +707,7 @@
 <pre><code><span class="cmd">cullit</span> generate <span class="flag">--source</span> <span class="val">multi-repo</span> <span class="flag">--from</span> <span class="val">v1.0.0</span> <span class="flag">--to</span> <span class="val">v1.1.0</span></code></pre>
 
 <p><strong>GitHub Action:</strong></p>
-<pre><code>- <span class="key">uses</span>: <span class="str">mttaylor/cullit@main</span>
+<pre><code>- <span class="key">uses</span>: <span class="str">mttaylor/cullit@v1</span>
   <span class="key">with</span>:
     <span class="key">source</span>: <span class="str">multi-repo</span>
     <span class="key">from</span>: <span class="str">v1.0.0</span>
@@ -1004,7 +1008,7 @@ console.log(advisory.breakdown);       <span class="cmt">// { features: 4, fixes
         <span class="key">with</span>:
           <span class="key">fetch-depth</span>: <span class="val">0</span>
 
-      - <span class="key">uses</span>: <span class="str">mttaylor/cullit@main</span>
+      - <span class="key">uses</span>: <span class="str">mttaylor/cullit@v1</span>
         <span class="key">with</span>:
           <span class="key">provider</span>: <span class="str">anthropic</span>
           <span class="key">audience</span>: <span class="str">end-user</span>

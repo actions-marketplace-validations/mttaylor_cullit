@@ -11,20 +11,21 @@ This directory contains the static site for cullit.io.
 - `setup.html` — guided setup flow
 - `dashboard.html` — authenticated dashboard (auth, billing, history, analytics, team, drafts)
 - `changelog.html` — hosted changelog surface
+- `free-trial.html` — free trial onboarding page
+- `releases.html` — public release notes browser
 - `privacy.html` — website privacy policy
 - `terms.html` — website terms of service
 
 ## Deploy
 
-The site is deployed via Cloudflare Pages from the `site/` directory.
+The site is deployed via Cloudflare Workers using `wrangler` from the `site/` directory.
 
-Recommended Cloudflare Pages settings:
+Recommended Cloudflare Workers setup:
 
 1. Connect GitHub repo `mttaylor/cullit`
-2. Set **Root directory** to `site`
-3. Set **Build command** to empty (static site)
-4. Set **Build output directory** to `.`
-5. Add custom domain `cullit.io`
+2. Configure `wrangler.toml` with the `site/` directory as the asset root
+3. Deploy with `wrangler deploy` or via CI
+4. Add custom domain `cullit.io`
 
 ## Notes
 

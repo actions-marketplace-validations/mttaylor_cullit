@@ -43,6 +43,8 @@ We take security seriously. If you discover a vulnerability, please report it re
 
 - Cullit processes git commit messages and ticket metadata locally
 - Data is sent only to the AI provider you configure (Anthropic, OpenAI, Gemini, or Ollama)
+- **Dashboard users:** Authentication uses GitHub OAuth 2.0. Sessions are stored as HttpOnly JWT cookies
+- **Billing:** Subscription management uses Stripe. Full payment card data is handled by Stripe, not stored by Cullit
 - **Pro/Team users:** Anonymous usage metering (generation count, project name) is sent to the Cullit metering service when `CULLIT_API_KEY` and `CULLIT_METER_URL` are configured. No commit data, code, or personally identifiable information is included. Metering is non-blocking and best-effort.
 - **Free users / self-hosted:** No telemetry or data collection is performed
 - Self-hosted options (Ollama) keep all data on your infrastructure
@@ -50,7 +52,7 @@ We take security seriously. If you discover a vulnerability, please report it re
 ### Dependencies
 
 - We minimize external dependencies
-- The API server uses Node.js built-in `http` module (zero dependencies)
+- The API server uses Node.js built-in `http` module with minimal dependencies
 - Dependencies are audited with `pnpm audit` before releases
 
 ### Docker

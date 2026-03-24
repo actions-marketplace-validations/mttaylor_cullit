@@ -918,7 +918,7 @@
 <span class="t-output">added 1 package in 2s</span><br>
 <br>
 <span class="t-prompt">$</span> <span class="t-cmd">cullit --version</span><br>
-<span class="t-accent">cullit v1.9.0</span>
+<span class="t-accent">cullit v1.11.1</span>
         </div>
       </div>
 
@@ -1195,7 +1195,7 @@
 <span class="t-output">&raquo; License: &#x1f511; Pro</span><br>
 <span class="t-comment"># Collecting commits between v1.1.0..v1.2.0</span><br>
 <span class="t-output">&raquo; Found 12 commits, 4 PRs</span><br>
-<span class="t-output">&raquo; Generating with Claude (claude-sonnet-4-6-20250514)...</span><br>
+<span class="t-output">&raquo; Generating with Claude (claude-sonnet-4-20250514)...</span><br>
 <br>
 <span class="t-accent">## Release v1.2.0 &mdash; March 13, 2026</span><br>
 <br>
@@ -1387,7 +1387,8 @@
       - <span style="color:var(--terminal-blue)">uses</span>: <span style="color:var(--terminal-green)">mttaylor/cullit@v1</span>
         <span style="color:var(--terminal-blue)">with</span>:
           <span style="color:var(--terminal-blue)">provider</span>: <span style="color:var(--terminal-green)">anthropic</span>
-          <span style="color:var(--terminal-blue)">publish</span>: <span style="color:var(--terminal-green)">github-release,slack</span>
+          <span style="color:var(--terminal-blue)">publish-github-release</span>: <span style="color:var(--terminal-green)">'true'</span>
+          <span style="color:var(--terminal-blue)">publish-slack-webhook</span>: <span style="color:var(--terminal-green)">${{ secrets.SLACK_WEBHOOK_URL }}</span>
           <span style="color:var(--terminal-blue)">api-key</span>: <span style="color:var(--terminal-green)">${{ secrets.CULLIT_API_KEY }}</span>
         <span style="color:var(--terminal-blue)">env</span>:
           <span style="color:var(--terminal-blue)">ANTHROPIC_API_KEY</span>: <span style="color:var(--terminal-green)">${{ secrets.ANTHROPIC_API_KEY }}</span>
@@ -1473,7 +1474,7 @@
 <span class="t-output">  &#x255a;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x255d;</span><br>
 <br>
 <span class="t-output">  Current version:   v1.2.0</span><br>
-<span class="t-output">  Suggested next:    v1.9.0 (minor)</span><br>
+<span class="t-output">  Suggested next:    v1.3.0 (minor)</span><br>
 <span class="t-output">  Last release:      5 day(s) ago</span><br>
 <span class="t-output">  Unreleased commits: 8</span><br>
 <br>
