@@ -9,13 +9,13 @@ import { randomBytes } from 'crypto';
 import { json, readBody } from '../utils.js';
 import {
   resolveUser, getUser, getOrg, createOrg, addOrgMember, removeOrgMember, getOrgMembers,
-  useDb, getEffectiveTier,
+  getEffectiveTier,
 } from '../auth.js';
 import {
   getUsageStats, getMonthlyGenerationCount,
 } from '../store.js';
 import {
-  sql, dbCreateOrgInvite, dbListOrgInvites, dbDeleteOrgInvite,
+  dbCreateOrgInvite, dbListOrgInvites, dbDeleteOrgInvite, dbUpdateOrgMemberRole,
 } from '../db.js';
 import { getTierLimits } from '@cullit/core';
 
@@ -197,9 +197,9 @@ export async function handleUpdateOrgMemberRole(req: IncomingMessage, res: Serve
     json(res, 409, { error: 'Cannot change your own role' }); return;
   }
 
-  if (useDb) {
-    await sql!`UPDATE org_members SET role = ${role} WHERE org_id = ${user.orgId} AND user_id = ${memberId}`;
-    await sql!`UPDATE users SET role = ${role} WHERE id = ${memberId} AND org_id = ${user.orgId}`;
+  const updated = await dbUpdateOrgMemberRole(user.orgId, memberId, role);
+  if (!updated) {
+    json(res, 404, { error: 'Member not found in this organization' }); return;
   }
 
   json(res, 200, { ok: true, userId: memberId, role });

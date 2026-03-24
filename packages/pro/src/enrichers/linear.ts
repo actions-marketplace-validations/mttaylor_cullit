@@ -25,6 +25,10 @@ interface LinearSingleResponse {
 export class LinearEnricher implements Enricher {
   private apiKey: string;
 
+  private static readonly PRIORITY_MAP: Record<number, string> = {
+    0: 'none', 1: 'urgent', 2: 'high', 3: 'medium', 4: 'low'
+  };
+
   constructor(apiKey?: string) {
     const resolved = apiKey || process.env.LINEAR_API_KEY;
     if (!resolved) {
@@ -103,16 +107,12 @@ export class LinearEnricher implements Enricher {
     const data = await response.json() as LinearBatchResponse;
     const issues = data.data?.issues?.nodes || [];
 
-    const priorityMap: Record<number, string> = {
-      0: 'none', 1: 'urgent', 2: 'high', 3: 'medium', 4: 'low'
-    };
-
     return issues.map(issue => ({
       key: issue.identifier,
       title: issue.title,
       description: issue.description?.substring(0, 500),
       labels: issue.labels?.nodes?.map(l => l.name) || [],
-      priority: issue.priority !== undefined ? priorityMap[issue.priority] : undefined,
+      priority: issue.priority !== undefined ? LinearEnricher.PRIORITY_MAP[issue.priority] : undefined,
       status: issue.state?.name,
       source: 'linear' as const,
     }));
@@ -152,16 +152,12 @@ export class LinearEnricher implements Enricher {
 
     if (!issue) return null;
 
-    const priorityMap: Record<number, string> = {
-      0: 'none', 1: 'urgent', 2: 'high', 3: 'medium', 4: 'low'
-    };
-
     return {
       key: issue.identifier,
       title: issue.title,
       description: issue.description?.substring(0, 500),
       labels: issue.labels?.nodes?.map(l => l.name) || [],
-      priority: issue.priority !== undefined ? priorityMap[issue.priority] : undefined,
+      priority: issue.priority !== undefined ? LinearEnricher.PRIORITY_MAP[issue.priority] : undefined,
       status: issue.state?.name,
       source: 'linear',
     };

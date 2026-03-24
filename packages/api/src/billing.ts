@@ -245,8 +245,8 @@ export async function handleCheckout(
   // If user already has a Stripe customer ID, reuse it
   if (user.stripe_customer_id) {
     params['customer'] = user.stripe_customer_id;
-  } else {
-    params['customer_email'] = user.email || undefined!;
+  } else if (user.email) {
+    params['customer_email'] = user.email;
   }
 
   const session = await stripeRequest('/checkout/sessions', 'POST', params);

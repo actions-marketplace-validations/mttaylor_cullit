@@ -19,7 +19,7 @@
  *   CULLIT_DASHBOARD_URL    — Post-login redirect URL (default: CULLIT_BASE_URL)
  */
 
-import { createHmac, randomBytes } from 'crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { readFileSync, writeFileSync, existsSync, renameSync } from 'fs';
 import type { IncomingMessage, ServerResponse } from 'http';
 import {
@@ -190,13 +190,11 @@ export function verifyJWT(token: string): { sub: string } | null {
     createHmac('sha256', JWT_SECRET).update(`${header}.${payload}`).digest()
   );
 
-  // Constant-time comparison
-  if (expected.length !== signature.length) return null;
-  let diff = 0;
-  for (let i = 0; i < expected.length; i++) {
-    diff |= expected.charCodeAt(i) ^ signature.charCodeAt(i);
-  }
-  if (diff !== 0) return null;
+  // Constant-time comparison using crypto.timingSafeEqual
+  const expectedBuf = Buffer.from(expected);
+  const signatureBuf = Buffer.from(signature);
+  if (expectedBuf.length !== signatureBuf.length) return null;
+  if (!timingSafeEqual(expectedBuf, signatureBuf)) return null;
 
   try {
     const headerData = JSON.parse(base64urlDecode(header));
@@ -405,8 +403,14 @@ function dbOrgToOrg(row: DbOrg): Org {
 
 export async function createOrg(name: string, owner: User): Promise<Org> {
   const id = randomBytes(12).toString('hex');
-  const slug = name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').slice(0, 48);
+  let slug = name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').slice(0, 48);
   const now = new Date().toISOString();
+
+  // Ensure slug uniqueness by appending random suffix on collision
+  const existing = await getOrgBySlug(slug);
+  if (existing) {
+    slug = `${slug.slice(0, 40)}-${randomBytes(4).toString('hex')}`;
+  }
 
   if (useDb) {
     const row = await dbCreateOrg({ id, name, slug, ownerId: owner.id, tier: 'team', maxSeats: 10 });

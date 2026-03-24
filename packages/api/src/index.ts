@@ -209,11 +209,17 @@ function setCachedResult(key: string, result: unknown): void {
 // --- Routes ---
 
 async function handleHealth(_req: IncomingMessage, res: ServerResponse): Promise<void> {
-  json(res, 200, {
-    status: 'ok',
+  let dbOk = !sql; // if no DB configured, that's fine
+  if (sql) {
+    try { await sql`SELECT 1`; dbOk = true; } catch { dbOk = false; }
+  }
+  const status = dbOk ? 'ok' : 'degraded';
+  json(res, dbOk ? 200 : 503, {
+    status,
     version: VERSION,
     uptime: process.uptime(),
     database: !!sql,
+    databaseConnected: dbOk,
     stripe: isStripeConfigured(),
   });
 }
@@ -763,6 +769,8 @@ const server = createServer(async (req, res: CorsResponse) => {
 
 const isDirectRun = process.argv[1]?.endsWith('index.js') || process.argv[1]?.endsWith('index.mjs');
 if (isDirectRun) {
+  server.headersTimeout = 30_000;    // 30s to receive headers (slow-loris protection)
+  server.requestTimeout = 120_000;   // 2min total request timeout
   server.listen(PORT, () => {
     log.info({ version: VERSION, port: PORT, database: !!sql, stripe: isStripeConfigured() }, `Cullit API v${VERSION} listening on http://localhost:${PORT}`);
   });

@@ -243,7 +243,7 @@ Rules:
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: model || 'llama3.1',
+        model: model || 'llama3.2:3b',
         messages: [{ role: 'user', content: prompt }],
         stream: false,
         options: { temperature: 0.3 },

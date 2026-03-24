@@ -400,6 +400,16 @@ export async function dbGetOrgMembers(orgId: string): Promise<DbUser[]> {
   `;
 }
 
+export async function dbUpdateOrgMemberRole(orgId: string, userId: string, role: string): Promise<boolean> {
+  const result = await sql`
+    UPDATE org_members SET role = ${role}
+    WHERE org_id = ${orgId} AND user_id = ${userId}
+  `;
+  if (result.count === 0) return false;
+  await sql`UPDATE users SET role = ${role} WHERE id = ${userId} AND org_id = ${orgId}`;
+  return true;
+}
+
 // --- Generation history DB operations ---
 
 export async function dbAddGeneration(entry: {
