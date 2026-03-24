@@ -58,26 +58,27 @@
     border-bottom: 1px solid var(--border);
     background: rgba(15, 17, 23, 0.85);
     backdrop-filter: blur(20px);
-    position: sticky;
-    top: 0;
+    position: fixed;
+    top: 0; left: 0; right: 0;
     z-index: 100;
   }
   .logo {
     font-family: 'Space Mono', monospace;
-    font-size: 1.4rem;
+    font-size: 1.3rem;
     font-weight: 700;
     color: var(--accent);
     text-decoration: none;
+    letter-spacing: -0.5px;
     display: flex;
     align-items: center;
     gap: 0.5rem;
   }
   .logo-mark { width: 28px; height: 28px; flex-shrink: 0; }
-  .logo span { color: var(--text-dim); }
+  .logo span { color: var(--text-dim); font-weight: 400; }
   .nav-links { display: flex; gap: 2rem; align-items: center; }
   .nav-links a {
     font-family: 'Space Mono', monospace;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     color: var(--text-dim);
     text-decoration: none;
     transition: color 0.2s;
@@ -89,6 +90,12 @@
     padding: 0.5rem 1.2rem !important;
     border-radius: 4px;
     font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    transition: transform 0.2s, box-shadow 0.2s !important;
+  }
+  .nav-cta:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(94,234,212,0.25);
   }
   .hamburger {
     display: none;
@@ -110,8 +117,8 @@
     .hamburger { display: flex; }
     .nav-links {
       display: none;
-      position: absolute;
-      top: 100%;
+      position: fixed;
+      top: 56px;
       left: 0;
       right: 0;
       flex-direction: column;
@@ -126,7 +133,7 @@
   /* --- Header --- */
   .page-header {
     text-align: center;
-    padding: 3rem 2rem 1rem;
+    padding: 6rem 2rem 1rem;
   }
   .page-header h1 {
     font-family: 'Chakra Petch', sans-serif;

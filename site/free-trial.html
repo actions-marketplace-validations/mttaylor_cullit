@@ -53,18 +53,18 @@
   /* NAV */
   nav {
     position: fixed; top: 0; left: 0; right: 0;
-    padding: 0.8rem 2rem;
+    padding: 1rem 2rem;
     display: flex; justify-content: space-between; align-items: center;
-    z-index: 200;
-    background: rgba(15,17,23,0.92);
+    z-index: 100;
+    background: rgba(15,17,23,0.85);
     backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border);
   }
   .logo { font-family: 'Space Mono', monospace; font-size: 1.3rem; font-weight: 700; color: var(--accent); text-decoration: none; letter-spacing: -0.5px; display: flex; align-items: center; gap: 0.5rem; }
   .logo-mark { width: 28px; height: 28px; flex-shrink: 0; }
   .logo span { color: var(--text-dim); font-weight: 400; }
-  .nav-links { display: flex; gap: 1.5rem; align-items: center; }
-  .nav-links a { color: var(--text-dim); text-decoration: none; font-size: 0.85rem; font-family: 'Space Mono', monospace; transition: color 0.2s; }
+  .nav-links { display: flex; gap: 2rem; align-items: center; }
+  .nav-links a { color: var(--text-dim); text-decoration: none; font-size: 0.9rem; font-family: 'Space Mono', monospace; transition: color 0.2s; }
   .nav-links a:hover, .nav-links a.active { color: var(--accent); }
   .nav-cta {
     background: var(--accent) !important;
@@ -225,7 +225,7 @@
   .sidebar-overlay.open { display: block; }
 
   /* RESPONSIVE */
-  @media (max-width: 900px) {
+  @media (max-width: 768px) {
     nav { padding: 0.6rem 1rem; }
     .hamburger { display: flex; }
     .nav-links {
