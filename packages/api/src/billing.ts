@@ -26,6 +26,7 @@ import {
   dbUpsertSubscription, dbGetSubscription, dbGetUserByStripeCustomer,
 } from './db.js';
 import { getEffectiveTier, getTrialStatus, getUser } from './auth.js';
+import { isRecord } from './utils.js';
 import { log } from './logger.js';
 
 const STRIPE_SECRET_KEY = process.env['STRIPE_SECRET_KEY'] || '';
@@ -68,9 +69,7 @@ interface StripeInvoice {
   subscription?: string;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
+// isRecord imported from utils.ts
 
 function toStripeEvent(value: unknown): StripeEvent | null {
   if (!isRecord(value) || typeof value.type !== 'string') return null;
@@ -183,6 +182,28 @@ function planToTier(plan: string): string {
   if (plan === 'pro') return 'pro';
   if (plan === 'team') return 'team';
   return 'free';
+}
+
+/** Build a subscription record for dbUpsertSubscription, eliminating repetition across webhook handlers. */
+function buildSubscriptionRecord(
+  subscriptionId: string,
+  userId: string,
+  customerId: string,
+  plan: string,
+  sub?: StripeSubscription | null,
+  overrides?: { status?: string },
+) {
+  return {
+    id: subscriptionId,
+    userId,
+    stripeSubscriptionId: subscriptionId,
+    stripeCustomerId: customerId,
+    plan,
+    status: overrides?.status || sub?.status || 'active',
+    currentPeriodStart: sub?.current_period_start ? new Date(sub.current_period_start * 1000) : undefined,
+    currentPeriodEnd: sub?.current_period_end ? new Date(sub.current_period_end * 1000) : undefined,
+    cancelAtPeriodEnd: sub?.cancel_at_period_end || false,
+  };
 }
 
 // --- Checkout ---
@@ -362,17 +383,7 @@ async function handleCheckoutComplete(sessionPayload: unknown): Promise<void> {
   // Fetch full subscription details from Stripe
   const sub = await stripeRequest<StripeSubscription>(`/subscriptions/${subscriptionId}`, 'GET');
 
-  await dbUpsertSubscription({
-    id: subscriptionId,
-    userId,
-    stripeSubscriptionId: subscriptionId,
-    stripeCustomerId: customerId,
-    plan,
-    status: sub.status || 'active',
-    currentPeriodStart: sub.current_period_start ? new Date(sub.current_period_start * 1000) : undefined,
-    currentPeriodEnd: sub.current_period_end ? new Date(sub.current_period_end * 1000) : undefined,
-    cancelAtPeriodEnd: sub.cancel_at_period_end || false,
-  });
+  await dbUpsertSubscription(buildSubscriptionRecord(subscriptionId, userId, customerId, plan, sub));
 
   log.info({ userId, plan, customerId }, 'Checkout complete');
 }
@@ -396,17 +407,7 @@ async function handleSubscriptionUpdate(subscriptionPayload: unknown): Promise<v
   }
 
   // Update subscription record
-  await dbUpsertSubscription({
-    id: subscription.id,
-    userId: user.id,
-    stripeSubscriptionId: subscription.id,
-    stripeCustomerId: customerId,
-    plan,
-    status: subscription.status,
-    currentPeriodStart: subscription.current_period_start ? new Date(subscription.current_period_start * 1000) : undefined,
-    currentPeriodEnd: subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : undefined,
-    cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-  });
+  await dbUpsertSubscription(buildSubscriptionRecord(subscription.id, user.id, customerId, plan, subscription));
 
   log.info({ userId: user.id, plan, status: subscription.status }, 'Subscription updated');
 }
@@ -423,14 +424,7 @@ async function handleSubscriptionDeleted(subscriptionPayload: unknown): Promise<
   await dbUpdateUserTier(user.id, 'free');
 
   // Update subscription record
-  await dbUpsertSubscription({
-    id: subscription.id,
-    userId: user.id,
-    stripeSubscriptionId: subscription.id,
-    stripeCustomerId: customerId,
-    plan: 'free',
-    status: 'canceled',
-  });
+  await dbUpsertSubscription(buildSubscriptionRecord(subscription.id, user.id, customerId, 'free', null, { status: 'canceled' }));
 
   log.info({ userId: user.id, customerId }, 'Subscription canceled');
 }
@@ -450,14 +444,7 @@ async function handlePaymentFailed(invoicePayload: unknown): Promise<void> {
     const priceId = sub.items?.data?.[0]?.price?.id || '';
     const plan = priceToPlan(priceId);
 
-    await dbUpsertSubscription({
-      id: subscriptionId,
-      userId: user.id,
-      stripeSubscriptionId: subscriptionId,
-      stripeCustomerId: customerId,
-      plan,
-      status: 'past_due',
-    });
+    await dbUpsertSubscription(buildSubscriptionRecord(subscriptionId, user.id, customerId, plan, null, { status: 'past_due' }));
   }
 
   log.info({ userId: user.id, customerId, invoiceId: invoice.id }, 'Payment failed');

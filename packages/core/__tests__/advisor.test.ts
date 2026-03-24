@@ -28,15 +28,23 @@ describe('analyzeReleaseReadiness', () => {
 
   it('reports no urgency with few chore commits', () => {
     const sep = '---CULLIT_COMMIT---';
+    // Use dynamic dates relative to now so the test never crosses the 14-day staleness threshold
+    const now = new Date();
+    const tagDate = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000); // 3 days ago
+    const commit1Date = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+    const commit2Date = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
+    const tagIso = tagDate.toISOString();
+    const c1Iso = commit1Date.toISOString().slice(0, 10);
+    const c2Iso = commit2Date.toISOString().slice(0, 10);
 
     mockedExecFileSync.mockImplementation((_cmd: any, args: any) => {
       const argsArr = args as string[];
       if (argsArr.includes('describe')) return 'v1.0.0\n';
-      if (argsArr.includes('-1') && argsArr.some((a: string) => a.includes('%aI'))) return '2026-03-10T00:00:00Z\n';
+      if (argsArr.includes('-1') && argsArr.some((a: string) => a.includes('%aI'))) return `${tagIso}\n`;
       if (argsArr.includes('--no-merges')) {
         return [
-          `aaa|aaa|matt|2026-03-12|chore: update deps|${sep}`,
-          `bbb|bbb|matt|2026-03-11|docs: fix typo|${sep}`,
+          `aaa|aaa|matt|${c1Iso}|chore: update deps|${sep}`,
+          `bbb|bbb|matt|${c2Iso}|docs: fix typo|${sep}`,
         ].join('\n');
       }
       if (argsArr.includes('tag')) return 'v1.0.0\n';

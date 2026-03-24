@@ -17,33 +17,42 @@
  */
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
-import { createHash, randomBytes, timingSafeEqual } from 'crypto';
-import { readFileSync, writeFileSync, existsSync, renameSync } from 'fs';
-
-/** ServerResponse with per-request CORS origin attached. */
-interface CorsResponse extends ServerResponse { _corsOrigin?: string; }
+import { createHash, randomBytes } from 'crypto';
 
 import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS, getTierLimits } from '@cullit/core';
 import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget } from '@cullit/core';
 import { openApiSpec } from './openapi.js';
 import {
   handleAuthRedirect, handleAuthCallback, handleAuthMe, handleAuthLogout,
-  resolveUser, getUser, getOrg, createOrg, addOrgMember, removeOrgMember, getOrgMembers,
-  useDb, getEffectiveTier,
+  resolveUser, getEffectiveTier,
 } from './auth.js';
 import {
   addHistoryEntry, getHistory, getHistoryCount,
   recordUsageEvent, getUsageStats, getMonthlyGenerationCount,
   type HistoryEntry,
 } from './store.js';
-import { migrate, dbPublishRelease, dbGetReleases, dbGetProjectCount, dbDeleteRelease, closeDb, sql,
-  dbCreateDraft, dbGetDraft, dbListDrafts, dbUpdateDraft, dbUpdateDraftStatus, dbDeleteDraft,
-  dbCreateRevision, dbGetRevisions, dbGetRevisionCount,
+import { migrate, closeDb, sql,
   dbGetProjectSettings, dbUpsertProjectSettings, dbListProjectSettings,
-  dbCreateOrgInvite, dbListOrgInvites, dbDeleteOrgInvite,
 } from './db.js';
 import { handleCheckout, handleBillingPortal, handleGetSubscription, handleStripeWebhook, isStripeConfigured } from './billing.js';
 import { log } from './logger.js';
+import {
+  json, checkAuth, readBody, parseJsonObject, isRecord,
+  PORT, SECURITY_HEADERS,
+  type CorsResponse, type JsonObject,
+} from './utils.js';
+
+// Route modules
+import { handleChangelogPublish, handleChangelogLatest, handleChangelogDelete, handleChangelogListProjects } from './routes/changelog.js';
+import {
+  handleCreateDraft, handleListDrafts, handleGetDraft, handleUpdateDraft,
+  handleDraftSubmit, handleDeleteDraft, handleDraftApprove, handleDraftPublish,
+} from './routes/drafts.js';
+import {
+  handleGetOrg, handleCreateOrg, handleOrgInvite, handleOrgRemoveMember,
+  handleCreateOrgInvite, handleListOrgInvites, handleDeleteOrgInvite,
+  handleUpdateOrgMemberRole, handleGetOrgUsage,
+} from './routes/org.js';
 
 // Load pro plugins if installed
 try { await import('@cullit/pro'); } catch { /* pro not installed */ }
@@ -59,10 +68,6 @@ if (!isStripeConfigured()) {
   );
 }
 
-const PORT = parseInt(process.env['PORT'] || '3000', 10);
-const API_TOKEN = process.env['CULLIT_API_TOKEN'] || ''; // optional bearer auth
-// SECURITY: Restrict to specific origins in production.
-//   ALLOWED_ORIGINS=https://yourdomain.com (comma-separated for multiple)
 const ALLOWED_ORIGINS = process.env['ALLOWED_ORIGINS'] || '';
 const IS_HTTPS = (process.env['CULLIT_BASE_URL'] || '').startsWith('https');
 if (!ALLOWED_ORIGINS) {
@@ -132,53 +137,7 @@ function checkRateLimit(req: IncomingMessage, res: ServerResponse): boolean {
   return true;
 }
 
-// --- Helpers ---
-
-/** Shared security headers applied to every response. */
-const SECURITY_HEADERS: Record<string, string> = {
-  'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
-  'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'DENY',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-  ...(IS_HTTPS ? { 'Strict-Transport-Security': 'max-age=63072000; includeSubDomains' } : {}),
-};
-
-function json(res: CorsResponse, status: number, body: unknown): void {
-  const payload = JSON.stringify(body);
-  res.writeHead(status, {
-    'Content-Type': 'application/json',
-    'Content-Length': Buffer.byteLength(payload),
-    'Access-Control-Allow-Origin': res._corsOrigin || '',
-    'Access-Control-Allow-Credentials': 'true',
-    ...SECURITY_HEADERS,
-  });
-  res.end(payload);
-}
-
-function checkAuth(req: IncomingMessage, res: ServerResponse): boolean {
-  if (!API_TOKEN) return true; // no auth configured
-  const header = req.headers['authorization'] || '';
-  const expected = `Bearer ${API_TOKEN}`;
-  if (header.length === expected.length &&
-      timingSafeEqual(Buffer.from(header), Buffer.from(expected))) return true;
-  json(res, 401, { error: 'Unauthorized — set Authorization: Bearer <token>' });
-  return false;
-}
-
-async function readBody(req: IncomingMessage): Promise<string> {
-  const chunks: Buffer[] = [];
-  let size = 0;
-  const MAX_BODY = 1_048_576; // 1 MB
-
-  for await (const chunk of req) {
-    size += (chunk as Buffer).length;
-    if (size > MAX_BODY) {
-      throw new Error('Request body too large');
-    }
-    chunks.push(chunk as Buffer);
-  }
-  return Buffer.concat(chunks).toString('utf-8');
-}
+// Helpers (json, checkAuth, readBody) imported from utils.ts
 
 // --- Pipeline result cache (LRU + TTL) ---
 
@@ -245,89 +204,7 @@ function setCachedResult(key: string, result: unknown): void {
   pipelineCache.set(key, { result, expiresAt: Date.now() + CACHE_TTL });
 }
 
-// --- Changelog Store ---
-// In-memory with file-backed persistence. Replace with D1/Redis/Postgres for scale.
-
-interface ChangelogRelease {
-  version: string;
-  date: string;
-  summary: string;
-  changes: { description: string; category: string; ticketKey?: string }[];
-  contributors: string[];
-  metadata?: Record<string, unknown>;
-  formatted: { markdown: string; html: string };
-  publishedAt: string;
-  userId?: string;
-}
-
-/** Strip dangerous HTML tags and attributes to prevent stored XSS. */
-function sanitizeHtml(html: string): string {
-  return html
-    .replace(/<script[\s>].*?<\/script>/gis, '')
-    .replace(/<iframe[\s>].*?<\/iframe>/gis, '')
-    .replace(/<object[\s>].*?<\/object>/gis, '')
-    .replace(/<embed[^>]*>/gi, '')
-    .replace(/<link[^>]*>/gi, '')
-    .replace(/\s+on\w+\s*=\s*(["']?).*?\1/gi, '')
-    .replace(/href\s*=\s*(["']?)\s*javascript:/gi, 'href=$1');
-}
-
-type JsonObject = Record<string, unknown>;
-
-function isRecord(value: unknown): value is JsonObject {
-  return typeof value === 'object' && value !== null;
-}
-
-function parseJsonObject(raw: string): JsonObject | null {
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    return isRecord(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-function toStringArray(value: unknown, limit: number): string[] | undefined {
-  if (!Array.isArray(value)) return undefined;
-  return value.slice(0, limit).filter((v): v is string => typeof v === 'string');
-}
-
-const CHANGELOG_FILE = process.env['CHANGELOG_STORE_PATH'] || './changelog-store.json';
-const MAX_RELEASES_PER_PROJECT = 100;
-const changelogStore = new Map<string, ChangelogRelease[]>();
-
-// Load from disk on startup
-function loadChangelogStore(): void {
-  try {
-    if (existsSync(CHANGELOG_FILE)) {
-      const data = JSON.parse(readFileSync(CHANGELOG_FILE, 'utf-8'));
-      for (const [project, releases] of Object.entries(data)) {
-        if (typeof project === 'string' && Array.isArray(releases)) {
-          changelogStore.set(project, releases as ChangelogRelease[]);
-        }
-      }
-      log.info({ projects: changelogStore.size }, 'Loaded changelog store');
-    }
-  } catch (err) {
-    log.warn({ err: (err as Error).message }, 'Failed to load changelog store');
-  }
-}
-
-function saveChangelogStore(): void {
-  try {
-    const data: Record<string, ChangelogRelease[]> = {};
-    for (const [project, releases] of changelogStore) {
-      data[project] = releases;
-    }
-    const tmp = CHANGELOG_FILE + '.tmp';
-    writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf-8');
-    renameSync(tmp, CHANGELOG_FILE);
-  } catch (err) {
-    log.warn({ err: (err as Error).message }, 'Failed to save changelog store');
-  }
-}
-
-loadChangelogStore();
+// Changelog store and handlers imported from routes/changelog.ts
 
 // --- Routes ---
 
@@ -569,285 +446,8 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
   }
 }
 
-// --- Changelog Endpoints ---
-
-async function handleChangelogPublish(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-
-  const raw = await readBody(req);
-  const body = parseJsonObject(raw);
-  if (!body) {
-    json(res, 400, { error: 'Invalid JSON body' });
-    return;
-  }
-
-  const project = typeof body.project === 'string' ? body.project : '';
-  const version = typeof body.version === 'string' ? body.version : '';
-
-  // Validate required fields
-  if (!project) {
-    json(res, 400, { error: '"project" is required (string)' });
-    return;
-  }
-  if (!version) {
-    json(res, 400, { error: '"version" is required (string)' });
-    return;
-  }
-
-  // Validate project slug (alphanumeric, hyphens, underscores)
-  if (!/^[a-zA-Z0-9_-]{1,64}$/.test(project)) {
-    json(res, 400, { error: '"project" must be 1-64 alphanumeric characters, hyphens, or underscores' });
-    return;
-  }
-
-  // Validate version format
-  if (version.length > 64) {
-    json(res, 400, { error: '"version" must be under 64 characters' });
-    return;
-  }
-
-  if (!Array.isArray(body.changes)) {
-    json(res, 400, { error: '"changes" must be an array' });
-    return;
-  }
-
-  const contributors = toStringArray(body.contributors, 50) || [];
-
-  const release: ChangelogRelease = {
-    version,
-    date: typeof body.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.date) ? body.date : new Date().toISOString().split('T')[0],
-    summary: String(body.summary || '').slice(0, 2000),
-    changes: body.changes.slice(0, 50).map(c => {
-      const item = isRecord(c) ? c : {};
-      return {
-        description: String(item.description || '').slice(0, 500),
-        category: String(item.category || 'chores').slice(0, 50),
-        ticketKey: item.ticketKey ? String(item.ticketKey).slice(0, 32) : undefined,
-      };
-    }),
-    contributors,
-    metadata: body.metadata
-      ? JSON.parse(JSON.stringify(body.metadata, (k: string, v: unknown) => k === '__proto__' || k === 'constructor' || k === 'prototype' ? undefined : v))
-      : undefined,
-    formatted: {
-      markdown: String(body.formatted?.markdown || '').slice(0, 50_000),
-      html: sanitizeHtml(String(body.formatted?.html || '').slice(0, 100_000)),
-    },
-    publishedAt: new Date().toISOString(),
-    userId: user.id,
-  };
-
-  // Cap total number of projects
-  const MAX_PROJECTS = 1000;
-
-  // DB-backed persistence when available
-  if (useDb) {
-    const projectCount = await dbGetProjectCount();
-    if (projectCount >= MAX_PROJECTS) {
-      json(res, 409, { error: 'Maximum number of projects reached' });
-      return;
-    }
-    await dbPublishRelease(project, {
-      version: release.version,
-      date: release.date,
-      summary: release.summary,
-      changes: release.changes,
-      contributors: release.contributors,
-      metadata: release.metadata,
-      formattedMd: release.formatted.markdown,
-      formattedHtml: release.formatted.html,
-      userId: user.id,
-    });
-  } else {
-    if (!changelogStore.has(project) && changelogStore.size >= MAX_PROJECTS) {
-      json(res, 409, { error: 'Maximum number of projects reached' });
-      return;
-    }
-
-    // Store the release
-    const releases = changelogStore.get(project) || [];
-
-    // Check for duplicate version (update if exists)
-    const existingIdx = releases.findIndex(r => r.version === release.version);
-    if (existingIdx >= 0) {
-      releases[existingIdx] = release;
-    } else {
-      releases.unshift(release); // newest first
-      // Cap stored releases
-      if (releases.length > MAX_RELEASES_PER_PROJECT) {
-        releases.length = MAX_RELEASES_PER_PROJECT;
-      }
-    }
-
-    changelogStore.set(project, releases);
-    saveChangelogStore();
-  }
-
-  json(res, 201, {
-    ok: true,
-    url: `https://cullit.io/changelog/${project}`,
-    version: release.version,
-    project,
-  });
-}
-
-async function handleChangelogLatest(req: IncomingMessage, res: ServerResponse, project: string): Promise<void> {
-  const url = new URL(req.url || '/', `http://localhost:${PORT}`);
-  const rawLimit = parseInt(url.searchParams.get('limit') || '20', 10);
-  const limit = Math.max(1, Math.min(isNaN(rawLimit) ? 20 : rawLimit, 50));
-
-  if (useDb) {
-    const result = await dbGetReleases(project, limit);
-    json(res, 200, { project, releases: result });
-    return;
-  }
-
-  const releases = changelogStore.get(project);
-  if (!releases || releases.length === 0) {
-    json(res, 200, { project, releases: [] });
-    return;
-  }
-
-  // Return releases in the shape the widget expects
-  const result = releases.slice(0, limit).map(r => ({
-    version: r.version,
-    date: r.date,
-    summary: r.summary,
-    changes: r.changes,
-    contributors: r.contributors,
-    formatted: r.formatted,
-  }));
-
-  json(res, 200, { project, releases: result });
-}
-
-async function handleChangelogDelete(req: IncomingMessage, res: ServerResponse, project: string, version: string): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-
-  if (useDb) {
-    const deleted = await dbDeleteRelease(project, version, user.id);
-    if (!deleted) { json(res, 404, { error: 'Release not found or not owned by you' }); return; }
-  } else {
-    const releases = changelogStore.get(project);
-    if (!releases) { json(res, 404, { error: 'Release not found' }); return; }
-    const idx = releases.findIndex(r => r.version === version && r.userId === user.id);
-    if (idx < 0) { json(res, 404, { error: 'Release not found or not owned by you' }); return; }
-    releases.splice(idx, 1);
-    if (releases.length === 0) changelogStore.delete(project);
-    saveChangelogStore();
-  }
-
-  json(res, 200, { ok: true, project, version });
-}
-
-async function handleChangelogListProjects(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-
-  if (useDb) {
-    const rows = await sql<Array<{ project: string }>>`SELECT DISTINCT project FROM changelog_releases ORDER BY project`;
-    json(res, 200, { projects: rows.map(r => r.project) });
-  } else {
-    json(res, 200, { projects: Array.from(changelogStore.keys()).sort() });
-  }
-}
-
-// --- Team / Org Endpoints ---
-
-async function handleGetOrg(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-  if (!user.orgId) { json(res, 200, { org: null }); return; }
-
-  const org = await getOrg(user.orgId);
-  if (!org) { json(res, 200, { org: null }); return; }
-
-  const members = (await getOrgMembers(org.id)).map(m => ({
-    id: m.id, login: m.login, name: m.name, avatarUrl: m.avatarUrl, role: m.role,
-  }));
-
-  json(res, 200, {
-    org: { id: org.id, name: org.name, slug: org.slug, tier: org.tier, maxSeats: org.maxSeats, memberCount: members.length, createdAt: org.createdAt },
-    members,
-  });
-}
-
-async function handleCreateOrg(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-  if (user.orgId) { json(res, 409, { error: 'Already a member of an organization' }); return; }
-
-  const raw = await readBody(req);
-  let body: { name?: string };
-  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
-
-  if (!body.name || typeof body.name !== 'string' || body.name.length < 2 || body.name.length > 64) {
-    json(res, 400, { error: '"name" is required (2-64 characters)' }); return;
-  }
-
-  const org = await createOrg(body.name, user);
-  json(res, 201, { org: { id: org.id, name: org.name, slug: org.slug, tier: org.tier } });
-}
-
-async function handleOrgInvite(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-  if (!user.orgId || (user.role !== 'owner' && user.role !== 'admin')) {
-    json(res, 403, { error: 'Must be org owner or admin to invite members' }); return;
-  }
-
-  const raw = await readBody(req);
-  let body: { userId?: string; role?: 'admin' | 'member' };
-  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
-
-  if (!body.userId || typeof body.userId !== 'string') {
-    json(res, 400, { error: '"userId" is required' }); return;
-  }
-
-  const targetUser = await getUser(body.userId);
-  if (!targetUser) {
-    json(res, 404, { error: 'User not found' }); return;
-  }
-
-  const role = body.role === 'admin' ? 'admin' : 'member';
-
-  // Only the org owner can grant admin role
-  if (role === 'admin' && user.role !== 'owner') {
-    json(res, 403, { error: 'Only the org owner can grant admin role' }); return;
-  }
-
-  const success = await addOrgMember(user.orgId, targetUser, role);
-  if (!success) {
-    json(res, 409, { error: 'Cannot add member (org full or already a member)' }); return;
-  }
-
-  json(res, 200, { ok: true });
-}
-
-async function handleOrgRemoveMember(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-  if (!user.orgId || (user.role !== 'owner' && user.role !== 'admin')) {
-    json(res, 403, { error: 'Must be org owner or admin to remove members' }); return;
-  }
-
-  const raw = await readBody(req);
-  let body: { userId?: string };
-  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
-
-  if (!body.userId || typeof body.userId !== 'string') {
-    json(res, 400, { error: '"userId" is required' }); return;
-  }
-
-  const success = await removeOrgMember(user.orgId, body.userId);
-  if (!success) {
-    json(res, 409, { error: 'Cannot remove member (owner, not found, or not a member)' }); return;
-  }
-
-  json(res, 200, { ok: true });
-}
+// Changelog handlers imported from routes/changelog.ts
+// Org handlers imported from routes/org.ts
 
 // --- History Endpoint ---
 
@@ -889,249 +489,13 @@ async function handleGetAnalytics(req: IncomingMessage, res: ServerResponse): Pr
   });
 }
 
-// --- Draft Workflow Endpoints ---
+// Draft handlers imported from routes/drafts.ts
 
-const VALID_DRAFT_STATUSES = new Set(['draft', 'submitted', 'approved', 'published']);
+// --- Project Settings Endpoints ---
 
 function isTeamTier(tier: string): boolean {
   return tier === 'team' || tier === 'enterprise';
 }
-
-function hasDraftAccess(user: { id: string; orgId: string | null }, draft: { user_id: string; org_id: string | null }): boolean {
-  if (draft.user_id === user.id) return true;
-  return !!draft.org_id && !!user.orgId && draft.org_id === user.orgId;
-}
-
-function hasDraftAdminAccess(user: { id: string; orgId: string | null; role: string }, draft: { user_id: string; org_id: string | null }): boolean {
-  if (draft.user_id === user.id) return true;
-  return !!draft.org_id && !!user.orgId && draft.org_id === user.orgId && (user.role === 'owner' || user.role === 'admin');
-}
-
-async function handleCreateDraft(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-
-  // Team feature: require team or higher tier
-  const tier = getEffectiveTier(user);
-  if (!isTeamTier(tier)) {
-    json(res, 403, { error: 'Release drafts require a Team plan', upgrade: 'https://cullit.io/pricing' }); return;
-  }
-
-  const raw = await readBody(req);
-  const body = parseJsonObject(raw);
-  if (!body) { json(res, 400, { error: 'Invalid JSON' }); return; }
-
-  const project = typeof body.project === 'string' ? body.project : '';
-
-  if (!project) {
-    json(res, 400, { error: '"project" is required' }); return;
-  }
-  if (!/^[a-zA-Z0-9_-]{1,64}$/.test(project)) {
-    json(res, 400, { error: '"project" must be 1-64 alphanumeric characters, hyphens, or underscores' }); return;
-  }
-
-  const draft = await dbCreateDraft({
-    id: randomBytes(12).toString('hex'),
-    orgId: user.orgId,
-    userId: user.id,
-    project,
-    version: String(body.version || '').slice(0, 64),
-    sourceType: typeof body.sourceType === 'string' ? body.sourceType : 'local',
-    provider: typeof body.provider === 'string' ? body.provider : 'none',
-    model: typeof body.model === 'string' ? body.model : '',
-    audience: typeof body.audience === 'string' ? body.audience : 'developer',
-    tone: typeof body.tone === 'string' ? body.tone : 'professional',
-    notesJson: Array.isArray(body.notes) ? body.notes.slice(0, 200) : [],
-    formattedMd: String(body.formattedMd || '').slice(0, 50_000),
-    formattedHtml: String(body.formattedHtml || '').slice(0, 100_000),
-    rawInputsJson: body.rawInputs || null,
-    createdBy: user.id,
-  });
-
-  json(res, 201, { draft });
-}
-
-async function handleListDrafts(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-
-  const tier = getEffectiveTier(user);
-  if (!isTeamTier(tier)) {
-    json(res, 403, { error: 'Release drafts require a Team plan', upgrade: 'https://cullit.io/pricing' }); return;
-  }
-
-  const url = new URL(req.url || '/', `http://localhost:${PORT}`);
-  const rawLimit = parseInt(url.searchParams.get('limit') || '20', 10);
-  const limit = Math.max(1, Math.min(isNaN(rawLimit) ? 20 : rawLimit, 100));
-  const rawOffset = parseInt(url.searchParams.get('offset') || '0', 10);
-  const offset = Math.max(0, isNaN(rawOffset) ? 0 : rawOffset);
-  const statusFilter = url.searchParams.get('status') || undefined;
-  if (statusFilter && !VALID_DRAFT_STATUSES.has(statusFilter)) {
-    json(res, 400, { error: 'Invalid status filter' }); return;
-  }
-
-  const result = await dbListDrafts({
-    userId: user.id,
-    orgId: user.orgId || undefined,
-    status: statusFilter,
-    limit,
-    offset,
-  });
-
-  json(res, 200, { drafts: result.drafts, total: result.total, limit, offset });
-}
-
-async function handleGetDraft(req: IncomingMessage, res: ServerResponse, draftId: string): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-
-  const draft = await dbGetDraft(draftId);
-  if (!draft) { json(res, 404, { error: 'Draft not found' }); return; }
-
-  if (!hasDraftAccess(user, draft)) {
-    json(res, 403, { error: 'Access denied' }); return;
-  }
-
-  const revisions = await dbGetRevisions(draftId);
-  json(res, 200, { draft, revisions });
-}
-
-async function handleUpdateDraft(req: IncomingMessage, res: ServerResponse, draftId: string): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-
-  const draft = await dbGetDraft(draftId);
-  if (!draft) { json(res, 404, { error: 'Draft not found' }); return; }
-
-  if (!hasDraftAdminAccess(user, draft)) {
-    json(res, 403, { error: 'Access denied' }); return;
-  }
-
-  if (draft.status === 'published') {
-    json(res, 409, { error: 'Cannot edit a published draft' }); return;
-  }
-
-  const raw = await readBody(req);
-  const body = parseJsonObject(raw);
-  if (!body) { json(res, 400, { error: 'Invalid JSON' }); return; }
-
-  // Save revision before updating
-  const revisionNum = await dbGetRevisionCount(draftId);
-  await dbCreateRevision({
-    id: randomBytes(12).toString('hex'),
-    draftId,
-    revisionNumber: revisionNum + 1,
-    notesJson: typeof draft.notes_json === 'string' ? JSON.parse(draft.notes_json as string) : (draft.notes_json || []),
-    formattedMd: draft.formatted_md,
-    formattedHtml: draft.formatted_html,
-    changedBy: user.id,
-  });
-
-  const updated = await dbUpdateDraft(draftId, {
-    version: body.version,
-    notesJson: Array.isArray(body.notes) ? body.notes.slice(0, 200) : undefined,
-    formattedMd: body.formattedMd ? String(body.formattedMd).slice(0, 50_000) : undefined,
-    formattedHtml: body.formattedHtml ? String(body.formattedHtml).slice(0, 100_000) : undefined,
-    audience: body.audience,
-    tone: body.tone,
-  });
-
-  json(res, 200, { draft: updated });
-}
-
-async function handleDraftSubmit(req: IncomingMessage, res: ServerResponse, draftId: string): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-
-  const draft = await dbGetDraft(draftId);
-  if (!draft) { json(res, 404, { error: 'Draft not found' }); return; }
-  if (!hasDraftAccess(user, draft)) {
-    json(res, 403, { error: 'Access denied' }); return;
-  }
-  if (draft.status !== 'draft') {
-    json(res, 409, { error: 'Draft must be in "draft" status to submit for review' }); return;
-  }
-
-  const updated = await dbUpdateDraftStatus(draftId, 'submitted');
-  json(res, 200, { draft: updated });
-}
-
-async function handleDeleteDraft(req: IncomingMessage, res: ServerResponse, draftId: string): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-
-  const draft = await dbGetDraft(draftId);
-  if (!draft) { json(res, 404, { error: 'Draft not found' }); return; }
-  if (!hasDraftAdminAccess(user, draft)) {
-    json(res, 403, { error: 'Access denied' }); return;
-  }
-  if (draft.status === 'published') {
-    json(res, 409, { error: 'Cannot delete a published draft' }); return;
-  }
-
-  const deleted = await dbDeleteDraft(draftId);
-  if (!deleted) { json(res, 404, { error: 'Draft not found' }); return; }
-  json(res, 200, { ok: true });
-}
-
-async function handleDraftApprove(req: IncomingMessage, res: ServerResponse, draftId: string): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-
-  // Only owner or admin can approve
-  if (user.role !== 'owner' && user.role !== 'admin') {
-    json(res, 403, { error: 'Only org owners and admins can approve drafts' }); return;
-  }
-
-  const draft = await dbGetDraft(draftId);
-  if (!draft) { json(res, 404, { error: 'Draft not found' }); return; }
-  if (draft.org_id !== user.orgId) {
-    json(res, 403, { error: 'Access denied' }); return;
-  }
-  if (draft.status !== 'submitted') {
-    json(res, 409, { error: 'Draft must be in "submitted" status to approve' }); return;
-  }
-
-  const updated = await dbUpdateDraftStatus(draftId, 'approved', user.id);
-  json(res, 200, { draft: updated });
-}
-
-async function handleDraftPublish(req: IncomingMessage, res: ServerResponse, draftId: string): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-
-  // Only owner or admin can publish
-  if (user.role !== 'owner' && user.role !== 'admin') {
-    json(res, 403, { error: 'Only org owners and admins can publish drafts' }); return;
-  }
-
-  const draft = await dbGetDraft(draftId);
-  if (!draft) { json(res, 404, { error: 'Draft not found' }); return; }
-  if (draft.org_id !== user.orgId) {
-    json(res, 403, { error: 'Access denied' }); return;
-  }
-  if (draft.status !== 'approved') {
-    json(res, 409, { error: 'Draft must be approved before publishing' }); return;
-  }
-
-  // Publish to changelog
-  if (draft.version) {
-    await dbPublishRelease(draft.project, {
-      version: draft.version,
-      date: new Date().toISOString().split('T')[0],
-      summary: draft.formatted_md.slice(0, 2000),
-      changes: typeof draft.notes_json === 'string' ? JSON.parse(draft.notes_json as string) : (draft.notes_json as unknown[]),
-      contributors: [],
-      formattedMd: draft.formatted_md,
-      formattedHtml: draft.formatted_html,
-    });
-  }
-
-  const updated = await dbUpdateDraftStatus(draftId, 'published');
-  json(res, 200, { draft: updated });
-}
-
-// --- Project Settings Endpoints ---
 
 async function handleGetProjectSettings(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const user = await resolveUser(req);
@@ -1144,6 +508,23 @@ async function handleGetProjectSettings(req: IncomingMessage, res: ServerRespons
 
   const settings = await dbListProjectSettings(user.id, user.orgId);
   json(res, 200, { settings });
+}
+
+/** Resolve a field from body using camelCase first, then snake_case fallback. */
+function pick(body: JsonObject, camel: string, snake: string): unknown {
+  return body[camel] ?? body[snake];
+}
+
+/** Parse a field that can be a JSON array or a JSON string encoding an array. */
+function parseArrayField(value: unknown, limit: number): string[] | undefined {
+  if (Array.isArray(value)) return value.slice(0, limit);
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed.slice(0, limit);
+    } catch { /* ignore */ }
+  }
+  return undefined;
 }
 
 async function handlePutProjectSettings(req: IncomingMessage, res: ServerResponse, project: string): Promise<void> {
@@ -1163,48 +544,34 @@ async function handlePutProjectSettings(req: IncomingMessage, res: ServerRespons
   const body = parseJsonObject(raw);
   if (!body) { json(res, 400, { error: 'Invalid JSON' }); return; }
 
-  const defaultSource = body.defaultSource ?? body.default_source_type;
-  const defaultProvider = body.defaultProvider ?? body.default_provider;
-  const defaultModel = body.defaultModel ?? body.default_model;
-  const defaultAudience = body.defaultAudience ?? body.default_audience;
-  const defaultTone = body.defaultTone ?? body.default_tone;
-  const categoriesInput = body.categories ?? body.categories_json;
-  let categories: string[] | undefined;
-  if (Array.isArray(categoriesInput)) {
-    categories = categoriesInput.slice(0, 20);
-  } else if (typeof categoriesInput === 'string') {
-    try {
-      const parsed = JSON.parse(categoriesInput);
-      if (Array.isArray(parsed)) categories = parsed.slice(0, 20);
-    } catch {
-      categories = undefined;
-    }
-  }
-  const publishTargetsInput = body.publishTargets ?? body.publish_targets_json;
-  let publishTargets: unknown[] | undefined;
-  if (Array.isArray(publishTargetsInput)) {
-    publishTargets = publishTargetsInput.slice(0, 10);
-  }
+  // Resolve fields with camelCase/snake_case fallback
+  const defaultSource = pick(body, 'defaultSource', 'default_source_type');
+  const defaultProvider = pick(body, 'defaultProvider', 'default_provider');
+  const defaultModel = pick(body, 'defaultModel', 'default_model');
+  const defaultAudience = pick(body, 'defaultAudience', 'default_audience');
+  const defaultTone = pick(body, 'defaultTone', 'default_tone');
+  const categories = parseArrayField(pick(body, 'categories', 'categories_json'), 20);
 
-  const templateInput = body.template || {};
-  const templateDefaultFormat = templateInput.defaultFormat ?? templateInput.default_format ?? body.defaultFormat ?? body.default_format;
-  const templateProfile = templateInput.profile ?? templateInput.templateProfile ?? templateInput.template_profile ?? body.templateProfile ?? body.template_profile;
-  const sectionOrderInput = templateInput.sectionOrder ?? templateInput.section_order ?? body.sectionOrder ?? body.section_order;
+  const publishTargetsInput = pick(body, 'publishTargets', 'publish_targets_json');
+  const publishTargets = Array.isArray(publishTargetsInput) ? publishTargetsInput.slice(0, 10) : undefined;
+
+  // Template config — resolve from nested template object or top-level body
+  const templateInput = (isRecord(body.template) ? body.template : {}) as JsonObject;
+  const templateDefaultFormat = pick(templateInput, 'defaultFormat', 'default_format') ?? pick(body, 'defaultFormat', 'default_format');
+  const templateProfile = templateInput.profile ?? pick(templateInput, 'templateProfile', 'template_profile') ?? pick(body, 'templateProfile', 'template_profile');
+  const sectionOrderInput = pick(templateInput, 'sectionOrder', 'section_order') ?? pick(body, 'sectionOrder', 'section_order');
   const templateSectionOrder = Array.isArray(sectionOrderInput)
     ? sectionOrderInput.slice(0, 20).filter((x: unknown) => typeof x === 'string')
     : undefined;
 
+  // Build widget config with template overlay
   type WidgetConfig = { template?: { defaultFormat?: string; profile?: string; sectionOrder?: string[] } } & JsonObject;
   const widgetConfig: WidgetConfig = (isRecord(body.widgetConfig)) ? { ...body.widgetConfig } : {};
-  const currentTemplate = isRecord(widgetConfig.template)
-    ? { ...widgetConfig.template }
-    : {};
+  const currentTemplate = isRecord(widgetConfig.template) ? { ...widgetConfig.template } : {};
   if (typeof templateDefaultFormat === 'string') currentTemplate.defaultFormat = templateDefaultFormat;
   if (typeof templateProfile === 'string') currentTemplate.profile = templateProfile;
   if (templateSectionOrder) currentTemplate.sectionOrder = templateSectionOrder;
-  if (Object.keys(currentTemplate).length) {
-    widgetConfig.template = currentTemplate;
-  }
+  if (Object.keys(currentTemplate).length) widgetConfig.template = currentTemplate;
 
   const existing = await dbGetProjectSettings(user.id, project, user.orgId);
 
@@ -1226,118 +593,7 @@ async function handlePutProjectSettings(req: IncomingMessage, res: ServerRespons
   json(res, 200, { settings });
 }
 
-// --- Org Invite Endpoints ---
-
-async function handleCreateOrgInvite(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-  if (!user.orgId || (user.role !== 'owner' && user.role !== 'admin')) {
-    json(res, 403, { error: 'Must be org owner or admin to create invites' }); return;
-  }
-
-  const raw = await readBody(req);
-  let body: { email?: string; role?: string };
-  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
-
-  if (!body.email || typeof body.email !== 'string' || !body.email.includes('@')) {
-    json(res, 400, { error: 'Valid email is required' }); return;
-  }
-
-  const role = body.role === 'admin' ? 'admin' : 'member';
-  if (role === 'admin' && user.role !== 'owner') {
-    json(res, 403, { error: 'Only the org owner can create admin invites' }); return;
-  }
-
-  const invite = await dbCreateOrgInvite({
-    id: randomBytes(12).toString('hex'),
-    orgId: user.orgId,
-    email: body.email.toLowerCase().trim(),
-    role,
-    token: randomBytes(24).toString('hex'),
-    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-    createdBy: user.id,
-  });
-
-  json(res, 201, { invite: { id: invite.id, email: invite.email, role: invite.role, expiresAt: invite.expires_at } });
-}
-
-async function handleListOrgInvites(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-  if (!user.orgId || (user.role !== 'owner' && user.role !== 'admin')) {
-    json(res, 403, { error: 'Must be org owner or admin to list invites' }); return;
-  }
-
-  const invites = await dbListOrgInvites(user.orgId);
-  json(res, 200, {
-    invites: invites.map(i => ({
-      id: i.id, email: i.email, role: i.role, expiresAt: i.expires_at, createdAt: i.created_at,
-    })),
-  });
-}
-
-async function handleDeleteOrgInvite(req: IncomingMessage, res: ServerResponse, inviteId: string): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-  if (!user.orgId || (user.role !== 'owner' && user.role !== 'admin')) {
-    json(res, 403, { error: 'Must be org owner or admin to revoke invites' }); return;
-  }
-
-  const ok = await dbDeleteOrgInvite(inviteId, user.orgId);
-  if (!ok) { json(res, 404, { error: 'Invite not found' }); return; }
-  json(res, 200, { ok: true });
-}
-
-async function handleUpdateOrgMemberRole(req: IncomingMessage, res: ServerResponse, memberId: string): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-  if (!user.orgId || user.role !== 'owner') {
-    json(res, 403, { error: 'Only the org owner can change member roles' }); return;
-  }
-
-  const raw = await readBody(req);
-  let body: { role?: string };
-  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
-
-  const role = body.role;
-  if (role !== 'admin' && role !== 'member') {
-    json(res, 400, { error: 'Role must be "admin" or "member"' }); return;
-  }
-
-  // Can't change own role
-  if (memberId === user.id) {
-    json(res, 409, { error: 'Cannot change your own role' }); return;
-  }
-
-  // Update the member's role via the org_members table directly
-  if (useDb) {
-    await sql!`UPDATE org_members SET role = ${role} WHERE org_id = ${user.orgId} AND user_id = ${memberId}`;
-    await sql!`UPDATE users SET role = ${role} WHERE id = ${memberId} AND org_id = ${user.orgId}`;
-  }
-
-  json(res, 200, { ok: true, userId: memberId, role });
-}
-
-async function handleGetOrgUsage(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-  if (!user.orgId) { json(res, 200, { usage: null }); return; }
-
-  const stats = await getUsageStats(user.orgId, 30);
-  const monthlyCount = await getMonthlyGenerationCount(user.orgId);
-  const members = await getOrgMembers(user.orgId);
-  const org = await getOrg(user.orgId);
-  const limits = getTierLimits(org?.tier || 'team');
-
-  json(res, 200, {
-    usage: {
-      ...stats,
-      monthlyGenerations: monthlyCount,
-      limits,
-      seats: { used: members.length, max: org?.maxSeats || 10 },
-    },
-  });
-}
+// Org invite, member role, and usage handlers imported from routes/org.ts
 
 // --- Router ---
 
