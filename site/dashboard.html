@@ -1283,7 +1283,10 @@
       <div class="panel">
         <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
           <span>&#128240; Published Releases</span>
-          <button class="btn-small" onclick="loadChangelog()" style="font-size:0.7rem">&#x21bb; Refresh</button>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <a id="changelogLiveLink" href="changelog.html" target="_blank" rel="noopener noreferrer" class="btn-small" style="font-size:0.7rem;text-decoration:none;display:none">&#128279; View Live Page</a>
+            <button class="btn-small" onclick="loadChangelog()" style="font-size:0.7rem">&#x21bb; Refresh</button>
+          </div>
         </div>
         <div class="panel-body">
           <div id="changelogProjectList" style="margin-bottom:1rem">
@@ -2345,6 +2348,15 @@ async function loadChangelog() {
 
 function updateWidgetSnippet(project) {
   var proj = project || document.getElementById('changelogProjectSelect').value || 'your-project';
+  var liveLink = document.getElementById('changelogLiveLink');
+  if (liveLink) {
+    if (proj && proj !== 'your-project') {
+      liveLink.href = 'changelog.html?project=' + encodeURIComponent(proj);
+      liveLink.style.display = '';
+    } else {
+      liveLink.style.display = 'none';
+    }
+  }
   var accent = document.getElementById('widgetAccentColor').value;
   var header = document.getElementById('widgetHeaderText').value;
   var emoji = document.getElementById('widgetTriggerEmoji').value;
