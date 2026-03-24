@@ -153,12 +153,12 @@ export async function handleUpdateDraft(req: IncomingMessage, res: ServerRespons
   });
 
   const updated = await dbUpdateDraft(draftId, {
-    version: body.version,
-    notesJson: Array.isArray(body.notes) ? body.notes.slice(0, 200) : undefined,
+    version: typeof body.version === 'string' ? String(body.version) : undefined,
+    notesJson: Array.isArray(body.notes) ? (body.notes as unknown[]).slice(0, 200) : undefined,
     formattedMd: body.formattedMd ? String(body.formattedMd).slice(0, 50_000) : undefined,
     formattedHtml: body.formattedHtml ? String(body.formattedHtml).slice(0, 100_000) : undefined,
-    audience: body.audience,
-    tone: body.tone,
+    audience: typeof body.audience === 'string' ? String(body.audience) : undefined,
+    tone: typeof body.tone === 'string' ? String(body.tone) : undefined,
   });
 
   json(res, 200, { draft: updated });

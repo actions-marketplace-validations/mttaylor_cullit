@@ -8,7 +8,6 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { readFileSync, writeFileSync, existsSync, renameSync } from 'fs';
 import { json, readBody, parseJsonObject, toStringArray, isRecord, sanitizeHtml, PORT } from '../utils.js';
-import type { JsonObject } from '../utils.js';
 import { resolveUser, useDb } from '../auth.js';
 import { dbPublishRelease, dbGetReleases, dbGetProjectCount, dbDeleteRelease, sql } from '../db.js';
 import { log } from '../logger.js';
@@ -122,8 +121,8 @@ export async function handleChangelogPublish(req: IncomingMessage, res: ServerRe
       ? JSON.parse(JSON.stringify(body.metadata, (k: string, v: unknown) => k === '__proto__' || k === 'constructor' || k === 'prototype' ? undefined : v))
       : undefined,
     formatted: {
-      markdown: String(body.formatted?.markdown || '').slice(0, 50_000),
-      html: sanitizeHtml(String(body.formatted?.html || '').slice(0, 100_000)),
+      markdown: String(isRecord(body.formatted) && body.formatted.markdown || '').slice(0, 50_000),
+      html: sanitizeHtml(String(isRecord(body.formatted) && body.formatted.html || '').slice(0, 100_000)),
     },
     publishedAt: new Date().toISOString(),
     userId: user.id,
