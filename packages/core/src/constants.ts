@@ -1,11 +1,11 @@
 // Shared constants across Cullit packages
 
-export const VERSION = '1.10.1';
+export const VERSION = '1.11.0';
 
 export const DEFAULT_CATEGORIES = ['features', 'fixes', 'breaking', 'improvements', 'chores'];
 
 export const DEFAULT_MODELS: Record<string, string> = {
-  anthropic: 'claude-sonnet-4-6-20250514',
+  anthropic: 'claude-sonnet-4-20250514',
   openai: 'gpt-4o',
   gemini: 'gemini-2.5-flash',
   ollama: 'llama3.3',
