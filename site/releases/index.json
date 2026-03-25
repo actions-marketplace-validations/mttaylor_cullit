@@ -13,6 +13,19 @@
     ],
     "patches": [
       {
+        "version": "v1.11.1",
+        "date": "2026-03-24",
+        "commits": 3,
+        "filesChanged": 20,
+        "providers": [
+          "anthropic",
+          "openai",
+          "gemini",
+          "ollama",
+          "template"
+        ]
+      },
+      {
         "version": "v1.11.2",
         "date": "2026-03-24",
         "commits": 14,
@@ -24,19 +37,6 @@
           "openai",
           "gemini",
           "ollama"
-        ]
-      },
-      {
-        "version": "v1.11.1",
-        "date": "2026-03-24",
-        "commits": 3,
-        "filesChanged": 20,
-        "providers": [
-          "anthropic",
-          "openai",
-          "gemini",
-          "ollama",
-          "template"
         ]
       }
     ]
