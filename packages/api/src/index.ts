@@ -57,8 +57,11 @@ import {
 // Load pro plugins if installed
 try { await import('@cullit/pro'); } catch { /* pro not installed */ }
 
-// Run database migrations (no-op if DATABASE_URL not set)
-await migrate();
+// Run database migrations (no-op if DATABASE_URL not set).
+// Wrapped in try/catch so the server still starts if the DB is temporarily unreachable.
+try { await migrate(); } catch (err) {
+  log.error({ err: (err as Error).message }, 'Database migration failed — server will start in degraded mode');
+}
 
 // Warn at startup if Stripe is not configured so operators know billing is disabled.
 if (!isStripeConfigured()) {
@@ -226,7 +229,9 @@ async function handleHealth(_req: IncomingMessage, res: ServerResponse): Promise
     try { await sql`SELECT 1`; dbOk = true; } catch { dbOk = false; }
   }
   const status = dbOk ? 'ok' : 'degraded';
-  json(res, dbOk ? 200 : 503, {
+  // Always return 200 so the load balancer considers the server healthy.
+  // Degraded status (DB unreachable) is communicated via the response body.
+  json(res, 200, {
     status,
     version: VERSION,
     uptime: process.uptime(),
