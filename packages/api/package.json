@@ -7,7 +7,9 @@
   "license": "MIT",
   "author": "Cullit <matt@cullit.io>",
   "main": "./dist/index.js",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "tsup src/index.ts src/openapi.ts src/auth.ts src/store.ts src/db.ts src/billing.ts src/email.ts src/logger.ts src/utils.ts src/routes/changelog.ts src/routes/drafts.ts src/routes/org.ts --format esm --clean",
     "dev": "tsup src/index.ts --format esm --watch --onSuccess 'node dist/index.js'",
@@ -16,7 +18,12 @@
   "dependencies": {
     "@cullit/config": "workspace:*",
     "@cullit/core": "workspace:*",
+    "@sentry/node": "^10.46.0",
     "pino": "^10.3.1",
-    "postgres": "^3.4.8"
+    "postgres": "^3.4.8",
+    "sanitize-html": "^2.17.2"
+  },
+  "devDependencies": {
+    "@types/sanitize-html": "^2.16.1"
   }
 }

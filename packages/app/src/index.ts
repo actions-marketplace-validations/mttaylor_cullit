@@ -24,6 +24,7 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import { runPipeline, VERSION, DEFAULT_CATEGORIES } from '@cullit/core';
 import type { CullConfig, PublishTarget } from '@cullit/core';
+import { log } from './logger.js';
 
 // Load pro plugins
 try { await import('@cullit/pro'); } catch { /* pro not installed */ }
@@ -179,14 +180,14 @@ async function createOrUpdateRelease(
       headers,
       body: JSON.stringify({ body }),
     });
-    console.log(`Updated release ${tag} on ${owner}/${repo}`);
+    log.info({ tag, owner, repo }, 'Updated release');
   } else {
     await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ tag_name: tag, name: tag, body }),
     });
-    console.log(`Created release ${tag} on ${owner}/${repo}`);
+    log.info({ tag, owner, repo }, 'Created release');
   }
 }
 
@@ -275,13 +276,13 @@ async function handleRelease(payload: GitHubReleasePayload): Promise<void> {
   const repo = repository.name;
   const installationId = installation.id;
 
-  console.log(`Release ${action}: ${owner}/${repo}@${tag}`);
+  log.info({ action, owner, repo, tag }, 'Processing release event');
 
   const token = await getInstallationToken(installationId);
   const prevTag = await getPreviousTag(token, owner, repo, tag);
 
   if (!prevTag) {
-    console.log(`No previous tag found for ${tag}, skipping`);
+    log.info({ tag }, 'No previous tag found, skipping');
     return;
   }
 
@@ -315,13 +316,13 @@ async function handlePush(payload: GitHubPushPayload): Promise<void> {
   const repo = repository.name;
   const installationId = installation.id;
 
-  console.log(`Tag push: ${owner}/${repo}@${tag}`);
+  log.info({ owner, repo, tag }, 'Processing tag push');
 
   const token = await getInstallationToken(installationId);
   const prevTag = await getPreviousTag(token, owner, repo, tag);
 
   if (!prevTag) {
-    console.log(`No previous tag found for ${tag}, skipping`);
+    log.info({ tag }, 'No previous tag found, skipping');
     return;
   }
 
@@ -347,11 +348,11 @@ function handleInstallation(payload: GitHubInstallationEventPayload): void {
   const account = payload.installation?.account?.login || 'unknown';
   const repos = payload.repositories?.map(r => r.full_name || '').filter(Boolean) || [];
 
-  console.log(`Installation ${action}: ${account} (${repos.length} repos)`);
+  log.info({ action, account, repoCount: repos.length }, 'Installation event');
   metrics.installations++;
 
   if (action === 'created') {
-    console.log('  Repos:', repos.join(', '));
+    log.info({ repos }, 'Installed repos');
   }
 }
 
@@ -417,7 +418,7 @@ const server = createServer(async (req, res) => {
     // Verify webhook signature (always required)
     const sig = req.headers['x-hub-signature-256'] as string;
     if (!WEBHOOK_SECRET) {
-      console.error('GITHUB_WEBHOOK_SECRET is not set — rejecting all webhooks');
+      log.error('GITHUB_WEBHOOK_SECRET is not set — rejecting all webhooks');
       json(res, 500, { error: 'Server misconfigured: webhook secret not set' });
       return;
     }
@@ -427,7 +428,13 @@ const server = createServer(async (req, res) => {
     }
 
     const event = req.headers['x-github-event'] as string;
-    const payload = JSON.parse(body);
+    let payload: unknown;
+    try {
+      payload = JSON.parse(body);
+    } catch {
+      json(res, 400, { error: 'Invalid JSON payload' });
+      return;
+    }
 
     // Respond immediately, process async
     json(res, 200, { ok: true, event });
@@ -437,13 +444,13 @@ const server = createServer(async (req, res) => {
       case 'release':
         handleRelease(payload).then(() => { metrics.releasesProcessed++; }).catch(err => {
           metrics.errors++;
-          console.error('Release handler error:', err.message);
+          log.error({ err: err.message }, 'Release handler error');
         });
         break;
       case 'push':
         handlePush(payload).then(() => { metrics.pushesProcessed++; }).catch(err => {
           metrics.errors++;
-          console.error('Push handler error:', err.message);
+          log.error({ err: err.message }, 'Push handler error');
         });
         break;
       case 'installation':
@@ -451,12 +458,12 @@ const server = createServer(async (req, res) => {
         handleInstallation(payload);
         break;
       default:
-        console.log(`Ignored event: ${event}`);
+        log.debug({ event }, 'Ignored event');
     }
   } catch (err) {
     metrics.errors++;
     const message = (err as Error).message;
-    console.error('Webhook error:', message);
+    log.error({ err: message }, 'Webhook error');
     if (message === 'Payload too large') {
       json(res, 413, { error: message });
       return;
@@ -469,21 +476,12 @@ const server = createServer(async (req, res) => {
 const isDirectRun = process.argv[1]?.endsWith('index.js') || process.argv[1]?.endsWith('index.mjs');
 if (isDirectRun) {
   server.listen(PORT, () => {
-    console.log(`
-  ╔═══════════════════════════════════════════╗
-  ║  Cullit GitHub App v${VERSION}               ║
-  ║  http://localhost:${PORT}                    ║
-  ║                                           ║
-  ║  POST /webhook    GitHub events           ║
-  ║  GET  /health     Health check            ║
-  ║  GET  /metrics    Usage metrics           ║
-  ╚═══════════════════════════════════════════╝
-    `);
+    log.info({ version: VERSION, port: PORT }, `Cullit GitHub App v${VERSION} listening on http://localhost:${PORT}`);
   });
 
   // Graceful shutdown — drain in-flight requests before exiting
   const shutdown = () => {
-    console.log('Shutting down...');
+    log.info('Shutting down...');
     server.close(() => process.exit(0));
     setTimeout(() => process.exit(1), 10_000).unref(); // force after 10s
   };

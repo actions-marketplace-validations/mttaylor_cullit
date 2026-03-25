@@ -7,6 +7,7 @@
 
 import { timingSafeEqual } from 'crypto';
 import type { IncomingMessage, ServerResponse } from 'http';
+import createSanitizer from 'sanitize-html';
 
 // --- Types ---
 
@@ -97,12 +98,13 @@ export function toStringArray(value: unknown, limit: number): string[] | undefin
 
 /** Strip dangerous HTML tags and attributes to prevent stored XSS. */
 export function sanitizeHtml(html: string): string {
-  return html
-    .replace(/<script[\s>].*?<\/script>/gis, '')
-    .replace(/<iframe[\s>].*?<\/iframe>/gis, '')
-    .replace(/<object[\s>].*?<\/object>/gis, '')
-    .replace(/<embed[^>]*>/gi, '')
-    .replace(/<link[^>]*>/gi, '')
-    .replace(/\s+on\w+\s*=\s*(["']?).*?\1/gi, '')
-    .replace(/href\s*=\s*(["']?)\s*javascript:/gi, 'href=$1');
+  return createSanitizer(html, {
+    allowedTags: createSanitizer.defaults.allowedTags.concat(['h1', 'h2', 'img', 'details', 'summary']),
+    allowedAttributes: {
+      ...createSanitizer.defaults.allowedAttributes,
+      img: ['src', 'alt', 'title', 'width', 'height'],
+    },
+    allowedSchemes: ['http', 'https', 'mailto'],
+    disallowedTagsMode: 'discard',
+  });
 }

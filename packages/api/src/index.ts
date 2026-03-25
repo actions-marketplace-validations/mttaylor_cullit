@@ -18,6 +18,7 @@
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
 import { createHash, randomBytes } from 'crypto';
+import * as Sentry from '@sentry/node';
 
 import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS, getTierLimits } from '@cullit/core';
 import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget } from '@cullit/core';
@@ -54,6 +55,17 @@ import {
   handleUpdateOrgMemberRole, handleGetOrgUsage,
 } from './routes/org.js';
 
+// Initialize Sentry error tracking (opt-in via SENTRY_DSN)
+if (process.env['SENTRY_DSN']) {
+  Sentry.init({
+    dsn: process.env['SENTRY_DSN'],
+    release: `cullit-api@${VERSION}`,
+    environment: process.env['NODE_ENV'] || 'development',
+    tracesSampleRate: 0.1,
+  });
+  log.info('Sentry error tracking enabled');
+}
+
 // Load pro plugins if installed
 try { await import('@cullit/pro'); } catch { /* pro not installed */ }
 
@@ -70,6 +82,18 @@ if (!isStripeConfigured()) {
 
 const ALLOWED_ORIGINS = process.env['ALLOWED_ORIGINS'] || '';
 const IS_HTTPS = (process.env['CULLIT_BASE_URL'] || '').startsWith('https');
+
+// --- Production safety checks ---
+const IS_PROD = process.env['NODE_ENV'] === 'production';
+if (IS_PROD) {
+  if (!process.env['CULLIT_JWT_SECRET']) {
+    log.warn('CULLIT_JWT_SECRET is not set — sessions will not survive restarts. Set this in production.');
+  }
+  if (!ALLOWED_ORIGINS || ALLOWED_ORIGINS === '*') {
+    log.warn('ALLOWED_ORIGINS is empty or wildcard (*) in production. Set to an explicit domain for security.');
+  }
+}
+
 if (!ALLOWED_ORIGINS) {
   log.warn('ALLOWED_ORIGINS is not set. CORS will reject cross-origin requests. Set ALLOWED_ORIGINS=* for local dev or specify your domain.');
 }
@@ -762,6 +786,7 @@ const server = createServer(async (req, res: CorsResponse) => {
       json(res, 404, { error: 'Not found', docs: '/openapi.json' });
     }
   } catch (err) {
+    Sentry.captureException(err);
     log.error({ err }, 'Unhandled error');
     json(res, 500, { error: 'Internal server error' });
   }

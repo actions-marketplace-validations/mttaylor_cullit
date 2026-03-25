@@ -54,7 +54,8 @@ describe('GitHub App - handleInstallation', () => {
     vi.stubEnv('GITHUB_APP_ID', '');
     vi.stubEnv('GITHUB_APP_PRIVATE_KEY', '');
 
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const { log } = await import('../src/logger');
+    const logSpy = vi.spyOn(log, 'info').mockImplementation(() => {});
     const mod = await import('../src/index');
 
     mod.handleInstallation({
@@ -66,8 +67,10 @@ describe('GitHub App - handleInstallation', () => {
       ],
     });
 
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('created'));
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('acme-corp'));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'created', account: 'acme-corp' }),
+      expect.any(String),
+    );
   });
 
   it('handles missing installation account gracefully', async () => {
@@ -75,12 +78,16 @@ describe('GitHub App - handleInstallation', () => {
     vi.stubEnv('GITHUB_APP_ID', '');
     vi.stubEnv('GITHUB_APP_PRIVATE_KEY', '');
 
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const { log } = await import('../src/logger');
+    const logSpy = vi.spyOn(log, 'info').mockImplementation(() => {});
     const mod = await import('../src/index');
 
     // Should not throw
     mod.handleInstallation({ action: 'deleted', installation: {} });
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('deleted'));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'deleted' }),
+      expect.any(String),
+    );
   });
 });
 

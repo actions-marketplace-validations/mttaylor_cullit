@@ -142,11 +142,17 @@ export async function handleUpdateDraft(req: IncomingMessage, res: ServerRespons
 
   // Save revision before updating
   const revisionNum = await dbGetRevisionCount(draftId);
+  let previousNotes: unknown[];
+  try {
+    previousNotes = typeof draft.notes_json === 'string' ? JSON.parse(draft.notes_json as string) : (draft.notes_json || []);
+  } catch {
+    previousNotes = [];
+  }
   await dbCreateRevision({
     id: randomBytes(12).toString('hex'),
     draftId,
     revisionNumber: revisionNum + 1,
-    notesJson: typeof draft.notes_json === 'string' ? JSON.parse(draft.notes_json as string) : (draft.notes_json || []),
+    notesJson: previousNotes,
     formattedMd: draft.formatted_md,
     formattedHtml: draft.formatted_html,
     changedBy: user.id,
@@ -239,11 +245,17 @@ export async function handleDraftPublish(req: IncomingMessage, res: ServerRespon
 
   // Publish to changelog
   if (draft.version) {
+    let changes: unknown[];
+    try {
+      changes = typeof draft.notes_json === 'string' ? JSON.parse(draft.notes_json as string) : (draft.notes_json as unknown[]);
+    } catch {
+      changes = [];
+    }
     await dbPublishRelease(draft.project, {
       version: draft.version,
       date: new Date().toISOString().split('T')[0],
       summary: draft.formatted_md.slice(0, 2000),
-      changes: typeof draft.notes_json === 'string' ? JSON.parse(draft.notes_json as string) : (draft.notes_json as unknown[]),
+      changes,
       contributors: [],
       formattedMd: draft.formatted_md,
       formattedHtml: draft.formatted_html,
