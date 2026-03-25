@@ -18,7 +18,6 @@
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
 import { createHash, randomBytes } from 'crypto';
-import * as Sentry from '@sentry/node';
 
 import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS, getTierLimits } from '@cullit/core';
 import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget } from '@cullit/core';
@@ -54,17 +53,6 @@ import {
   handleCreateOrgInvite, handleListOrgInvites, handleDeleteOrgInvite,
   handleUpdateOrgMemberRole, handleGetOrgUsage,
 } from './routes/org.js';
-
-// Initialize Sentry error tracking (opt-in via SENTRY_DSN)
-if (process.env['SENTRY_DSN']) {
-  Sentry.init({
-    dsn: process.env['SENTRY_DSN'],
-    release: `cullit-api@${VERSION}`,
-    environment: process.env['NODE_ENV'] || 'development',
-    tracesSampleRate: 0.1,
-  });
-  log.info('Sentry error tracking enabled');
-}
 
 // Load pro plugins if installed
 try { await import('@cullit/pro'); } catch { /* pro not installed */ }
@@ -786,7 +774,6 @@ const server = createServer(async (req, res: CorsResponse) => {
       json(res, 404, { error: 'Not found', docs: '/openapi.json' });
     }
   } catch (err) {
-    Sentry.captureException(err);
     log.error({ err }, 'Unhandled error');
     json(res, 500, { error: 'Internal server error' });
   }
