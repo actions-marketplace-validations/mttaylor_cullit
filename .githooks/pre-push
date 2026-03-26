@@ -1,9 +1,10 @@
 #!/bin/sh
 
-# Enforce local launch gate before pushing.
-pnpm launch:ready
+# Fast local gate: build + lint + test only.
+# Full checks (E2E, guards) run in CI.
+pnpm build && pnpm lint && pnpm test
 status=$?
 if [ $status -ne 0 ]; then
-  echo "pre-push blocked: pnpm launch:ready failed"
+  echo "pre-push blocked: build/lint/test failed"
   exit $status
 fi
