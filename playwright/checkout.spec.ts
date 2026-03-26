@@ -60,7 +60,7 @@ test.describe('pricing page checkout flow', () => {
 
     await page.goto('/pricing.html');
 
-    const navigationPromise = page.waitForURL('**/dashboard.html');
+    const navigationPromise = page.waitForURL('**/dashboard.html**');
     await page.locator('a.plan-btn', { hasText: 'Start Pro' }).click();
     await navigationPromise;
 
