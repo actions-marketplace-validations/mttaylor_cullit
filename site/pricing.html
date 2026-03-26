@@ -579,7 +579,7 @@ hamburger.addEventListener('click', () => {
 
 function getApiUrl() {
   if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return 'http://localhost:3000';
-  return location.origin;
+  return 'https://api.cullit.io';
 }
 
 async function trackEvent(event, metadata = {}) {
