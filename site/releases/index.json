@@ -8,7 +8,8 @@
       "template",
       "anthropic",
       "openai",
-      "gemini"
+      "gemini",
+      "ollama"
     ]
   },
   {
