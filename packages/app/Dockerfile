@@ -18,7 +18,7 @@ COPY tsconfig.json ./
 RUN pnpm --filter @cullit/config build && pnpm --filter @cullit/core build && pnpm --filter @cullit/pro build && pnpm --filter @cullit/app build
 
 FROM node:22-alpine
-RUN corepack enable && corepack prepare pnpm@10.32.1 --activate
+RUN apk upgrade --no-cache && corepack enable && corepack prepare pnpm@10.32.1 --activate
 RUN apk add --no-cache git tini
 WORKDIR /app
 COPY --from=build /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/.npmrc ./

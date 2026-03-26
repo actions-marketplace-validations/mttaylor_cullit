@@ -30,7 +30,7 @@ RUN pnpm -r build
 
 # --- Production ---
 FROM node:22-alpine AS production
-RUN corepack enable && corepack prepare pnpm@10.32.1 --activate
+RUN apk upgrade --no-cache && corepack enable && corepack prepare pnpm@10.32.1 --activate
 WORKDIR /app
 
 # Install git (needed for local source collector) and curl (healthcheck)
