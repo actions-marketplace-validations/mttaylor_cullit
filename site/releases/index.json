@@ -5,7 +5,10 @@
     "commits": 4,
     "filesChanged": 29,
     "providers": [
-      "template"
+      "template",
+      "anthropic",
+      "openai",
+      "gemini"
     ]
   },
   {
