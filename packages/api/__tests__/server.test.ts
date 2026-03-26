@@ -243,29 +243,28 @@ describe('API Server', () => {
 
   // --- Auth endpoints ---
 
-  it('GET /auth/github redirects to GitHub OAuth with correct redirect_uri', async () => {
-    const res = await fetch(`http://localhost:${PORT}/auth/github`, { redirect: 'manual' });
+  it('GET /auth/login redirects to WorkOS AuthKit with correct redirect_uri', async () => {
+    const res = await fetch(`http://localhost:${PORT}/auth/login`, { redirect: 'manual' });
     // May be rate limited in test env
     if (res.status === 429) return;
     expect(res.status).toBe(302);
     const location = res.headers.get('location') || '';
-    expect(location).toContain('https://github.com/login/oauth/authorize');
-    // redirect_uri must use /auth/callback (not /auth/github/callback)
+    expect(location).toContain('https://api.workos.com/user_management/authorize');
+    // redirect_uri must use /auth/callback
     const url = new URL(location);
     const redirectUri = url.searchParams.get('redirect_uri') || '';
     expect(redirectUri).toMatch(/\/auth\/callback$/);
-    expect(redirectUri).not.toContain('/auth/github/callback');
-    // Must include required scopes
-    expect(url.searchParams.get('scope')).toContain('read:user');
+    // Must include provider=authkit
+    expect(url.searchParams.get('provider')).toBe('authkit');
     // Must include CSRF state
     expect(url.searchParams.get('state')).toBeTruthy();
   });
 
-  it('GET /auth/github redirect_uri matches CULLIT_BASE_URL origin', async () => {
-    const res = await fetch(`http://localhost:${PORT}/auth/github`, { redirect: 'manual' });
+  it('GET /auth/login redirect_uri matches CULLIT_BASE_URL origin', async () => {
+    const res = await fetch(`http://localhost:${PORT}/auth/login`, { redirect: 'manual' });
     if (res.status === 429) return;
     const location = res.headers.get('location') || '';
-    if (!location) return; // No GITHUB_CLIENT_ID configured in test env
+    if (!location) return; // No WORKOS_CLIENT_ID configured in test env
     const url = new URL(location);
     const redirectUri = url.searchParams.get('redirect_uri') || '';
     // redirect_uri must always be an absolute URL starting with http
@@ -340,7 +339,7 @@ describe('API Server', () => {
 
   it('OpenAPI spec includes auth, team, history, and analytics paths', async () => {
     const { body } = await apiRequest('/openapi.json');
-    expect(body.paths['/auth/github']).toBeDefined();
+    expect(body.paths['/auth/login']).toBeDefined();
     expect(body.paths['/auth/me']).toBeDefined();
     expect(body.paths['/auth/logout']).toBeDefined();
     expect(body.paths['/v1/org']).toBeDefined();

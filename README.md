@@ -325,8 +325,8 @@ jira:
 | `CULLIT_API_TOKEN` | Optional bearer token for API auth |
 | `ALLOWED_ORIGINS` | API CORS allowlist |
 | `DATABASE_URL` | Enable PostgreSQL mode for API/dashboard |
-| `GITHUB_CLIENT_ID` | Dashboard GitHub OAuth client id |
-| `GITHUB_CLIENT_SECRET` | Dashboard GitHub OAuth secret |
+| `WORKOS_CLIENT_ID` | Dashboard login (WorkOS AuthKit) |
+| `WORKOS_API_KEY` | Dashboard login (WorkOS API key) |
 | `CULLIT_JWT_SECRET` | Dashboard session signing secret |
 | `CULLIT_BASE_URL` | Public base URL for OAuth callbacks |
 | `CULLIT_TRIAL_DAYS` | Trial duration override (default 14) |

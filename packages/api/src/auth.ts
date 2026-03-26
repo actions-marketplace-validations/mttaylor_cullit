@@ -1,18 +1,18 @@
 /**
  * Cullit Auth Module
  *
- * GitHub OAuth 2.0 login + JWT session tokens.
+ * WorkOS AuthKit login + JWT session tokens.
  * Stores users in file-backed JSON (same pattern as changelog store).
  *
  * Flow:
- *   1. GET /auth/github       → redirect to GitHub OAuth consent
+ *   1. GET /auth/login        → redirect to WorkOS AuthKit hosted login
  *   2. GET /auth/callback     → exchange code for token, create/update user, issue JWT
  *   3. GET /auth/me           → return current user from JWT
  *   4. POST /auth/logout      → invalidate session (client clears cookie)
  *
  * Environment Variables:
- *   GITHUB_CLIENT_ID       — GitHub OAuth App client ID
- *   GITHUB_CLIENT_SECRET   — GitHub OAuth App client secret
+ *   WORKOS_CLIENT_ID        — WorkOS AuthKit client ID
+ *   WORKOS_API_KEY          — WorkOS API key (secret)
  *   CULLIT_JWT_SECRET       — Secret for signing JWTs (min 32 chars)
  *   CULLIT_AUTH_STORE_PATH  — Path to auth store JSON (default: ./auth-store.json)
  *   CULLIT_BASE_URL         — Public base URL for callbacks (default: http://localhost:3000)
@@ -37,8 +37,8 @@ export const useDb = !!process.env['DATABASE_URL'];
 
 // --- Config ---
 
-const GITHUB_CLIENT_ID = process.env['GITHUB_CLIENT_ID'] || '';
-const GITHUB_CLIENT_SECRET = process.env['GITHUB_CLIENT_SECRET'] || '';
+const WORKOS_CLIENT_ID = process.env['WORKOS_CLIENT_ID'] || '';
+const WORKOS_API_KEY = process.env['WORKOS_API_KEY'] || '';
 const JWT_SECRET = process.env['CULLIT_JWT_SECRET'] || (() => {
   const fallback = randomBytes(32).toString('hex');
   log.warn('CULLIT_JWT_SECRET is not set — using random key. Sessions will not survive restarts.');
@@ -64,8 +64,8 @@ const AUTH_SECURITY_HEADERS: Record<string, string> = {
 // --- Types ---
 
 export interface User {
-  id: string;            // GitHub user ID (numeric string)
-  login: string;         // GitHub username
+  id: string;            // WorkOS user ID (user_01...)
+  login: string;         // email address
   name: string;
   email: string;
   avatarUrl: string;
@@ -356,15 +356,16 @@ function generateApiKey(): string {
   return 'clt_' + randomBytes(24).toString('hex');
 }
 
-async function createOrUpdateUser(ghUser: GitHubUser): Promise<User> {
+async function createOrUpdateUser(woUser: WorkOSUser): Promise<User> {
+  const displayName = [woUser.first_name, woUser.last_name].filter(Boolean).join(' ') || woUser.email;
   if (useDb) {
     const apiKey = generateApiKey();
-    const isNew = !(await dbGetUser(ghUser.id));
+    const isNew = !(await dbGetUser(woUser.id));
     const trial = isNew ? getInitialTrialWindow() : null;
     const row = await dbUpsertUser({
-      id: ghUser.id, login: ghUser.login,
-      name: ghUser.name || ghUser.login, email: ghUser.email || '',
-      avatarUrl: ghUser.avatar_url, apiKey,
+      id: woUser.id, login: woUser.email,
+      name: displayName, email: woUser.email,
+      avatarUrl: woUser.profile_picture_url || '', apiKey,
       trialTier: trial?.trialTier || null,
       trialStartsAt: trial?.trialStartsAt || null,
       trialEndsAt: trial?.trialEndsAt || null,
@@ -376,23 +377,23 @@ async function createOrUpdateUser(ghUser: GitHubUser): Promise<User> {
     return user;
   }
 
-  const existing = store.users[ghUser.id];
+  const existing = store.users[woUser.id];
   const now = new Date().toISOString();
 
   if (existing) {
-    existing.login = ghUser.login;
-    existing.name = ghUser.name || existing.name;
-    existing.email = ghUser.email || existing.email;
-    existing.avatarUrl = ghUser.avatar_url;
+    existing.login = woUser.email;
+    existing.name = displayName;
+    existing.email = woUser.email;
+    existing.avatarUrl = woUser.profile_picture_url || existing.avatarUrl;
     existing.lastLoginAt = now;
     saveAuthStore();
     return existing;
   }
 
   const user: User = {
-    id: ghUser.id, login: ghUser.login,
-    name: ghUser.name || ghUser.login, email: ghUser.email || '',
-    avatarUrl: ghUser.avatar_url, tier: 'free',
+    id: woUser.id, login: woUser.email,
+    name: displayName, email: woUser.email,
+    avatarUrl: woUser.profile_picture_url || '', tier: 'free',
     orgId: null, role: 'member',
     apiKey: generateApiKey(),
     ...(getInitialTrialWindow() ? {
@@ -537,23 +538,23 @@ export async function getOrgMembers(orgId: string): Promise<User[]> {
     .filter((u): u is User => !!u);
 }
 
-// --- GitHub OAuth Handlers ---
+// --- WorkOS AuthKit Handlers ---
 
-interface GitHubUser {
+interface WorkOSUser {
   id: string;
-  login: string;
-  name: string | null;
-  email: string | null;
-  avatar_url: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  profile_picture_url: string | null;
 }
 
 /**
- * GET /auth/github — Redirect to GitHub OAuth consent screen
+ * GET /auth/login — Redirect to WorkOS AuthKit hosted login
  */
 export function handleAuthRedirect(_req: IncomingMessage, res: ServerResponse): void {
-  if (!GITHUB_CLIENT_ID) {
+  if (!WORKOS_CLIENT_ID) {
     res.writeHead(500, { 'Content-Type': 'application/json', ...AUTH_SECURITY_HEADERS });
-    res.end(JSON.stringify({ error: 'GitHub OAuth not configured (GITHUB_CLIENT_ID missing)' }));
+    res.end(JSON.stringify({ error: 'WorkOS AuthKit not configured (WORKOS_CLIENT_ID missing)' }));
     return;
   }
 
@@ -567,18 +568,19 @@ export function handleAuthRedirect(_req: IncomingMessage, res: ServerResponse): 
   pendingStates.set(state, Date.now());
 
   const params = new URLSearchParams({
-    client_id: GITHUB_CLIENT_ID,
+    client_id: WORKOS_CLIENT_ID,
     redirect_uri: `${BASE_URL}/auth/callback`,
-    scope: 'read:user user:email',
+    response_type: 'code',
+    provider: 'authkit',
     state,
   });
 
-  res.writeHead(302, { Location: `https://github.com/login/oauth/authorize?${params}` });
+  res.writeHead(302, { Location: `https://api.workos.com/user_management/authorize?${params}` });
   res.end();
 }
 
 /**
- * GET /auth/callback — Handle GitHub OAuth callback
+ * GET /auth/callback — Handle WorkOS AuthKit callback
  */
 export async function handleAuthCallback(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const url = new URL(req.url || '/', `http://localhost`);
@@ -600,45 +602,37 @@ export async function handleAuthCallback(req: IncomingMessage, res: ServerRespon
   }
 
   try {
-    // Exchange code for access token
-    const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
+    // Exchange code for user profile via WorkOS User Management API
+    const tokenRes = await fetch('https://api.workos.com/user_management/authenticate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${WORKOS_API_KEY}`,
+      },
       body: JSON.stringify({
-        client_id: GITHUB_CLIENT_ID,
-        client_secret: GITHUB_CLIENT_SECRET,
+        grant_type: 'authorization_code',
         code,
+        client_id: WORKOS_CLIENT_ID,
       }),
     });
 
-    const tokenData = await tokenRes.json() as { access_token?: string; error?: string };
-    if (!tokenData.access_token) {
-      log.warn({ error: tokenData.error }, 'GitHub OAuth token exchange failed');
+    if (!tokenRes.ok) {
+      const errBody = await tokenRes.text();
+      log.warn({ status: tokenRes.status, body: errBody }, 'WorkOS code exchange failed');
       res.writeHead(401, { 'Content-Type': 'application/json', ...AUTH_SECURITY_HEADERS });
-      res.end(JSON.stringify({ error: 'GitHub OAuth failed' }));
+      res.end(JSON.stringify({ error: 'Authentication failed' }));
       return;
     }
 
-    // Fetch GitHub user profile
-    const userRes = await fetch('https://api.github.com/user', {
-      headers: {
-        Authorization: `Bearer ${tokenData.access_token}`,
-        Accept: 'application/vnd.github+json',
-        'User-Agent': 'cullit-api',
-      },
-    });
-
-    if (!userRes.ok) {
+    const data = await tokenRes.json() as { user?: WorkOSUser };
+    if (!data.user?.id || !data.user?.email) {
       res.writeHead(502, { 'Content-Type': 'application/json', ...AUTH_SECURITY_HEADERS });
-      res.end(JSON.stringify({ error: 'Failed to fetch GitHub user profile' }));
+      res.end(JSON.stringify({ error: 'Invalid user profile from WorkOS' }));
       return;
     }
-
-    const ghUser = await userRes.json() as GitHubUser;
-    ghUser.id = String(ghUser.id); // Ensure string
 
     // Create or update user
-    const user = await createOrUpdateUser(ghUser);
+    const user = await createOrUpdateUser(data.user);
 
     // Issue JWT and set cookie
     const jwt = createJWT(user.id);

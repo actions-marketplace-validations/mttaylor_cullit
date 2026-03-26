@@ -908,8 +908,8 @@ console.log(advisory.breakdown);       <span class="cmt">// { features: 4, fixes
     <tr><td><code>CULLIT_API_TOKEN</code></td><td>Bearer token for auth</td><td>disabled</td></tr>
     <tr><td><code>ALLOWED_ORIGINS</code></td><td>CORS allowed origins</td><td><code>*</code></td></tr>
     <tr><td><code>RATE_LIMIT</code></td><td>Requests per minute per IP</td><td><code>30</code></td></tr>
-    <tr><td><code>GITHUB_CLIENT_ID</code></td><td>GitHub OAuth App client ID</td><td>required for auth</td></tr>
-    <tr><td><code>GITHUB_CLIENT_SECRET</code></td><td>GitHub OAuth App client secret</td><td>required for auth</td></tr>
+    <tr><td><code>WORKOS_CLIENT_ID</code></td><td>WorkOS AuthKit client ID</td><td>required for auth</td></tr>
+    <tr><td><code>WORKOS_API_KEY</code></td><td>WorkOS API key (secret)</td><td>required for auth</td></tr>
     <tr><td><code>CULLIT_JWT_SECRET</code></td><td>Secret key for JWT signing (HS256)</td><td>random per restart</td></tr>
     <tr><td><code>CULLIT_BASE_URL</code></td><td>Public URL for OAuth callback</td><td><code>http://localhost:3000</code></td></tr>
     <tr><td><code>CULLIT_AUTH_STORE_PATH</code></td><td>Path to auth JSON store</td><td><code>./auth-store.json</code></td></tr>
@@ -1067,17 +1067,17 @@ formats, and several performance improvements.</span>
 
 <h2 id="team-dashboard">Team Dashboard</h2>
 
-<p>The Cullit Dashboard (v1.8.0+) provides GitHub OAuth login, persistent generation history, usage analytics, team/org management, release drafts, and project templates.</p>
+<p>The Cullit Dashboard (v1.8.0+) provides multi-provider login, persistent generation history, usage analytics, team/org management, release drafts, and project templates.</p>
 
 <h3 id="team-auth">Authentication</h3>
-<p>The dashboard uses <strong>GitHub OAuth 2.0</strong> for authentication. To enable it:</p>
+<p>The dashboard uses <strong>WorkOS AuthKit</strong> for authentication, supporting GitHub, GitLab, Google, email, and SSO/SAML. To enable it:</p>
 <ol>
-  <li>Create a GitHub OAuth App at <code>Settings &rarr; Developer settings &rarr; OAuth Apps</code></li>
-  <li>Set the callback URL to <code>https://your-domain.com/auth/callback</code></li>
+  <li>Create a WorkOS account at <a href="https://dashboard.workos.com" target="_blank" rel="noopener" style="color:var(--accent)">dashboard.workos.com</a></li>
+  <li>Add the redirect URI <code>https://your-domain.com/auth/callback</code></li>
   <li>Configure the API server environment variables:</li>
 </ol>
-<pre><code><span class="key">GITHUB_CLIENT_ID</span>=<span class="val">your_client_id</span>
-<span class="key">GITHUB_CLIENT_SECRET</span>=<span class="val">your_client_secret</span>
+<pre><code><span class="key">WORKOS_CLIENT_ID</span>=<span class="val">your_client_id</span>
+<span class="key">WORKOS_API_KEY</span>=<span class="val">your_api_key</span>
 <span class="key">CULLIT_JWT_SECRET</span>=<span class="val">your_32char_minimum_secret</span>
 <span class="key">CULLIT_BASE_URL</span>=<span class="val">https://your-domain.com</span></code></pre>
 <p>Users sign in via the dashboard login button. Sessions are stored as HttpOnly JWT cookies (7-day expiry). Each user automatically receives a <code>clt_*</code> API key on first login.</p>

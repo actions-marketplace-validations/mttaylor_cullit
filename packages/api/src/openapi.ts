@@ -241,14 +241,14 @@ export const openApiSpec = {
         },
       },
     },
-    '/auth/github': {
+    '/auth/login': {
       get: {
-        operationId: 'authGitHub',
-        summary: 'Start GitHub OAuth login',
-        description: 'Redirects to GitHub OAuth consent screen. On success, sets a session cookie and redirects to /dashboard.html.',
+        operationId: 'authLogin',
+        summary: 'Start login via WorkOS AuthKit',
+        description: 'Redirects to WorkOS AuthKit hosted login. On success, sets a session cookie and redirects to /dashboard.html.',
         tags: ['Auth'],
         responses: {
-          '302': { description: 'Redirect to GitHub OAuth consent' },
+          '302': { description: 'Redirect to WorkOS AuthKit login' },
           '500': {
             description: 'OAuth not configured',
             content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
@@ -259,7 +259,7 @@ export const openApiSpec = {
     '/auth/callback': {
       get: {
         operationId: 'authCallback',
-        summary: 'GitHub OAuth callback',
+        summary: 'OAuth callback',
         description: 'Handles the OAuth callback, exchanges code for token, creates/updates user, and sets session cookie.',
         tags: ['Auth'],
         parameters: [

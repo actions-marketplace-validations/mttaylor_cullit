@@ -732,7 +732,7 @@ const server = createServer(async (req, res: CorsResponse) => {
     }
 
     // --- Auth routes ---
-    if (path === '/auth/github' && req.method === 'GET') {
+    if (path === '/auth/login' && req.method === 'GET') {
       handleAuthRedirect(req, res);
     } else if (path === '/auth/callback' && req.method === 'GET') {
       await handleAuthCallback(req, res);
