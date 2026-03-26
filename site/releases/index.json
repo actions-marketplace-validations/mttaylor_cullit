@@ -1,9 +1,32 @@
 [
   {
+    "version": "v1.15.0",
+    "date": "2026-03-26",
+    "commits": 4,
+    "filesChanged": 29,
+    "providers": [
+      "template"
+    ]
+  },
+  {
     "version": "v1.14.0",
     "date": "2026-03-26",
     "commits": 11,
     "filesChanged": 88,
+    "providers": [
+      "none",
+      "template",
+      "anthropic",
+      "openai",
+      "gemini",
+      "ollama"
+    ]
+  },
+  {
+    "version": "v1.13.1",
+    "date": "2026-03-25",
+    "commits": 1,
+    "filesChanged": 13,
     "providers": [
       "none",
       "template",
@@ -25,22 +48,33 @@
       "openai",
       "gemini",
       "ollama"
-    ],
-    "patches": [
-      {
-        "version": "v1.13.1",
-        "date": "2026-03-25",
-        "commits": 1,
-        "filesChanged": 13,
-        "providers": [
-          "none",
-          "template",
-          "anthropic",
-          "openai",
-          "gemini",
-          "ollama"
-        ]
-      }
+    ]
+  },
+  {
+    "version": "v1.12.2",
+    "date": "2026-03-24",
+    "commits": 14,
+    "filesChanged": 33,
+    "providers": [
+      "none",
+      "template",
+      "anthropic",
+      "openai",
+      "gemini",
+      "ollama"
+    ]
+  },
+  {
+    "version": "v1.12.1",
+    "date": "2026-03-24",
+    "commits": 3,
+    "filesChanged": 20,
+    "providers": [
+      "anthropic",
+      "openai",
+      "gemini",
+      "ollama",
+      "template"
     ]
   },
   {
@@ -54,35 +88,6 @@
       "openai",
       "gemini",
       "ollama"
-    ],
-    "patches": [
-      {
-        "version": "v1.12.1",
-        "date": "2026-03-24",
-        "commits": 3,
-        "filesChanged": 20,
-        "providers": [
-          "anthropic",
-          "openai",
-          "gemini",
-          "ollama",
-          "template"
-        ]
-      },
-      {
-        "version": "v1.12.2",
-        "date": "2026-03-24",
-        "commits": 14,
-        "filesChanged": 33,
-        "providers": [
-          "none",
-          "template",
-          "anthropic",
-          "openai",
-          "gemini",
-          "ollama"
-        ]
-      }
     ]
   },
   {
@@ -96,8 +101,7 @@
       "ollama",
       "openai",
       "gemini"
-    ],
-    "patches": []
+    ]
   },
   {
     "version": "v1.10.0",
@@ -111,8 +115,7 @@
       "ollama",
       "openai",
       "gemini"
-    ],
-    "patches": []
+    ]
   },
   {
     "version": "v1.9.0",
@@ -126,8 +129,7 @@
       "ollama",
       "openai",
       "gemini"
-    ],
-    "patches": []
+    ]
   },
   {
     "version": "v1.8.0",
@@ -140,8 +142,7 @@
       "gemini",
       "ollama",
       "template"
-    ],
-    "patches": []
+    ]
   },
   {
     "version": "v1.7.0",
@@ -155,8 +156,7 @@
       "ollama",
       "openai",
       "gemini"
-    ],
-    "patches": []
+    ]
   },
   {
     "version": "v1.6.0",
@@ -170,8 +170,7 @@
       "ollama",
       "openai",
       "gemini"
-    ],
-    "patches": []
+    ]
   },
   {
     "version": "v1.5.0",
@@ -185,8 +184,7 @@
       "ollama",
       "openai",
       "gemini"
-    ],
-    "patches": []
+    ]
   },
   {
     "version": "v1.4.0",
@@ -200,8 +198,7 @@
       "ollama",
       "openai",
       "gemini"
-    ],
-    "patches": []
+    ]
   },
   {
     "version": "v1.3.0",
@@ -215,8 +212,7 @@
       "ollama",
       "openai",
       "gemini"
-    ],
-    "patches": []
+    ]
   },
   {
     "version": "v1.2.0",
@@ -230,8 +226,7 @@
       "ollama",
       "openai",
       "gemini"
-    ],
-    "patches": []
+    ]
   },
   {
     "version": "v1.1.0",
@@ -245,8 +240,7 @@
       "ollama",
       "openai",
       "gemini"
-    ],
-    "patches": []
+    ]
   },
   {
     "version": "v1.0.0",
@@ -260,7 +254,6 @@
       "ollama",
       "openai",
       "gemini"
-    ],
-    "patches": []
+    ]
   }
 ]
