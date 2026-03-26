@@ -36,9 +36,10 @@ import { migrate, closeDb, sql,
 } from './db.js';
 import { handleCheckout, handleBillingPortal, handleGetSubscription, handleStripeWebhook, isStripeConfigured } from './billing.js';
 import { log } from './logger.js';
+import { metrics, handleMetrics } from './metrics.js';
 import {
   json, checkAuth, readBody, parseJsonObject, isRecord,
-  PORT, SECURITY_HEADERS,
+  PORT, SECURITY_HEADERS, generateRequestId,
   type CorsResponse, type JsonObject,
 } from './utils.js';
 
@@ -137,6 +138,7 @@ function checkRateLimit(req: IncomingMessage, res: ServerResponse): boolean {
 
   if (recent.length >= RATE_LIMIT) {
     res.setHeader('Retry-After', Math.ceil(RATE_WINDOW / 1000));
+    metrics.rateLimited();
     json(res, 429, { error: 'Too many requests. Try again later.' });
     return false;
   }
@@ -435,6 +437,7 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
     };
 
     setCachedResult(cacheKey, response);
+    metrics.generation(config.ai.provider);
     json(res, 200, response);
 
     // Record history + analytics (fire-and-forget, don't block response)
@@ -465,6 +468,7 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
     }
   } catch (err) {
     log.error({ err: (err as Error).message }, 'Pipeline error');
+    metrics.generationError();
     json(res, 500, { error: 'Generation failed. Check server logs for details.' });
   }
 }
@@ -621,6 +625,10 @@ async function handlePutProjectSettings(req: IncomingMessage, res: ServerRespons
 // --- Router ---
 
 const server = createServer(async (req, res: CorsResponse) => {
+  // Assign a unique request ID (prefer client-supplied if valid)
+  const clientId = req.headers['x-request-id'];
+  res._requestId = (typeof clientId === 'string' && /^[\w-]{1,64}$/.test(clientId)) ? clientId : generateRequestId();
+
   // Resolve CORS origin for this request (stored on res to avoid cross-request races)
   res._corsOrigin = getCorsOrigin(req);
 
@@ -629,9 +637,10 @@ const server = createServer(async (req, res: CorsResponse) => {
     res.writeHead(204, {
       'Access-Control-Allow-Origin': res._corsOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Request-Id',
       'Access-Control-Allow-Credentials': 'true',
       'Access-Control-Max-Age': '86400',
+      'X-Request-Id': res._requestId || '',
       ...SECURITY_HEADERS,
     });
     res.end();
@@ -643,7 +652,7 @@ const server = createServer(async (req, res: CorsResponse) => {
 
   try {
     // --- Rate limit all non-system routes ---
-    if (path !== '/health' && path !== '/healthz' && path !== '/openapi.json' && path !== '/v1/billing/webhook') {
+    if (path !== '/health' && path !== '/healthz' && path !== '/openapi.json' && path !== '/metrics' && path !== '/v1/billing/webhook') {
       if (!checkRateLimit(req, res)) return;
     }
 
@@ -664,6 +673,8 @@ const server = createServer(async (req, res: CorsResponse) => {
       await handleHealth(req, res);
     } else if (path === '/openapi.json' && req.method === 'GET') {
       await handleOpenAPI(req, res);
+    } else if (path === '/metrics' && req.method === 'GET') {
+      handleMetrics(req, res);
     } else if (path === '/v1/events' && req.method === 'POST') {
       await handleTrackEvent(req, res);
 
@@ -779,7 +790,7 @@ const server = createServer(async (req, res: CorsResponse) => {
       json(res, 404, { error: 'Not found', docs: '/openapi.json' });
     }
   } catch (err) {
-    log.error({ err }, 'Unhandled error');
+    log.error({ err, requestId: res._requestId }, 'Unhandled error');
     json(res, 500, { error: 'Internal server error' });
   }
 });

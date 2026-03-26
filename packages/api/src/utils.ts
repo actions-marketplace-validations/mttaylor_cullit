@@ -5,14 +5,14 @@
  * to eliminate duplication (e.g. isRecord was duplicated in index.ts and billing.ts).
  */
 
-import { timingSafeEqual } from 'crypto';
+import { randomBytes, timingSafeEqual } from 'crypto';
 import type { IncomingMessage, ServerResponse } from 'http';
 import createSanitizer from 'sanitize-html';
 
 // --- Types ---
 
-/** ServerResponse with per-request CORS origin attached. */
-export interface CorsResponse extends ServerResponse { _corsOrigin?: string; }
+/** ServerResponse with per-request CORS origin and request ID attached. */
+export interface CorsResponse extends ServerResponse { _corsOrigin?: string; _requestId?: string; }
 
 export type JsonObject = Record<string, unknown>;
 
@@ -22,6 +22,11 @@ export const PORT = parseInt(process.env['PORT'] || '3000', 10);
 
 const IS_HTTPS = (process.env['CULLIT_BASE_URL'] || '').startsWith('https');
 const API_TOKEN = process.env['CULLIT_API_TOKEN'] || '';
+
+/** Generate a short, URL-safe request ID. */
+export function generateRequestId(): string {
+  return randomBytes(12).toString('hex');
+}
 
 // --- Security headers ---
 
@@ -42,6 +47,7 @@ export function json(res: CorsResponse, status: number, body: unknown): void {
     'Content-Length': Buffer.byteLength(payload),
     'Access-Control-Allow-Origin': res._corsOrigin || '',
     'Access-Control-Allow-Credentials': 'true',
+    ...(res._requestId ? { 'X-Request-Id': res._requestId } : {}),
     ...SECURITY_HEADERS,
   });
   res.end(payload);

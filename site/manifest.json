@@ -1,0 +1,21 @@
+{
+  "name": "Cullit",
+  "short_name": "Cullit",
+  "description": "AI-generated release notes grounded in git, Jira, and Linear.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1117",
+  "theme_color": "#5eead4",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "type": "image/png",
+      "sizes": "180x180"
+    }
+  ]
+}
