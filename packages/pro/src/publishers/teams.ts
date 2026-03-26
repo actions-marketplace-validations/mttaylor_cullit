@@ -1,5 +1,7 @@
 import type { Publisher, ReleaseNotes, OutputFormat } from '@cullit/core';
-import { fetchWithTimeout } from '@cullit/core';
+import { fetchWithTimeout, createLogger } from '@cullit/core';
+
+const log = createLogger();
 
 /**
  * Posts release notes to Microsoft Teams via Incoming Webhook.
@@ -26,7 +28,7 @@ export class TeamsPublisher implements Publisher {
     if (!response.ok) {
       throw new Error(`Teams webhook failed (${response.status})`);
     }
-    console.log('✓ Published to Microsoft Teams');
+    log.info('✓ Published to Microsoft Teams');
   }
 
   private buildAdaptiveCard(notes: ReleaseNotes): object {

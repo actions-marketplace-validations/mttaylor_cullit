@@ -1,5 +1,7 @@
 import type { Collector, GitDiff, GitCommit } from '@cullit/core';
-import { fetchWithTimeout } from '@cullit/core';
+import { fetchWithTimeout, createLogger } from '@cullit/core';
+
+const log = createLogger();
 
 /**
  * Collects commits from the Bitbucket Cloud API.
@@ -71,7 +73,7 @@ export class BitbucketCollector implements Collector {
 
       // Safety cap: don't fetch more than 500 commits
       if (commits.length >= 500) {
-        console.warn(`⚠ Bitbucket: ${commits.length} commits fetched — capped at 500. Release notes may be incomplete. Use a narrower range.`);
+        log.warn(`⚠ Bitbucket: ${commits.length} commits fetched — capped at 500. Release notes may be incomplete. Use a narrower range.`);
         break;
       }
       url = data.next || null;

@@ -1,5 +1,7 @@
 import type { Publisher, ReleaseNotes, OutputFormat } from '@cullit/core';
-import { formatNotes, fetchWithTimeout } from '@cullit/core';
+import { formatNotes, fetchWithTimeout, createLogger } from '@cullit/core';
+
+const log = createLogger();
 
 /**
  * Creates or updates a GitHub Release via the GitHub API.
@@ -36,10 +38,10 @@ export class GitHubReleasePublisher implements Publisher {
 
     if (existing) {
       await this.updateRelease(existing.id, formatted, notes);
-      console.log(`✓ Updated GitHub Release: ${tagName}`);
+      log.info(`✓ Updated GitHub Release: ${tagName}`);
     } else {
       await this.createRelease(tagName, formatted, notes);
-      console.log(`✓ Created GitHub Release: ${tagName}`);
+      log.info(`✓ Created GitHub Release: ${tagName}`);
     }
   }
 

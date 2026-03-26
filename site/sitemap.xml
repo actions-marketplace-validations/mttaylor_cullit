@@ -40,4 +40,8 @@
     <loc>https://cullit.io/privacy.html</loc>
     <priority>0.3</priority>
   </url>
+  <url>
+    <loc>https://cullit.io/releases.html</loc>
+    <priority>0.5</priority>
+  </url>
 </urlset>

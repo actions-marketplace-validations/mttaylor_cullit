@@ -1,5 +1,7 @@
 import type { Publisher, ReleaseNotes, OutputFormat } from '@cullit/core';
-import { fetchWithTimeout } from '@cullit/core';
+import { fetchWithTimeout, createLogger } from '@cullit/core';
+
+const log = createLogger();
 
 /**
  * Posts release notes to a Slack channel via webhook.
@@ -23,7 +25,7 @@ export class SlackPublisher implements Publisher {
     if (!response.ok) {
       throw new Error(`Slack webhook failed (${response.status})`);
     }
-    console.log('✓ Published to Slack');
+    log.info('✓ Published to Slack');
   }
 
   private buildSlackMessage(notes: ReleaseNotes): string {

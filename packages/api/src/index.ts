@@ -24,7 +24,7 @@ import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarge
 import { openApiSpec } from './openapi.js';
 import {
   handleAuthRedirect, handleAuthCallback, handleAuthMe, handleAuthLogout,
-  resolveUser, getEffectiveTier,
+  handleRotateApiKey, resolveUser, getEffectiveTier,
 } from './auth.js';
 import {
   addHistoryEntry, getHistory, getHistoryCount,
@@ -83,6 +83,9 @@ if (IS_PROD) {
   }
   if (!ALLOWED_ORIGINS || ALLOWED_ORIGINS === '*') {
     log.warn('ALLOWED_ORIGINS is empty or wildcard (*) in production. Set to an explicit domain for security.');
+  }
+  if (!process.env['DATABASE_URL']) {
+    log.warn('DATABASE_URL is not set — file-backed stores will lose data on container restart. Set a PostgreSQL connection string in production.');
   }
 }
 
@@ -455,7 +458,7 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
         duration: result.duration,
         createdAt: new Date().toISOString(),
       };
-      addHistoryEntry(entry).catch(() => {});
+      addHistoryEntry(entry).catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to save history entry'); });
       recordUsageEvent({
         userId: user.id,
         orgId: user.orgId,
@@ -464,7 +467,7 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
         changeCount: result.notes.changes.length,
         duration: result.duration,
         timestamp: entry.createdAt,
-      }).catch(() => {});
+      }).catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to record usage event'); });
     }
   } catch (err) {
     log.error({ err: (err as Error).message }, 'Pipeline error');
@@ -665,11 +668,11 @@ const server = createServer(async (req, res: CorsResponse) => {
       await handleAuthMe(req, res, json);
     } else if (path === '/auth/logout' && req.method === 'POST') {
       handleAuthLogout(req, res, json);
+    } else if (path === '/auth/rotate-key' && req.method === 'POST') {
+      await handleRotateApiKey(req, res, json);
 
     // --- Public / system routes ---
-    } else if (path === '/health' && req.method === 'GET') {
-      await handleHealth(req, res);
-    } else if (path === '/healthz' && req.method === 'GET') {
+    } else if ((path === '/health' || path === '/healthz') && (req.method === 'GET' || req.method === 'HEAD')) {
       await handleHealth(req, res);
     } else if (path === '/openapi.json' && req.method === 'GET') {
       await handleOpenAPI(req, res);
@@ -792,6 +795,8 @@ const server = createServer(async (req, res: CorsResponse) => {
   } catch (err) {
     log.error({ err, requestId: res._requestId }, 'Unhandled error');
     json(res, 500, { error: 'Internal server error' });
+  } finally {
+    metrics.httpRequest(req.method || 'UNKNOWN', res.statusCode);
   }
 });
 
@@ -817,5 +822,12 @@ function shutdown(signal: string) {
 }
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('unhandledRejection', (reason) => {
+  log.error({ err: reason }, 'Unhandled promise rejection');
+});
+process.on('uncaughtException', (err) => {
+  log.fatal({ err }, 'Uncaught exception — shutting down');
+  shutdown('uncaughtException');
+});
 
 export { server };

@@ -3,17 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f1117">
 <title>Cullit Docs — Getting Started, Configuration, CLI & API Reference</title>
 <meta name="description" content="Official documentation for Cullit — AI-powered release notes generator. Guides for CLI, GitHub Actions, Jira/Linear integration, AI providers, and API.">
 <meta property="og:title" content="Cullit Documentation">
 <meta property="og:description" content="Complete guide to Cullit — AI release notes from git, Jira, and Linear.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://cullit.io/docs">
-<meta property="og:image" content="https://cullit.io/og-image.svg">
+<meta property="og:image" content="https://cullit.io/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Cullit Documentation">
 <meta name="twitter:description" content="Complete guide to Cullit — AI release notes from git, Jira, and Linear.">
-<meta name="twitter:image" content="https://cullit.io/og-image.svg">
+<meta name="twitter:image" content="https://cullit.io/og-image.png">
 <link rel="canonical" href="https://cullit.io/docs">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -247,9 +248,12 @@
 
   /* SCROLL TARGETS need offset for fixed nav */
   [id] { scroll-margin-top: 70px; }
+.skip-link:focus{position:fixed!important;left:1rem!important;top:1rem!important;width:auto!important;height:auto!important;overflow:visible!important;clip:auto!important;border-radius:6px;z-index:10000;}
 </style>
 </head>
 <body>
+<a href="#main" class="skip-link" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;z-index:9999;padding:0.5rem 1rem;background:var(--accent,#5eead4);color:#0f1117;font-weight:700;text-decoration:none;">Skip to content</a>
+<noscript><p style="background:#161822;color:#d4d4e0;padding:1rem;text-align:center;">JavaScript is required for the full Cullit experience. Core content is still accessible.</p></noscript>
 
 <!-- OVERLAY (for mobile sidebar) -->
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
@@ -1136,7 +1140,6 @@ formats, and several performance improvements.</span>
 
 <p style="color: var(--text-dim); margin-top: 2rem; font-size: 0.85rem;">
   Cullit is open source under the MIT license.
-  <a href="https://github.com/mttaylor/cullit" target="_blank" rel="noopener noreferrer">View on GitHub</a> &bull;
   <a href="https://www.npmjs.com/package/cullit" target="_blank" rel="noopener noreferrer">npm</a> &bull;
   <a href="index.html">Home</a>
 </p>
@@ -1147,7 +1150,6 @@ formats, and several performance improvements.</span>
 <footer style="text-align: center; padding: 2rem 1rem; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 0.85rem;">
   <p>&copy; 2026 Cullit</p>
   <div style="margin-top: 0.5rem; display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;">
-    <a href="https://github.com/mttaylor/cullit" target="_blank" rel="noopener noreferrer" style="color: var(--text-dim);">GitHub</a>
     <a href="terms.html" style="color: var(--text-dim);">Terms</a>
     <a href="privacy.html" style="color: var(--text-dim);">Privacy</a>
     <a href="mailto:sales@cullit.io" style="color: var(--text-dim);">sales@cullit.io</a>
@@ -1210,5 +1212,10 @@ sidebarLinks.forEach(link => {
 });
 </script>
 
+<div id="cookie-consent" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#161822;border-top:1px solid #282a3a;padding:1rem 2rem;z-index:10000;font-family:'DM Sans',sans-serif;font-size:0.85rem;color:#d4d4e0;text-align:center;">
+This site uses essential cookies only &mdash; no tracking. <button onclick="document.getElementById('cookie-consent').style.display='none';localStorage.setItem('cullit_consent','1')" style="margin-left:1rem;padding:0.4rem 1.2rem;background:#5eead4;color:#0f1117;border:none;border-radius:4px;font-weight:700;cursor:pointer;">OK</button>
+</div>
+<script>if(!localStorage.getItem('cullit_consent'))document.getElementById('cookie-consent').style.display='block';</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 </body>
 </html>

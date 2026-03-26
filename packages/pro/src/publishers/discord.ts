@@ -1,5 +1,7 @@
 import type { Publisher, ReleaseNotes, OutputFormat } from '@cullit/core';
-import { fetchWithTimeout } from '@cullit/core';
+import { fetchWithTimeout, createLogger } from '@cullit/core';
+
+const log = createLogger();
 
 /**
  * Posts release notes to Discord via webhook.
@@ -31,7 +33,7 @@ export class DiscordPublisher implements Publisher {
     if (!response.ok) {
       throw new Error(`Discord webhook failed (${response.status})`);
     }
-    console.log('✓ Published to Discord');
+    log.info('✓ Published to Discord');
   }
 
   private buildDiscordMessage(notes: ReleaseNotes): string {

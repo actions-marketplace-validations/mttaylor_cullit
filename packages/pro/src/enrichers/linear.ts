@@ -1,5 +1,7 @@
 import type { Enricher, GitDiff, EnrichedTicket } from '@cullit/core';
-import { fetchWithTimeout } from '@cullit/core';
+import { fetchWithTimeout, createLogger } from '@cullit/core';
+
+const log = createLogger();
 
 interface LinearIssueNode {
   identifier: string;
@@ -44,7 +46,7 @@ export class LinearEnricher implements Enricher {
     try {
       return await this.fetchIssuesBatch(keys);
     } catch (err) {
-      console.warn(`⚠ Linear batch fetch failed, falling back to individual queries: ${(err as Error).message}`);
+      log.warn(`⚠ Linear batch fetch failed, falling back to individual queries: ${(err as Error).message}`);
       return this.fetchIssuesIndividually(keys);
     }
   }
@@ -56,7 +58,7 @@ export class LinearEnricher implements Enricher {
         const ticket = await this.fetchIssue(key);
         if (ticket) tickets.push(ticket);
       } catch (err) {
-        console.warn(`⚠ Could not fetch Linear issue ${key}: ${(err as Error).message}`);
+        log.warn(`⚠ Could not fetch Linear issue ${key}: ${(err as Error).message}`);
       }
     }
     return tickets;

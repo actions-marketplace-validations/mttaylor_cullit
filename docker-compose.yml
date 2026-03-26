@@ -9,7 +9,7 @@ services:
   # API server — POST /generate, GET /health, GET /openapi.json
   api:
     build: .
-    entrypoint: ["node", "packages/api/dist/index.js"]
+    entrypoint: ["tini", "--", "node", "packages/api/dist/index.js"]
     ports:
       - "3000:3000"
     env_file:

@@ -18,13 +18,19 @@ COPY tsconfig.json ./
 RUN pnpm --filter @cullit/config build && pnpm --filter @cullit/core build && pnpm --filter @cullit/pro build && pnpm --filter @cullit/app build
 
 FROM node:22-alpine
+RUN corepack enable && corepack prepare pnpm@10.32.1 --activate
 RUN apk add --no-cache git tini
 WORKDIR /app
-COPY --from=build /app/packages/app/dist ./dist
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/packages/core/dist ./packages/core/dist
-COPY --from=build /app/packages/config/dist ./packages/config/dist
-COPY --from=build /app/packages/pro/dist ./packages/pro/dist
+COPY --from=build /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/.npmrc ./
+COPY --from=build /app/packages/app/package.json packages/app/package.json
+COPY --from=build /app/packages/app/dist packages/app/dist
+COPY --from=build /app/packages/core/package.json packages/core/package.json
+COPY --from=build /app/packages/core/dist packages/core/dist
+COPY --from=build /app/packages/config/package.json packages/config/package.json
+COPY --from=build /app/packages/config/dist packages/config/dist
+COPY --from=build /app/packages/pro/package.json packages/pro/package.json
+COPY --from=build /app/packages/pro/dist packages/pro/dist
+RUN pnpm install --prod --frozen-lockfile
 ENV NODE_ENV=production
 
 # Run as non-root user
@@ -33,4 +39,4 @@ USER cullit
 
 EXPOSE 3001
 ENTRYPOINT ["tini", "--"]
-CMD ["node", "dist/index.js"]
+CMD ["node", "packages/app/dist/index.js"]

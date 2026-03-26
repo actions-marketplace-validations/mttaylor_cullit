@@ -1,5 +1,7 @@
 import type { Publisher, ReleaseNotes, OutputFormat } from '@cullit/core';
-import { formatNotes, fetchWithTimeout } from '@cullit/core';
+import { formatNotes, fetchWithTimeout, createLogger } from '@cullit/core';
+
+const log = createLogger();
 
 /**
  * Publishes release notes to a Cullit Hosted Changelog page.
@@ -64,6 +66,6 @@ export class ChangelogPublisher implements Publisher {
 
     const data = await res.json() as { url?: string };
     const url = data.url || `https://cullit.io/changelog/${this.project}`;
-    console.log(`✓ Published to hosted changelog: ${url}`);
+    log.info(`✓ Published to hosted changelog: ${url}`);
   }
 }

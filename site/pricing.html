@@ -3,17 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f1117">
 <title>Pricing — Cullit</title>
 <meta name="description" content="Cullit pricing — AI-generated release notes grounded in git, Jira, and Linear. Start free, upgrade for model choice, audience-aware output, and team release workflows.">
 <meta property="og:title" content="Pricing — Cullit">
 <meta property="og:description" content="Cullit pricing — AI release notes from $0/mo. Free, Pro, Team & Enterprise plans.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://cullit.io/pricing">
-<meta property="og:image" content="https://cullit.io/og-image.svg">
+<meta property="og:image" content="https://cullit.io/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Pricing — Cullit">
 <meta name="twitter:description" content="Cullit pricing — AI release notes from $0/mo. Free, Pro, Team & Enterprise plans.">
-<meta name="twitter:image" content="https://cullit.io/og-image.svg">
+<meta name="twitter:image" content="https://cullit.io/og-image.png">
 <link rel="canonical" href="https://cullit.io/pricing">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -379,9 +380,12 @@
   @media (max-width: 520px) {
     .pricing-grid { grid-template-columns: 1fr; }
   }
+.skip-link:focus{position:fixed!important;left:1rem!important;top:1rem!important;width:auto!important;height:auto!important;overflow:visible!important;clip:auto!important;border-radius:6px;z-index:10000;}
 </style>
 </head>
 <body>
+<a href="#main" class="skip-link" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;z-index:9999;padding:0.5rem 1rem;background:var(--accent,#5eead4);color:#0f1117;font-weight:700;text-decoration:none;">Skip to content</a>
+<noscript><p style="background:#161822;color:#d4d4e0;padding:1rem;text-align:center;">JavaScript is required for the full Cullit experience. Core content is still accessible.</p></noscript>
 
 <nav>
   <a href="index.html" class="logo"><svg class="logo-mark" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#0f1117"/><path d="M42 22A17 17 0 1 0 42 42" stroke="#5eead4" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="50" cy="32" r="3.5" fill="#2dd4bf"/></svg>cullit<span>.io</span></a>
@@ -557,7 +561,6 @@
 <footer>
   <p class="footer-brand">&copy; 2026 Cullit &mdash; Built by <a href="https://cullit.io" target="_blank" rel="noopener noreferrer">Cullit</a></p>
   <div class="footer-links">
-    <a href="https://github.com/mttaylor/cullit" target="_blank" rel="noopener noreferrer">GitHub</a>
     <a href="https://x.com/Cullit_io" target="_blank" rel="noopener noreferrer">X / Twitter</a>
     <a href="https://www.linkedin.com/company/cullit/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
     <a href="terms.html">Terms</a>
@@ -623,5 +626,10 @@ async function startCheckout(plan, e) {
 }
 </script>
 
+<div id="cookie-consent" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#161822;border-top:1px solid #282a3a;padding:1rem 2rem;z-index:10000;font-family:'DM Sans',sans-serif;font-size:0.85rem;color:#d4d4e0;text-align:center;">
+This site uses essential cookies only &mdash; no tracking. <button onclick="document.getElementById('cookie-consent').style.display='none';localStorage.setItem('cullit_consent','1')" style="margin-left:1rem;padding:0.4rem 1.2rem;background:#5eead4;color:#0f1117;border:none;border-radius:4px;font-weight:700;cursor:pointer;">OK</button>
+</div>
+<script>if(!localStorage.getItem('cullit_consent'))document.getElementById('cookie-consent').style.display='block';</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 </body>
 </html>

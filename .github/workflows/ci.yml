@@ -41,7 +41,15 @@ jobs:
         run: pnpm lint
 
       - name: Test
-        run: pnpm test
+        run: pnpm test -- --coverage
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14
 
       - name: E2E Tests (Playwright)
         run: |
@@ -79,4 +87,4 @@ jobs:
           image-ref: cullit-api:test
           format: table
           severity: CRITICAL,HIGH
-          exit-code: 0
+          exit-code: 1

@@ -144,7 +144,7 @@ export async function migrate(): Promise<void> {
     )
   `;
 
-  await sql`ALTER TABLE changelog_releases ADD COLUMN IF NOT EXISTS user_id TEXT`.catch(() => {});
+  await sql`ALTER TABLE changelog_releases ADD COLUMN IF NOT EXISTS user_id TEXT`.catch((err) => { log.debug({ err: (err as Error).message }, 'ALTER TABLE changelog_releases user_id'); });
 
   await sql`CREATE INDEX IF NOT EXISTS idx_changelog_project ON changelog_releases (project, published_at DESC)`;
 
@@ -320,6 +320,11 @@ export async function dbUpdateUserOrg(userId: string, orgId: string | null, role
 
 export async function dbUpdateUserStripe(userId: string, customerId: string, subscriptionId: string | null): Promise<void> {
   await sql`UPDATE users SET stripe_customer_id = ${customerId}, stripe_subscription_id = ${subscriptionId} WHERE id = ${userId}`;
+}
+
+export async function dbRotateApiKey(userId: string, newApiKey: string): Promise<DbUser> {
+  const rows = await sql<DbUser[]>`UPDATE users SET api_key = ${newApiKey} WHERE id = ${userId} RETURNING *`;
+  return rows[0];
 }
 
 export async function dbUpdateUserTrial(userId: string, trialTier: string | null, startsAt: Date | null, endsAt: Date | null): Promise<void> {

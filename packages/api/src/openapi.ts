@@ -647,6 +647,148 @@ export const openApiSpec = {
         },
       },
     },
+    '/healthz': {
+      get: {
+        summary: 'Health check (alias)',
+        tags: ['System'],
+        responses: { 200: { description: 'Health status (same as /health)' } },
+      },
+    },
+    '/metrics': {
+      get: {
+        summary: 'Prometheus metrics',
+        tags: ['System'],
+        description: 'Returns counters in Prometheus text exposition format. Gated by METRICS_TOKEN if set.',
+        parameters: [{ name: 'Authorization', in: 'header', schema: { type: 'string' }, description: 'Bearer <METRICS_TOKEN>' }],
+        responses: {
+          200: { description: 'Metrics in Prometheus text format', content: { 'text/plain': { schema: { type: 'string' } } } },
+          403: { description: 'Forbidden — invalid or missing metrics token' },
+        },
+      },
+    },
+    '/auth/rotate-key': {
+      post: {
+        summary: 'Rotate API key',
+        tags: ['Auth'],
+        description: 'Generates a new API key, invalidating the previous one.',
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
+        responses: {
+          200: { description: 'New API key', content: { 'application/json': { schema: { type: 'object', properties: { apiKey: { type: 'string' } } } } } },
+          401: { description: 'Not authenticated' },
+        },
+      },
+    },
+    '/v1/changelog/projects': {
+      get: {
+        summary: 'List changelog projects',
+        tags: ['Changelog'],
+        responses: { 200: { description: 'Array of project slugs with release counts' } },
+      },
+    },
+    '/v1/changelog/{project}/{version}': {
+      delete: {
+        summary: 'Delete a changelog release',
+        tags: ['Changelog'],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
+        parameters: [
+          { name: 'project', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'version', in: 'path', required: true, schema: { type: 'string' } },
+        ],
+        responses: {
+          200: { description: 'Release deleted' },
+          401: { description: 'Not authenticated' },
+          404: { description: 'Release not found' },
+        },
+      },
+    },
+    '/v1/billing/webhook': {
+      post: {
+        summary: 'Stripe webhook handler',
+        tags: ['Billing'],
+        description: 'Receives Stripe webhook events for subscription lifecycle management.',
+        responses: { 200: { description: 'Webhook processed' }, 400: { description: 'Invalid signature or payload' } },
+      },
+    },
+    '/v1/drafts/{id}': {
+      get: {
+        summary: 'Get draft details',
+        tags: ['Drafts'],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'Draft with revision history' }, 404: { description: 'Draft not found' } },
+      },
+      patch: {
+        summary: 'Update draft',
+        tags: ['Drafts'],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { title: { type: 'string' }, body: { type: 'string' } } } } } },
+        responses: { 200: { description: 'Draft updated' }, 404: { description: 'Draft not found' } },
+      },
+      delete: {
+        summary: 'Delete draft',
+        tags: ['Drafts'],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'Draft deleted' }, 404: { description: 'Draft not found' } },
+      },
+    },
+    '/v1/drafts/{id}/submit': {
+      post: {
+        summary: 'Submit draft for review',
+        tags: ['Drafts'],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'Draft submitted' }, 404: { description: 'Draft not found' } },
+      },
+    },
+    '/v1/drafts/{id}/approve': {
+      post: {
+        summary: 'Approve draft',
+        tags: ['Drafts'],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'Draft approved' }, 404: { description: 'Draft not found' } },
+      },
+    },
+    '/v1/drafts/{id}/publish': {
+      post: {
+        summary: 'Publish draft to changelog',
+        tags: ['Drafts'],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'Draft published' }, 404: { description: 'Draft not found' } },
+      },
+    },
+    '/v1/projects/{project}/settings': {
+      put: {
+        summary: 'Save project defaults',
+        tags: ['Projects'],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
+        parameters: [{ name: 'project', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: { content: { 'application/json': { schema: { type: 'object' } } } },
+        responses: { 200: { description: 'Settings saved' }, 401: { description: 'Not authenticated' } },
+      },
+    },
+    '/v1/org/invites/{id}': {
+      delete: {
+        summary: 'Revoke org invite',
+        tags: ['Team'],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'Invite revoked' }, 404: { description: 'Invite not found' } },
+      },
+    },
+    '/v1/org/members/{userId}': {
+      patch: {
+        summary: 'Update org member role',
+        tags: ['Team'],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
+        parameters: [{ name: 'userId', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { role: { type: 'string', enum: ['admin', 'member'] } } } } } },
+        responses: { 200: { description: 'Role updated' }, 404: { description: 'Member not found' } },
+      },
+    },
   },
   components: {
     securitySchemes: {

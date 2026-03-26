@@ -1,5 +1,7 @@
 import type { Publisher, ReleaseNotes, OutputFormat } from '@cullit/core';
-import { fetchWithTimeout } from '@cullit/core';
+import { fetchWithTimeout, createLogger } from '@cullit/core';
+
+const log = createLogger();
 
 /**
  * Publishes release notes to a Notion database.
@@ -48,7 +50,7 @@ export class NotionPublisher implements Publisher {
       throw new Error(`Notion API failed (${res.status}): ${error}`);
     }
 
-    console.log(`✓ Published to Notion database`);
+    log.info(`✓ Published to Notion database`);
   }
 
   private buildProperties(notes: ReleaseNotes): Record<string, unknown> {

@@ -23,7 +23,7 @@ import { createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { readFileSync, writeFileSync, existsSync, renameSync } from 'fs';
 import type { IncomingMessage, ServerResponse } from 'http';
 import {
-  dbGetUser, dbGetUserByApiKey, dbUpsertUser,
+  dbGetUser, dbGetUserByApiKey, dbUpsertUser, dbRotateApiKey,
   dbUpdateUserOrg, dbGetOrg, dbGetOrgBySlug, dbCreateOrg, dbGetOrgMemberCount,
   dbAddOrgMember, dbRemoveOrgMember, dbGetOrgMembers,
   type DbUser, type DbOrg,
@@ -333,7 +333,7 @@ async function createOrUpdateUser(ghUser: GitHubUser): Promise<User> {
     });
     const user = dbUserToUser(row);
     if (isNew && user.email) {
-      sendWelcome(user.email, user.name, user.apiKey).catch(() => {});
+      sendWelcome(user.email, user.name, user.apiKey).catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to send welcome email'); });
     }
     return user;
   }
@@ -653,4 +653,26 @@ export async function handleAuthMe(req: IncomingMessage, res: ServerResponse, js
 export function handleAuthLogout(_req: IncomingMessage, res: ServerResponse, jsonFn: (r: ServerResponse, s: number, b: unknown) => void): void {
   res.setHeader('Set-Cookie', `${SESSION_COOKIE_NAME}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${COOKIE_SECURE}`);
   jsonFn(res, 200, { ok: true });
+}
+
+/**
+ * POST /auth/rotate-key — Generate a new API key, invalidating the old one.
+ */
+export async function handleRotateApiKey(req: IncomingMessage, res: ServerResponse, jsonFn: (r: ServerResponse, s: number, b: unknown) => void): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { jsonFn(res, 401, { error: 'Not authenticated' }); return; }
+  const newApiKey = generateApiKey();
+  if (useDb) {
+    await dbRotateApiKey(user.id, newApiKey);
+  } else {
+    const existing = store.users[user.id];
+    if (existing) {
+      delete store.apiKeyIndex[existing.apiKey];
+      existing.apiKey = newApiKey;
+      store.apiKeyIndex[newApiKey] = user.id;
+      saveAuthStore();
+    }
+  }
+  log.info({ userId: user.id }, 'API key rotated');
+  jsonFn(res, 200, { apiKey: newApiKey });
 }

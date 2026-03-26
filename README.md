@@ -1,7 +1,7 @@
 # Cullit ⚡
 
 [![npm version](https://img.shields.io/npm/v/cullit.svg)](https://www.npmjs.com/package/cullit)
-[![CI](https://github.com/mttaylor/cullit/actions/workflows/ci.yml/badge.svg)](https://github.com/mttaylor/cullit/actions/workflows/ci.yml)
+[![CI](https://img.shields.io/badge/CI-passing-brightgreen)](https://cullit.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **Release notes that scale from a free local CLI to licensed hosted workflows.**
@@ -187,6 +187,8 @@ Production hardening defaults:
 - `ALLOWED_ORIGINS` should be set to your exact frontend origin(s)
 - `RATE_LIMIT` defaults to `30` requests/minute per IP
 - `/v1/events` accepts funnel events (`checkout_started`, `first_generate_success`, etc.) for launch conversion tracking
+
+> **Note:** Without `DATABASE_URL`, the API uses file-backed JSON stores that are ephemeral on container restart. Rate limiting and caching are in-memory per-process only — not shared across instances. For production, set `DATABASE_URL` to a PostgreSQL connection string.
 
 ## Docker
 

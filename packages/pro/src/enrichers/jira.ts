@@ -1,5 +1,7 @@
 import type { Enricher, GitDiff, EnrichedTicket, JiraConfig } from '@cullit/core';
-import { fetchWithTimeout } from '@cullit/core';
+import { fetchWithTimeout, createLogger } from '@cullit/core';
+
+const log = createLogger();
 
 interface JiraIssueResponse {
   fields?: {
@@ -33,7 +35,7 @@ export class JiraEnricher implements Enricher {
         const ticket = await this.fetchTicket(key);
         if (ticket) tickets.push(ticket);
       } catch (err) {
-        console.warn(`⚠ Could not fetch Jira ticket ${key}: ${(err as Error).message}`);
+        log.warn(`⚠ Could not fetch Jira ticket ${key}: ${(err as Error).message}`);
       }
     }
 

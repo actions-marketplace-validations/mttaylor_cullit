@@ -1,5 +1,7 @@
 import type { Publisher, ReleaseNotes, OutputFormat } from '@cullit/core';
-import { formatNotes, fetchWithTimeout, escapeHtml } from '@cullit/core';
+import { formatNotes, fetchWithTimeout, escapeHtml, createLogger } from '@cullit/core';
+
+const log = createLogger();
 
 interface ConfluenceSearchResponse {
   results?: Array<{ id: string; version: { number: number } }>;
@@ -59,10 +61,10 @@ export class ConfluencePublisher implements Publisher {
     const existing = await this.findPage(title);
     if (existing) {
       await this.updatePage(existing.id, existing.version + 1, title, htmlBody);
-      console.log(`✓ Updated Confluence page: ${title}`);
+      log.info(`✓ Updated Confluence page: ${title}`);
     } else {
       await this.createPage(title, htmlBody);
-      console.log(`✓ Created Confluence page: ${title}`);
+      log.info(`✓ Created Confluence page: ${title}`);
     }
   }
 

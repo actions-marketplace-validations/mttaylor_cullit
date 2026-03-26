@@ -1,5 +1,7 @@
 import type { Publisher, ReleaseNotes, OutputFormat } from '@cullit/core';
-import { formatNotes, fetchWithTimeout } from '@cullit/core';
+import { formatNotes, fetchWithTimeout, createLogger } from '@cullit/core';
+
+const log = createLogger();
 
 /**
  * Creates or updates a GitLab Release via the GitLab API.
@@ -37,10 +39,10 @@ export class GitLabReleasePublisher implements Publisher {
 
     if (existing) {
       await this.updateRelease(tagName, body, notes);
-      console.log(`✓ Updated GitLab Release: ${tagName}`);
+      log.info(`✓ Updated GitLab Release: ${tagName}`);
     } else {
       await this.createRelease(tagName, body, notes);
-      console.log(`✓ Created GitLab Release: ${tagName}`);
+      log.info(`✓ Created GitLab Release: ${tagName}`);
     }
   }
 
