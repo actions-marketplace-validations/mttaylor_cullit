@@ -279,8 +279,18 @@ export async function handleCheckout(
     params['customer_email'] = user.email;
   }
 
-  const session = await stripeRequest('/checkout/sessions', 'POST', params);
-  jsonFn(res, 200, { url: session.url });
+  try {
+    const session = await stripeRequest<{ url?: string }>('/checkout/sessions', 'POST', params);
+    if (!session.url) {
+      log.error({ plan, userId }, 'Stripe returned checkout session without URL');
+      jsonFn(res, 502, { error: 'Checkout session could not be created. Please try again.' });
+      return;
+    }
+    jsonFn(res, 200, { url: session.url });
+  } catch (err) {
+    log.error({ err, plan, userId }, 'Stripe checkout session creation failed');
+    jsonFn(res, 502, { error: 'Payment service is temporarily unavailable. Please try again shortly.' });
+  }
 }
 
 // --- Customer Portal ---
@@ -301,12 +311,21 @@ export async function handleBillingPortal(
     return;
   }
 
-  const session = await stripeRequest('/billing_portal/sessions', 'POST', {
-    'customer': user.stripe_customer_id,
-    'return_url': `${BASE_URL}/dashboard.html`,
-  });
-
-  jsonFn(res, 200, { url: session.url });
+  try {
+    const session = await stripeRequest<{ url?: string }>('/billing_portal/sessions', 'POST', {
+      'customer': user.stripe_customer_id,
+      'return_url': `${BASE_URL}/dashboard.html`,
+    });
+    if (!session.url) {
+      log.error({ userId }, 'Stripe returned portal session without URL');
+      jsonFn(res, 502, { error: 'Billing portal could not be opened. Please try again.' });
+      return;
+    }
+    jsonFn(res, 200, { url: session.url });
+  } catch (err) {
+    log.error({ err, userId }, 'Stripe billing portal session creation failed');
+    jsonFn(res, 502, { error: 'Payment service is temporarily unavailable. Please try again shortly.' });
+  }
 }
 
 // --- Get subscription status ---

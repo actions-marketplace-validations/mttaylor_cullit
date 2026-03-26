@@ -607,21 +607,22 @@ async function startCheckout(plan, e) {
       credentials: 'include',
       body: JSON.stringify({ plan }),
     });
+    if (res.status === 401) {
+      trackEvent('checkout_failed', { plan, reason: 'unauthenticated' });
+      window.location.href = 'dashboard.html?checkout=' + plan;
+      return;
+    }
     const data = await res.json();
     if (data.url) {
       trackEvent('checkout_redirected', { plan });
       window.location.href = data.url;
-    } else if (res.status === 401) {
-      trackEvent('checkout_failed', { plan, reason: 'unauthenticated' });
-      window.location.href = 'dashboard.html';
     } else {
       trackEvent('checkout_failed', { plan, reason: data.error || 'unknown' });
       alert(data.error || 'Could not start checkout. Please try again.');
     }
   } catch {
     trackEvent('checkout_failed', { plan, reason: 'network_error' });
-    // Fallback to mailto if API isn't available
-    window.location.href = 'mailto:sales@cullit.io?subject=Cullit%20' + plan.charAt(0).toUpperCase() + plan.slice(1);
+    window.location.href = 'dashboard.html?checkout=' + plan;
   }
 }
 </script>
