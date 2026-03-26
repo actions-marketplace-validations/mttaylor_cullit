@@ -1,6 +1,6 @@
 {
   "name": "cullit",
-  "version": "1.12.0",
+  "version": "1.13.1",
   "private": true,
   "description": "Cull the noise from your releases. AI-powered release notes.",
   "author": "Cullit <matt@cullit.io>",

@@ -1,9 +1,9 @@
 [
   {
-    "version": "v1.12.0",
+    "version": "v1.13.0",
     "date": "2026-03-25",
     "commits": 1,
-    "filesChanged": 13,
+    "filesChanged": 23,
     "providers": [
       "none",
       "template",
@@ -12,10 +12,25 @@
       "gemini",
       "ollama"
     ],
-    "patches": []
+    "patches": [
+      {
+        "version": "v1.13.1",
+        "date": "2026-03-25",
+        "commits": 1,
+        "filesChanged": 13,
+        "providers": [
+          "none",
+          "template",
+          "anthropic",
+          "openai",
+          "gemini",
+          "ollama"
+        ]
+      }
+    ]
   },
   {
-    "version": "v1.11.0",
+    "version": "v1.12.0",
     "date": "2026-03-23",
     "commits": 22,
     "filesChanged": 70,
@@ -28,7 +43,7 @@
     ],
     "patches": [
       {
-        "version": "v1.11.1",
+        "version": "v1.12.1",
         "date": "2026-03-24",
         "commits": 3,
         "filesChanged": 20,
@@ -41,7 +56,7 @@
         ]
       },
       {
-        "version": "v1.11.2",
+        "version": "v1.12.2",
         "date": "2026-03-24",
         "commits": 14,
         "filesChanged": 33,
@@ -53,22 +68,22 @@
           "gemini",
           "ollama"
         ]
-      },
-      {
-        "version": "v1.11.3",
-        "date": "2026-03-25",
-        "commits": 1,
-        "filesChanged": 23,
-        "providers": [
-          "none",
-          "template",
-          "anthropic",
-          "openai",
-          "gemini",
-          "ollama"
-        ]
       }
     ]
+  },
+  {
+    "version": "v1.11.0",
+    "date": "2026-03-22",
+    "commits": 6,
+    "filesChanged": 33,
+    "providers": [
+      "template",
+      "anthropic",
+      "ollama",
+      "openai",
+      "gemini"
+    ],
+    "patches": []
   },
   {
     "version": "v1.10.0",
@@ -83,24 +98,25 @@
       "openai",
       "gemini"
     ],
-    "patches": [
-      {
-        "version": "v1.10.1",
-        "date": "2026-03-22",
-        "commits": 6,
-        "filesChanged": 33,
-        "providers": [
-          "template",
-          "anthropic",
-          "ollama",
-          "openai",
-          "gemini"
-        ]
-      }
-    ]
+    "patches": []
   },
   {
     "version": "v1.9.0",
+    "date": "2026-03-19",
+    "commits": 24,
+    "filesChanged": 49,
+    "providers": [
+      "none",
+      "template",
+      "anthropic",
+      "ollama",
+      "openai",
+      "gemini"
+    ],
+    "patches": []
+  },
+  {
+    "version": "v1.8.0",
     "date": "2026-03-18",
     "commits": 9,
     "filesChanged": 38,
@@ -111,25 +127,10 @@
       "ollama",
       "template"
     ],
-    "patches": [
-      {
-        "version": "v1.9.2",
-        "date": "2026-03-19",
-        "commits": 24,
-        "filesChanged": 49,
-        "providers": [
-          "none",
-          "template",
-          "anthropic",
-          "ollama",
-          "openai",
-          "gemini"
-        ]
-      }
-    ]
+    "patches": []
   },
   {
-    "version": "v1.8.0",
+    "version": "v1.7.0",
     "date": "2026-03-17",
     "commits": 1,
     "filesChanged": 20,
@@ -140,10 +141,11 @@
       "ollama",
       "openai",
       "gemini"
-    ]
+    ],
+    "patches": []
   },
   {
-    "version": "v1.7.0",
+    "version": "v1.6.0",
     "date": "2026-03-17",
     "commits": 4,
     "filesChanged": 27,
@@ -154,10 +156,11 @@
       "ollama",
       "openai",
       "gemini"
-    ]
+    ],
+    "patches": []
   },
   {
-    "version": "v1.6.0",
+    "version": "v1.5.0",
     "date": "2026-03-17",
     "commits": 3,
     "filesChanged": 25,
@@ -168,10 +171,11 @@
       "ollama",
       "openai",
       "gemini"
-    ]
+    ],
+    "patches": []
   },
   {
-    "version": "v1.5.0",
+    "version": "v1.4.0",
     "date": "2026-03-16",
     "commits": 2,
     "filesChanged": 23,
@@ -182,10 +186,11 @@
       "ollama",
       "openai",
       "gemini"
-    ]
+    ],
+    "patches": []
   },
   {
-    "version": "v1.4.0",
+    "version": "v1.3.0",
     "date": "2026-03-16",
     "commits": 10,
     "filesChanged": 55,
@@ -196,10 +201,11 @@
       "ollama",
       "openai",
       "gemini"
-    ]
+    ],
+    "patches": []
   },
   {
-    "version": "v1.3.0",
+    "version": "v1.2.0",
     "date": "2026-03-15",
     "commits": 1,
     "filesChanged": 14,
@@ -210,10 +216,11 @@
       "ollama",
       "openai",
       "gemini"
-    ]
+    ],
+    "patches": []
   },
   {
-    "version": "v1.2.0",
+    "version": "v1.1.0",
     "date": "2026-03-15",
     "commits": 9,
     "filesChanged": 48,
@@ -224,7 +231,8 @@
       "ollama",
       "openai",
       "gemini"
-    ]
+    ],
+    "patches": []
   },
   {
     "version": "v1.0.0",
@@ -238,6 +246,7 @@
       "ollama",
       "openai",
       "gemini"
-    ]
+    ],
+    "patches": []
   }
 ]
