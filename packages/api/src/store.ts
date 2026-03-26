@@ -90,6 +90,15 @@ function saveHistoryStore(): void {
 
 loadHistoryStore();
 
+// Loud warning if file-backed store is used in production
+if (!useDb && process.env['NODE_ENV'] === 'production') {
+  log.error(
+    'PRODUCTION WARNING: Running with file-backed store (no DATABASE_URL). ' +
+    'Data WILL be lost on container restart. This is NOT suitable for production. ' +
+    'Set DATABASE_URL to a PostgreSQL connection string.',
+  );
+}
+
 // --- History ---
 
 export async function addHistoryEntry(entry: HistoryEntry): Promise<void> {
@@ -120,9 +129,9 @@ export async function addHistoryEntry(entry: HistoryEntry): Promise<void> {
   saveHistoryStore();
 }
 
-export async function getHistory(userId: string, limit: number = 20, offset: number = 0): Promise<HistoryEntry[]> {
+export async function getHistory(userId: string, limit: number = 20, offset: number = 0, cursor?: string): Promise<HistoryEntry[]> {
   if (useDb) {
-    const rows = await dbGetGenerations(userId, limit, offset);
+    const rows = await dbGetGenerations(userId, limit, offset, cursor);
     return rows.map(r => ({
       id: r.id, userId: r.user_id, project: r.project,
       from: r.from_ref, to: r.to_ref, provider: r.provider,
@@ -132,6 +141,10 @@ export async function getHistory(userId: string, limit: number = 20, offset: num
     }));
   }
   const entries = store.history[userId] || [];
+  if (cursor) {
+    const idx = entries.findIndex(e => e.id === cursor);
+    if (idx >= 0) return entries.slice(idx + 1, idx + 1 + limit);
+  }
   return entries.slice(offset, offset + limit);
 }
 

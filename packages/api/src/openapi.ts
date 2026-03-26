@@ -2,6 +2,10 @@ import { VERSION } from '@cullit/core';
 
 /**
  * OpenAPI 3.1 specification for the Cullit API.
+ *
+ * NOTE: This spec is manually maintained. When adding/changing endpoints in the
+ * router (index.ts), update this file to match. A CI lint step should compare
+ * declared paths here against the router's registered routes.
  */
 export const openApiSpec = {
   openapi: '3.1.0',
@@ -284,6 +288,26 @@ export const openApiSpec = {
           },
           '401': {
             description: 'Not authenticated',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+        },
+      },
+      delete: {
+        operationId: 'deleteAccount',
+        summary: 'Delete account (GDPR)',
+        description: 'Permanently deletes the authenticated user account and all associated data. Org owners must transfer ownership first.',
+        tags: ['Auth'],
+        responses: {
+          '200': {
+            description: 'Account deleted',
+            content: { 'application/json': { schema: { type: 'object', properties: { ok: { type: 'boolean' }, message: { type: 'string' } } } } },
+          },
+          '401': {
+            description: 'Not authenticated',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+          '409': {
+            description: 'Must transfer org ownership first',
             content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
           },
         },

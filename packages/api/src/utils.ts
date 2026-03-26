@@ -88,6 +88,39 @@ export function isRecord(value: unknown): value is JsonObject {
   return typeof value === 'object' && value !== null;
 }
 
+/**
+ * Structured error codes for machine-readable API responses.
+ * Convention: CATEGORY_SPECIFIC_ERROR (e.g. AUTH_NOT_AUTHENTICATED).
+ */
+export const ErrorCode = {
+  // Auth
+  AUTH_NOT_AUTHENTICATED: 'AUTH_NOT_AUTHENTICATED',
+  AUTH_UNAUTHORIZED: 'AUTH_UNAUTHORIZED',
+  AUTH_OAUTH_FAILED: 'AUTH_OAUTH_FAILED',
+  AUTH_ORG_OWNER_CONFLICT: 'AUTH_ORG_OWNER_CONFLICT',
+
+  // Rate limiting
+  RATE_LIMIT_EXCEEDED: 'RATE_LIMIT_EXCEEDED',
+
+  // Billing
+  BILLING_NOT_CONFIGURED: 'BILLING_NOT_CONFIGURED',
+  BILLING_LIMIT_REACHED: 'BILLING_LIMIT_REACHED',
+  BILLING_NO_ACCOUNT: 'BILLING_NO_ACCOUNT',
+  BILLING_WEBHOOK_INVALID: 'BILLING_WEBHOOK_INVALID',
+
+  // Validation
+  VALIDATION_INVALID_JSON: 'VALIDATION_INVALID_JSON',
+  VALIDATION_INVALID_PARAMETER: 'VALIDATION_INVALID_PARAMETER',
+  VALIDATION_MISSING_FIELD: 'VALIDATION_MISSING_FIELD',
+
+  // Resource
+  RESOURCE_NOT_FOUND: 'RESOURCE_NOT_FOUND',
+
+  // Server
+  SERVER_INTERNAL_ERROR: 'SERVER_INTERNAL_ERROR',
+  SERVER_GENERATION_FAILED: 'SERVER_GENERATION_FAILED',
+} as const;
+
 export function parseJsonObject(raw: string): JsonObject | null {
   try {
     const parsed = JSON.parse(raw) as unknown;

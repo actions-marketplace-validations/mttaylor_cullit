@@ -4,6 +4,12 @@
  * Aggregates counters and gauges in memory. Exposed via GET /metrics
  * in Prometheus text exposition format for easy scraping.
  *
+ * LIMITATION: All counters are in-memory and reset on process restart.
+ * This is by design — Prometheus scrapes regularly and maintains its own
+ * time-series DB, so ephemeral counters are expected. However, if you need
+ * metrics to survive restarts without Prometheus, consider persisting
+ * counter snapshots to the database.
+ *
  * Tracked metrics:
  *   cullit_generations_total        — successful generations (by provider)
  *   cullit_generation_errors_total  — failed generations

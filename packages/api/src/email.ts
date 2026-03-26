@@ -209,3 +209,45 @@ export async function sendUsageAlert(email: string, name: string, used: number, 
 export function isEmailConfigured(): boolean {
   return !!RESEND_API_KEY;
 }
+
+export async function sendTrialExpiryWarning(email: string, name: string, daysRemaining: number): Promise<boolean> {
+  return send({
+    to: email,
+    subject: `Cullit — Your Pro trial ends in ${daysRemaining} day${daysRemaining === 1 ? '' : 's'}`,
+    html: `${BRAND}
+      <h2 style="color: #0f1117; margin-bottom: 16px;">Your trial is ending soon</h2>
+      <p style="color: #374151; line-height: 1.6;">
+        Hi ${escapeHtml(name)}, your Cullit Pro trial ends in <strong>${daysRemaining} day${daysRemaining === 1 ? '' : 's'}</strong>.
+      </p>
+      <p style="color: #374151; line-height: 1.6;">
+        Subscribe now to keep your Pro features:
+      </p>
+      <p style="margin: 16px 0;">
+        <a href="https://cullit.io/dashboard.html" style="background: #5eead4; color: #0f1117; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">
+          Upgrade to Pro
+        </a>
+      </p>
+    ${FOOTER}`,
+  });
+}
+
+export async function sendTrialExpired(email: string, name: string): Promise<boolean> {
+  return send({
+    to: email,
+    subject: 'Cullit — Your Pro trial has ended',
+    html: `${BRAND}
+      <h2 style="color: #0f1117; margin-bottom: 16px;">Your trial has expired</h2>
+      <p style="color: #374151; line-height: 1.6;">
+        Hi ${escapeHtml(name)}, your Cullit Pro trial has ended and your account has reverted to the Free plan.
+      </p>
+      <p style="color: #374151; line-height: 1.6;">
+        Subscribe to keep all the features you've been using:
+      </p>
+      <p style="margin: 16px 0;">
+        <a href="https://cullit.io/pricing.html" style="background: #5eead4; color: #0f1117; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">
+          View Plans
+        </a>
+      </p>
+    ${FOOTER}`,
+  });
+}

@@ -353,6 +353,15 @@ function handleInstallation(payload: GitHubInstallationEventPayload): void {
 
   if (action === 'created') {
     log.info({ repos }, 'Installed repos');
+    // TODO: Link this GitHub App installation to the Cullit user account.
+    // The installation.account.login should be matched to a Cullit user by
+    // their GitHub login. Until this is implemented, users must manually
+    // configure their repos in the Cullit dashboard after installing the app.
+    log.warn(
+      { account, installationId: payload.installation?.id },
+      'Installation created but auto-linking to Cullit account is not yet implemented. ' +
+      'User must configure repos manually in the dashboard.',
+    );
   }
 }
 
