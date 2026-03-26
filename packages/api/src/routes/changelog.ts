@@ -9,7 +9,7 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import { readFileSync, writeFileSync, existsSync, renameSync } from 'fs';
 import { json, readBody, parseJsonObject, toStringArray, isRecord, sanitizeHtml, PORT } from '../utils.js';
 import { resolveUser, useDb } from '../auth.js';
-import { dbPublishRelease, dbGetReleases, dbGetProjectCount, dbDeleteRelease, sql } from '../db.js';
+import { dbPublishRelease, dbGetReleases, dbGetProjectCount, dbDeleteRelease, dbGetProjectOwner, dbGetUserProjects } from '../db.js';
 import { log } from '../logger.js';
 
 // --- Changelog types & store ---
@@ -132,6 +132,13 @@ export async function handleChangelogPublish(req: IncomingMessage, res: ServerRe
 
   // DB-backed persistence when available
   if (useDb) {
+    // Project ownership check — prevent cross-user changelog hijacking
+    const owner = await dbGetProjectOwner(project);
+    if (owner && owner !== user.id) {
+      json(res, 403, { error: 'Project belongs to another user' });
+      return;
+    }
+
     const projectCount = await dbGetProjectCount();
     if (projectCount >= MAX_PROJECTS) {
       json(res, 409, { error: 'Maximum number of projects reached' });
@@ -149,6 +156,13 @@ export async function handleChangelogPublish(req: IncomingMessage, res: ServerRe
       userId: user.id,
     });
   } else {
+    // In-memory ownership check
+    const existingReleases = changelogStore.get(project);
+    if (existingReleases && existingReleases.length > 0 && existingReleases[0].userId && existingReleases[0].userId !== user.id) {
+      json(res, 403, { error: 'Project belongs to another user' });
+      return;
+    }
+
     if (!changelogStore.has(project) && changelogStore.size >= MAX_PROJECTS) {
       json(res, 409, { error: 'Maximum number of projects reached' });
       return;
@@ -231,9 +245,13 @@ export async function handleChangelogListProjects(req: IncomingMessage, res: Ser
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
 
   if (useDb) {
-    const rows = await sql<Array<{ project: string }>>`SELECT DISTINCT project FROM changelog_releases ORDER BY project`;
-    json(res, 200, { projects: rows.map(r => r.project) });
+    const projects = await dbGetUserProjects(user.id);
+    json(res, 200, { projects });
   } else {
-    json(res, 200, { projects: Array.from(changelogStore.keys()).sort() });
+    const userProjects = Array.from(changelogStore.entries())
+      .filter(([, releases]) => releases.some(r => r.userId === user.id))
+      .map(([project]) => project)
+      .sort();
+    json(res, 200, { projects: userProjects });
   }
 }

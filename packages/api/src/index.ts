@@ -24,7 +24,7 @@ import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarge
 import { openApiSpec } from './openapi.js';
 import {
   handleAuthRedirect, handleAuthCallback, handleAuthMe, handleAuthLogout,
-  handleRotateApiKey, resolveUser, getEffectiveTier,
+  handleRotateApiKey, handleDeleteAccount, resolveUser, getEffectiveTier,
 } from './auth.js';
 import {
   addHistoryEntry, getHistory, getHistoryCount,
@@ -33,12 +33,14 @@ import {
 } from './store.js';
 import { migrate, closeDb, sql,
   dbGetProjectSettings, dbUpsertProjectSettings, dbListProjectSettings,
+  dbGetExpiringTrials, dbGetJustExpiredTrials,
 } from './db.js';
 import { handleCheckout, handleBillingPortal, handleGetSubscription, handleStripeWebhook, isStripeConfigured } from './billing.js';
 import { log } from './logger.js';
 import { metrics, handleMetrics } from './metrics.js';
+import { sendTrialExpiryWarning, sendTrialExpired } from './email.js';
 import {
-  json, checkAuth, readBody, parseJsonObject, isRecord,
+  json, checkAuth, readBody, parseJsonObject, isRecord, ErrorCode,
   PORT, SECURITY_HEADERS, generateRequestId,
   type CorsResponse, type JsonObject,
 } from './utils.js';
@@ -87,10 +89,47 @@ if (IS_PROD) {
   if (!process.env['DATABASE_URL']) {
     log.warn('DATABASE_URL is not set — file-backed stores will lose data on container restart. Set a PostgreSQL connection string in production.');
   }
+  // IMPORTANT: Rate limiting is in-memory and per-process. In multi-instance
+  // deployments (multiple containers/pods), each instance tracks limits independently.
+  // This means the effective rate limit is multiplied by the number of instances.
+  // For strict enforcement across instances, integrate a shared store like Redis.
+  log.warn(
+    'Rate limiting is in-memory (per-process). If running multiple instances, ' +
+    'rate limits are NOT shared. Consider Redis-backed rate limiting for strict enforcement.',
+  );
 }
 
 if (!ALLOWED_ORIGINS) {
   log.warn('ALLOWED_ORIGINS is not set. CORS will reject cross-origin requests. Set ALLOWED_ORIGINS=* for local dev or specify your domain.');
+}
+
+// --- Trial expiry email cron (runs every 6 hours) ---
+async function checkTrialExpiry(): Promise<void> {
+  try {
+    // Warn users whose trial expires within 3 days
+    const expiring = await dbGetExpiringTrials(3);
+    for (const user of expiring) {
+      if (!user.email || !user.trial_ends_at) continue;
+      const daysRemaining = Math.max(1, Math.ceil((new Date(user.trial_ends_at).getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
+      await sendTrialExpiryWarning(user.email, user.name || user.login, daysRemaining);
+    }
+    // Notify users whose trial just expired
+    const expired = await dbGetJustExpiredTrials();
+    for (const user of expired) {
+      if (!user.email) continue;
+      await sendTrialExpired(user.email, user.name || user.login);
+    }
+    if (expiring.length || expired.length) {
+      log.info({ expiring: expiring.length, expired: expired.length }, 'Trial expiry emails sent');
+    }
+  } catch (err) {
+    log.warn({ err: (err as Error).message }, 'Trial expiry check failed');
+  }
+}
+if (sql) {
+  // Run on startup (delayed) and every 6 hours
+  setTimeout(() => { checkTrialExpiry().catch(() => {}); }, 30_000);
+  setInterval(() => { checkTrialExpiry().catch(() => {}); }, 6 * 60 * 60 * 1000).unref();
 }
 const allowedOriginSet = new Set(ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean));
 
@@ -142,7 +181,7 @@ function checkRateLimit(req: IncomingMessage, res: ServerResponse): boolean {
   if (recent.length >= RATE_LIMIT) {
     res.setHeader('Retry-After', Math.ceil(RATE_WINDOW / 1000));
     metrics.rateLimited();
-    json(res, 429, { error: 'Too many requests. Try again later.' });
+    json(res, 429, { error: 'Too many requests. Try again later.', code: ErrorCode.RATE_LIMIT_EXCEEDED });
     return false;
   }
 
@@ -235,15 +274,8 @@ async function handleHealth(_req: IncomingMessage, res: ServerResponse): Promise
   }
   const status = dbOk ? 'ok' : 'degraded';
   // Always return 200 so the load balancer considers the server healthy.
-  // Degraded status (DB unreachable) is communicated via the response body.
-  json(res, 200, {
-    status,
-    version: VERSION,
-    uptime: process.uptime(),
-    database: !!sql,
-    databaseConnected: dbOk,
-    stripe: isStripeConfigured(),
-  });
+  // Only expose status — no version, uptime, or infrastructure details.
+  json(res, 200, { status });
 }
 
 async function handleOpenAPI(_req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -363,10 +395,43 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
   // in the API to prevent path traversal / arbitrary file read)
   const publishers: PublishTarget[] = [{ type: 'stdout' }];
 
-  // Validate Jira domain if provided
-  if (body.jira?.domain && !/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(body.jira.domain)) {
-    json(res, 400, { error: 'Invalid Jira domain format' });
+  // Reject source types not supported via hosted API (no config passthrough)
+  const sourceType = body.source?.type || 'local';
+  if (sourceType === 'gitlab' || sourceType === 'bitbucket') {
+    json(res, 400, { error: `Source type "${sourceType}" is not supported via the hosted API. Use the CLI instead.` });
     return;
+  }
+
+  // Validate Jira domain if provided — SSRF protection
+  if (body.jira?.domain) {
+    const domain = body.jira.domain;
+    // Basic format: must be valid hostname with TLD
+    if (!/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/.test(domain)) {
+      json(res, 400, { error: 'Invalid Jira domain format' });
+      return;
+    }
+    // Block DNS rebinding / SSRF bypass domains
+    const SSRF_BLOCKED_SUFFIXES = [
+      '.nip.io', '.xip.io', '.sslip.io', '.localtest.me', '.lvh.me',
+      '.vcap.me', '.lacolhost.com', '.127.0.0.1.ip',
+    ];
+    const SSRF_BLOCKED_EXACT = [
+      'localtest.me', 'lvh.me', 'vcap.me', 'lacolhost.com',
+    ];
+    const SSRF_BLOCKED_PATTERNS = [
+      /^localhost/i, /\.localhost$/i, /\.local$/i, /\.internal$/i,
+      /\.svc$/i, /\.svc\./i, /\.cluster\./i, /\.pod\./i,
+      /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/, // IP address anywhere in hostname
+    ];
+    const lowerDomain = domain.toLowerCase();
+    if (
+      SSRF_BLOCKED_SUFFIXES.some(s => lowerDomain.endsWith(s)) ||
+      SSRF_BLOCKED_EXACT.includes(lowerDomain) ||
+      SSRF_BLOCKED_PATTERNS.some(p => p.test(lowerDomain))
+    ) {
+      json(res, 400, { error: 'Invalid Jira domain format' });
+      return;
+    }
   }
 
   const config: CullConfig = {
@@ -378,7 +443,7 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
       categories: body.categories || DEFAULT_CATEGORIES,
     },
     source: {
-      type: body.source?.type || 'local',
+      type: sourceType,
       enrichment: body.source?.enrichment || [],
     },
     publish: publishers,
@@ -397,7 +462,7 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
     // Usage enforcement: check monthly limit before running pipeline
     const user = await resolveUser(req);
     if (!user) {
-      json(res, 401, { error: 'Authentication required for generation' });
+      json(res, 401, { error: 'Authentication required for generation', code: ErrorCode.AUTH_NOT_AUTHENTICATED });
       return;
     }
     {
@@ -408,6 +473,7 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
       if (monthlyCount >= limits.generationsPerMonth) {
         json(res, 402, {
           error: 'Monthly generation limit reached',
+          code: ErrorCode.BILLING_LIMIT_REACHED,
           used: monthlyCount,
           limit: limits.generationsPerMonth,
           tier: effectiveTier,
@@ -472,7 +538,7 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
   } catch (err) {
     log.error({ err: (err as Error).message }, 'Pipeline error');
     metrics.generationError();
-    json(res, 500, { error: 'Generation failed. Check server logs for details.' });
+    json(res, 500, { error: 'Generation failed. Check server logs for details.', code: ErrorCode.SERVER_GENERATION_FAILED });
   }
 }
 
@@ -488,13 +554,19 @@ async function handleGetHistory(req: IncomingMessage, res: ServerResponse): Prom
   const url = new URL(req.url || '/', `http://localhost:${PORT}`);
   const rawLimit = parseInt(url.searchParams.get('limit') || '20', 10);
   const limit = Math.max(1, Math.min(isNaN(rawLimit) ? 20 : rawLimit, 100));
-  const rawOffset = parseInt(url.searchParams.get('offset') || '0', 10);
-  const offset = Math.max(0, isNaN(rawOffset) ? 0 : rawOffset);
 
-  const entries = await getHistory(user.id, limit, offset);
+  // Support cursor-based pagination (cursor = last entry ID) or offset-based fallback
+  const cursor = url.searchParams.get('cursor') || undefined;
+  const rawOffset = parseInt(url.searchParams.get('offset') || '0', 10);
+  const offset = cursor ? 0 : Math.max(0, isNaN(rawOffset) ? 0 : rawOffset);
+
+  const entries = await getHistory(user.id, limit + 1, offset, cursor);
+  const hasMore = entries.length > limit;
+  const page = hasMore ? entries.slice(0, limit) : entries;
+  const nextCursor = hasMore && page.length > 0 ? page[page.length - 1].id : undefined;
   const total = await getHistoryCount(user.id);
 
-  json(res, 200, { entries, total, limit, offset });
+  json(res, 200, { entries: page, total, limit, offset, cursor: nextCursor, hasMore });
 }
 
 // --- Analytics Endpoint ---
@@ -670,6 +742,8 @@ const server = createServer(async (req, res: CorsResponse) => {
       handleAuthLogout(req, res, json);
     } else if (path === '/auth/rotate-key' && req.method === 'POST') {
       await handleRotateApiKey(req, res, json);
+    } else if (path === '/auth/me' && req.method === 'DELETE') {
+      await handleDeleteAccount(req, res, json);
 
     // --- Public / system routes ---
     } else if ((path === '/health' || path === '/healthz') && (req.method === 'GET' || req.method === 'HEAD')) {
@@ -790,11 +864,11 @@ const server = createServer(async (req, res: CorsResponse) => {
       await handleGetAnalytics(req, res);
 
     } else {
-      json(res, 404, { error: 'Not found', docs: '/openapi.json' });
+      json(res, 404, { error: 'Not found', code: ErrorCode.RESOURCE_NOT_FOUND, docs: '/openapi.json' });
     }
   } catch (err) {
     log.error({ err, requestId: res._requestId }, 'Unhandled error');
-    json(res, 500, { error: 'Internal server error' });
+    json(res, 500, { error: 'Internal server error', code: ErrorCode.SERVER_INTERNAL_ERROR });
   } finally {
     metrics.httpRequest(req.method || 'UNKNOWN', res.statusCode);
   }

@@ -1753,11 +1753,17 @@ async function loadHistory() {
     list.innerHTML = data.entries.map(h => {
       const date = new Date(h.createdAt);
       const ago = timeAgo(date.getTime());
-      return '<div class="history-item" onclick="loadHistoryEntry(\'' + escapeAttr(h.from) + '\',\'' + escapeAttr(h.to) + '\',\'' + escapeAttr(h.provider) + '\',\'' + escapeAttr(h.summary) + '\')">' +
+      return '<div class="history-item" data-from="' + escapeAttr(h.from) + '" data-to="' + escapeAttr(h.to) + '" data-provider="' + escapeAttr(h.provider) + '" data-summary="' + escapeAttr(h.summary) + '">' +
         '<span><span class="tag">' + escapeHtml(h.from) + '</span> &rarr; ' + escapeHtml(h.to) + ' <span style="color:var(--terminal-purple);font-size:0.7rem">' + escapeHtml(h.provider) + '</span></span>' +
         '<span class="time">' + escapeHtml(String(h.changeCount)) + ' changes &middot; ' + ago + '</span>' +
         '</div>';
     }).join('');
+
+    list.querySelectorAll('.history-item[data-from]').forEach(function(el) {
+      el.addEventListener('click', function() {
+        loadHistoryEntry(el.dataset.from, el.dataset.to, el.dataset.provider, el.dataset.summary);
+      });
+    });
 
     // Pager
     const totalPages = Math.ceil(data.total / HISTORY_LIMIT);
@@ -1892,14 +1898,20 @@ async function loadTeam() {
     const members = data.members || [];
     document.getElementById('memberList').innerHTML = members.map(m => {
       const removeBtn = isAdmin && m.id !== currentUser.id
-        ? '<button class="btn-danger" onclick="removeMember(\'' + escapeAttr(m.id) + '\')">Remove</button>'
+        ? '<button class="btn-danger" data-remove-id="' + escapeAttr(m.id) + '">Remove</button>'
         : '';
       return '<div class="member-row">' +
-        '<img src="' + escapeHtml(m.avatarUrl || '') + '" alt="">' +
+        '<img src="' + escapeAttr(m.avatarUrl || '') + '" alt="">' +
         '<div class="member-info"><div class="member-name">' + escapeHtml(m.name || m.login) + '</div>' +
         '<div class="member-role">' + escapeHtml(m.role) + '</div></div>' +
         removeBtn + '</div>';
     }).join('');
+
+    document.querySelectorAll('[data-remove-id]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        removeMember(btn.dataset.removeId);
+      });
+    });
   } catch {
     document.getElementById('teamNoOrg').style.display = '';
     document.getElementById('teamHasOrg').style.display = 'none';
@@ -2405,9 +2417,15 @@ async function loadChangelogReleases() {
           '<span style="color:var(--text-dim);font-size:0.75rem">' + escapeHtml(r.date) + '</span>' +
           (r.summary ? '<div style="font-size:0.8rem;color:var(--text-dim);margin-top:0.25rem">' + escapeHtml(r.summary.slice(0, 120)) + '</div>' : '') +
         '</div>' +
-        '<button class="btn-danger" style="font-size:0.7rem;padding:0.2rem 0.5rem" onclick="deleteRelease(\'' + escapeAttr(project) + '\',\'' + escapeAttr(r.version) + '\')">Delete</button>' +
+        '<button class="btn-danger" style="font-size:0.7rem;padding:0.2rem 0.5rem" data-del-project="' + escapeAttr(project) + '" data-del-version="' + escapeAttr(r.version) + '">Delete</button>' +
       '</div>';
     }).join('');
+
+    list.querySelectorAll('[data-del-project]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        deleteRelease(btn.dataset.delProject, btn.dataset.delVersion);
+      });
+    });
   } catch {
     list.innerHTML = '<div class="empty-state" style="min-height:100px"><p>Failed to load releases</p></div>';
   }

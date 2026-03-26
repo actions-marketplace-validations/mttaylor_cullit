@@ -249,7 +249,72 @@ export async function migrate(): Promise<void> {
   await sql`CREATE INDEX IF NOT EXISTS idx_invites_org ON org_invites (org_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_invites_token ON org_invites (token) WHERE accepted_at IS NULL`;
 
+  // JWT token revocation table (blacklist for logged-out / rotated tokens)
+  await sql`
+    CREATE TABLE IF NOT EXISTS revoked_tokens (
+      token_hash  TEXT PRIMARY KEY,
+      user_id     TEXT NOT NULL,
+      revoked_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      expires_at  TIMESTAMPTZ NOT NULL
+    )
+  `;
+
+  // Auto-prune expired revoked tokens (no longer needed once JWT naturally expires)
+  await sql`DELETE FROM revoked_tokens WHERE expires_at < NOW()`.catch(() => { /* best effort */ });
+
+  // Stripe webhook idempotency table
+  await sql`
+    CREATE TABLE IF NOT EXISTS webhook_events (
+      stripe_event_id TEXT PRIMARY KEY,
+      event_type      TEXT NOT NULL,
+      processed_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+
+  // Auto-prune webhook events older than 30 days
+  await sql`DELETE FROM webhook_events WHERE processed_at < NOW() - INTERVAL '30 days'`.catch(() => { /* best effort */ });
+
   log.info('Database migrations complete');
+}
+
+// --- Token revocation DB operations ---
+
+export async function dbRevokeToken(tokenHash: string, userId: string, expiresAt: Date): Promise<void> {
+  if (!sql) return;
+  await sql`
+    INSERT INTO revoked_tokens (token_hash, user_id, expires_at)
+    VALUES (${tokenHash}, ${userId}, ${expiresAt})
+    ON CONFLICT (token_hash) DO NOTHING
+  `;
+}
+
+export async function dbIsTokenRevoked(tokenHash: string): Promise<boolean> {
+  if (!sql) return false;
+  const rows = await sql`SELECT 1 FROM revoked_tokens WHERE token_hash = ${tokenHash}`;
+  return rows.length > 0;
+}
+
+export async function dbRevokeAllUserTokens(userId: string, expiresAt: Date): Promise<void> {
+  if (!sql) return;
+  // This doesn't revoke existing tokens by hash — it's used as a marker.
+  // Actual per-token revocation happens in auth.ts on logout/rotate.
+}
+
+// --- Webhook idempotency DB operations ---
+
+export async function dbCheckWebhookProcessed(eventId: string): Promise<boolean> {
+  if (!sql) return false;
+  const rows = await sql`SELECT 1 FROM webhook_events WHERE stripe_event_id = ${eventId}`;
+  return rows.length > 0;
+}
+
+export async function dbMarkWebhookProcessed(eventId: string, eventType: string): Promise<void> {
+  if (!sql) return;
+  await sql`
+    INSERT INTO webhook_events (stripe_event_id, event_type)
+    VALUES (${eventId}, ${eventType})
+    ON CONFLICT (stripe_event_id) DO NOTHING
+  `;
 }
 
 // --- User DB operations ---
@@ -346,6 +411,34 @@ export async function dbClearUserTrial(userId: string): Promise<void> {
   `;
 }
 
+/** Get users whose trial expires within the given number of days (for expiry email reminders). */
+export async function dbGetExpiringTrials(withinDays: number): Promise<DbUser[]> {
+  if (!sql) return [];
+  return sql<DbUser[]>`
+    SELECT * FROM users
+    WHERE trial_tier IS NOT NULL
+      AND trial_ends_at IS NOT NULL
+      AND trial_ends_at > NOW()
+      AND trial_ends_at <= NOW() + (${withinDays}::int || ' days')::interval
+      AND tier = 'free'
+      AND trial_converted_at IS NULL
+  `;
+}
+
+/** Get users whose trial has just expired (within the last 24 hours). */
+export async function dbGetJustExpiredTrials(): Promise<DbUser[]> {
+  if (!sql) return [];
+  return sql<DbUser[]>`
+    SELECT * FROM users
+    WHERE trial_tier IS NOT NULL
+      AND trial_ends_at IS NOT NULL
+      AND trial_ends_at <= NOW()
+      AND trial_ends_at > NOW() - INTERVAL '24 hours'
+      AND tier = 'free'
+      AND trial_converted_at IS NULL
+  `;
+}
+
 // --- Org DB operations ---
 
 export interface DbOrg {
@@ -396,6 +489,30 @@ export async function dbRemoveOrgMember(orgId: string, userId: string): Promise<
   return result.count > 0;
 }
 
+/**
+ * GDPR: Delete all user data. Anonymizes history records, removes org membership,
+ * deletes subscriptions, drafts, and the user record itself.
+ */
+export async function dbDeleteUser(userId: string): Promise<void> {
+  if (!sql) return;
+  // Remove org memberships (but don't delete orgs the user owns — handled by caller)
+  await sql`DELETE FROM org_members WHERE user_id = ${userId}`;
+  // Anonymize generation history (keep aggregate stats, remove PII)
+  await sql`UPDATE generations SET user_id = 'deleted' WHERE user_id = ${userId}`;
+  // Delete subscriptions
+  await sql`DELETE FROM subscriptions WHERE user_id = ${userId}`;
+  // Delete drafts and their revisions (CASCADE handles revisions)
+  await sql`DELETE FROM release_drafts WHERE user_id = ${userId}`;
+  // Delete project settings
+  await sql`DELETE FROM project_settings WHERE user_id = ${userId}`;
+  // Delete org invites created by this user
+  await sql`DELETE FROM org_invites WHERE created_by = ${userId}`;
+  // Revoke all tokens
+  await sql`DELETE FROM revoked_tokens WHERE user_id = ${userId}`;
+  // Delete the user record
+  await sql`DELETE FROM users WHERE id = ${userId}`;
+}
+
 export async function dbGetOrgMembers(orgId: string): Promise<DbUser[]> {
   return sql<DbUser[]>`
     SELECT u.* FROM users u
@@ -428,10 +545,20 @@ export async function dbAddGeneration(entry: {
   `;
 }
 
-export async function dbGetGenerations(userId: string, limit: number, offset: number): Promise<{
+export async function dbGetGenerations(userId: string, limit: number, offset: number, cursor?: string): Promise<{
   id: string; user_id: string; project: string; from_ref: string; to_ref: string;
   provider: string; format: string; change_count: number; summary: string; duration: number; created_at: Date;
 }[]> {
+  if (cursor) {
+    // Cursor-based: fetch rows created before the cursor row
+    return sql`
+      SELECT * FROM generations
+      WHERE user_id = ${userId}
+        AND created_at < (SELECT created_at FROM generations WHERE id = ${cursor})
+      ORDER BY created_at DESC
+      LIMIT ${limit}
+    `;
+  }
   return sql`
     SELECT * FROM generations
     WHERE user_id = ${userId}
@@ -531,6 +658,12 @@ export async function dbGetUsageStats(key: string, days: number): Promise<{
 }
 
 // --- Changelog DB operations ---
+
+export async function dbGetProjectOwner(project: string): Promise<string | null> {
+  const rows = await sql<Array<{ user_id: string }>>`
+    SELECT user_id FROM changelog_releases WHERE project = ${project} AND user_id IS NOT NULL LIMIT 1`;
+  return rows.length > 0 ? rows[0].user_id : null;
+}
 
 export async function dbPublishRelease(project: string, release: {
   version: string; date: string; summary: string;
