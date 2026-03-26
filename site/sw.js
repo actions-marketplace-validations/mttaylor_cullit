@@ -1,12 +1,8 @@
-// Cullit Service Worker — cache-first for static assets
-const CACHE_NAME = 'cullit-v1';
+// Cullit Service Worker
+// - Network-first for HTML navigations (always fresh content)
+// - Cache-first for static assets (images, icons)
+const CACHE_NAME = 'cullit-v2';
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/docs.html',
-  '/pricing.html',
-  '/tutorial.html',
-  '/changelog.html',
   '/favicon.svg',
   '/og-image.png',
 ];
@@ -27,18 +23,54 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
+function isNavigationRequest(request) {
+  return request.mode === 'navigate' ||
+    request.destination === 'document' ||
+    request.headers.get('accept')?.includes('text/html');
+}
+
+// Network-first: try network, fall back to cache
+function networkFirst(event) {
+  event.respondWith(
+    fetch(event.request).then((response) => {
+      if (response.ok) {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+      }
+      return response;
+    }).catch(() => caches.match(event.request))
+  );
+}
+
+// Cache-first: serve from cache, update in background
+function cacheFirst(event) {
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      const fetchPromise = fetch(event.request).then((response) => {
+      if (cached) {
+        // Update cache in background
+        fetch(event.request).then((response) => {
+          if (response.ok) {
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, response));
+          }
+        }).catch(() => {});
+        return cached;
+      }
+      return fetch(event.request).then((response) => {
         if (response.ok) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return response;
-      }).catch(() => cached);
-      return cached || fetchPromise;
+      });
     })
   );
+}
+
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+  if (isNavigationRequest(event.request)) {
+    networkFirst(event);
+  } else {
+    cacheFirst(event);
+  }
 });
