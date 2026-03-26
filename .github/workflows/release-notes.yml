@@ -36,13 +36,19 @@ jobs:
       - name: Build CLI
         run: pnpm --filter @cullit/config build && pnpm --filter @cullit/core build && pnpm --filter cullit build
 
+      - name: Install Ollama
+        run: curl -fsSL https://ollama.com/install.sh | sh
+
+      - name: Pull Ollama model
+        run: ollama pull llama3.2:3b
+
       - name: Generate release notes
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           CULLIT_API_KEY: ${{ secrets.CULLIT_API_KEY }}
-        run: node scripts/generate-release-notes.mjs --providers anthropic,openai,gemini ${{ github.ref_name }}
+        run: node scripts/generate-release-notes.mjs --providers anthropic,openai,gemini,ollama ${{ github.ref_name }}
 
       - name: Commit & push release notes
         run: |
