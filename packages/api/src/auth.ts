@@ -605,14 +605,12 @@ export async function handleAuthCallback(req: IncomingMessage, res: ServerRespon
     // Exchange code for user profile via WorkOS User Management API
     const tokenRes = await fetch('https://api.workos.com/user_management/authenticate', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${WORKOS_API_KEY}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         grant_type: 'authorization_code',
         code,
         client_id: WORKOS_CLIENT_ID,
+        client_secret: WORKOS_API_KEY,
       }),
     });
 
