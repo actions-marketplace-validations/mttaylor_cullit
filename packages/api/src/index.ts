@@ -788,8 +788,8 @@ const isDirectRun = process.argv[1]?.endsWith('index.js') || process.argv[1]?.en
 if (isDirectRun) {
   server.headersTimeout = 30_000;    // 30s to receive headers (slow-loris protection)
   server.requestTimeout = 120_000;   // 2min total request timeout
-  server.listen(PORT, () => {
-    log.info({ version: VERSION, port: PORT, database: !!sql, stripe: isStripeConfigured() }, `Cullit API v${VERSION} listening on http://localhost:${PORT}`);
+  server.listen(PORT, '0.0.0.0', () => {
+    log.info({ version: VERSION, port: PORT, database: !!sql, stripe: isStripeConfigured() }, `Cullit API v${VERSION} listening on 0.0.0.0:${PORT}`);
   });
 }
 

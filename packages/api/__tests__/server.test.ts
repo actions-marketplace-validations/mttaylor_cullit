@@ -45,7 +45,7 @@ describe('API Server', () => {
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('Server startup timeout')), 10000);
       serverProcess.stdout?.on('data', (data: Buffer) => {
-        if (data.toString().includes('localhost')) {
+        if (data.toString().includes('listening')) {
           clearTimeout(timeout);
           resolve();
         }
