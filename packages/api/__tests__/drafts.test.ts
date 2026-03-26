@@ -5,10 +5,12 @@ import { Readable } from 'stream';
 // Mock auth module
 const mockResolveUser = vi.fn();
 const mockGetEffectiveTier = vi.fn();
+const mockGetOrg = vi.fn();
 
 vi.mock('../src/auth.js', () => ({
   resolveUser: (...args: unknown[]) => mockResolveUser(...args),
   getEffectiveTier: (...args: unknown[]) => mockGetEffectiveTier(...args),
+  getOrg: (...args: unknown[]) => mockGetOrg(...args),
 }));
 
 // Mock db module
@@ -22,6 +24,7 @@ const mockDbCreateRevision = vi.fn();
 const mockDbGetRevisions = vi.fn();
 const mockDbGetRevisionCount = vi.fn();
 const mockDbPublishRelease = vi.fn();
+const mockDbPublishDraftWithRelease = vi.fn();
 
 vi.mock('../src/db.js', () => ({
   dbCreateDraft: (...args: unknown[]) => mockDbCreateDraft(...args),
@@ -34,6 +37,7 @@ vi.mock('../src/db.js', () => ({
   dbGetRevisions: (...args: unknown[]) => mockDbGetRevisions(...args),
   dbGetRevisionCount: (...args: unknown[]) => mockDbGetRevisionCount(...args),
   dbPublishRelease: (...args: unknown[]) => mockDbPublishRelease(...args),
+  dbPublishDraftWithRelease: (...args: unknown[]) => mockDbPublishDraftWithRelease(...args),
 }));
 
 // Mock logger (prevent console output in tests)
@@ -50,7 +54,7 @@ import {
 
 function mockReq(body = '{}', url = '/'): IncomingMessage {
   const stream = Readable.from([Buffer.from(body)]);
-  (stream as Record<string, unknown>).url = url;
+  (stream as unknown as Record<string, unknown>).url = url;
   return stream as unknown as IncomingMessage;
 }
 
@@ -486,18 +490,16 @@ describe('handleDraftPublish', () => {
     mockResolveUser.mockResolvedValue(teamOwner);
     mockDbGetDraft.mockResolvedValue(approved);
     const published = { ...approved, status: 'published' };
-    mockDbUpdateDraftStatus.mockResolvedValue(published);
-    mockDbPublishRelease.mockResolvedValue({});
+    mockDbPublishDraftWithRelease.mockResolvedValue(published);
 
     await handleDraftPublish(mockReq(), mockRes(), 'draft1');
     expect(captured.status).toBe(200);
-    expect(mockDbPublishRelease).toHaveBeenCalledWith('myapp', expect.objectContaining({
+    expect(mockDbPublishDraftWithRelease).toHaveBeenCalledWith('draft1', 'myapp', expect.objectContaining({
       version: '1.0.0',
     }));
-    expect(mockDbUpdateDraftStatus).toHaveBeenCalledWith('draft1', 'published');
   });
 
-  it('skips dbPublishRelease when draft has no version', async () => {
+  it('skips dbPublishDraftWithRelease when draft has no version', async () => {
     const approved = { ...sampleDraft, status: 'approved', version: '' };
     mockResolveUser.mockResolvedValue(teamOwner);
     mockDbGetDraft.mockResolvedValue(approved);
@@ -505,6 +507,7 @@ describe('handleDraftPublish', () => {
 
     await handleDraftPublish(mockReq(), mockRes(), 'draft1');
     expect(captured.status).toBe(200);
-    expect(mockDbPublishRelease).not.toHaveBeenCalled();
+    expect(mockDbPublishDraftWithRelease).not.toHaveBeenCalled();
+    expect(mockDbUpdateDraftStatus).toHaveBeenCalledWith('draft1', 'published');
   });
 });

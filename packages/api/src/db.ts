@@ -83,6 +83,7 @@ export async function migrate(): Promise<void> {
       owner_id   TEXT NOT NULL REFERENCES users(id),
       tier       TEXT NOT NULL DEFAULT 'team',
       max_seats  INT NOT NULL DEFAULT 10,
+      require_separate_approver BOOLEAN NOT NULL DEFAULT FALSE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `;
@@ -145,6 +146,7 @@ export async function migrate(): Promise<void> {
   `;
 
   await sql`ALTER TABLE changelog_releases ADD COLUMN IF NOT EXISTS user_id TEXT`.catch((err) => { log.debug({ err: (err as Error).message }, 'ALTER TABLE changelog_releases user_id'); });
+  await sql`ALTER TABLE orgs ADD COLUMN IF NOT EXISTS require_separate_approver BOOLEAN NOT NULL DEFAULT FALSE`.catch((err) => { log.debug({ err: (err as Error).message }, 'ALTER TABLE orgs require_separate_approver'); });
 
   await sql`CREATE INDEX IF NOT EXISTS idx_changelog_project ON changelog_releases (project, published_at DESC)`;
 
@@ -448,6 +450,7 @@ export interface DbOrg {
   owner_id: string;
   tier: string;
   max_seats: number;
+  require_separate_approver: boolean;
   created_at: Date;
 }
 
@@ -468,6 +471,10 @@ export async function dbCreateOrg(org: { id: string; name: string; slug: string;
     RETURNING *
   `;
   return rows[0];
+}
+
+export async function dbUpdateOrgSettings(orgId: string, settings: { requireSeparateApprover: boolean }): Promise<void> {
+  await sql`UPDATE orgs SET require_separate_approver = ${settings.requireSeparateApprover} WHERE id = ${orgId}`;
 }
 
 export async function dbGetOrgMemberCount(orgId: string): Promise<number> {
@@ -788,6 +795,35 @@ export async function closeDb(): Promise<void> {
 // --- Release Draft DB operations ---
 
 export type DraftStatus = 'draft' | 'submitted' | 'approved' | 'published';
+
+/**
+ * Atomically publish a release AND mark the draft as published in a single transaction.
+ * Prevents duplicates if the server crashes between the two writes.
+ */
+export async function dbPublishDraftWithRelease(draftId: string, project: string, release: {
+  version: string; date: string; summary: string;
+  changes: { description: string; category: string; ticketKey?: string }[];
+  contributors: string[];
+  formattedMd: string; formattedHtml: string;
+}): Promise<DbDraft | null> {
+  return sql.begin(async (tx) => {
+    await tx`
+      INSERT INTO changelog_releases (project, version, date, summary, changes, contributors, formatted_md, formatted_html)
+      VALUES (${project}, ${release.version}, ${release.date}, ${release.summary},
+              ${JSON.stringify(release.changes)}::jsonb, ${JSON.stringify(release.contributors)}::jsonb,
+              ${release.formattedMd}, ${release.formattedHtml})
+      ON CONFLICT (project, version) DO UPDATE SET
+        date = EXCLUDED.date, summary = EXCLUDED.summary, changes = EXCLUDED.changes,
+        contributors = EXCLUDED.contributors, formatted_md = EXCLUDED.formatted_md,
+        formatted_html = EXCLUDED.formatted_html, published_at = NOW()
+    `;
+    const rows = await tx<DbDraft[]>`
+      UPDATE release_drafts SET status = 'published', published_at = NOW(), updated_at = NOW()
+      WHERE id = ${draftId} RETURNING *
+    `;
+    return rows[0] || null;
+  });
+}
 
 export interface DbDraft {
   id: string;

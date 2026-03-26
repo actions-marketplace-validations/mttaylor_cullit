@@ -54,7 +54,7 @@ import {
 import {
   handleGetOrg, handleCreateOrg, handleOrgInvite, handleOrgRemoveMember,
   handleCreateOrgInvite, handleListOrgInvites, handleDeleteOrgInvite,
-  handleUpdateOrgMemberRole, handleGetOrgUsage,
+  handleUpdateOrgMemberRole, handleGetOrgUsage, handleUpdateOrgSettings,
 } from './routes/org.js';
 
 // Load pro plugins if installed
@@ -807,6 +807,8 @@ const server = createServer(async (req, res: CorsResponse) => {
       await handleGetOrg(req, res);
     } else if (path === '/v1/org' && req.method === 'POST') {
       await handleCreateOrg(req, res);
+    } else if (path === '/v1/org/settings' && req.method === 'PATCH') {
+      await handleUpdateOrgSettings(req, res);
     } else if (path === '/v1/org/invite' && req.method === 'POST') {
       await handleOrgInvite(req, res);
     } else if (path === '/v1/org/members' && req.method === 'DELETE') {

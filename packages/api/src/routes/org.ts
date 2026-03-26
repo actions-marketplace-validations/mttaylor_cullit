@@ -17,6 +17,7 @@ import {
 } from '../store.js';
 import {
   dbCreateOrgInvite, dbListOrgInvites, dbDeleteOrgInvite, dbUpdateOrgMemberRole,
+  dbUpdateOrgSettings,
 } from '../db.js';
 import { getTierLimits } from '@cullit/core';
 
@@ -45,6 +46,11 @@ export async function handleCreateOrg(req: IncomingMessage, res: ServerResponse)
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
   if (user.orgId) { json(res, 409, { error: 'Already a member of an organization' }); return; }
 
+  const tier = getEffectiveTier(user);
+  if (tier !== 'team') {
+    json(res, 403, { error: 'Team plan required to create an organization' }); return;
+  }
+
   const raw = await readBody(req);
   let body: { name?: string };
   try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
@@ -56,6 +62,29 @@ export async function handleCreateOrg(req: IncomingMessage, res: ServerResponse)
   const org = await createOrg(body.name, user);
   log.info({ actor: user.id, action: 'org.create', resource: org.id }, 'Organization created');
   json(res, 201, { org: { id: org.id, name: org.name, slug: org.slug, tier: org.tier } });
+}
+
+export async function handleUpdateOrgSettings(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  if (!user.orgId || user.role !== 'owner') {
+    json(res, 403, { error: 'Only org owners can update settings' }); return;
+  }
+
+  const raw = await readBody(req);
+  let body: { requireSeparateApprover?: boolean };
+  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
+
+  if (typeof body.requireSeparateApprover !== 'boolean') {
+    json(res, 400, { error: '"requireSeparateApprover" must be a boolean' }); return;
+  }
+
+  const org = await getOrg(user.orgId);
+  if (!org) { json(res, 404, { error: 'Organization not found' }); return; }
+
+  await dbUpdateOrgSettings(user.orgId, { requireSeparateApprover: body.requireSeparateApprover });
+  log.info({ actor: user.id, action: 'org.updateSettings', resource: user.orgId }, 'Org settings updated');
+  json(res, 200, { ok: true, requireSeparateApprover: body.requireSeparateApprover });
 }
 
 export async function handleOrgInvite(req: IncomingMessage, res: ServerResponse): Promise<void> {

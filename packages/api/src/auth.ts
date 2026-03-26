@@ -19,13 +19,14 @@
  *   CULLIT_DASHBOARD_URL    — Post-login redirect URL (default: CULLIT_BASE_URL)
  */
 
-import { createHmac, randomBytes, timingSafeEqual } from 'crypto';
+import { createHmac, createHash, randomBytes, timingSafeEqual } from 'crypto';
 import { readFileSync, writeFileSync, existsSync, renameSync } from 'fs';
 import type { IncomingMessage, ServerResponse } from 'http';
 import {
   dbGetUser, dbGetUserByApiKey, dbUpsertUser, dbRotateApiKey,
   dbUpdateUserOrg, dbGetOrg, dbGetOrgBySlug, dbCreateOrg, dbGetOrgMemberCount,
   dbAddOrgMember, dbRemoveOrgMember, dbGetOrgMembers,
+  dbRevokeToken, dbIsTokenRevoked, dbDeleteUser,
   type DbUser, type DbOrg,
 } from './db.js';
 import { sendWelcome } from './email.js';
@@ -96,6 +97,7 @@ export interface Org {
   ownerId: string;      // User.id
   tier: 'team' | 'enterprise';
   maxSeats: number;
+  requireSeparateApprover: boolean;
   members: OrgMember[];
   createdAt: string;
 }
@@ -154,6 +156,40 @@ function saveAuthStore(): void {
 }
 
 loadAuthStore();
+
+// Loud warning if file-backed auth store is used in production
+if (!useDb && process.env['NODE_ENV'] === 'production') {
+  log.error(
+    'PRODUCTION WARNING: Running with file-backed auth store (no DATABASE_URL). ' +
+    'User data WILL be lost on container restart. Set DATABASE_URL for production.',
+  );
+}
+
+// --- Token revocation (in-memory fast-path + DB-backed) ---
+const revokedTokensCache = new Set<string>();
+const MAX_REVOKED_CACHE = 5000;
+
+function hashToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
+}
+
+async function isTokenRevoked(token: string): Promise<boolean> {
+  const h = hashToken(token);
+  if (revokedTokensCache.has(h)) return true;
+  return dbIsTokenRevoked(h);
+}
+
+async function revokeToken(token: string, userId: string): Promise<void> {
+  const h = hashToken(token);
+  revokedTokensCache.add(h);
+  if (revokedTokensCache.size > MAX_REVOKED_CACHE) {
+    const first = revokedTokensCache.values().next().value;
+    if (first) revokedTokensCache.delete(first);
+  }
+  // Revoke until the token's natural expiry (7 days)
+  const expiresAt = new Date(Date.now() + JWT_EXPIRY * 1000);
+  await dbRevokeToken(h, userId, expiresAt);
+}
 
 // --- JWT ---
 
@@ -220,6 +256,8 @@ export async function resolveUser(req: IncomingMessage): Promise<User | null> {
   if (sessionToken) {
     const jwt = verifyJWT(sessionToken);
     if (jwt) {
+      // Check if token has been revoked (logout / key rotation)
+      if (await isTokenRevoked(sessionToken)) return null;
       const user = await getUser(jwt.sub);
       if (user) return user;
     }
@@ -396,8 +434,8 @@ function dbOrgToOrg(row: DbOrg): Org {
   return {
     id: row.id, name: row.name, slug: row.slug,
     ownerId: row.owner_id, tier: row.tier as Org['tier'],
-    maxSeats: row.max_seats, members: [],
-    createdAt: row.created_at.toISOString(),
+    maxSeats: row.max_seats, requireSeparateApprover: row.require_separate_approver,
+    members: [], createdAt: row.created_at.toISOString(),
   };
 }
 
@@ -421,6 +459,7 @@ export async function createOrg(name: string, owner: User): Promise<Org> {
 
   const org: Org = {
     id, name, slug, ownerId: owner.id, tier: 'team', maxSeats: 10,
+    requireSeparateApprover: false,
     members: [{ userId: owner.id, role: 'owner', joinedAt: now }],
     createdAt: now,
   };
@@ -648,9 +687,18 @@ export async function handleAuthMe(req: IncomingMessage, res: ServerResponse, js
 }
 
 /**
- * POST /auth/logout — Clear session cookie
+ * POST /auth/logout — Clear session cookie and revoke the JWT server-side.
  */
-export function handleAuthLogout(_req: IncomingMessage, res: ServerResponse, jsonFn: (r: ServerResponse, s: number, b: unknown) => void): void {
+export function handleAuthLogout(req: IncomingMessage, res: ServerResponse, jsonFn: (r: ServerResponse, s: number, b: unknown) => void): void {
+  // Revoke the current JWT so it can't be reused
+  const cookies = parseCookies(req.headers['cookie'] || '');
+  const sessionToken = cookies[SESSION_COOKIE_NAME];
+  if (sessionToken) {
+    const jwt = verifyJWT(sessionToken);
+    if (jwt) {
+      revokeToken(sessionToken, jwt.sub).catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to revoke token'); });
+    }
+  }
   res.setHeader('Set-Cookie', `${SESSION_COOKIE_NAME}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${COOKIE_SECURE}`);
   jsonFn(res, 200, { ok: true });
 }
@@ -675,4 +723,32 @@ export async function handleRotateApiKey(req: IncomingMessage, res: ServerRespon
   }
   log.info({ userId: user.id }, 'API key rotated');
   jsonFn(res, 200, { apiKey: newApiKey });
+}
+
+/**
+ * DELETE /auth/me — GDPR: Delete current user's account and all associated data.
+ */
+export async function handleDeleteAccount(req: IncomingMessage, res: ServerResponse, jsonFn: (r: ServerResponse, s: number, b: unknown) => void): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { jsonFn(res, 401, { error: 'Not authenticated' }); return; }
+
+  // Org owners must transfer or delete the org before deleting their account
+  if (user.orgId && user.role === 'owner') {
+    jsonFn(res, 409, { error: 'You must transfer org ownership or delete the org before deleting your account.' });
+    return;
+  }
+
+  if (useDb) {
+    await dbDeleteUser(user.id);
+  } else {
+    // File-backed fallback: remove from in-memory store
+    delete store.apiKeyIndex[user.apiKey];
+    delete store.users[user.id];
+    saveAuthStore();
+  }
+
+  // Clear session cookie
+  res.setHeader('Set-Cookie', `${SESSION_COOKIE_NAME}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${COOKIE_SECURE}`);
+  log.info({ userId: user.id }, 'Account deleted (GDPR)');
+  jsonFn(res, 200, { ok: true, message: 'Account and all associated data have been deleted.' });
 }

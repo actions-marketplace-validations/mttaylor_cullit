@@ -24,10 +24,12 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import {
   dbGetUser, dbUpdateUserTier, dbUpdateUserStripe, dbClearUserTrial,
   dbUpsertSubscription, dbGetSubscription, dbGetUserByStripeCustomer,
+  dbCheckWebhookProcessed, dbMarkWebhookProcessed,
 } from './db.js';
 import { getEffectiveTier, getTrialStatus, getUser } from './auth.js';
 import { isRecord } from './utils.js';
 import { log } from './logger.js';
+import { sendPaymentFailed, sendSubscriptionConfirmed } from './email.js';
 
 const STRIPE_SECRET_KEY = process.env['STRIPE_SECRET_KEY'] || '';
 const STRIPE_WEBHOOK_SECRET = process.env['STRIPE_WEBHOOK_SECRET'] || '';
@@ -36,19 +38,30 @@ const STRIPE_TEAM_PRICE_ID = process.env['STRIPE_TEAM_PRICE_ID'] || '';
 const BASE_URL = process.env['CULLIT_BASE_URL'] || 'http://localhost:3000';
 
 // --- Webhook idempotency ---
+// DB-backed via webhook_events table (survives restarts).
+// In-memory Set kept as a fast-path cache to avoid DB round-trip on hot duplicates.
 
 const MAX_PROCESSED_EVENTS = 1000;
 const processedWebhookEvents = new Set<string>();
 const processedOrder: string[] = [];
 
-function markWebhookProcessed(eventId: string): void {
+function markInMemory(eventId: string): void {
   processedWebhookEvents.add(eventId);
   processedOrder.push(eventId);
-  // Evict oldest entries to cap memory
   while (processedOrder.length > MAX_PROCESSED_EVENTS) {
     const oldest = processedOrder.shift()!;
     processedWebhookEvents.delete(oldest);
   }
+}
+
+async function isWebhookProcessed(eventId: string): Promise<boolean> {
+  if (processedWebhookEvents.has(eventId)) return true;
+  return dbCheckWebhookProcessed(eventId);
+}
+
+async function markWebhookProcessed(eventId: string, eventType: string): Promise<void> {
+  markInMemory(eventId);
+  await dbMarkWebhookProcessed(eventId, eventType);
 }
 
 // --- Stripe API helpers ---
@@ -355,8 +368,8 @@ export async function handleStripeWebhook(
     return;
   }
 
-  // Idempotency: skip already-processed events
-  if (processedWebhookEvents.has(event.id)) {
+  // Idempotency: skip already-processed events (DB-backed + in-memory cache)
+  if (await isWebhookProcessed(event.id)) {
     jsonFn(res, 200, { received: true, duplicate: true });
     return;
   }
@@ -377,7 +390,7 @@ export async function handleStripeWebhook(
         break;
     }
 
-    markWebhookProcessed(event.id);
+    await markWebhookProcessed(event.id, event.type);
     jsonFn(res, 200, { received: true });
   } catch (err) {
     log.error({ err: (err as Error).message }, 'Stripe webhook error');
@@ -410,6 +423,14 @@ async function handleCheckoutComplete(sessionPayload: unknown): Promise<void> {
   await dbUpsertSubscription(buildSubscriptionRecord(subscriptionId, userId, customerId, plan, sub));
 
   log.info({ userId, plan, customerId }, 'Checkout complete');
+
+  // Send subscription confirmation email
+  const user = await dbGetUser(userId);
+  if (user?.email) {
+    sendSubscriptionConfirmed(user.email, user.name || user.login, plan).catch((err) => {
+      log.warn({ err: (err as Error).message }, 'Failed to send subscription confirmed email');
+    });
+  }
 }
 
 async function handleSubscriptionUpdate(subscriptionPayload: unknown): Promise<void> {
@@ -472,6 +493,13 @@ async function handlePaymentFailed(invoicePayload: unknown): Promise<void> {
   }
 
   log.info({ userId: user.id, customerId, invoiceId: invoice.id }, 'Payment failed');
+
+  // Notify the user so they can update their payment method
+  if (user.email) {
+    sendPaymentFailed(user.email, user.name || user.login).catch((err) => {
+      log.warn({ err: (err as Error).message }, 'Failed to send payment failed email');
+    });
+  }
 }
 
 /**

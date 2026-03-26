@@ -8,10 +8,10 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import { randomBytes } from 'crypto';
 import { json, readBody, parseJsonObject, PORT } from '../utils.js';
 import { log } from '../logger.js';
-import { resolveUser, getEffectiveTier } from '../auth.js';
+import { resolveUser, getEffectiveTier, getOrg } from '../auth.js';
 import {
   dbCreateDraft, dbGetDraft, dbListDrafts, dbUpdateDraft, dbUpdateDraftStatus, dbDeleteDraft,
-  dbCreateRevision, dbGetRevisions, dbGetRevisionCount, dbPublishRelease,
+  dbCreateRevision, dbGetRevisions, dbGetRevisionCount, dbPublishRelease, dbPublishDraftWithRelease,
 } from '../db.js';
 
 // --- Helpers ---
@@ -225,6 +225,14 @@ export async function handleDraftApprove(req: IncomingMessage, res: ServerRespon
     json(res, 409, { error: 'Draft must be in "submitted" status to approve' }); return;
   }
 
+  // Optional: block self-approval if org requires separate approver
+  if (draft.created_by === user.id && user.orgId) {
+    const org = await getOrg(user.orgId);
+    if (org?.requireSeparateApprover) {
+      json(res, 403, { error: 'Org policy requires a different user to approve' }); return;
+    }
+  }
+
   const updated = await dbUpdateDraftStatus(draftId, 'approved', user.id);
   log.info({ actor: user.id, action: 'draft.approve', resource: draftId }, 'Draft approved');
   json(res, 200, { draft: updated });
@@ -255,17 +263,22 @@ export async function handleDraftPublish(req: IncomingMessage, res: ServerRespon
     } catch {
       changes = [];
     }
-    await dbPublishRelease(draft.project, {
+    // Atomic: publish release + mark draft published in a single transaction
+    const updated = await dbPublishDraftWithRelease(draftId, draft.project, {
       version: draft.version,
       date: new Date().toISOString().split('T')[0],
       summary: draft.formatted_md.slice(0, 2000),
-      changes,
+      changes: changes as { description: string; category: string; ticketKey?: string }[],
       contributors: [],
       formattedMd: draft.formatted_md,
       formattedHtml: draft.formatted_html,
     });
+    log.info({ actor: user.id, action: 'draft.publish', resource: draftId, project: draft.project, version: draft.version }, 'Draft published');
+    json(res, 200, { draft: updated });
+    return;
   }
 
+  // No version — just mark as published (no changelog entry)
   const updated = await dbUpdateDraftStatus(draftId, 'published');
   log.info({ actor: user.id, action: 'draft.publish', resource: draftId, project: draft.project, version: draft.version }, 'Draft published');
   json(res, 200, { draft: updated });
