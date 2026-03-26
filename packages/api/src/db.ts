@@ -31,7 +31,7 @@ if (!DATABASE_URL) {
 
 export const sql = DATABASE_URL
   ? postgres(DATABASE_URL, {
-      max: 10,
+      max: 25,
       idle_timeout: 30,
       connect_timeout: 3,
       types: { bigint: postgres.BigInt },

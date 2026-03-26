@@ -7,6 +7,7 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { randomBytes } from 'crypto';
 import { json, readBody, parseJsonObject, PORT } from '../utils.js';
+import { log } from '../logger.js';
 import { resolveUser, getEffectiveTier } from '../auth.js';
 import {
   dbCreateDraft, dbGetDraft, dbListDrafts, dbUpdateDraft, dbUpdateDraftStatus, dbDeleteDraft,
@@ -184,6 +185,7 @@ export async function handleDraftSubmit(req: IncomingMessage, res: ServerRespons
   }
 
   const updated = await dbUpdateDraftStatus(draftId, 'submitted');
+  log.info({ actor: user.id, action: 'draft.submit', resource: draftId }, 'Draft submitted for review');
   json(res, 200, { draft: updated });
 }
 
@@ -202,6 +204,7 @@ export async function handleDeleteDraft(req: IncomingMessage, res: ServerRespons
 
   const deleted = await dbDeleteDraft(draftId);
   if (!deleted) { json(res, 404, { error: 'Draft not found' }); return; }
+  log.info({ actor: user.id, action: 'draft.delete', resource: draftId }, 'Draft deleted');
   json(res, 200, { ok: true });
 }
 
@@ -223,6 +226,7 @@ export async function handleDraftApprove(req: IncomingMessage, res: ServerRespon
   }
 
   const updated = await dbUpdateDraftStatus(draftId, 'approved', user.id);
+  log.info({ actor: user.id, action: 'draft.approve', resource: draftId }, 'Draft approved');
   json(res, 200, { draft: updated });
 }
 
@@ -263,5 +267,6 @@ export async function handleDraftPublish(req: IncomingMessage, res: ServerRespon
   }
 
   const updated = await dbUpdateDraftStatus(draftId, 'published');
+  log.info({ actor: user.id, action: 'draft.publish', resource: draftId, project: draft.project, version: draft.version }, 'Draft published');
   json(res, 200, { draft: updated });
 }

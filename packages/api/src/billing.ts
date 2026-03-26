@@ -35,6 +35,22 @@ const STRIPE_PRO_PRICE_ID = process.env['STRIPE_PRO_PRICE_ID'] || '';
 const STRIPE_TEAM_PRICE_ID = process.env['STRIPE_TEAM_PRICE_ID'] || '';
 const BASE_URL = process.env['CULLIT_BASE_URL'] || 'http://localhost:3000';
 
+// --- Webhook idempotency ---
+
+const MAX_PROCESSED_EVENTS = 1000;
+const processedWebhookEvents = new Set<string>();
+const processedOrder: string[] = [];
+
+function markWebhookProcessed(eventId: string): void {
+  processedWebhookEvents.add(eventId);
+  processedOrder.push(eventId);
+  // Evict oldest entries to cap memory
+  while (processedOrder.length > MAX_PROCESSED_EVENTS) {
+    const oldest = processedOrder.shift()!;
+    processedWebhookEvents.delete(oldest);
+  }
+}
+
 // --- Stripe API helpers ---
 
 interface StripeErrorResponse {
@@ -42,6 +58,7 @@ interface StripeErrorResponse {
 }
 
 interface StripeEvent {
+  id: string;
   type: string;
   data?: { object?: unknown };
 }
@@ -72,10 +89,10 @@ interface StripeInvoice {
 // isRecord imported from utils.ts
 
 function toStripeEvent(value: unknown): StripeEvent | null {
-  if (!isRecord(value) || typeof value.type !== 'string') return null;
+  if (!isRecord(value) || typeof value.type !== 'string' || typeof value.id !== 'string') return null;
   const data = isRecord(value.data) ? value.data : undefined;
   const object = data && 'object' in data ? data.object : undefined;
-  return { type: value.type, data: { object } };
+  return { id: value.id, type: value.type, data: { object } };
 }
 
 function toStripeCheckoutSession(value: unknown): StripeCheckoutSession | null {
@@ -338,6 +355,12 @@ export async function handleStripeWebhook(
     return;
   }
 
+  // Idempotency: skip already-processed events
+  if (processedWebhookEvents.has(event.id)) {
+    jsonFn(res, 200, { received: true, duplicate: true });
+    return;
+  }
+
   try {
     switch (event.type) {
       case 'checkout.session.completed':
@@ -354,6 +377,7 @@ export async function handleStripeWebhook(
         break;
     }
 
+    markWebhookProcessed(event.id);
     jsonFn(res, 200, { received: true });
   } catch (err) {
     log.error({ err: (err as Error).message }, 'Stripe webhook error');

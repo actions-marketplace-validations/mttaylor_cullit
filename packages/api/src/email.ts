@@ -15,6 +15,25 @@ const EMAIL_FROM = process.env['EMAIL_FROM'] || 'Cullit <noreply@cullit.io>';
 import { log } from './logger.js';
 import { escapeHtml } from '@cullit/core';
 
+// --- Per-recipient email throttle (max 10 emails per hour) ---
+const EMAIL_THROTTLE_MAX = 10;
+const EMAIL_THROTTLE_WINDOW = 60 * 60 * 1000; // 1 hour
+const emailSentTimestamps = new Map<string, number[]>();
+
+function isEmailThrottled(to: string): boolean {
+  const now = Date.now();
+  const timestamps = emailSentTimestamps.get(to) || [];
+  const recent = timestamps.filter(t => now - t < EMAIL_THROTTLE_WINDOW);
+  emailSentTimestamps.set(to, recent);
+  return recent.length >= EMAIL_THROTTLE_MAX;
+}
+
+function recordEmailSent(to: string): void {
+  const timestamps = emailSentTimestamps.get(to) || [];
+  timestamps.push(Date.now());
+  emailSentTimestamps.set(to, timestamps);
+}
+
 interface EmailOptions {
   to: string;
   subject: string;
@@ -24,6 +43,11 @@ interface EmailOptions {
 async function send(options: EmailOptions): Promise<boolean> {
   if (!RESEND_API_KEY) {
     log.warn({ subject: options.subject, to: options.to }, 'Email skipped (RESEND_API_KEY not set)');
+    return false;
+  }
+
+  if (isEmailThrottled(options.to)) {
+    log.warn({ to: options.to, subject: options.subject }, 'Email throttled (rate limit exceeded)');
     return false;
   }
 
@@ -47,6 +71,7 @@ async function send(options: EmailOptions): Promise<boolean> {
       log.error({ status: res.status, err }, 'Email send failed');
       return false;
     }
+    recordEmailSent(options.to);
     return true;
   } catch (err) {
     log.error({ err: (err as Error).message }, 'Email send error');

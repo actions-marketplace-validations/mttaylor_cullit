@@ -86,27 +86,27 @@ function parseSimpleYaml(raw: string): Record<string, any> {
         if (currentArray === null) {
           currentArray = [];
           if (currentSection && currentArrayKey) {
-            (result[currentSection] as any)[currentArrayKey] = currentArray;
+            result[currentSection][currentArrayKey] = currentArray;
           } else if (currentSection) {
             result[currentSection] = currentArray;
           }
         }
-        const obj: Record<string, any> = {};
+        const obj: Record<string, unknown> = {};
         const [k, ...vParts] = content.split(':');
         obj[safeKey(k)] = parseValue(vParts.join(':').trim());
         currentArray.push(obj);
       } else {
         // Simple array value
         if (currentSection && currentArrayKey) {
-          if (!Array.isArray((result[currentSection] as any)?.[currentArrayKey])) {
-            (result[currentSection] as any)[currentArrayKey] = [];
+          if (!Array.isArray(result[currentSection]?.[currentArrayKey])) {
+            result[currentSection][currentArrayKey] = [];
           }
-          (result[currentSection] as any)[currentArrayKey].push(parseValue(content));
+          result[currentSection][currentArrayKey].push(parseValue(content));
         } else if (currentSection) {
           if (!Array.isArray(result[currentSection])) {
             result[currentSection] = [];
           }
-          (result[currentSection] as any).push(parseValue(content));
+          result[currentSection].push(parseValue(content));
         }
       }
       continue;
@@ -126,13 +126,13 @@ function parseSimpleYaml(raw: string): Record<string, any> {
           }
         }
         if (currentSection) {
-          (result[currentSection] as any)[safeKey(key)] = parseValue(val);
+          result[currentSection][safeKey(key)] = parseValue(val);
         }
       } else {
         currentArrayKey = safeKey(key);
         currentArray = null;
         if (currentSection) {
-          (result[currentSection] as any)[currentArrayKey] = {};
+          result[currentSection][currentArrayKey] = {};
         }
       }
     }

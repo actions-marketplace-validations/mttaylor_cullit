@@ -74,7 +74,18 @@ export const metrics = {
 
 // --- Prometheus text format ---
 
-export function handleMetrics(_req: IncomingMessage, res: ServerResponse): void {
+export function handleMetrics(req: IncomingMessage, res: ServerResponse): void {
+  // Gate behind METRICS_TOKEN if set (production security)
+  const token = process.env['METRICS_TOKEN'];
+  if (token) {
+    const auth = req.headers['authorization'];
+    if (auth !== `Bearer ${token}`) {
+      res.writeHead(403, { 'Content-Type': 'text/plain' });
+      res.end('Forbidden\n');
+      return;
+    }
+  }
+
   const lines: string[] = [
     '# HELP cullit_generations_total Total successful generations',
     '# TYPE cullit_generations_total counter',

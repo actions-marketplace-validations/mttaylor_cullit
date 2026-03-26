@@ -7,6 +7,7 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { randomBytes } from 'crypto';
 import { json, readBody } from '../utils.js';
+import { log } from '../logger.js';
 import {
   resolveUser, getUser, getOrg, createOrg, addOrgMember, removeOrgMember, getOrgMembers,
   getEffectiveTier,
@@ -53,6 +54,7 @@ export async function handleCreateOrg(req: IncomingMessage, res: ServerResponse)
   }
 
   const org = await createOrg(body.name, user);
+  log.info({ actor: user.id, action: 'org.create', resource: org.id }, 'Organization created');
   json(res, 201, { org: { id: org.id, name: org.name, slug: org.slug, tier: org.tier } });
 }
 
@@ -87,6 +89,7 @@ export async function handleOrgInvite(req: IncomingMessage, res: ServerResponse)
     json(res, 409, { error: 'Cannot add member (org full or already a member)' }); return;
   }
 
+  log.info({ actor: user.id, action: 'org.invite', resource: user.orgId, target: body.userId, role }, 'Member invited to org');
   json(res, 200, { ok: true });
 }
 
@@ -110,6 +113,7 @@ export async function handleOrgRemoveMember(req: IncomingMessage, res: ServerRes
     json(res, 409, { error: 'Cannot remove member (owner, not found, or not a member)' }); return;
   }
 
+  log.info({ actor: user.id, action: 'org.removeMember', resource: user.orgId, target: body.userId }, 'Member removed from org');
   json(res, 200, { ok: true });
 }
 
@@ -145,6 +149,7 @@ export async function handleCreateOrgInvite(req: IncomingMessage, res: ServerRes
     createdBy: user.id,
   });
 
+  log.info({ actor: user.id, action: 'org.createInvite', resource: user.orgId, email: body.email }, 'Org invite created');
   json(res, 201, { invite: { id: invite.id, email: invite.email, role: invite.role, expiresAt: invite.expires_at } });
 }
 
@@ -172,6 +177,7 @@ export async function handleDeleteOrgInvite(req: IncomingMessage, res: ServerRes
 
   const ok = await dbDeleteOrgInvite(inviteId, user.orgId);
   if (!ok) { json(res, 404, { error: 'Invite not found' }); return; }
+  log.info({ actor: user.id, action: 'org.deleteInvite', resource: inviteId }, 'Org invite revoked');
   json(res, 200, { ok: true });
 }
 
@@ -202,6 +208,7 @@ export async function handleUpdateOrgMemberRole(req: IncomingMessage, res: Serve
     json(res, 404, { error: 'Member not found in this organization' }); return;
   }
 
+  log.info({ actor: user.id, action: 'org.updateRole', resource: user.orgId, target: memberId, role }, 'Member role updated');
   json(res, 200, { ok: true, userId: memberId, role });
 }
 

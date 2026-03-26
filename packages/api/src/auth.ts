@@ -607,7 +607,7 @@ export async function handleAuthCallback(req: IncomingMessage, res: ServerRespon
 
     res.writeHead(302, {
       Location: `${DASHBOARD_URL}/dashboard.html`,
-      'Set-Cookie': `${SESSION_COOKIE_NAME}=${jwt}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAge}${COOKIE_SECURE}`,
+      'Set-Cookie': `${SESSION_COOKIE_NAME}=${jwt}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${maxAge}${COOKIE_SECURE}`,
       ...AUTH_SECURITY_HEADERS,
     });
     res.end();
@@ -651,6 +651,6 @@ export async function handleAuthMe(req: IncomingMessage, res: ServerResponse, js
  * POST /auth/logout — Clear session cookie
  */
 export function handleAuthLogout(_req: IncomingMessage, res: ServerResponse, jsonFn: (r: ServerResponse, s: number, b: unknown) => void): void {
-  res.setHeader('Set-Cookie', `${SESSION_COOKIE_NAME}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${COOKIE_SECURE}`);
+  res.setHeader('Set-Cookie', `${SESSION_COOKIE_NAME}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${COOKIE_SECURE}`);
   jsonFn(res, 200, { ok: true });
 }
