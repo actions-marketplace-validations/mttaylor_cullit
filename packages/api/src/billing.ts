@@ -36,6 +36,7 @@ const STRIPE_WEBHOOK_SECRET = process.env['STRIPE_WEBHOOK_SECRET'] || '';
 const STRIPE_PRO_PRICE_ID = process.env['STRIPE_PRO_PRICE_ID'] || '';
 const STRIPE_TEAM_PRICE_ID = process.env['STRIPE_TEAM_PRICE_ID'] || '';
 const BASE_URL = process.env['CULLIT_BASE_URL'] || 'http://localhost:3000';
+const DASHBOARD_URL = process.env['CULLIT_DASHBOARD_URL'] || BASE_URL;
 
 // --- Webhook idempotency ---
 // DB-backed via webhook_events table (survives restarts).
@@ -265,8 +266,8 @@ export async function handleCheckout(
     'mode': 'subscription',
     'line_items[0][price]': priceId,
     'line_items[0][quantity]': '1',
-    'success_url': `${BASE_URL}/dashboard.html?billing=success`,
-    'cancel_url': `${BASE_URL}/dashboard.html?billing=cancelled`,
+    'success_url': `${DASHBOARD_URL}/dashboard.html?billing=success`,
+    'cancel_url': `${DASHBOARD_URL}/dashboard.html?billing=cancelled`,
     'client_reference_id': userId,
     'metadata[user_id]': userId,
     'metadata[plan]': plan,
@@ -314,7 +315,7 @@ export async function handleBillingPortal(
   try {
     const session = await stripeRequest<{ url?: string }>('/billing_portal/sessions', 'POST', {
       'customer': user.stripe_customer_id,
-      'return_url': `${BASE_URL}/dashboard.html`,
+      'return_url': `${DASHBOARD_URL}/dashboard.html`,
     });
     if (!session.url) {
       log.error({ userId }, 'Stripe returned portal session without URL');
