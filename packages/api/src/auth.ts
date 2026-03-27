@@ -51,6 +51,13 @@ const JWT_EXPIRY = 7 * 24 * 60 * 60; // 7 days in seconds
 const SESSION_COOKIE_NAME = 'cullit_session';
 const COOKIE_SECURE = BASE_URL.startsWith('https') ? '; Secure' : '';
 const IS_HTTPS = BASE_URL.startsWith('https');
+const DASHBOARD_ORIGIN = (() => { try { return new URL(DASHBOARD_URL).origin; } catch { return ''; } })();
+const API_ORIGIN = (() => { try { return new URL(BASE_URL).origin; } catch { return ''; } })();
+const COOKIE_SAMESITE = DASHBOARD_ORIGIN && API_ORIGIN && DASHBOARD_ORIGIN !== API_ORIGIN ? 'None' : 'Lax';
+// SameSite=None requires Secure, but skip Secure for localhost HTTP (Chrome allows it)
+const IS_LOCALHOST = API_ORIGIN === 'http://localhost:3000' || API_ORIGIN.startsWith('http://localhost:') || API_ORIGIN.startsWith('http://127.0.0.1:');
+const COOKIE_SECURE_FLAG = IS_HTTPS && !IS_LOCALHOST ? '; Secure' : '';
+const COOKIE_ATTRS = `; HttpOnly; SameSite=${COOKIE_SAMESITE}; Path=/` + (COOKIE_SAMESITE === 'None' && IS_HTTPS ? '; Secure' : COOKIE_SECURE_FLAG);
 const TRIAL_DAYS = Math.max(0, parseInt(process.env['CULLIT_TRIAL_DAYS'] || '14', 10) || 14);
 
 /** Security headers for auth endpoint responses (mirrors index.ts SECURITY_HEADERS). */
@@ -638,7 +645,7 @@ export async function handleAuthCallback(req: IncomingMessage, res: ServerRespon
 
     res.writeHead(302, {
       Location: `${DASHBOARD_URL}/dashboard.html`,
-      'Set-Cookie': `${SESSION_COOKIE_NAME}=${jwt}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${maxAge}${COOKIE_SECURE}`,
+      'Set-Cookie': `${SESSION_COOKIE_NAME}=${jwt}${COOKIE_ATTRS}; Max-Age=${maxAge}`,
       ...AUTH_SECURITY_HEADERS,
     });
     res.end();
