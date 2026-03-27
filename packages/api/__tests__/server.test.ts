@@ -150,8 +150,8 @@ describe('API Server', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ from: 'HEAD~3', to: 'HEAD', provider: 'none', format: 'markdown' }),
     });
-    // May succeed (200) or fail if no git repo (500) — but should NOT be 400/401
-    expect([200, 500]).toContain(status);
+    // May succeed (200), fail if no git repo (500), or hit usage limit (402) — but should NOT be 400/401
+    expect([200, 402, 500]).toContain(status);
     if (status === 200) {
       expect(body.formatted).toBeDefined();
       expect(body.version).toBeDefined();
