@@ -229,10 +229,11 @@ export async function migrate(): Promise<void> {
       publish_targets_json JSONB NOT NULL DEFAULT '[]',
       widget_config_json   JSONB,
       created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      UNIQUE (COALESCE(org_id, user_id), project)
+      updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `;
+
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_project_settings_owner ON project_settings (COALESCE(org_id, user_id), project)`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS org_invites (
