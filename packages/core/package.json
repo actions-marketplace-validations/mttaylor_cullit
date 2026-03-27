@@ -3,7 +3,7 @@
   "version": "1.16.0",
   "type": "module",
   "description": "Core engine for Cullit — AI-powered release note generation.",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "author": "Cullit <matt@cullit.io>",
   "repository": {
     "type": "git",

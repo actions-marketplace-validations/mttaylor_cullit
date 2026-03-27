@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/cullit.svg)](https://www.npmjs.com/package/cullit)
 [![CI](https://img.shields.io/badge/CI-passing-brightgreen)](https://cullit.io)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License](https://img.shields.io/badge/License-Proprietary-blue.svg)](LICENSE)
 
 **Release notes that scale from a free local CLI to licensed hosted workflows.**
 
@@ -397,52 +397,6 @@ Cullit includes a hosted dashboard experience with authentication, billing, tria
 - [x] Web dashboard
 - [x] Multi-repo aggregation
 
-## Release Notes
-
-### v1.9.2
-
-**Integrity, Build, and Release Hardening**
-
-- **🛡️ Release workflow integrity**: Reordered tag-based publishing so package versions are updated before build and test steps run, preventing stale version metadata from leaking into published artifacts.
-
-- **🔁 Action bundle drift protection**: Added a CI guard that rebuilds the GitHub Action and fails if [dist/action.js](dist/action.js) is out of sync with [src/action.ts](src/action.ts), so reviewed source and shipped action stay aligned.
-
-- **⚙️ GitHub Action consistency**: Aligned the Action input defaults with runtime behavior by defaulting the provider to `none`, matching the free-first template flow documented elsewhere in the product.
-
-- **🏗️ Action build reliability**: Fixed the Action bundle path by removing top-level await from the entrypoint, loading Pro plugins lazily, and wiring root workspace dependencies so `pnpm build:action` succeeds consistently in CI and local builds.
-
-- **📱 Free trial mobile navigation fix**: Reworked the standalone free-trial page so mobile navigation and the docs sidebar use separate controls, eliminating the broken shared-toggle behavior.
-
-- **🔒 Safer markdown output**: Hardened markdown rendering to escape raw HTML while preserving readable Markdown output, reducing integrity risk when notes are rendered downstream by external consumers.
-
-- **📦 Packaging hygiene**: Added an explicit publish whitelist to the Pro package and rebuilt the committed GitHub Action bundle as part of the normal build path.
-
-### v1.9.0
-
-**Template Profiles & Target-Specific Layouts**
-
-- **🎨 Named Template Profiles**: Define reusable layout profiles in `.cullit.yml` with `template.default` and `templates[]` for different audiences (e.g., `customer-facing`, `internal`, `executive`).
-  ```yaml
-  template:
-    default: customer-facing
-    templates:
-      - name: customer-facing
-        format: markdown
-        sectionOrder: [features, fixes, breaking-changes]
-        includeContributors: false
-        summaryPrefix: "**What's New** — "
-  ```
-
-- **📍 Per-Destination Overrides**: Use `publish[].templateProfile`, `publish[].format`, and `publish[].sectionOrder` to customize what each channel (Slack, Confluence, GitHub, etc.) receives without managing separate configs.
-
-- **⚙️ CLI Profile Selection**: Run `cullit generate --template customer-facing` to apply a named profile, with fallback to config defaults.
-
-- **🎛️ Dashboard Template Settings**: Extended project settings UI with template profile selector, format picker, section ordering, and JSON publish-target override textarea for webhook targets.
-
-- **🔌 API Template Payload Support**: Enhanced `/v1/projects/:project/settings` endpoint to accept and merge template configuration into widget settings, enabling programmatic template management.
-
-- **✅ Zero-Config Defaults**: Template profiles are optional; generation works without config. Profiles layer on top of global format/audience settings for fine-grained control.
-
 ## Contributing
 
 PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -459,7 +413,7 @@ See [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
 
 ## License
 
-MIT — see [LICENSE](LICENSE)
+Proprietary — see [LICENSE](LICENSE) and [TERMS.md](TERMS.md)
 
 ---
 

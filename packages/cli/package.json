@@ -3,7 +3,7 @@
   "version": "1.16.0",
   "type": "module",
   "description": "Public Cullit CLI for local, template-based release notes. Licensed AI and integrations are delivered separately.",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "author": "Cullit <matt@cullit.io>",
   "repository": {
     "type": "git",

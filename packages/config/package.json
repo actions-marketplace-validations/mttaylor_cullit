@@ -3,7 +3,7 @@
   "version": "1.16.0",
   "type": "module",
   "description": "Config loader for Cullit — YAML config parsing with env var resolution.",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "author": "Cullit <matt@cullit.io>",
   "repository": {
     "type": "git",

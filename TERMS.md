@@ -6,11 +6,11 @@
 
 By using Cullit (the "Service"), you agree to these Terms.
 
-Cullit includes open-source packages and hosted services (such as the dashboard and billing flows). Open-source code is provided under MIT; hosted service usage is governed by these Terms.
+Cullit includes source-available packages and hosted services (such as the dashboard and billing flows). All usage is governed by these Terms and the [LICENSE](LICENSE) file.
 
-## 2. Open-Source License
+## 2. License
 
-Cullit source code is licensed under the [MIT License](LICENSE). Your rights to use, modify, and distribute source code are governed by MIT.
+Cullit source code is provided under the terms described in the [LICENSE](LICENSE) file. Your rights to use, modify, and distribute the software are governed by that license.
 
 ## 3. Account and Access
 

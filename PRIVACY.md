@@ -79,7 +79,7 @@ For vulnerability reporting, see [SECURITY.md](SECURITY.md).
 
 ## Open Source Transparency
 
-Cullit is open source under MIT. You can audit implementation details at [github.com/mttaylor/cullit](https://github.com/mttaylor/cullit).
+Cullit source code is available at [github.com/mttaylor/cullit](https://github.com/mttaylor/cullit).
 
 ## Contact
 
