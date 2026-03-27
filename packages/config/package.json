@@ -1,6 +1,6 @@
 {
   "name": "@cullit/config",
-  "version": "1.16.0",
+  "version": "1.18.0",
   "type": "module",
   "description": "Config loader for Cullit — YAML config parsing with env var resolution.",
   "license": "SEE LICENSE IN LICENSE",
@@ -11,7 +11,9 @@
     "directory": "packages/config"
   },
   "homepage": "https://cullit.io",
-  "bugs": { "url": "https://github.com/mttaylor/cullit/issues" },
+  "bugs": {
+    "url": "https://github.com/mttaylor/cullit/issues"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -20,10 +22,22 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
-  "keywords": ["cullit", "config", "yaml", "release-notes", "changelog"],
-  "engines": { "node": ">=22" },
-  "publishConfig": { "access": "public" },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "cullit",
+    "config",
+    "yaml",
+    "release-notes",
+    "changelog"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean",
     "dev": "tsup src/index.ts --format esm --watch",

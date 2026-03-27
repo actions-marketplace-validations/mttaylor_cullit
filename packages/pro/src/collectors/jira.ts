@@ -35,22 +35,42 @@ export class JiraCollector implements Collector {
   }
 
   private buildJQL(from: string, to: string): string {
+    // If user passes a raw JQL expression, sanitize it to prevent injection
     if (from.includes('=') || from.includes('AND') || from.includes('OR')) {
+      const sanitized = this.sanitizeJQL(from);
       const statusFilter = ' AND status in (Done, Closed, Resolved)';
-      return from.includes('status') ? from : from + statusFilter;
+      return sanitized.toLowerCase().includes('status') ? sanitized : sanitized + statusFilter;
     }
 
     if (!/^[A-Z][A-Z0-9_]{0,30}$/.test(from)) {
       throw new Error(`Invalid Jira project key: "${from}". Must be uppercase letters, digits, or underscores (e.g., PROJ, MY_PROJ).`);
     }
 
-    const safeVersion = to.replace(/["'\\]/g, '');
+    const safeVersion = to.replace(/["'\\;]/g, '');
 
     if (to === 'HEAD') {
-      return `project = ${from} AND status in (Done, Closed, Resolved) AND resolved >= -30d ORDER BY resolved DESC`;
+      return `project = "${from}" AND status in (Done, Closed, Resolved) AND resolved >= -30d ORDER BY resolved DESC`;
     }
 
-    return `project = ${from} AND fixVersion = "${safeVersion}" AND status in (Done, Closed, Resolved) ORDER BY resolved DESC`;
+    return `project = "${from}" AND fixVersion = "${safeVersion}" AND status in (Done, Closed, Resolved) ORDER BY resolved DESC`;
+  }
+
+  /** Sanitize a user-provided JQL string to prevent injection attacks. */
+  private sanitizeJQL(jql: string): string {
+    // Reject dangerous JQL patterns: nested functions, semicolons, comment syntax
+    if (/[;{}]|\/\*|\*\/|--/.test(jql)) {
+      throw new Error('Invalid JQL: contains disallowed characters.');
+    }
+    // Limit JQL length to prevent abuse
+    if (jql.length > 1000) {
+      throw new Error('JQL query too long (max 1000 characters).');
+    }
+    // Only allow known JQL clauses/operators (whitelist approach)
+    const allowedPattern = /^[\w\s=<>!~(),"'.\-+@*/]+$/;
+    if (!allowedPattern.test(jql)) {
+      throw new Error('Invalid JQL: contains unsupported characters.');
+    }
+    return jql;
   }
 
   private async fetchIssues(jql: string): Promise<JiraIssue[]> {

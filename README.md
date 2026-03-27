@@ -69,6 +69,65 @@ cullit generate --from v1.0.0 --to v1.1.0 --provider anthropic
 
 If you do not have a paid key yet, start at https://cullit.io/pricing.
 
+## CLI Command Reference
+
+### `cullit init`
+
+Interactive setup wizard — creates a `.cullit.yml` configuration file.
+
+```bash
+cullit init
+```
+
+### `cullit generate`
+
+Generate release notes from your configured source and provider.
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--from` | string | Auto-detect | Start ref (tag, SHA, `HEAD~N`, JQL query, or Linear filter) |
+| `--to` | string | `HEAD` | End ref |
+| `--provider` | string | From config | AI provider: `anthropic`, `openai`, `gemini`, `ollama`, `none` |
+| `--model` | string | Provider default | Override the AI model (e.g., `claude-sonnet-4-6-20250514`) |
+| `--audience` | string | `developer` | Target audience: `developer`, `end-user`, `executive` |
+| `--tone` | string | `professional` | Writing tone: `professional`, `casual`, `terse` |
+| `--format` | string | `markdown` | Output format: `markdown`, `html`, `json` |
+| `--template` | string | — | Named template profile from `.cullit.yml` |
+| `--source` | string | `local` | Data source: `local`, `jira`, `linear`, `gitlab`, `bitbucket`, `multi-repo` |
+| `--dry-run` | boolean | `false` | Generate but don't publish; output to stdout |
+| `--verbose` | boolean | `false` | Show detailed progress and debug info |
+| `--quiet` | boolean | `false` | Suppress all output except the result |
+
+**Examples:**
+
+```bash
+# Auto-detect latest two tags, template mode
+cullit generate --provider none
+
+# Between specific tags with AI
+cullit generate --from v1.0.0 --to v1.1.0 --provider anthropic
+
+# Executive summary from last 20 commits
+cullit generate --from HEAD~20 --audience executive --tone terse
+
+# HTML output for customer-facing notes
+cullit generate --from v2.0.0 --format html --template customer-facing
+
+# Jira as primary source
+cullit generate --from "project = PROJ AND fixVersion = 1.5" --source jira
+
+# Dry-run (no publishing)
+cullit generate --from v1.0.0 --dry-run --verbose
+```
+
+### `cullit version`
+
+Print the installed Cullit version.
+
+```bash
+cullit version
+```
+
 ## Multi-Repo Aggregation
 
 Merge commits from multiple repositories into a single changelog. Add a `repos` array to `.cullit.yml`:

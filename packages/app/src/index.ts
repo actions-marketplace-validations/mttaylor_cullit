@@ -22,7 +22,7 @@ import { execFileSync } from 'child_process';
 import { mkdtempSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { runPipeline, VERSION, DEFAULT_CATEGORIES } from '@cullit/core';
+import { runPipeline, VERSION, DEFAULT_CATEGORIES, createRateLimiter } from '@cullit/core';
 import type { CullConfig, PublishTarget } from '@cullit/core';
 import { log } from './logger.js';
 
@@ -46,37 +46,21 @@ const SLACK_WEBHOOK = process.env['CULLIT_APP_SLACK_WEBHOOK'] || '';
 const DISCORD_WEBHOOK = process.env['CULLIT_APP_DISCORD_WEBHOOK'] || '';
 const TEAMS_WEBHOOK = process.env['CULLIT_APP_TEAMS_WEBHOOK'] || '';
 const CHANGELOG_ENABLED = process.env['CULLIT_APP_CHANGELOG_ENABLED'] === 'true';
+const CULLIT_API_URL = process.env['CULLIT_API_URL'] || ''; // e.g. https://api.cullit.io
+const CULLIT_APP_SECRET = process.env['CULLIT_APP_SECRET'] || ''; // shared secret for app→API auth
 
 // --- Rate limiter (per-IP sliding window) ---
-const ipTimestamps = new Map<string, number[]>();
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, times] of ipTimestamps) {
-    const active = times.filter(t => now - t < RATE_WINDOW);
-    if (active.length === 0) ipTimestamps.delete(ip);
-    else ipTimestamps.set(ip, active);
-  }
-}, 120_000).unref();
+const rateLimiter = createRateLimiter({ limit: RATE_LIMIT, windowMs: RATE_WINDOW });
 
 function checkRateLimit(req: IncomingMessage, res: ServerResponse): boolean {
   const ip = req.socket.remoteAddress || 'unknown';
-  const now = Date.now();
-  const timestamps = ipTimestamps.get(ip) || [];
-  const recent = timestamps.filter(t => now - t < RATE_WINDOW);
+  const result = rateLimiter.check(ip);
 
-  if (recent.length >= RATE_LIMIT) {
+  if (!result.allowed) {
     json(res, 429, { error: 'Too many requests. Try again later.' });
     return false;
   }
 
-  if (!ipTimestamps.has(ip) && ipTimestamps.size >= 10_000) {
-    json(res, 503, { error: 'Server is busy. Try again later.' });
-    return false;
-  }
-
-  recent.push(now);
-  ipTimestamps.set(ip, recent);
   return true;
 }
 
@@ -299,6 +283,11 @@ async function handleRelease(payload: GitHubReleasePayload): Promise<void> {
 
     const result = await runPipeline(prevTag, tag, config, { format: 'markdown' });
     await createOrUpdateRelease(token, owner, repo, tag, result.formatted);
+
+    // Auto-comment on PRs and linked issues shipped in this release
+    await commentOnShippedPRs(token, owner, repo, prevTag, tag).catch(err => {
+      log.warn({ err: (err as Error).message, tag }, 'PR/issue commenting failed (non-fatal)');
+    });
   } finally {
     if (repoDir) try { rmSync(repoDir, { recursive: true, force: true }); } catch { /* best effort */ }
   }
@@ -353,16 +342,132 @@ function handleInstallation(payload: GitHubInstallationEventPayload): void {
 
   if (action === 'created') {
     log.info({ repos }, 'Installed repos');
-    // TODO: Link this GitHub App installation to the Cullit user account.
-    // The installation.account.login should be matched to a Cullit user by
-    // their GitHub login. Until this is implemented, users must manually
-    // configure their repos in the Cullit dashboard after installing the app.
-    log.warn(
-      { account, installationId: payload.installation?.id },
-      'Installation created but auto-linking to Cullit account is not yet implemented. ' +
-      'User must configure repos manually in the dashboard.',
-    );
+    // Notify the Cullit API to link this GitHub installation to a user account.
+    // The API will match installation.account.login to a Cullit user by their GitHub login.
+    // If CULLIT_API_URL is not set, auto-linking is skipped (user configures repos manually).
+    if (CULLIT_API_URL && CULLIT_APP_SECRET) {
+      linkInstallation(
+        payload.installation?.id,
+        account,
+        repos,
+      ).catch(err => {
+        log.warn(
+          { err: (err as Error).message, account },
+          'Failed to auto-link installation — user can configure repos manually in the dashboard',
+        );
+      });
+    } else {
+      log.warn(
+        { account, installationId: payload.installation?.id },
+        'CULLIT_API_URL or CULLIT_APP_SECRET not set — skipping auto-link. ' +
+        'User must configure repos manually in the dashboard.',
+      );
+    }
   }
+}
+
+/**
+ * Notify the Cullit API that a GitHub App installation was created.
+ * The API matches the GitHub login to a Cullit user and stores the installation mapping.
+ */
+async function linkInstallation(
+  installationId: number | undefined,
+  githubLogin: string,
+  repos: string[],
+): Promise<void> {
+  if (!installationId) return;
+
+  const res = await fetch(`${CULLIT_API_URL}/v1/app/installation`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${CULLIT_APP_SECRET}`,
+      'User-Agent': `cullit-app/${VERSION}`,
+    },
+    body: JSON.stringify({ installationId, githubLogin, repos }),
+    signal: AbortSignal.timeout(10_000),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`API responded ${res.status}: ${body.slice(0, 200)}`);
+  }
+
+  log.info({ installationId, githubLogin, repoCount: repos.length }, 'Installation linked via API');
+}
+
+// --- PR / Issue Auto-Commenting ---
+
+/**
+ * Find merged PRs between two tags and comment "Shipped in <tag>" on each.
+ * Also comments on any linked issues (Fixes #N, Closes #N) found in PR bodies.
+ */
+async function commentOnShippedPRs(
+  token: string, owner: string, repo: string,
+  fromTag: string, toTag: string,
+): Promise<void> {
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/vnd.github+json',
+    'Content-Type': 'application/json',
+    'User-Agent': `cullit-app/${VERSION}`,
+  };
+
+  // Compare the two tags to find commits
+  const compareRes = await fetch(
+    `https://api.github.com/repos/${owner}/${repo}/compare/${encodeURIComponent(fromTag)}...${encodeURIComponent(toTag)}?per_page=100`,
+    { headers },
+  );
+  if (!compareRes.ok) {
+    log.warn({ status: compareRes.status, fromTag, toTag }, 'Compare API failed');
+    return;
+  }
+  const compareData = await compareRes.json() as {
+    commits: Array<{ sha: string }>;
+  };
+
+  // For each commit, find associated merged PRs
+  const commentedPRs = new Set<number>();
+  const commentedIssues = new Set<number>();
+  const comment = `🚀 Shipped in [${toTag}](https://github.com/${owner}/${repo}/releases/tag/${encodeURIComponent(toTag)})`;
+
+  for (const commit of compareData.commits) {
+    const prRes = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/commits/${commit.sha}/pulls`,
+      { headers },
+    );
+    if (!prRes.ok) continue;
+    const prs = await prRes.json() as Array<{ number: number; body: string | null; merged_at: string | null }>;
+
+    for (const pr of prs) {
+      if (!pr.merged_at || commentedPRs.has(pr.number)) continue;
+      commentedPRs.add(pr.number);
+
+      // Comment on the PR
+      await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/issues/${pr.number}/comments`,
+        { method: 'POST', headers, body: JSON.stringify({ body: comment }) },
+      );
+
+      // Find linked issues in PR body
+      if (pr.body) {
+        const issuePattern = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)/gi;
+        let match: RegExpExecArray | null;
+        while ((match = issuePattern.exec(pr.body)) !== null) {
+          const issueNum = parseInt(match[1], 10);
+          if (commentedIssues.has(issueNum)) continue;
+          commentedIssues.add(issueNum);
+
+          await fetch(
+            `https://api.github.com/repos/${owner}/${repo}/issues/${issueNum}/comments`,
+            { method: 'POST', headers, body: JSON.stringify({ body: comment }) },
+          );
+        }
+      }
+    }
+  }
+
+  log.info({ owner, repo, toTag, prs: commentedPRs.size, issues: commentedIssues.size }, 'Commented on shipped PRs/issues');
 }
 
 // --- Metrics ---

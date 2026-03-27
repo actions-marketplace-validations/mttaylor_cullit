@@ -75,6 +75,16 @@ export async function validateLicense(): Promise<LicenseStatus> {
     return { tier: 'pro', valid: true };
   }
 
+  // SSRF protection: only allow https (or http for localhost dev)
+  try {
+    const parsed = new URL(validationUrl);
+    if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && parsed.hostname === 'localhost')) {
+      return { tier: 'pro', valid: true, message: 'CULLIT_LICENSE_URL must use https.' };
+    }
+  } catch {
+    return { tier: 'pro', valid: true, message: 'CULLIT_LICENSE_URL is not a valid URL.' };
+  }
+
   // Remote validation
   try {
     const res = await fetchWithTimeout(validationUrl, {

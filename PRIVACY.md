@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated:** June 27, 2026
+**Last updated:** March 27, 2026
 
 ## Overview
 
@@ -58,6 +58,25 @@ Cullit sends release input data to the provider you configure. Each provider has
 
 Your provider choice determines where model inference data is processed.
 
+## Third-Party Integrations
+
+When you configure integrations, Cullit may send metadata to the following services on your behalf:
+
+| Service | Purpose | Data Shared |
+|---------|---------|-------------|
+| GitHub | OAuth login, GitHub App webhooks, Release publishing | Email, name, commit metadata, release notes |
+| Jira | Issue collection and enrichment | Issue keys, summaries, statuses |
+| Linear | Issue collection and enrichment | Issue identifiers, titles, statuses |
+| GitLab | Source collection, Release publishing | Commit metadata, release notes |
+| Bitbucket | Source collection | Commit metadata |
+| Slack | Release note publishing | Formatted release notes |
+| Discord | Release note publishing | Formatted release notes |
+| Microsoft Teams | Release note publishing | Formatted release notes (Adaptive Card) |
+| Confluence | Release note publishing | Formatted release notes (wiki page) |
+| Notion | Release note publishing | Formatted release notes (database page) |
+
+These integrations are opt-in and only active when configured by you.
+
 ## Billing and Payment Data
 
 - Billing is processed through Stripe
@@ -77,9 +96,9 @@ Your provider choice determines where model inference data is processed.
 
 For vulnerability reporting, see [SECURITY.md](SECURITY.md).
 
-## Open Source Transparency
+## Source Transparency
 
-Cullit source code is available at [github.com/mttaylor/cullit](https://github.com/mttaylor/cullit).
+Cullit source code is available for review at [github.com/mttaylor/cullit](https://github.com/mttaylor/cullit). See [LICENSE](LICENSE) for usage terms.
 
 ## Contact
 

@@ -19,9 +19,10 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
 import { createHash, randomBytes } from 'crypto';
 
-import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS, getTierLimits } from '@cullit/core';
+import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS, getTierLimits, createRateLimiter } from '@cullit/core';
 import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget } from '@cullit/core';
 import { openApiSpec } from './openapi.js';
+import { handleDocs } from './docs.js';
 import {
   handleAuthRedirect, handleAuthCallback, handleAuthMe, handleAuthLogout,
   handleRotateApiKey, handleDeleteAccount, handleLicenseValidate, resolveUser, getEffectiveTier,
@@ -33,7 +34,7 @@ import {
 } from './store.js';
 import { migrate, closeDb, sql,
   dbGetProjectSettings, dbUpsertProjectSettings, dbListProjectSettings,
-  dbGetExpiringTrials, dbGetJustExpiredTrials,
+  dbGetExpiringTrials, dbGetJustExpiredTrials, dbGetUserByLogin,
 } from './db.js';
 import { handleCheckout, handleBillingPortal, handleGetSubscription, handleStripeWebhook, isStripeConfigured } from './billing.js';
 import { log } from './logger.js';
@@ -128,8 +129,8 @@ async function checkTrialExpiry(): Promise<void> {
 }
 if (sql) {
   // Run on startup (delayed) and every 6 hours
-  setTimeout(() => { checkTrialExpiry().catch(() => {}); }, 30_000);
-  setInterval(() => { checkTrialExpiry().catch(() => {}); }, 6 * 60 * 60 * 1000).unref();
+  setTimeout(() => { checkTrialExpiry().catch((e) => { log.error({ err: (e as Error).message }, 'Trial expiry cron failed'); }); }, 30_000);
+  setInterval(() => { checkTrialExpiry().catch((e) => { log.error({ err: (e as Error).message }, 'Trial expiry cron failed'); }); }, 6 * 60 * 60 * 1000).unref();
 }
 const allowedOriginSet = new Set(ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean));
 
@@ -150,49 +151,25 @@ const RATE_WINDOW = 60_000; // 1 minute
 
 // --- Rate limiter (per-IP sliding window) ---
 // NOTE: In-memory, per-process only. Not shared across instances.
-// For multi-instance deployments, replace with Redis or similar.
+// For multi-instance deployments, swap createRateLimiter() with a Redis-backed implementation.
 
-const MAX_RATE_BUCKETS = 10_000;
-const rateBuckets = new Map<string, number[]>();
-
-// Prune stale rate limiter entries every 2 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, times] of rateBuckets) {
-    const active = times.filter(t => now - t < RATE_WINDOW);
-    if (active.length === 0) rateBuckets.delete(key);
-    else rateBuckets.set(key, active);
-  }
-}, 120_000).unref();
+const rateLimiter = createRateLimiter({ limit: RATE_LIMIT, windowMs: RATE_WINDOW });
 
 function checkRateLimit(req: IncomingMessage, res: ServerResponse): boolean {
   const ip = req.socket.remoteAddress || 'unknown';
-  const now = Date.now();
-  const timestamps = rateBuckets.get(ip) || [];
-  const recent = timestamps.filter(t => now - t < RATE_WINDOW);
+  const result = rateLimiter.check(ip);
 
-  // Set rate limit headers on every response
-  const remaining = Math.max(0, RATE_LIMIT - recent.length);
-  const resetAt = recent.length > 0 ? Math.ceil((recent[0] + RATE_WINDOW) / 1000) : Math.ceil((now + RATE_WINDOW) / 1000);
   res.setHeader('X-RateLimit-Limit', RATE_LIMIT);
-  res.setHeader('X-RateLimit-Remaining', remaining);
-  res.setHeader('X-RateLimit-Reset', resetAt);
+  res.setHeader('X-RateLimit-Remaining', result.remaining);
+  res.setHeader('X-RateLimit-Reset', result.resetAt);
 
-  if (recent.length >= RATE_LIMIT) {
+  if (!result.allowed) {
     res.setHeader('Retry-After', Math.ceil(RATE_WINDOW / 1000));
     metrics.rateLimited();
     json(res, 429, { error: 'Too many requests. Try again later.', code: ErrorCode.RATE_LIMIT_EXCEEDED });
     return false;
   }
 
-  // Cap total tracked IPs — evict oldest bucket to prevent memory exhaustion
-  if (!rateBuckets.has(ip) && rateBuckets.size >= MAX_RATE_BUCKETS) {
-    const oldestKey = rateBuckets.keys().next().value;
-    if (oldestKey) rateBuckets.delete(oldestKey);
-  }
-
-  recent.push(now);
-  rateBuckets.set(ip, recent);
   return true;
 }
 
@@ -353,88 +330,73 @@ interface GenerateRequest {
   linear?: { apiKey?: string };
 }
 
-async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const raw = await readBody(req);
-  let body: GenerateRequest;
+// --- SSRF protection for Jira domains ---
 
-  try {
-    body = JSON.parse(raw);
-  } catch {
-    json(res, 400, { error: 'Invalid JSON body' });
-    return;
+const SSRF_BLOCKED_SUFFIXES = [
+  '.nip.io', '.xip.io', '.sslip.io', '.localtest.me', '.lvh.me',
+  '.vcap.me', '.lacolhost.com', '.127.0.0.1.ip',
+];
+const SSRF_BLOCKED_EXACT = [
+  'localtest.me', 'lvh.me', 'vcap.me', 'lacolhost.com',
+];
+const SSRF_BLOCKED_PATTERNS = [
+  /^localhost/i, /\.localhost$/i, /\.local$/i, /\.internal$/i,
+  /\.svc$/i, /\.svc\./i, /\.cluster\./i, /\.pod\./i,
+  /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/, // IP address anywhere in hostname
+];
+
+function isBlockedJiraDomain(domain: string): boolean {
+  const lowerDomain = domain.toLowerCase();
+  if (!/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/.test(domain)) {
+    return true;
   }
+  return (
+    SSRF_BLOCKED_SUFFIXES.some(s => lowerDomain.endsWith(s)) ||
+    SSRF_BLOCKED_EXACT.includes(lowerDomain) ||
+    SSRF_BLOCKED_PATTERNS.some(p => p.test(lowerDomain))
+  );
+}
 
+// --- Generate: Validate → Execute → Record ---
+
+function validateGenerateRequest(body: GenerateRequest, res: ServerResponse): CullConfig & { _format: OutputFormat; _to: string } | null {
   if (!body.from) {
     json(res, 400, { error: '"from" is required (tag, SHA, or JQL/filter)' });
-    return;
+    return null;
   }
-
   if (typeof body.from !== 'string' || body.from.length > 1000) {
     json(res, 400, { error: '"from" must be a string under 1000 characters' });
-    return;
+    return null;
   }
-
   if (body.to !== undefined && (typeof body.to !== 'string' || body.to.length > 256)) {
     json(res, 400, { error: '"to" must be a string under 256 characters' });
-    return;
+    return null;
   }
 
   const VALID_PROVIDERS = AI_PROVIDERS as readonly string[];
   if (body.provider && !VALID_PROVIDERS.includes(body.provider)) {
     json(res, 400, { error: `Invalid provider. Must be one of: ${VALID_PROVIDERS.join(', ')}` });
-    return;
+    return null;
   }
 
   const VALID_FORMATS = OUTPUT_FORMATS as readonly string[];
   if (body.format && !VALID_FORMATS.includes(body.format)) {
     json(res, 400, { error: `Invalid format. Must be one of: ${VALID_FORMATS.join(', ')}` });
-    return;
+    return null;
   }
 
-  // Build config from request body (configPath intentionally unsupported
-  // in the API to prevent path traversal / arbitrary file read)
-  const publishers: PublishTarget[] = [{ type: 'stdout' }];
-
-  // Reject source types not supported via hosted API (no config passthrough)
   const sourceType = body.source?.type || 'local';
   if (sourceType === 'gitlab' || sourceType === 'bitbucket') {
     json(res, 400, { error: `Source type "${sourceType}" is not supported via the hosted API. Use the CLI instead.` });
-    return;
+    return null;
   }
 
-  // Validate Jira domain if provided — SSRF protection
-  if (body.jira?.domain) {
-    const domain = body.jira.domain;
-    // Basic format: must be valid hostname with TLD
-    if (!/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/.test(domain)) {
-      json(res, 400, { error: 'Invalid Jira domain format' });
-      return;
-    }
-    // Block DNS rebinding / SSRF bypass domains
-    const SSRF_BLOCKED_SUFFIXES = [
-      '.nip.io', '.xip.io', '.sslip.io', '.localtest.me', '.lvh.me',
-      '.vcap.me', '.lacolhost.com', '.127.0.0.1.ip',
-    ];
-    const SSRF_BLOCKED_EXACT = [
-      'localtest.me', 'lvh.me', 'vcap.me', 'lacolhost.com',
-    ];
-    const SSRF_BLOCKED_PATTERNS = [
-      /^localhost/i, /\.localhost$/i, /\.local$/i, /\.internal$/i,
-      /\.svc$/i, /\.svc\./i, /\.cluster\./i, /\.pod\./i,
-      /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/, // IP address anywhere in hostname
-    ];
-    const lowerDomain = domain.toLowerCase();
-    if (
-      SSRF_BLOCKED_SUFFIXES.some(s => lowerDomain.endsWith(s)) ||
-      SSRF_BLOCKED_EXACT.includes(lowerDomain) ||
-      SSRF_BLOCKED_PATTERNS.some(p => p.test(lowerDomain))
-    ) {
-      json(res, 400, { error: 'Invalid Jira domain format' });
-      return;
-    }
+  if (body.jira?.domain && isBlockedJiraDomain(body.jira.domain)) {
+    json(res, 400, { error: 'Invalid Jira domain format' });
+    return null;
   }
 
-  const config: CullConfig = {
+  const config: CullConfig & { _format: OutputFormat; _to: string } = {
     ai: {
       provider: body.provider || 'anthropic',
       model: body.model,
@@ -446,52 +408,93 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
       type: sourceType,
       enrichment: body.source?.enrichment || [],
     },
-    publish: publishers,
+    publish: [{ type: 'stdout' }],
     ...(body.jira ? { jira: body.jira } : {}),
     ...(body.linear ? { linear: body.linear } : {}),
+    _format: (body.format || 'markdown') as OutputFormat,
+    _to: body.to || 'HEAD',
   };
 
-  // Apply overrides 
   if (body.provider) config.ai.provider = body.provider;
   if (body.model) config.ai.model = body.model;
 
-  const format = body.format || 'markdown';
-  const to = body.to || 'HEAD';
+  return config;
+}
+
+function recordGeneration(
+  user: { id: string; orgId?: string | null },
+  body: GenerateRequest,
+  config: CullConfig,
+  format: string,
+  to: string,
+  result: { notes: { changes: { length: number } }; formatted: string; duration: number },
+): void {
+  const entry: HistoryEntry = {
+    id: randomBytes(8).toString('hex'),
+    userId: user.id,
+    project: body.from,
+    from: body.from,
+    to,
+    provider: config.ai.provider,
+    format,
+    changeCount: result.notes.changes.length,
+    summary: result.formatted.slice(0, 500),
+    duration: result.duration,
+    createdAt: new Date().toISOString(),
+  };
+  addHistoryEntry(entry).catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to save history entry'); });
+  recordUsageEvent({
+    userId: user.id,
+    orgId: user.orgId,
+    project: body.from,
+    provider: config.ai.provider,
+    changeCount: result.notes.changes.length,
+    duration: result.duration,
+    timestamp: entry.createdAt,
+  }).catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to record usage event'); });
+}
+
+async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const raw = await readBody(req);
+  let body: GenerateRequest;
+  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON body' }); return; }
+
+  const validated = validateGenerateRequest(body, res);
+  if (!validated) return;
+
+  const { _format: format, _to: to, ...config } = validated;
 
   try {
-    // Usage enforcement: check monthly limit before running pipeline
+    // Usage enforcement
     const user = await resolveUser(req);
     if (!user) {
       json(res, 401, { error: 'Authentication required for generation', code: ErrorCode.AUTH_NOT_AUTHENTICATED });
       return;
     }
-    {
-      const key = user.orgId || user.id;
-      const monthlyCount = await getMonthlyGenerationCount(key);
-      const effectiveTier = getEffectiveTier(user);
-      const limits = getTierLimits(effectiveTier);
-      if (monthlyCount >= limits.generationsPerMonth) {
-        json(res, 402, {
-          error: 'Monthly generation limit reached',
-          code: ErrorCode.BILLING_LIMIT_REACHED,
-          used: monthlyCount,
-          limit: limits.generationsPerMonth,
-          tier: effectiveTier,
-          upgrade: 'https://cullit.io/pricing',
-        });
-        return;
-      }
-    }
 
-    // Check cache first
-    const cacheKey = getCacheKey(body.from, to, format, config);
-    const cached = getCachedResult(cacheKey);
-    if (cached) {
-      json(res, 200, cached);
+    const key = user.orgId || user.id;
+    const monthlyCount = await getMonthlyGenerationCount(key);
+    const effectiveTier = getEffectiveTier(user);
+    const limits = getTierLimits(effectiveTier);
+    if (monthlyCount >= limits.generationsPerMonth) {
+      json(res, 402, {
+        error: 'Monthly generation limit reached',
+        code: ErrorCode.BILLING_LIMIT_REACHED,
+        used: monthlyCount,
+        limit: limits.generationsPerMonth,
+        tier: effectiveTier,
+        upgrade: 'https://cullit.io/pricing',
+      });
       return;
     }
 
-    const result = await runPipeline(body.from, to, config, { format, dryRun: true });
+    // Check cache
+    const cacheKey = getCacheKey(body.from, to, format, config as CullConfig);
+    const cached = getCachedResult(cacheKey);
+    if (cached) { json(res, 200, cached); return; }
+
+    // Execute pipeline
+    const result = await runPipeline(body.from, to, config as CullConfig, { format, dryRun: true });
 
     const response = {
       version: result.notes.version,
@@ -509,32 +512,8 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
     metrics.generation(config.ai.provider);
     json(res, 200, response);
 
-    // Record history + analytics (fire-and-forget, don't block response)
-    if (user) {
-      const entry: HistoryEntry = {
-        id: randomBytes(8).toString('hex'),
-        userId: user.id,
-        project: body.from,
-        from: body.from,
-        to,
-        provider: config.ai.provider,
-        format,
-        changeCount: result.notes.changes.length,
-        summary: result.formatted.slice(0, 500),
-        duration: result.duration,
-        createdAt: new Date().toISOString(),
-      };
-      addHistoryEntry(entry).catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to save history entry'); });
-      recordUsageEvent({
-        userId: user.id,
-        orgId: user.orgId,
-        project: body.from,
-        provider: config.ai.provider,
-        changeCount: result.notes.changes.length,
-        duration: result.duration,
-        timestamp: entry.createdAt,
-      }).catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to record usage event'); });
-    }
+    // Record history + analytics (fire-and-forget)
+    recordGeneration(user, body, config as CullConfig, format, to, result);
   } catch (err) {
     log.error({ err: (err as Error).message }, 'Pipeline error');
     metrics.generationError();
@@ -697,6 +676,54 @@ async function handlePutProjectSettings(req: IncomingMessage, res: ServerRespons
 
 // Org invite, member role, and usage handlers imported from routes/org.ts
 
+// --- GitHub App Installation Linking ---
+
+const APP_SECRET = process.env['CULLIT_APP_SECRET'] || '';
+
+async function handleAppInstallation(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  // Authenticate: only the GitHub App server can call this endpoint
+  const auth = req.headers['authorization'] || '';
+  if (!APP_SECRET || !auth.startsWith('Bearer ') || auth.slice(7) !== APP_SECRET) {
+    json(res, 401, { error: 'Unauthorized', code: ErrorCode.AUTH_UNAUTHORIZED });
+    return;
+  }
+
+  const raw = await readBody(req);
+  let body: { installationId?: number; githubLogin?: string; repos?: string[] };
+  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
+
+  if (!body.installationId || !body.githubLogin) {
+    json(res, 400, { error: 'installationId and githubLogin are required' });
+    return;
+  }
+
+  if (!sql) {
+    json(res, 503, { error: 'Database not configured' });
+    return;
+  }
+
+  // Find the Cullit user by their GitHub login
+  const user = await dbGetUserByLogin(body.githubLogin);
+  if (!user) {
+    log.info({ githubLogin: body.githubLogin }, 'No Cullit user found for GitHub login — installation will be linked on next login');
+    json(res, 200, { linked: false, reason: 'User not found — will link on next login' });
+    return;
+  }
+
+  // Store the installation mapping
+  await sql`
+    INSERT INTO github_installations (installation_id, user_id, github_login, repos, created_at)
+    VALUES (${body.installationId}, ${user.id}, ${body.githubLogin}, ${JSON.stringify(body.repos || [])}, NOW())
+    ON CONFLICT (installation_id) DO UPDATE SET
+      user_id = EXCLUDED.user_id,
+      github_login = EXCLUDED.github_login,
+      repos = EXCLUDED.repos
+  `;
+
+  log.info({ installationId: body.installationId, userId: user.id, githubLogin: body.githubLogin }, 'GitHub App installation linked');
+  json(res, 200, { linked: true, userId: user.id });
+}
+
 // --- Router ---
 
 const server = createServer(async (req, res: CorsResponse) => {
@@ -749,11 +776,17 @@ const server = createServer(async (req, res: CorsResponse) => {
     } else if (path === '/v1/license/validate' && req.method === 'POST') {
       await handleLicenseValidate(req, res, json);
 
+    // --- GitHub App internal routes ---
+    } else if (path === '/v1/app/installation' && req.method === 'POST') {
+      await handleAppInstallation(req, res);
+
     // --- Public / system routes ---
     } else if ((path === '/health' || path === '/healthz') && (req.method === 'GET' || req.method === 'HEAD')) {
       await handleHealth(req, res);
     } else if (path === '/openapi.json' && req.method === 'GET') {
       await handleOpenAPI(req, res);
+    } else if ((path === '/v1/docs' || path === '/docs') && req.method === 'GET') {
+      handleDocs(req, res);
     } else if (path === '/metrics' && req.method === 'GET') {
       handleMetrics(req, res);
     } else if (path === '/v1/events' && req.method === 'POST') {

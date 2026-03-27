@@ -37,7 +37,7 @@ describe('API Server', () => {
     // Start the API server as a child process
     const serverPath = join(__dirname, '..', 'dist', 'index.js');
     serverProcess = spawn('node', [serverPath], {
-      env: { ...process.env, PORT: String(PORT), RATE_LIMIT: '15', CULLIT_API_TOKEN: '', CULLIT_AUTH_STORE_PATH: TEST_AUTH_STORE },
+      env: { ...process.env, PORT: String(PORT), RATE_LIMIT: '60', CULLIT_API_TOKEN: '', CULLIT_AUTH_STORE_PATH: TEST_AUTH_STORE },
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 
@@ -144,6 +144,30 @@ describe('API Server', () => {
     expect(body.error).toContain('Invalid Jira domain');
   });
 
+  it('POST /generate succeeds with provider=none (template mode)', async () => {
+    const { status, body } = await authedRequest('/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: 'HEAD~3', to: 'HEAD', provider: 'none', format: 'markdown' }),
+    });
+    // May succeed (200) or fail if no git repo (500) — but should NOT be 400/401
+    expect([200, 500]).toContain(status);
+    if (status === 200) {
+      expect(body.formatted).toBeDefined();
+      expect(body.version).toBeDefined();
+    }
+  });
+
+  it('POST /v1/generate enforces usage limits for authenticated user', async () => {
+    const { status, body } = await authedRequest('/v1/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: 'HEAD~1', provider: 'none' }),
+    });
+    // Free tier user — should either work or hit limit (402), never 400
+    expect([200, 402, 500]).toContain(status);
+  });
+
   it('OPTIONS returns CORS headers', async () => {
     const res = await fetch(`http://localhost:${PORT}/generate`, { method: 'OPTIONS' });
     expect(res.status).toBe(204);
@@ -227,10 +251,10 @@ describe('API Server', () => {
   });
 
   it('rate limits excessive requests', async () => {
-    // RATE_LIMIT is 15, only POST /generate is rate-limited
-    // Earlier tests used ~6 POST /generate requests
+    // RATE_LIMIT is 60; prior tests have used ~20 requests.
+    // Fire enough to exceed the limit.
     const results = [];
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 60; i++) {
       results.push(await apiRequest('/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

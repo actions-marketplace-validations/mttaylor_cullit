@@ -39,7 +39,14 @@ export const useDb = !!process.env['DATABASE_URL'];
 
 const WORKOS_CLIENT_ID = process.env['WORKOS_CLIENT_ID'] || '';
 const WORKOS_API_KEY = process.env['WORKOS_API_KEY'] || '';
-const JWT_SECRET = process.env['CULLIT_JWT_SECRET'] || (() => {
+const JWT_SECRET = (() => {
+  const envSecret = process.env['CULLIT_JWT_SECRET'];
+  if (envSecret) {
+    if (envSecret.length < 32) {
+      throw new Error('CULLIT_JWT_SECRET must be at least 32 characters. Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
+    }
+    return envSecret;
+  }
   const fallback = randomBytes(32).toString('hex');
   log.warn('CULLIT_JWT_SECRET is not set — using random key. Sessions will not survive restarts.');
   return fallback;

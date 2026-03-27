@@ -1,6 +1,6 @@
 {
   "name": "@cullit/core",
-  "version": "1.16.0",
+  "version": "1.18.0",
   "type": "module",
   "description": "Core engine for Cullit — AI-powered release note generation.",
   "license": "SEE LICENSE IN LICENSE",
@@ -10,9 +10,16 @@
     "url": "https://github.com/mttaylor/cullit",
     "directory": "packages/core"
   },
-  "keywords": ["release-notes", "changelog", "ai", "automation"],
+  "keywords": [
+    "release-notes",
+    "changelog",
+    "ai",
+    "automation"
+  ],
   "homepage": "https://cullit.io",
-  "bugs": { "url": "https://github.com/mttaylor/cullit/issues" },
+  "bugs": {
+    "url": "https://github.com/mttaylor/cullit/issues"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -21,9 +28,15 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
-  "engines": { "node": ">=22" },
-  "publishConfig": { "access": "public" },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean",
     "dev": "tsup src/index.ts --format esm --dts --watch",

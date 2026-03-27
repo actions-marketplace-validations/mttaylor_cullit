@@ -60,7 +60,7 @@ jobs:
         run: pnpm validate:guards
 
       - name: Security audit
-        run: pnpm audit --audit-level=moderate || echo '::warning::Security audit found vulnerabilities — review pnpm audit output'
+        run: pnpm audit --audit-level=moderate
 
   docker:
     runs-on: ubuntu-latest

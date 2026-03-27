@@ -2,6 +2,7 @@ import { writeFileSync } from 'fs';
 import { resolve, relative, isAbsolute } from 'path';
 import type { Publisher, ReleaseNotes, OutputFormat } from '../types';
 import { formatNotes } from '../formatter';
+import { CullitError, CoreErrorCode } from '../errors';
 
 /**
  * Outputs release notes to stdout (default).
@@ -22,7 +23,7 @@ export class FilePublisher implements Publisher {
     const cwd = resolve('.');
     const rel = relative(cwd, resolved);
     if (rel.startsWith('..') || isAbsolute(rel)) {
-      throw new Error(`File output path must be within the project directory. Got: ${path}`);
+      throw new CullitError(CoreErrorCode.PUBLISHER_PATH_TRAVERSAL, `File output path must be within the project directory. Got: ${path}`);
     }
   }
 

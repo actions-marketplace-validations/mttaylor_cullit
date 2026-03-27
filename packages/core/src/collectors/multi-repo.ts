@@ -5,6 +5,7 @@ import { tmpdir } from 'os';
 import type { Collector, GitDiff, GitCommit } from '../types';
 import type { RepoSource } from '@cullit/config';
 import { GitCollector } from './git';
+import { CullitError, CoreErrorCode } from '../errors';
 
 /**
  * Collects commits from multiple repositories and merges them into a single GitDiff.
@@ -18,7 +19,7 @@ export class MultiRepoCollector implements Collector {
   private tempDirs: string[] = [];
 
   constructor(repos: RepoSource[]) {
-    if (!repos.length) throw new Error('Multi-repo collector requires at least one repo');
+    if (!repos.length) throw new CullitError(CoreErrorCode.MULTI_REPO_EMPTY, 'Multi-repo collector requires at least one repo');
     this.repos = repos;
   }
 
@@ -64,12 +65,12 @@ export class MultiRepoCollector implements Collector {
     if (repo.path) return repo.path;
 
     if (!repo.url) {
-      throw new Error('Each repo must have either "url" or "path"');
+      throw new CullitError(CoreErrorCode.MULTI_REPO_MISSING_TARGET, 'Each repo must have either "url" or "path"');
     }
 
     // Validate URL - only allow git protocols
     if (!/^(https?:\/\/|git@|ssh:\/\/)/.test(repo.url)) {
-      throw new Error(`Invalid repo URL: ${repo.url}`);
+      throw new CullitError(CoreErrorCode.MULTI_REPO_INVALID_URL, `Invalid repo URL: ${repo.url}`);
     }
 
     const tempDir = mkdtempSync(join(tmpdir(), 'cullit-repo-'));

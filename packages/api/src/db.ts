@@ -277,6 +277,19 @@ export async function migrate(): Promise<void> {
   // Auto-prune webhook events older than 30 days
   await sql`DELETE FROM webhook_events WHERE processed_at < NOW() - INTERVAL '30 days'`.catch(() => { /* best effort */ });
 
+  // GitHub App installation tracking
+  await sql`
+    CREATE TABLE IF NOT EXISTS github_installations (
+      installation_id  INT PRIMARY KEY,
+      user_id          TEXT REFERENCES users(id),
+      github_login     TEXT NOT NULL,
+      repos            JSONB NOT NULL DEFAULT '[]',
+      created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+
+  await sql`CREATE INDEX IF NOT EXISTS idx_gh_install_user ON github_installations (user_id)`;
+
   log.info('Database migrations complete');
 }
 
@@ -354,6 +367,11 @@ export async function dbGetUserByApiKey(apiKey: string): Promise<DbUser | null> 
 
 export async function dbGetUserByStripeCustomer(customerId: string): Promise<DbUser | null> {
   const rows = await sql<DbUser[]>`SELECT * FROM users WHERE stripe_customer_id = ${customerId}`;
+  return rows[0] || null;
+}
+
+export async function dbGetUserByLogin(login: string): Promise<DbUser | null> {
+  const rows = await sql<DbUser[]>`SELECT * FROM users WHERE login = ${login}`;
   return rows[0] || null;
 }
 
@@ -503,22 +521,25 @@ export async function dbRemoveOrgMember(orgId: string, userId: string): Promise<
  */
 export async function dbDeleteUser(userId: string): Promise<void> {
   if (!sql) return;
-  // Remove org memberships (but don't delete orgs the user owns — handled by caller)
-  await sql`DELETE FROM org_members WHERE user_id = ${userId}`;
-  // Anonymize generation history (keep aggregate stats, remove PII)
-  await sql`UPDATE generations SET user_id = 'deleted' WHERE user_id = ${userId}`;
-  // Delete subscriptions
-  await sql`DELETE FROM subscriptions WHERE user_id = ${userId}`;
-  // Delete drafts and their revisions (CASCADE handles revisions)
-  await sql`DELETE FROM release_drafts WHERE user_id = ${userId}`;
-  // Delete project settings
-  await sql`DELETE FROM project_settings WHERE user_id = ${userId}`;
-  // Delete org invites created by this user
-  await sql`DELETE FROM org_invites WHERE created_by = ${userId}`;
-  // Revoke all tokens
-  await sql`DELETE FROM revoked_tokens WHERE user_id = ${userId}`;
-  // Delete the user record
-  await sql`DELETE FROM users WHERE id = ${userId}`;
+  // Wrap in a transaction so partial deletes cannot leave orphaned data
+  await sql.begin(async (tx) => {
+    // Remove org memberships (but don't delete orgs the user owns — handled by caller)
+    await tx`DELETE FROM org_members WHERE user_id = ${userId}`;
+    // Anonymize generation history (keep aggregate stats, remove PII)
+    await tx`UPDATE generations SET user_id = 'deleted' WHERE user_id = ${userId}`;
+    // Delete subscriptions
+    await tx`DELETE FROM subscriptions WHERE user_id = ${userId}`;
+    // Delete drafts and their revisions (CASCADE handles revisions)
+    await tx`DELETE FROM release_drafts WHERE user_id = ${userId}`;
+    // Delete project settings
+    await tx`DELETE FROM project_settings WHERE user_id = ${userId}`;
+    // Delete org invites created by this user
+    await tx`DELETE FROM org_invites WHERE created_by = ${userId}`;
+    // Revoke all tokens
+    await tx`DELETE FROM revoked_tokens WHERE user_id = ${userId}`;
+    // Delete the user record
+    await tx`DELETE FROM users WHERE id = ${userId}`;
+  });
 }
 
 export async function dbGetOrgMembers(orgId: string): Promise<DbUser[]> {

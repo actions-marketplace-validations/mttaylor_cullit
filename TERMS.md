@@ -1,6 +1,6 @@
 # Terms of Service
 
-**Last updated:** June 27, 2026
+**Last updated:** March 27, 2026
 
 ## 1. Acceptance
 
@@ -22,7 +22,7 @@ When using hosted features (for example dashboard login, billing, and team workf
 
 ## 4. BYOK (Bring Your Own Key)
 
-Cullit supports AI provider keys you supply (Anthropic, OpenAI, Google, and others). You are responsible for:
+Cullit supports AI provider keys you supply (Anthropic, OpenAI, Google Gemini, Ollama, and others). You are responsible for:
 
 - Obtaining and managing your own provider credentials
 - Complying with provider terms and policies
@@ -61,6 +61,41 @@ Cullit processes data from your configured sources and selected AI providers.
 
 - Data handling differs across local CLI, self-hosted API, and hosted dashboard modes
 - See [PRIVACY.md](PRIVACY.md) for current details
+
+### 9.1 Data Retention
+
+| Mode | Data Stored | Retention |
+|------|-------------|-----------|
+| **CLI / local** | None — all processing is ephemeral on your machine | N/A |
+| **Self-hosted API** | As configured by you in your database | You control retention and backup |
+| **Hosted dashboard** | Account info, generation history, team membership, billing state | Retained while your account is active |
+
+Hosted dashboard generation history is retained for **90 days** by default and can be manually deleted at any time via the dashboard or API (`DELETE /auth/me`).
+
+### 9.2 Data Deletion
+
+You may delete your account and all associated data at any time:
+
+- **Dashboard**: Settings → Delete Account
+- **API**: `DELETE /auth/me` with a valid session or API key
+- **Email**: Contact matt@cullit.io
+
+Account deletion is permanent and removes all personal data, team memberships, drafts, project settings, and billing associations. Generation history is anonymized (aggregate statistics retained without personally identifiable information).
+
+Deletion is processed immediately. If you believe deletion was incomplete, contact matt@cullit.io.
+
+### 9.3 Third-Party Data Processors
+
+When using the hosted dashboard, the following third-party services process data on behalf of Cullit:
+
+| Service | Purpose | Data Shared |
+|---------|---------|-------------|
+| WorkOS | Authentication | Email, name (via GitHub OAuth) |
+| Stripe | Billing | Email, subscription state |
+| Railway | Hosting | Encrypted at rest, access-controlled |
+| AI Providers | Generation | Commit messages, issue summaries (your choice of provider) |
+
+Cullit does not sell, share, or distribute your data to third parties beyond what is required for service operation.
 
 ## 10. Enterprise Terms
 

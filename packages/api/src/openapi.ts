@@ -19,7 +19,7 @@ export const openApiSpec = {
       email: 'matt@cullit.io',
     },
     license: {
-      name: 'MIT',
+      name: 'Proprietary',
       url: 'https://github.com/mttaylor/cullit/blob/main/LICENSE',
     },
   },
@@ -150,6 +150,24 @@ export const openApiSpec = {
             content: {
               'application/json': {
                 schema: { type: 'object' },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/v1/docs': {
+      get: {
+        operationId: 'getInteractiveDocs',
+        summary: 'Interactive API documentation',
+        description: 'Serves a self-contained HTML page with endpoint browser and "Try It" testing capability.',
+        tags: ['System'],
+        responses: {
+          '200': {
+            description: 'Interactive API documentation page',
+            content: {
+              'text/html': {
+                schema: { type: 'string' },
               },
             },
           },

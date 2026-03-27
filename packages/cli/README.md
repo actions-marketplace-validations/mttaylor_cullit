@@ -50,6 +50,49 @@ cullit generate --from v1.8.0 --provider none --template customer-facing
 - `CULLIT_API_KEY`: used by licensed hosted/private Cullit surfaces
 - Need Pro or Team access: https://cullit.io/pricing
 
+## Commands
+
+### `generate`
+
+Generate release notes between two git refs.
+
+```bash
+cullit generate --from v1.0.0 --to v1.1.0 --provider none
+cullit generate --provider none          # autodetect last two tags
+```
+
+### `init`
+
+Create a `.cullit.yml` config file via interactive prompts.
+
+```bash
+cullit init
+```
+
+### `status`
+
+Show release readiness: current version, unreleased commit count and breakdown, suggested next version, and a release/no-release verdict.
+
+```bash
+cullit status
+```
+
+### `tags`
+
+List the 20 most recent tags in the current repository.
+
+```bash
+cullit tags
+```
+
+### `--version` / `-v`
+
+Print the installed CLI version.
+
+```bash
+cullit --version
+```
+
 ## Common Flags
 
 - `--from <ref>` source git ref / tag / query

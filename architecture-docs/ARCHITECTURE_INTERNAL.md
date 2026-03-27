@@ -1,6 +1,6 @@
 # Cullit Architecture
 
-Last updated: 2026-06-27
+Last updated: 2026-03-27
 
 This document is the source of truth for Cullit's technical architecture, distribution model, runtime flows, and operational boundaries.
 

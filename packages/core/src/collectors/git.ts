@@ -1,5 +1,6 @@
 import { execFileSync } from 'child_process';
 import type { Collector, GitCommit, GitDiff } from '../types';
+import { CullitError, CoreErrorCode } from '../errors';
 
 /**
  * Validates a git ref to prevent command injection.
@@ -7,11 +8,11 @@ import type { Collector, GitCommit, GitDiff } from '../types';
  */
 function validateRef(ref: string): void {
   if (!ref || ref.length > 256) {
-    throw new Error(`Invalid git ref: too ${ref ? 'long' : 'short'}`);
+    throw new CullitError(CoreErrorCode.GIT_REF_INVALID, `Invalid git ref: too ${ref ? 'long' : 'short'}`);
   }
   // Allow alphanumeric, dots, dashes, underscores, slashes, tildes, carets
   if (!/^[a-zA-Z0-9._\-/~^]+$/.test(ref)) {
-    throw new Error(`Invalid git ref "${ref}" — only alphanumeric, dots, dashes, underscores, slashes, tildes, and carets are allowed`);
+    throw new CullitError(CoreErrorCode.GIT_REF_INVALID, `Invalid git ref "${ref}" — only alphanumeric, dots, dashes, underscores, slashes, tildes, and carets are allowed`);
   }
 }
 
@@ -61,8 +62,8 @@ export class GitCollector implements Collector {
         : stderr.includes('not a git repository')
         ? 'Run this command inside a git repository.'
         : `Make sure both refs exist and you're in a git repository.`;
-      throw new Error(
-        `Failed to read git log between ${from} and ${to}. ${hint}`
+      throw new CullitError(
+        CoreErrorCode.GIT_LOG_FAILED, `Failed to read git log between ${from} and ${to}. ${hint}`
       );
     }
   }

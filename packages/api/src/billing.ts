@@ -184,9 +184,10 @@ function verifyWebhookSignature(payload: string, sigHeader: string): boolean {
 
   if (!parts.timestamp || parts.signatures.length === 0) return false;
 
-  // Reject timestamps older than 5 minutes
-  const age = Math.abs(Date.now() / 1000 - parseInt(parts.timestamp, 10));
-  if (age > 300) return false;
+  // Reject timestamps too far in the past or future (5 minute tolerance)
+  const now = Date.now() / 1000;
+  const ts = parseInt(parts.timestamp, 10);
+  if (isNaN(ts) || ts > now + 300 || ts < now - 300) return false;
 
   const expected = createHmac('sha256', STRIPE_WEBHOOK_SECRET)
     .update(`${parts.timestamp}.${payload}`)

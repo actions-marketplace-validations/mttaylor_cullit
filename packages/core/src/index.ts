@@ -36,8 +36,13 @@ export {
 } from './registry';
 export type { CollectorFactory, EnricherFactory, GeneratorFactory, PublisherFactory } from './registry';
 export { fetchWithTimeout } from './fetch';
+export { createRateLimiter } from './rate-limiter';
+export type { RateLimiter, RateLimitResult, RateLimiterOptions } from './rate-limiter';
+export { CullitError, CoreErrorCode } from './errors';
+export type { CoreErrorCodeValue } from './errors';
 
 import type { CullConfig, EnrichedContext, PipelineResult, OutputFormat, EnrichedTicket, ReleaseNotes, TemplateProfile, TemplateConfig, PublishTarget } from './types';
+import { CullitError, CoreErrorCode } from './errors';
 import { validateLicense, isProviderAllowed, isPublisherAllowed, isEnrichmentAllowed, upgradeMessage } from './gate';
 import { GitCollector } from './collectors/git';
 import { MultiRepoCollector } from './collectors/multi-repo';
@@ -160,20 +165,21 @@ export async function runPipeline(
 
   if (!license.valid) {
     if (!isProviderAllowed(config.ai.provider, license)) {
-      throw new Error(license.message || 'Invalid CULLIT_API_KEY');
+      throw new CullitError(CoreErrorCode.LICENSE_INVALID, license.message || 'Invalid CULLIT_API_KEY');
     }
     // Invalid key but provider is free-compatible — warn and continue in free mode
     log.warn(`⚠ ${license.message || 'Invalid CULLIT_API_KEY — running in free mode.'}`);
   }
 
   if (!isProviderAllowed(config.ai.provider, license)) {
-    throw new Error(upgradeMessage(`AI provider "${config.ai.provider}"`));
+    throw new CullitError(CoreErrorCode.LICENSE_TIER_INSUFFICIENT, upgradeMessage(`AI provider "${config.ai.provider}"`));
   }
 
   // 1. COLLECT — uniform factory pattern: factory(config)
   const collectorFactory = getCollector(config.source.type);
   if (!collectorFactory) {
-    throw new Error(
+    throw new CullitError(
+      CoreErrorCode.PIPELINE_COLLECTOR_MISSING,
       `Source type "${config.source.type}" is not available. ` +
       (config.source.type !== 'local'
         ? 'Install @cullit/licensed (private distribution) to use this source.'
@@ -194,7 +200,7 @@ export async function runPipeline(
 
   if (diff.commits.length === 0) {
     const source = config.source.type === 'jira' ? 'Jira' : config.source.type === 'linear' ? 'Linear' : `${from} and ${to}`;
-    throw new Error(`No ${itemLabel} found from ${source}`);
+    throw new CullitError(CoreErrorCode.PIPELINE_NO_CHANGES, `No ${itemLabel} found from ${source}`);
   }
 
   // 2. ENRICH
@@ -234,7 +240,8 @@ export async function runPipeline(
 
   const generatorFactory = getGenerator(config.ai.provider);
   if (!generatorFactory) {
-    throw new Error(
+    throw new CullitError(
+      CoreErrorCode.PIPELINE_GENERATOR_MISSING,
       `AI provider "${config.ai.provider}" is not available. ` +
       (config.ai.provider !== 'none'
         ? 'Install @cullit/licensed (private distribution) to use AI providers.'

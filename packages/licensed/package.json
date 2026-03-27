@@ -1,6 +1,6 @@
 {
   "name": "@cullit/licensed",
-  "version": "1.16.0",
+  "version": "1.18.0",
   "type": "module",
   "description": "Private registry distribution for Cullit paid tiers (Pro, Team, Enterprise).",
   "license": "UNLICENSED",
@@ -17,9 +17,15 @@
     "cullit": "./dist/index.js"
   },
   "main": "./dist/index.js",
-  "exports": { ".": { "import": "./dist/index.js" } },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
   "homepage": "https://cullit.io",
-  "bugs": { "url": "https://github.com/mttaylor/cullit/issues" },
+  "bugs": {
+    "url": "https://github.com/mttaylor/cullit/issues"
+  },
   "files": [
     "dist",
     "README.md"
