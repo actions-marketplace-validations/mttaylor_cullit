@@ -1286,6 +1286,31 @@
           <button class="btn-small" onclick="switchDashTab('billing')" style="margin-top:0.75rem">View Plans</button>
         </div>
       </div>
+      <div class="panel" style="margin-top:1rem" id="settingsApiKey">
+        <div class="panel-header">&#128273; API Key</div>
+        <div class="panel-body">
+          <p style="font-size:0.8rem;color:var(--text-dim);margin:0 0 0.75rem">Use this key in your GitHub Actions workflow or CLI to authenticate with Cullit.</p>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <input id="apiKeyDisplay" type="password" readonly style="flex:1;padding:0.45rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.8rem;font-family:'Space Mono',monospace" value="">
+            <button class="btn-small" id="apiKeyToggle" onclick="toggleApiKeyVisibility()" style="font-size:0.7rem;min-width:3.5rem">Show</button>
+            <button class="btn-small" onclick="copyApiKey()" style="font-size:0.7rem">Copy</button>
+          </div>
+          <details style="margin-top:1rem">
+            <summary style="font-size:0.8rem;color:var(--accent);cursor:pointer">Usage instructions</summary>
+            <div style="margin-top:0.5rem;font-size:0.78rem;color:var(--text-dim);line-height:1.6">
+              <p style="margin:0 0 0.5rem"><strong>GitHub Actions</strong> &mdash; add to your repository secrets:</p>
+              <pre style="background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:0.5rem;overflow-x:auto;font-size:0.75rem">env:
+  CULLIT_API_KEY: ${{ secrets.CULLIT_API_KEY }}</pre>
+              <p style="margin:0.75rem 0 0.5rem"><strong>CLI</strong> &mdash; set as environment variable:</p>
+              <pre style="background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:0.5rem;overflow-x:auto;font-size:0.75rem">export CULLIT_API_KEY="your-key-here"</pre>
+            </div>
+          </details>
+          <div style="margin-top:0.75rem;border-top:1px solid var(--border);padding-top:0.75rem">
+            <button class="btn-small" onclick="rotateApiKey()" style="font-size:0.7rem;background:transparent;border:1px solid var(--danger, #e74c3c);color:var(--danger, #e74c3c)">Rotate Key</button>
+            <span style="font-size:0.72rem;color:var(--text-dim);margin-left:0.5rem">This will invalidate your current key.</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- CHANGELOG TAB -->
@@ -1533,9 +1558,41 @@ async function showAuthWall() {
   document.getElementById('cliHint').style.display = 'none';
 }
 
+function toggleApiKeyVisibility() {
+  const input = document.getElementById('apiKeyDisplay');
+  const btn = document.getElementById('apiKeyToggle');
+  if (input.type === 'password') { input.type = 'text'; btn.textContent = 'Hide'; }
+  else { input.type = 'password'; btn.textContent = 'Show'; }
+}
+function copyApiKey() {
+  const input = document.getElementById('apiKeyDisplay');
+  navigator.clipboard.writeText(input.value).then(() => {
+    const btn = event.target;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1500);
+  });
+}
+async function rotateApiKey() {
+  if (!confirm('Rotate your API key? Your current key will stop working immediately.')) return;
+  try {
+    const res = await apiFetch('/v1/auth/rotate-key', { method: 'POST' });
+    const data = await res.json();
+    if (data.apiKey) {
+      currentUser.apiKey = data.apiKey;
+      document.getElementById('apiKeyDisplay').value = data.apiKey;
+      showToast('API key rotated successfully');
+    } else { showToast(data.error || 'Failed to rotate key'); }
+  } catch { showToast('Could not rotate key'); }
+}
+
 function showDashboard() {
   document.getElementById('authWall').style.display = 'none';
   document.getElementById('dashApp').style.display = '';
+
+  // API key
+  if (currentUser.apiKey) {
+    document.getElementById('apiKeyDisplay').value = currentUser.apiKey;
+  }
 
   // Nav user
   const nav = document.getElementById('navUser');

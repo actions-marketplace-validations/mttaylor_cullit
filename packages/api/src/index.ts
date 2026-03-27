@@ -24,7 +24,7 @@ import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarge
 import { openApiSpec } from './openapi.js';
 import {
   handleAuthRedirect, handleAuthCallback, handleAuthMe, handleAuthLogout,
-  handleRotateApiKey, handleDeleteAccount, resolveUser, getEffectiveTier,
+  handleRotateApiKey, handleDeleteAccount, handleLicenseValidate, resolveUser, getEffectiveTier,
 } from './auth.js';
 import {
   addHistoryEntry, getHistory, getHistoryCount,
@@ -744,6 +744,10 @@ const server = createServer(async (req, res: CorsResponse) => {
       await handleRotateApiKey(req, res, json);
     } else if (path === '/auth/me' && req.method === 'DELETE') {
       await handleDeleteAccount(req, res, json);
+
+    // --- License validation ---
+    } else if (path === '/v1/license/validate' && req.method === 'POST') {
+      await handleLicenseValidate(req, res, json);
 
     // --- Public / system routes ---
     } else if ((path === '/health' || path === '/healthz') && (req.method === 'GET' || req.method === 'HEAD')) {

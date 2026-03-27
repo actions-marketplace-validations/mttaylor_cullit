@@ -119,14 +119,15 @@ interface AuthStore {
 }
 
 // --- OAuth State CSRF protection ---
-const pendingStates = new Map<string, number>(); // state → timestamp
+interface PendingState { ts: number; returnTo?: string; }
+const pendingStates = new Map<string, PendingState>(); // state → {timestamp, returnTo}
 const STATE_TTL = 600_000; // 10 minutes
 const MAX_PENDING_STATES = 50_000;
 
 // Prune expired states periodically
 setInterval(() => {
   const now = Date.now();
-  for (const [state, ts] of pendingStates) {
+  for (const [state, { ts }] of pendingStates) {
     if (now - ts > STATE_TTL) pendingStates.delete(state);
   }
 }, 120_000).unref();
@@ -555,7 +556,7 @@ interface WorkOSUser {
 /**
  * GET /auth/login — Redirect to WorkOS AuthKit hosted login
  */
-export function handleAuthRedirect(_req: IncomingMessage, res: ServerResponse): void {
+export function handleAuthRedirect(req: IncomingMessage, res: ServerResponse): void {
   if (!WORKOS_CLIENT_ID) {
     res.writeHead(500, { 'Content-Type': 'application/json', ...AUTH_SECURITY_HEADERS });
     res.end(JSON.stringify({ error: 'WorkOS AuthKit not configured (WORKOS_CLIENT_ID missing)' }));
@@ -568,8 +569,14 @@ export function handleAuthRedirect(_req: IncomingMessage, res: ServerResponse): 
     return;
   }
 
+  // Accept ?returnTo= so callers can resume after login (e.g. pricing checkout)
+  const loginUrl = new URL(req.url || '/', `http://localhost`);
+  const rawReturnTo = loginUrl.searchParams.get('returnTo') || '';
+  // Only allow relative paths on DASHBOARD_URL to prevent open-redirect
+  const returnTo = rawReturnTo && /^\/[^/\\]/.test(rawReturnTo) ? rawReturnTo : '';
+
   const state = randomBytes(16).toString('hex');
-  pendingStates.set(state, Date.now());
+  pendingStates.set(state, { ts: Date.now(), returnTo });
 
   const params = new URLSearchParams({
     client_id: WORKOS_CLIENT_ID,
@@ -597,6 +604,7 @@ export async function handleAuthCallback(req: IncomingMessage, res: ServerRespon
     res.end(JSON.stringify({ error: 'Invalid or expired OAuth state' }));
     return;
   }
+  const pendingData = pendingStates.get(state)!;
   pendingStates.delete(state);
 
   if (!code) {
@@ -640,8 +648,9 @@ export async function handleAuthCallback(req: IncomingMessage, res: ServerRespon
     const jwt = createJWT(user.id);
     const maxAge = JWT_EXPIRY;
 
+    const redirectPath = pendingData.returnTo || '/dashboard.html';
     res.writeHead(302, {
-      Location: `${DASHBOARD_URL}/dashboard.html`,
+      Location: `${DASHBOARD_URL}${redirectPath}`,
       'Set-Cookie': `${SESSION_COOKIE_NAME}=${jwt}${COOKIE_ATTRS}; Max-Age=${maxAge}`,
       ...AUTH_SECURITY_HEADERS,
     });
@@ -747,4 +756,24 @@ export async function handleDeleteAccount(req: IncomingMessage, res: ServerRespo
   res.setHeader('Set-Cookie', `${SESSION_COOKIE_NAME}=${COOKIE_ATTRS}; Max-Age=0`);
   log.info({ userId: user.id }, 'Account deleted (GDPR)');
   jsonFn(res, 200, { ok: true, message: 'Account and all associated data have been deleted.' });
+}
+
+/**
+ * POST /v1/license/validate — Validate an API key and return the user's actual tier.
+ * Called by the CLI/GitHub Action when CULLIT_LICENSE_URL is configured.
+ */
+export async function handleLicenseValidate(req: IncomingMessage, res: ServerResponse, jsonFn: (r: ServerResponse, s: number, b: unknown) => void): Promise<void> {
+  const authHeader = req.headers['authorization'] || '';
+  if (!authHeader.startsWith('Bearer clt_')) {
+    jsonFn(res, 401, { valid: false, tier: 'free', message: 'Missing or invalid API key' });
+    return;
+  }
+  const apiKey = authHeader.slice(7);
+  const user = await getUserByApiKey(apiKey);
+  if (!user) {
+    jsonFn(res, 401, { valid: false, tier: 'free', message: 'Invalid API key' });
+    return;
+  }
+  const tier = getEffectiveTier(user);
+  jsonFn(res, 200, { valid: true, tier });
 }

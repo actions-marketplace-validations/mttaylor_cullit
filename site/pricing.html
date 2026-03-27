@@ -624,7 +624,8 @@ async function startCheckout(plan, e) {
     });
     if (res.status === 401) {
       trackEvent('checkout_failed', { plan, reason: 'unauthenticated' });
-      window.location.href = 'dashboard.html?checkout=' + plan;
+      // Send to login, which will redirect back to dashboard with ?checkout= to resume
+      window.location.href = getApiUrl() + '/auth/login?returnTo=' + encodeURIComponent('/dashboard.html?checkout=' + plan);
       return;
     }
     const data = await res.json();
