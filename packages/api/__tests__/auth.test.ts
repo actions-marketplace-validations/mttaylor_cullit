@@ -1,6 +1,8 @@
-import { describe, it, expect } from 'vitest';
-import { createJWT, verifyJWT, getEffectiveTier, getTrialStatus } from '../src/auth.js';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterAll } from 'vitest';
+import { createJWT, verifyJWT, getEffectiveTier, getTrialStatus, handleLicenseValidate, loadAuthStore } from '../src/auth.js';
 import { createHmac } from 'crypto';
+import { writeFileSync, existsSync, readFileSync, unlinkSync } from 'fs';
+import type { IncomingMessage, ServerResponse } from 'http';
 
 // Helper to craft arbitrary JWTs for security testing
 function craftJWT(header: object, payload: object, secret = process.env['CULLIT_JWT_SECRET'] || ''): string {
@@ -131,5 +133,154 @@ describe('Auth Module — JWT Security Hardening', () => {
     expect(typeof payload.iat).toBe('number');
     expect(typeof payload.exp).toBe('number');
     expect(payload.exp).toBeGreaterThan(payload.iat);
+  });
+});
+
+// --- handleLicenseValidate tests ---
+
+const STORE_PATH = './auth-store.json';
+
+function mockReqRes(authHeader?: string) {
+  const req = { headers: { ...(authHeader ? { authorization: authHeader } : {}) } } as unknown as IncomingMessage;
+  const res = {} as ServerResponse;
+  let captured: { status: number; body: any } | null = null;
+  const jsonFn = (_r: ServerResponse, status: number, body: unknown) => { captured = { status, body }; };
+  return { req, res, jsonFn, getCaptured: () => captured };
+}
+
+describe('handleLicenseValidate', () => {
+  let originalStore: string | null = null;
+
+  beforeAll(() => {
+    originalStore = existsSync(STORE_PATH) ? readFileSync(STORE_PATH, 'utf-8') : null;
+  });
+
+  afterAll(() => {
+    if (originalStore !== null) writeFileSync(STORE_PATH, originalStore);
+    else if (existsSync(STORE_PATH)) unlinkSync(STORE_PATH);
+  });
+
+  beforeEach(() => {
+    const now = new Date().toISOString();
+    const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const expiredTrialEnd = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    writeFileSync(STORE_PATH, JSON.stringify({
+      users: {
+        'free-user': {
+          id: 'free-user', login: 'free@test.com', name: 'Free', email: 'free@test.com',
+          avatarUrl: '', tier: 'free', orgId: null, role: 'member', apiKey: 'clt_freekey',
+          trialTier: null, trialStartsAt: null, trialEndsAt: null,
+          createdAt: now, lastLoginAt: now,
+        },
+        'pro-user': {
+          id: 'pro-user', login: 'pro@test.com', name: 'Pro', email: 'pro@test.com',
+          avatarUrl: '', tier: 'pro', orgId: null, role: 'member', apiKey: 'clt_prokey',
+          trialTier: null, trialStartsAt: null, trialEndsAt: null,
+          createdAt: now, lastLoginAt: now,
+        },
+        'team-user': {
+          id: 'team-user', login: 'team@test.com', name: 'Team', email: 'team@test.com',
+          avatarUrl: '', tier: 'team', orgId: null, role: 'member', apiKey: 'clt_teamkey',
+          trialTier: null, trialStartsAt: null, trialEndsAt: null,
+          createdAt: now, lastLoginAt: now,
+        },
+        'trial-user': {
+          id: 'trial-user', login: 'trial@test.com', name: 'Trial', email: 'trial@test.com',
+          avatarUrl: '', tier: 'free', orgId: null, role: 'member', apiKey: 'clt_trialkey',
+          trialTier: 'pro', trialStartsAt: now, trialEndsAt: trialEnd,
+          createdAt: now, lastLoginAt: now,
+        },
+        'expired-trial': {
+          id: 'expired-trial', login: 'expired@test.com', name: 'Expired', email: 'expired@test.com',
+          avatarUrl: '', tier: 'free', orgId: null, role: 'member', apiKey: 'clt_expiredkey',
+          trialTier: 'pro', trialStartsAt: now, trialEndsAt: expiredTrialEnd,
+          createdAt: now, lastLoginAt: now,
+        },
+      },
+      orgs: {},
+      apiKeyIndex: {
+        'clt_freekey': 'free-user',
+        'clt_prokey': 'pro-user',
+        'clt_teamkey': 'team-user',
+        'clt_trialkey': 'trial-user',
+        'clt_expiredkey': 'expired-trial',
+      },
+    }));
+    loadAuthStore();
+  });
+
+  it('returns 401 when no Authorization header is provided', async () => {
+    const { req, res, jsonFn, getCaptured } = mockReqRes();
+    await handleLicenseValidate(req, res, jsonFn);
+    const c = getCaptured()!;
+    expect(c.status).toBe(401);
+    expect(c.body.valid).toBe(false);
+    expect(c.body.tier).toBe('free');
+    expect(c.body.message).toMatch(/missing|invalid/i);
+  });
+
+  it('returns 401 when Authorization header has wrong prefix', async () => {
+    const { req, res, jsonFn, getCaptured } = mockReqRes('Basic abc123');
+    await handleLicenseValidate(req, res, jsonFn);
+    const c = getCaptured()!;
+    expect(c.status).toBe(401);
+    expect(c.body.valid).toBe(false);
+  });
+
+  it('returns 401 when Bearer token does not start with clt_', async () => {
+    const { req, res, jsonFn, getCaptured } = mockReqRes('Bearer sk_live_abc');
+    await handleLicenseValidate(req, res, jsonFn);
+    const c = getCaptured()!;
+    expect(c.status).toBe(401);
+    expect(c.body.valid).toBe(false);
+  });
+
+  it('returns 401 when API key is not found in the store', async () => {
+    const { req, res, jsonFn, getCaptured } = mockReqRes('Bearer clt_doesnotexist');
+    await handleLicenseValidate(req, res, jsonFn);
+    const c = getCaptured()!;
+    expect(c.status).toBe(401);
+    expect(c.body.valid).toBe(false);
+    expect(c.body.message).toMatch(/invalid/i);
+  });
+
+  it('returns valid:true with free tier for a free user', async () => {
+    const { req, res, jsonFn, getCaptured } = mockReqRes('Bearer clt_freekey');
+    await handleLicenseValidate(req, res, jsonFn);
+    const c = getCaptured()!;
+    expect(c.status).toBe(200);
+    expect(c.body).toEqual({ valid: true, tier: 'free' });
+  });
+
+  it('returns valid:true with pro tier for a pro user', async () => {
+    const { req, res, jsonFn, getCaptured } = mockReqRes('Bearer clt_prokey');
+    await handleLicenseValidate(req, res, jsonFn);
+    const c = getCaptured()!;
+    expect(c.status).toBe(200);
+    expect(c.body).toEqual({ valid: true, tier: 'pro' });
+  });
+
+  it('returns valid:true with team tier for a team user', async () => {
+    const { req, res, jsonFn, getCaptured } = mockReqRes('Bearer clt_teamkey');
+    await handleLicenseValidate(req, res, jsonFn);
+    const c = getCaptured()!;
+    expect(c.status).toBe(200);
+    expect(c.body).toEqual({ valid: true, tier: 'team' });
+  });
+
+  it('returns trial tier when user has an active trial', async () => {
+    const { req, res, jsonFn, getCaptured } = mockReqRes('Bearer clt_trialkey');
+    await handleLicenseValidate(req, res, jsonFn);
+    const c = getCaptured()!;
+    expect(c.status).toBe(200);
+    expect(c.body).toEqual({ valid: true, tier: 'pro' });
+  });
+
+  it('returns free tier when trial has expired', async () => {
+    const { req, res, jsonFn, getCaptured } = mockReqRes('Bearer clt_expiredkey');
+    await handleLicenseValidate(req, res, jsonFn);
+    const c = getCaptured()!;
+    expect(c.status).toBe(200);
+    expect(c.body).toEqual({ valid: true, tier: 'free' });
   });
 });
