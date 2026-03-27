@@ -44,7 +44,7 @@ test.describe('pricing page checkout flow', () => {
     expect(page.url()).toContain('checkout.stripe.test');
   });
 
-  test('401 response from checkout redirects to dashboard', async ({ page }) => {
+  test('401 response from checkout redirects to auth login with returnTo', async ({ page }) => {
     await page.route('**/v1/billing/checkout', async (route: Route) => {
       if (route.request().method() === 'POST') {
         return route.fulfill({
@@ -58,13 +58,23 @@ test.describe('pricing page checkout flow', () => {
 
     await page.route('**/v1/events', (route: Route) => route.fulfill({ status: 200, body: '{}' }));
 
+    // Intercept the auth/login navigation before it actually hits the network
+    let capturedUrl = '';
+    await page.route('**/auth/login**', async (route: Route) => {
+      capturedUrl = route.request().url();
+      // Fulfill with a dummy response so it doesn't ERR_CONNECTION_REFUSED
+      return route.fulfill({ status: 200, contentType: 'text/html', body: '<html>login</html>' });
+    });
+
     await page.goto('/pricing.html');
-
-    const navigationPromise = page.waitForURL('**/dashboard.html**');
     await page.locator('a.plan-btn', { hasText: 'Start Pro' }).click();
-    await navigationPromise;
 
-    expect(page.url()).toContain('dashboard.html');
+    // Wait for the auth login navigation to be intercepted
+    await page.waitForURL('**/auth/login**');
+
+    expect(capturedUrl).toContain('/auth/login');
+    expect(capturedUrl).toContain('returnTo');
+    expect(capturedUrl).toContain('dashboard.html');
   });
 
   test('API error shows alert with error message', async ({ page }) => {
