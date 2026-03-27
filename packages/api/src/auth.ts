@@ -698,7 +698,7 @@ export function handleAuthLogout(req: IncomingMessage, res: ServerResponse, json
       revokeToken(sessionToken, jwt.sub).catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to revoke token'); });
     }
   }
-  res.setHeader('Set-Cookie', `${SESSION_COOKIE_NAME}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${COOKIE_SECURE}`);
+  res.setHeader('Set-Cookie', `${SESSION_COOKIE_NAME}=${COOKIE_ATTRS}; Max-Age=0`);
   jsonFn(res, 200, { ok: true });
 }
 
@@ -747,7 +747,7 @@ export async function handleDeleteAccount(req: IncomingMessage, res: ServerRespo
   }
 
   // Clear session cookie
-  res.setHeader('Set-Cookie', `${SESSION_COOKIE_NAME}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${COOKIE_SECURE}`);
+  res.setHeader('Set-Cookie', `${SESSION_COOKIE_NAME}=${COOKIE_ATTRS}; Max-Age=0`);
   log.info({ userId: user.id }, 'Account deleted (GDPR)');
   jsonFn(res, 200, { ok: true, message: 'Account and all associated data have been deleted.' });
 }
