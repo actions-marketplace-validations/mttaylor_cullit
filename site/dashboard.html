@@ -1311,6 +1311,22 @@
           </div>
         </div>
       </div>
+      <div class="panel" style="margin-top:1rem" id="settingsGithubApp">
+        <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
+          <span>&#128025; GitHub App</span>
+          <button class="btn-small" onclick="loadGithubInstallations()" style="font-size:0.7rem">&#x21bb; Refresh</button>
+        </div>
+        <div class="panel-body">
+          <p style="font-size:0.8rem;color:var(--text-dim);margin:0 0 0.75rem">Connect the Cullit GitHub App to auto-generate release notes when you push tags or publish releases.</p>
+          <div id="githubInstallations">
+            <div class="empty-state" style="min-height:60px"><p>Loading&hellip;</p></div>
+          </div>
+          <div style="margin-top:0.75rem;border-top:1px solid var(--border);padding-top:0.75rem">
+            <a href="https://github.com/apps/cullit" target="_blank" rel="noopener noreferrer" class="btn-small" style="font-size:0.7rem;text-decoration:none;background:var(--accent);color:#000;border:none">Install GitHub App</a>
+            <span style="font-size:0.72rem;color:var(--text-dim);margin-left:0.5rem">Opens GitHub to install the app on your account or org.</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- CHANGELOG TAB -->
@@ -2096,6 +2112,11 @@ async function inviteMember() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to invite member');
     document.getElementById('inviteUserId').value = '';
+    if (data.emailSent === false) {
+      showToast('Invite created but email could not be sent \u2014 share the invite link manually');
+    } else {
+      showToast('Invite sent');
+    }
     loadTeam();
   } catch (err) {
     showToast(err.message);
@@ -2342,6 +2363,7 @@ async function loadSettingsTab() {
   const isTeam = userTier === 'team' || userTier === 'enterprise';
   document.getElementById('settingsTeamGate').style.display = isTeam ? 'none' : 'block';
   document.getElementById('projectSettingsForm').parentElement.parentElement.style.display = isTeam ? 'block' : 'none';
+  loadGithubInstallations();
   if (!isTeam) return;
 
   const select = document.getElementById('settingsProjectSelect');
@@ -2367,6 +2389,47 @@ async function loadSettingsTab() {
     } catch (e) {}
   }
   loadProjectSettings();
+}
+
+async function loadGithubInstallations() {
+  const container = document.getElementById('githubInstallations');
+  try {
+    const res = await apiFetch('/v1/github/installations');
+    const data = await res.json();
+    if (!res.ok || !data.installations || data.installations.length === 0) {
+      container.innerHTML = '<div class="empty-state" style="min-height:60px"><p>No GitHub App installations linked to your account.</p></div>';
+      return;
+    }
+    container.innerHTML = data.installations.map(inst => {
+      const repos = (inst.repos || []).slice(0, 10);
+      const repoList = repos.length ? repos.map(r => '<span style="display:inline-block;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:0.15rem 0.4rem;font-size:0.72rem;margin:0.15rem 0.1rem">' + escapeHtml(r) + '</span>').join(' ') : '<span style="font-size:0.75rem;color:var(--text-dim)">No repos</span>';
+      return '<div style="border:1px solid var(--border);border-radius:8px;padding:0.75rem;margin-bottom:0.5rem">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">' +
+        '<strong style="font-size:0.85rem;color:var(--text-bright)">' + escapeHtml(inst.github_login) + '</strong>' +
+        '<button class="btn-small" onclick="disconnectGithub(' + inst.installation_id + ')" style="font-size:0.65rem;background:transparent;border:1px solid var(--danger,#e74c3c);color:var(--danger,#e74c3c)">Disconnect</button>' +
+        '</div>' +
+        '<div>' + repoList + '</div>' +
+        '</div>';
+    }).join('');
+  } catch {
+    container.innerHTML = '<div class="empty-state" style="min-height:60px"><p>Could not load installations.</p></div>';
+  }
+}
+
+async function disconnectGithub(installationId) {
+  if (!confirm('Disconnect this GitHub installation? Auto-generated release notes will stop for these repos.')) return;
+  try {
+    const res = await apiFetch('/v1/github/disconnect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ installationId }),
+    });
+    if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed'); }
+    showToast('GitHub installation disconnected');
+    loadGithubInstallations();
+  } catch (err) {
+    showToast(err.message);
+  }
 }
 
 async function loadProjectSettings() {

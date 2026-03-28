@@ -33,10 +33,12 @@ import { sendPaymentFailed, sendSubscriptionConfirmed } from './email.js';
 
 const STRIPE_SECRET_KEY = process.env['STRIPE_SECRET_KEY'] || '';
 const STRIPE_WEBHOOK_SECRET = process.env['STRIPE_WEBHOOK_SECRET'] || '';
+const STRIPE_BASIC_PRICE_ID = process.env['STRIPE_BASIC_PRICE_ID'] || '';
 const STRIPE_PRO_PRICE_ID = process.env['STRIPE_PRO_PRICE_ID'] || '';
 const STRIPE_TEAM_PRICE_ID = process.env['STRIPE_TEAM_PRICE_ID'] || '';
 
 if (STRIPE_SECRET_KEY) {
+  if (!STRIPE_BASIC_PRICE_ID) log.warn('STRIPE_BASIC_PRICE_ID not set — Basic checkout will fail');
   if (!STRIPE_PRO_PRICE_ID) log.warn('STRIPE_PRO_PRICE_ID not set — Pro checkout will fail');
   if (!STRIPE_TEAM_PRICE_ID) log.warn('STRIPE_TEAM_PRICE_ID not set — Team checkout will fail');
 }
@@ -210,12 +212,14 @@ function verifyWebhookSignature(payload: string, sigHeader: string): boolean {
 // --- Plan mapping ---
 
 function priceToPlan(priceId: string): string {
+  if (priceId === STRIPE_BASIC_PRICE_ID) return 'basic';
   if (priceId === STRIPE_PRO_PRICE_ID) return 'pro';
   if (priceId === STRIPE_TEAM_PRICE_ID) return 'team';
   return 'free';
 }
 
 function planToTier(plan: string): string {
+  if (plan === 'basic') return 'basic';
   if (plan === 'pro') return 'pro';
   if (plan === 'team') return 'team';
   return 'free';
@@ -247,7 +251,7 @@ function buildSubscriptionRecord(
 
 export async function handleCheckout(
   userId: string,
-  plan: 'pro' | 'team',
+  plan: 'basic' | 'pro' | 'team',
   jsonFn: (res: ServerResponse, status: number, body: unknown) => void,
   res: ServerResponse,
 ): Promise<void> {
@@ -262,7 +266,7 @@ export async function handleCheckout(
     return;
   }
 
-  const priceId = plan === 'team' ? STRIPE_TEAM_PRICE_ID : STRIPE_PRO_PRICE_ID;
+  const priceId = plan === 'team' ? STRIPE_TEAM_PRICE_ID : plan === 'basic' ? STRIPE_BASIC_PRICE_ID : STRIPE_PRO_PRICE_ID;
   if (!priceId) {
     jsonFn(res, 503, { error: `Price not configured for ${plan} plan` });
     return;

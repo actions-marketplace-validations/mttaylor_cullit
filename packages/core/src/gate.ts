@@ -10,7 +10,7 @@
 
 import { fetchWithTimeout } from './fetch';
 
-export type LicenseTier = 'free' | 'pro' | 'team' | 'enterprise';
+export type LicenseTier = 'free' | 'basic' | 'pro' | 'team' | 'enterprise';
 
 export interface LicenseStatus {
   tier: LicenseTier;
@@ -96,7 +96,7 @@ export async function validateLicense(): Promise<LicenseStatus> {
     if (res.ok) {
       const data = await res.json() as { valid?: boolean; tier?: string; message?: string };
       const status: LicenseStatus = {
-        tier: (data.tier === 'team' || data.tier === 'enterprise') ? data.tier : data.tier === 'pro' ? 'pro' : 'free',
+        tier: (data.tier === 'team' || data.tier === 'enterprise') ? data.tier : data.tier === 'pro' ? 'pro' : data.tier === 'basic' ? 'basic' : 'free',
         valid: data.valid !== false,
         message: data.message,
       };
@@ -167,6 +167,7 @@ export interface UsageLimits {
 
 const TIER_LIMITS: Record<string, UsageLimits> = {
   free: { generationsPerMonth: 5, maxProjects: 3 },
+  basic: { generationsPerMonth: 50, maxProjects: 10 },
   pro: { generationsPerMonth: 500, maxProjects: 100 },
   team: { generationsPerMonth: 2000, maxProjects: 250 },
   enterprise: { generationsPerMonth: Infinity, maxProjects: Infinity },
@@ -198,7 +199,7 @@ const FEATURE_TIERS: Record<TeamFeature, Set<string>> = {
   approvals:          new Set(['team', 'enterprise']),
   shared_history:     new Set(['team', 'enterprise']),
   project_templates:  new Set(['team', 'enterprise']),
-  hosted_changelog:   new Set(['pro', 'team', 'enterprise']),
+  hosted_changelog:   new Set(['basic', 'pro', 'team', 'enterprise']),
   branded_widget:     new Set(['team', 'enterprise']),
   team_publishers:    new Set(['team', 'enterprise']),
   org_settings:       new Set(['team', 'enterprise']),

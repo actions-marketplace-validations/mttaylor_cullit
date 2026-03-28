@@ -156,14 +156,13 @@ const RATE_LIMIT = parseInt(process.env['RATE_LIMIT'] || '30', 10); // requests 
 const RATE_WINDOW = 60_000; // 1 minute
 
 // --- Rate limiter (per-IP sliding window) ---
-// NOTE: In-memory, per-process only. Not shared across instances.
-// For multi-instance deployments, swap createRateLimiter() with a Redis-backed implementation.
+// Automatically uses Redis backend when REDIS_URL is set.
 
 const rateLimiter = createRateLimiter({ limit: RATE_LIMIT, windowMs: RATE_WINDOW });
 
-function checkRateLimit(req: IncomingMessage, res: ServerResponse): boolean {
+async function checkRateLimit(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
   const ip = req.socket.remoteAddress || 'unknown';
-  const result = rateLimiter.check(ip);
+  const result = await rateLimiter.check(ip);
 
   res.setHeader('X-RateLimit-Limit', RATE_LIMIT);
   res.setHeader('X-RateLimit-Remaining', result.remaining);
@@ -766,7 +765,7 @@ const server = createServer(async (req, res: CorsResponse) => {
   try {
     // --- Rate limit all non-system routes ---
     if (path !== '/health' && path !== '/healthz' && path !== '/openapi.json' && path !== '/metrics' && path !== '/v1/billing/webhook') {
-      if (!checkRateLimit(req, res)) return;
+      if (!(await checkRateLimit(req, res))) return;
     }
 
     // --- Auth routes ---
@@ -833,7 +832,7 @@ const server = createServer(async (req, res: CorsResponse) => {
       if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
       const body = await readJsonBody(req, res) as { plan?: string } | null;
       if (!body) return;
-      const plan = body.plan === 'team' ? 'team' : 'pro';
+      const plan = body.plan === 'team' ? 'team' : body.plan === 'basic' ? 'basic' : 'pro';
       await handleCheckout(user.id, plan, json, res);
     } else if (path === '/v1/billing/portal' && req.method === 'POST') {
       const user = await resolveUser(req);
@@ -846,6 +845,22 @@ const server = createServer(async (req, res: CorsResponse) => {
     } else if (path === '/v1/billing/webhook' && req.method === 'POST') {
       const raw = await readBody(req);
       await handleStripeWebhook(req, raw, json, res);
+
+    // --- GitHub App user-facing routes ---
+    } else if (path === '/v1/github/installations' && req.method === 'GET') {
+      const user = await resolveUser(req);
+      if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+      if (!sql) { json(res, 200, { installations: [] }); return; }
+      const rows = await sql`SELECT installation_id, github_login, repos, created_at FROM github_installations WHERE user_id = ${user.id}`;
+      json(res, 200, { installations: rows });
+    } else if (path === '/v1/github/disconnect' && req.method === 'POST') {
+      const user = await resolveUser(req);
+      if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+      const body = await readJsonBody(req, res) as { installationId?: number } | null;
+      if (!body?.installationId) { json(res, 400, { error: 'installationId is required' }); return; }
+      if (!sql) { json(res, 503, { error: 'Database not configured' }); return; }
+      await sql`DELETE FROM github_installations WHERE installation_id = ${body.installationId} AND user_id = ${user.id}`;
+      json(res, 200, { disconnected: true });
 
     // --- Team / Org routes ---
     } else if (path === '/v1/org' && req.method === 'GET') {

@@ -138,7 +138,7 @@
 
   .pricing-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 1.5rem;
     margin-bottom: 4rem;
   }
@@ -356,6 +356,10 @@
   .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
   /* RESPONSIVE */
+  @media (max-width: 1100px) {
+    .pricing-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+
   @media (max-width: 900px) {
     .pricing-grid { grid-template-columns: repeat(2, 1fr); }
   }
@@ -410,7 +414,7 @@
 
   <section style="max-width:900px;margin:0 auto 2rem;padding:1rem 1.25rem;border:1px solid var(--border);border-radius:10px;background:var(--bg-card)">
     <h2 style="font-family:'Chakra Petch',sans-serif;font-size:1.2rem;margin-bottom:0.5rem">Upgrade in 4 steps</h2>
-    <ol style="margin:0;padding-left:1.2rem;color:var(--text-dim);line-height:1.7">      <li>Sign in with <strong>GitHub</strong> &mdash; no email or password required.</li>      <li>Choose Pro or Team below and complete checkout.</li>
+    <ol style="margin:0;padding-left:1.2rem;color:var(--text-dim);line-height:1.7">      <li>Sign in with <strong>GitHub</strong> &mdash; no email or password required.</li>      <li>Choose Basic, Pro, or Team below and complete checkout.</li>
       <li>Install <code style="background:#0d0d14;padding:0.1rem 0.35rem;border-radius:4px">@cullit/licensed</code> from your private registry.</li>
       <li>Set your <code style="background:#0d0d14;padding:0.1rem 0.35rem;border-radius:4px">CULLIT_API_KEY</code> and run your first generation.</li>
     </ol>
@@ -449,6 +453,24 @@
         <li><span class="dash">&mdash;</span> Jira / Linear enrichment</li>
       </ul>
       <a href="docs.html" class="plan-btn plan-btn-outline">Get Started</a>
+    </div>
+
+    <!-- BASIC -->
+    <div class="pricing-card">
+      <div class="plan-name">Basic</div>
+      <div class="plan-price">$4 <span class="period">/ mo</span></div>
+      <p class="plan-desc">AI generation with a single provider &mdash; ideal for solo devs.</p>
+      <ul class="plan-features">
+        <li><span class="check">&#10003;</span> 50 generations / month</li>
+        <li><span class="check">&#10003;</span> 10 projects</li>
+        <li><span class="check">&#10003;</span> All free features</li>
+        <li><span class="check">&#10003;</span> AI generation (BYOK)</li>
+        <li><span class="check">&#10003;</span> 1 AI provider</li>
+        <li><span class="check">&#10003;</span> Hosted changelog</li>
+        <li><span class="dash">&mdash;</span> Jira / Linear enrichment</li>
+        <li><span class="dash">&mdash;</span> Audience &amp; tone control</li>
+      </ul>
+      <a href="mailto:sales@cullit.io?subject=Cullit%20Basic" class="plan-btn plan-btn-outline" onclick="startCheckout('basic', event)">Start Basic</a>
     </div>
 
     <!-- PRO -->

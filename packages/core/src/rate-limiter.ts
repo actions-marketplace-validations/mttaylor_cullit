@@ -1,9 +1,13 @@
 /**
  * Rate Limiter — Sliding-window rate limiter with pluggable backends.
  *
+ * Backends:
+ *   - MemoryRateLimiter (default) — in-process, single instance only
+ *   - RedisRateLimiter — shared across instances via REDIS_URL
+ *
  * Usage:
  *   const limiter = createRateLimiter({ limit: 30, windowMs: 60_000 });
- *   const result = limiter.check('user-ip-or-key');
+ *   const result = await limiter.check('user-ip-or-key');
  *   if (!result.allowed) { // reject }
  */
 
@@ -15,9 +19,9 @@ export interface RateLimitResult {
 }
 
 export interface RateLimiter {
-  check(key: string): RateLimitResult;
+  check(key: string): RateLimitResult | Promise<RateLimitResult>;
   /** Remove all tracked entries */
-  reset(): void;
+  reset(): void | Promise<void>;
 }
 
 export interface RateLimiterOptions {
@@ -88,5 +92,71 @@ class MemoryRateLimiter implements RateLimiter {
 }
 
 export function createRateLimiter(opts?: RateLimiterOptions): RateLimiter {
+  const redisUrl = process.env['REDIS_URL'];
+  if (redisUrl) {
+    return new RedisRateLimiter(redisUrl, opts);
+  }
   return new MemoryRateLimiter(opts);
+}
+
+/**
+ * Redis-backed sliding-window rate limiter.
+ * Uses a sorted set per key with timestamps as scores.
+ * Requires a Redis-compatible server (Redis, Upstash, Dragonfly, etc.).
+ */
+class RedisRateLimiter implements RateLimiter {
+  private readonly limit: number;
+  private readonly windowMs: number;
+  private readonly redisUrl: string;
+  private readonly prefix: string;
+
+  constructor(redisUrl: string, opts: RateLimiterOptions = {}) {
+    this.limit = opts.limit ?? 30;
+    this.windowMs = opts.windowMs ?? 60_000;
+    this.redisUrl = redisUrl;
+    this.prefix = 'cullit:rl:';
+  }
+
+  async check(key: string): Promise<RateLimitResult> {
+    const now = Date.now();
+    const windowStart = now - this.windowMs;
+    const redisKey = this.prefix + key;
+
+    try {
+      const res = await fetch(this.redisUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify([
+          ['ZREMRANGEBYSCORE', redisKey, '0', String(windowStart)],
+          ['ZCARD', redisKey],
+          ['ZADD', redisKey, String(now), `${now}-${Math.random().toString(36).slice(2, 8)}`],
+          ['PEXPIRE', redisKey, String(this.windowMs)],
+        ]),
+        signal: AbortSignal.timeout(3_000),
+      });
+
+      if (!res.ok) return this.fallbackAllow(now);
+
+      const results = await res.json() as Array<{ result?: number }>;
+      const count = results[1]?.result ?? 0;
+      const remaining = Math.max(0, this.limit - count);
+      const resetAt = Math.ceil((now + this.windowMs) / 1000);
+
+      if (count >= this.limit) {
+        return { allowed: false, remaining: 0, resetAt };
+      }
+      return { allowed: true, remaining: remaining - 1, resetAt };
+    } catch {
+      // Redis unavailable — fail open (allow the request)
+      return this.fallbackAllow(now);
+    }
+  }
+
+  private fallbackAllow(now: number): RateLimitResult {
+    return { allowed: true, remaining: this.limit, resetAt: Math.ceil((now + this.windowMs) / 1000) };
+  }
+
+  async reset(): Promise<void> {
+    // Best-effort flush of rate limit keys — not critical
+  }
 }

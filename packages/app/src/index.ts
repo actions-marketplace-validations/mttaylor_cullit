@@ -52,9 +52,9 @@ const CULLIT_APP_SECRET = process.env['CULLIT_APP_SECRET'] || ''; // shared secr
 // --- Rate limiter (per-IP sliding window) ---
 const rateLimiter = createRateLimiter({ limit: RATE_LIMIT, windowMs: RATE_WINDOW });
 
-function checkRateLimit(req: IncomingMessage, res: ServerResponse): boolean {
+async function checkRateLimit(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
   const ip = req.socket.remoteAddress || 'unknown';
-  const result = rateLimiter.check(ip);
+  const result = await rateLimiter.check(ip);
 
   if (!result.allowed) {
     json(res, 429, { error: 'Too many requests. Try again later.' });
@@ -522,7 +522,7 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  if (!checkRateLimit(req, res)) return;
+  if (!(await checkRateLimit(req, res))) return;
 
   metrics.webhooksReceived++;
 

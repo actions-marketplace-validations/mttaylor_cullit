@@ -384,6 +384,7 @@ jira:
 | `CULLIT_API_TOKEN` | Optional bearer token for API auth |
 | `ALLOWED_ORIGINS` | API CORS allowlist |
 | `DATABASE_URL` | Enable PostgreSQL mode for API/dashboard |
+| `REDIS_URL` | Redis URL for shared rate limiting across instances |
 | `WORKOS_CLIENT_ID` | Dashboard login (WorkOS AuthKit) |
 | `WORKOS_API_KEY` | Dashboard login (WorkOS API key) |
 | `CULLIT_JWT_SECRET` | Dashboard session signing secret |
@@ -391,6 +392,7 @@ jira:
 | `CULLIT_TRIAL_DAYS` | Trial duration override (default 14) |
 | `STRIPE_SECRET_KEY` | Stripe billing API key |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature verification |
+| `STRIPE_BASIC_PRICE_ID` | Stripe price id for Basic plan |
 | `STRIPE_PRICE_PRO_MONTHLY` | Stripe price id for Pro plan |
 | `STRIPE_PRICE_TEAM_MONTHLY` | Stripe price id for Team plan |
 | `RESEND_API_KEY` | Transactional email delivery |
@@ -459,6 +461,51 @@ Cullit includes a hosted dashboard experience with authentication, billing, tria
 ## Contributing
 
 PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Troubleshooting
+
+### `CULLIT_API_KEY` not recognized
+
+- Ensure the key starts with `clt_` and is at least 32 characters
+- Check for trailing whitespace: `echo -n "$CULLIT_API_KEY" | wc -c`
+- In GitHub Actions, set it as a repository secret and reference with `${{ secrets.CULLIT_API_KEY }}`
+
+### `provider none` produces limited output
+
+The `none` provider uses a built-in template engine that groups commits by category. For AI-synthesized notes, use `--provider anthropic` (or `openai`, `gemini`, `ollama`) with the corresponding API key set.
+
+### API returns 429 Too Many Requests
+
+Default rate limit is 30 requests/minute per IP. Increase with `RATE_LIMIT=100` environment variable. For multi-instance deployments, set `REDIS_URL` to share rate limit state across processes.
+
+### Dashboard login fails
+
+- Verify `WORKOS_CLIENT_ID` and `WORKOS_API_KEY` are set
+- Check that `CULLIT_BASE_URL` matches the URL your users access (including port)
+- OAuth callback URL in WorkOS must match `{CULLIT_BASE_URL}/auth/callback`
+
+### Database features are disabled
+
+Set `DATABASE_URL` to a PostgreSQL connection string. Without it, the API uses ephemeral file-backed stores. Migrations run automatically on startup.
+
+### Docker build fails
+
+- Ensure `pnpm-lock.yaml` exists (run `pnpm install` first)
+- The Dockerfile expects Node.js 22+. Check your base image.
+- For monorepo issues, ensure all workspace packages are present
+
+### GitHub App not generating release notes
+
+- Confirm the app is installed on the target repository
+- Check that `GITHUB_APP_PRIVATE_KEY` is base64-encoded or raw PEM
+- Verify `GITHUB_WEBHOOK_SECRET` matches the value in GitHub App settings
+- Check the Settings tab in the dashboard to see linked installations
+
+### Generation returns empty or no changes
+
+- Ensure `--from` and `--to` refs exist: `git tag -l` or `git log --oneline`
+- Use `--verbose` to see which commits are being processed
+- For Jira/Linear sources, verify the API token and query syntax
 
 ## Security
 
