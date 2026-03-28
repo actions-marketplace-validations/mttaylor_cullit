@@ -2591,12 +2591,20 @@ async function loadBilling() {
   const planEl = document.getElementById('plan' + planName);
   if (planEl) planEl.classList.add('current');
 
-  // Hide upgrade button for current plan
-  document.querySelectorAll('.plan-upgrade-btn').forEach(btn => btn.style.display = '');
-  if (planEl) {
-    const btn = planEl.querySelector('.plan-upgrade-btn');
-    if (btn) btn.style.display = 'none';
-  }
+  // Hide upgrade button for current plan and lower tiers (no downgrade via UI)
+  const tierRank = { free: 0, pro: 1, team: 2, enterprise: 3 };
+  const currentRank = tierRank[tier] || 0;
+  document.querySelectorAll('.billing-plan-option').forEach(function(el) {
+    const btn = el.querySelector('.plan-upgrade-btn');
+    if (!btn) return;
+    const cardTier = (el.id || '').replace('plan', '').toLowerCase();
+    const cardRank = tierRank[cardTier] || 0;
+    if (cardRank <= currentRank) {
+      btn.style.display = 'none';
+    } else {
+      btn.style.display = '';
+    }
+  });
 
   // Show tier-appropriate support section
   ['Free', 'Pro', 'Team', 'Enterprise'].forEach(function(t) {
