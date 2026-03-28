@@ -268,6 +268,36 @@
     color: var(--accent);
   }
 
+  /* Team selector dropdown */
+  .team-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--bg);
+    color: var(--accent);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.45rem 2rem 0.45rem 0.75rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 0.5rem;
+    width: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235eead4' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    transition: border-color 0.2s;
+  }
+  .team-select:hover,
+  .team-select:focus {
+    border-color: var(--accent);
+    outline: none;
+  }
+  .team-select option {
+    background: var(--bg-card);
+    color: var(--text);
+  }
+
   /* FAQ */
   .faq-section {
     max-width: 700px;
@@ -459,14 +489,14 @@
     <div class="pricing-card">
       <div class="plan-name">Basic</div>
       <div class="plan-price">$4 <span class="period">/ mo</span></div>
-      <p class="plan-desc">AI generation for solo devs &mdash; all providers, BYOK.</p>
+      <p class="plan-desc">AI generation for solo devs &mdash; pick one provider, BYOK.</p>
       <ul class="plan-features">
         <li><span class="check">&#10003;</span> 50 generations / month</li>
         <li><span class="check">&#10003;</span> 10 projects</li>
-        <li><span class="check">&#10003;</span> All free features</li>
         <li><span class="check">&#10003;</span> AI generation (BYOK)</li>
-        <li><span class="check">&#10003;</span> All AI providers</li>
-        <li><span class="check">&#10003;</span> Hosted changelog</li>
+        <li><span class="check">&#10003;</span> 1 AI provider</li>
+        <li><span class="check">&#10003;</span> Slack, Discord &amp; GitHub publishing</li>
+        <li><span class="dash">&mdash;</span> Hosted changelog</li>
         <li><span class="dash">&mdash;</span> Jira / Linear enrichment</li>
         <li><span class="dash">&mdash;</span> Audience &amp; tone control</li>
       </ul>
@@ -486,60 +516,33 @@
         <li><span class="check">&#10003;</span> OpenAI, Anthropic, Gemini, Ollama</li>
         <li><span class="check">&#10003;</span> Jira &amp; Linear enrichment</li>
         <li><span class="check">&#10003;</span> Audience-aware AI outputs</li>
+        <li><span class="check">&#10003;</span> Hosted changelog</li>
         <li><span class="check">&#10003;</span> Styled HTML themes</li>
       </ul>
       <a href="mailto:sales@cullit.io?subject=Cullit%20Pro" class="plan-btn plan-btn-primary" onclick="startCheckout('pro', event)">Start Pro</a>
     </div>
 
-    <!-- TEAM 5 -->
-    <div class="pricing-card">
-      <div class="plan-name">Team 5</div>
-      <div class="plan-price">$44.99 <span class="period">/ mo</span></div>
-      <p class="plan-desc">5 seats &mdash; shared AI release workflow for small teams.</p>
-      <ul class="plan-features">
-        <li><span class="check">&#10003;</span> 5 API keys / seats</li>
+    <!-- TEAM -->
+    <div class="pricing-card" id="teamCard">
+      <div class="plan-name">Team</div>
+      <select id="teamSelect" class="team-select" onchange="updateTeamCard()">
+        <option value="team-5">5 seats</option>
+        <option value="team-10">10 seats</option>
+        <option value="team-25">25 seats</option>
+      </select>
+      <div class="plan-price" id="teamPrice">$44.99 <span class="period">/ mo</span></div>
+      <p class="plan-desc" id="teamDesc">5 seats &mdash; shared AI release workflow for small teams.</p>
+      <ul class="plan-features" id="teamFeatures">
+        <li><span class="check">&#10003;</span> <span id="teamSeats">5</span> API keys / seats</li>
         <li><span class="check">&#10003;</span> 2,000 generations / month</li>
         <li><span class="check">&#10003;</span> 250 projects</li>
         <li><span class="check">&#10003;</span> All Pro features</li>
-        <li><span class="check">&#10003;</span> Multi-repo collectors</li>
-        <li><span class="check">&#10003;</span> Team management dashboard</li>
+        <li><span class="check">&#10003;</span> <span id="teamExtra1">Multi-repo collectors</span></li>
+        <li><span class="check">&#10003;</span> <span id="teamExtra2">Team management dashboard</span></li>
+        <li id="teamExtra3" style="display:none"><span class="check">&#10003;</span> <span></span></li>
+        <li id="teamExtra4" style="display:none"><span class="check">&#10003;</span> <span></span></li>
       </ul>
-      <a href="mailto:sales@cullit.io?subject=Cullit%20Team%205" class="plan-btn plan-btn-outline" onclick="startCheckout('team-5', event)">Start Team 5</a>
-    </div>
-
-    <!-- TEAM 10 -->
-    <div class="pricing-card">
-      <div class="plan-name">Team 10</div>
-      <div class="plan-price">$89 <span class="period">/ mo</span></div>
-      <p class="plan-desc">10 seats &mdash; for growing teams shipping across multiple repos.</p>
-      <ul class="plan-features">
-        <li><span class="check">&#10003;</span> 10 API keys / seats</li>
-        <li><span class="check">&#10003;</span> 2,000 generations / month</li>
-        <li><span class="check">&#10003;</span> 250 projects</li>
-        <li><span class="check">&#10003;</span> All Pro features</li>
-        <li><span class="check">&#10003;</span> GitLab &amp; Bitbucket</li>
-        <li><span class="check">&#10003;</span> Confluence &amp; Notion</li>
-        <li><span class="check">&#10003;</span> Priority support</li>
-      </ul>
-      <a href="mailto:sales@cullit.io?subject=Cullit%20Team%2010" class="plan-btn plan-btn-outline" onclick="startCheckout('team-10', event)">Start Team 10</a>
-    </div>
-
-    <!-- TEAM 25 -->
-    <div class="pricing-card">
-      <div class="plan-name">Team 25</div>
-      <div class="plan-price">$209 <span class="period">/ mo</span></div>
-      <p class="plan-desc">25 seats &mdash; full-scale team release operations.</p>
-      <ul class="plan-features">
-        <li><span class="check">&#10003;</span> 25 API keys / seats</li>
-        <li><span class="check">&#10003;</span> 2,000 generations / month</li>
-        <li><span class="check">&#10003;</span> 250 projects</li>
-        <li><span class="check">&#10003;</span> All Pro features</li>
-        <li><span class="check">&#10003;</span> GitLab &amp; Bitbucket</li>
-        <li><span class="check">&#10003;</span> Confluence &amp; Notion</li>
-        <li><span class="check">&#10003;</span> Priority support</li>
-        <li><span class="check">&#10003;</span> Team usage dashboard</li>
-      </ul>
-      <a href="mailto:sales@cullit.io?subject=Cullit%20Team%2025" class="plan-btn plan-btn-outline" onclick="startCheckout('team-25', event)">Start Team 25</a>
+      <a id="teamCta" href="mailto:sales@cullit.io?subject=Cullit%20Team%205" class="plan-btn plan-btn-outline" onclick="startCheckout(document.getElementById('teamSelect').value, event)">Start Team</a>
     </div>
 
     <!-- ENTERPRISE -->
@@ -662,6 +665,51 @@ async function trackEvent(event, metadata = {}) {
 }
 
 trackEvent('pricing_viewed');
+
+const TEAM_PLANS = {
+  'team-5': {
+    price: '$44.99',
+    seats: '5',
+    desc: '5 seats &mdash; shared AI release workflow for small teams.',
+    extras: ['Multi-repo collectors', 'Team management dashboard'],
+    subject: 'Cullit%20Team%205',
+  },
+  'team-10': {
+    price: '$89',
+    seats: '10',
+    desc: '10 seats &mdash; multi-source collectors with priority support.',
+    extras: ['GitLab &amp; Bitbucket collectors', 'Confluence &amp; Notion publishing', 'Priority support'],
+    subject: 'Cullit%20Team%2010',
+  },
+  'team-25': {
+    price: '$209',
+    seats: '25',
+    desc: '25 seats &mdash; full platform access with team usage dashboard.',
+    extras: ['GitLab &amp; Bitbucket collectors', 'Confluence &amp; Notion publishing', 'Team usage dashboard', 'Priority support'],
+    subject: 'Cullit%20Team%2025',
+  },
+};
+
+function updateTeamCard() {
+  const sel = document.getElementById('teamSelect');
+  const plan = TEAM_PLANS[sel.value];
+  if (!plan) return;
+  document.getElementById('teamPrice').innerHTML = plan.price + ' <span class="period">/ mo</span>';
+  document.getElementById('teamDesc').innerHTML = plan.desc;
+  document.getElementById('teamSeats').textContent = plan.seats;
+  document.getElementById('teamCta').href = 'mailto:sales@cullit.io?subject=' + plan.subject;
+  for (let i = 1; i <= 4; i++) {
+    const li = document.getElementById('teamExtra' + i);
+    if (i <= plan.extras.length) {
+      li.style.display = '';
+      li.querySelector('span:last-child').innerHTML = plan.extras[i - 1];
+    } else {
+      li.style.display = 'none';
+    }
+  }
+}
+
+updateTeamCard();
 
 async function startCheckout(plan, e) {
   e.preventDefault();

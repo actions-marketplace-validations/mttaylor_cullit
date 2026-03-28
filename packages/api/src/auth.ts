@@ -27,7 +27,7 @@ import {
   dbUpdateUserOrg, dbGetOrg, dbGetOrgBySlug, dbCreateOrg, dbGetOrgMemberCount,
   dbAddOrgMember, dbRemoveOrgMember, dbGetOrgMembers,
   dbRevokeToken, dbIsTokenRevoked, dbDeleteUser,
-  dbGetTeamApiKeyByKey,
+  dbGetTeamApiKeyByKey, dbUpdatePreferredProvider,
   sql,
   type DbUser, type DbOrg,
 } from './db.js';
@@ -87,6 +87,7 @@ export interface User {
   orgId: string | null;  // null = no org membership
   role: 'owner' | 'admin' | 'member';
   apiKey: string;        // clt_<random> generated on first login
+  preferredProvider: string | null; // Basic tier: locked to one AI provider
   createdAt: string;
   lastLoginAt: string;
 }
@@ -323,6 +324,7 @@ function dbUserToUser(row: DbUser): User {
     githubUsername: row.github_username || null,
     tier: row.tier as User['tier'], orgId: row.org_id, role: row.role as User['role'],
     apiKey: row.api_key,
+    preferredProvider: row.preferred_provider || null,
     createdAt: row.created_at.toISOString(),
     lastLoginAt: row.last_login_at.toISOString(),
   };
@@ -389,6 +391,7 @@ async function createOrUpdateUser(woUser: WorkOSUser): Promise<User> {
     githubUsername,
     orgId: null, role: 'member',
     apiKey: generateApiKey(),
+    preferredProvider: null,
     createdAt: now, lastLoginAt: now,
   };
 
@@ -674,9 +677,50 @@ export async function handleAuthMe(req: IncomingMessage, res: ServerResponse, js
     orgId: user.orgId,
     role: user.role,
     apiKey: user.apiKey,
+    preferredProvider: user.preferredProvider,
     features: getFeatureGating(effectiveTier),
     createdAt: user.createdAt,
   });
+}
+
+/**
+ * Update a user's preferred AI provider (Basic tier lock).
+ */
+export async function updatePreferredProvider(userId: string, provider: string): Promise<void> {
+  if (useDb) {
+    await dbUpdatePreferredProvider(userId, provider);
+  } else {
+    const user = store.users[userId];
+    if (user) {
+      user.preferredProvider = provider;
+      saveAuthStore();
+    }
+  }
+}
+
+/**
+ * PATCH /auth/me — Update user settings (currently: preferredProvider only).
+ */
+export async function handleUpdateMe(req: IncomingMessage, res: ServerResponse, jsonFn: (r: ServerResponse, s: number, b: unknown) => void): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { jsonFn(res, 401, { error: 'Not authenticated' }); return; }
+
+  const body = await new Promise<string>((resolve) => {
+    let data = '';
+    req.on('data', (chunk: Buffer) => { data += chunk; });
+    req.on('end', () => resolve(data));
+  });
+
+  let parsed: { preferredProvider?: string };
+  try { parsed = JSON.parse(body); } catch { jsonFn(res, 400, { error: 'Invalid JSON' }); return; }
+
+  if (typeof parsed.preferredProvider !== 'string' || !parsed.preferredProvider.trim()) {
+    jsonFn(res, 400, { error: 'preferredProvider must be a non-empty string' });
+    return;
+  }
+
+  await updatePreferredProvider(user.id, parsed.preferredProvider.trim());
+  jsonFn(res, 200, { ok: true, preferredProvider: parsed.preferredProvider.trim() });
 }
 
 /**

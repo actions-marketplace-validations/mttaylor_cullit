@@ -136,7 +136,6 @@ const PLAN_DETAILS: Record<string, { label: string; features: string[] }> = {
       '50 generations/month',
       '10 projects',
       'AI generation (BYOK)',
-      'Hosted changelog',
     ],
   },
   pro: {

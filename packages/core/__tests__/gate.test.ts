@@ -271,9 +271,9 @@ describe('Gate — getFeatureGating', () => {
     expect(gating.audit_logs).toBe(false);
   });
 
-  it('returns hosted changelog enabled for basic tier', () => {
+  it('returns hosted changelog blocked for basic tier', () => {
     const gating = getFeatureGating('basic');
-    expect(gating.hosted_changelog).toBe(true);
+    expect(gating.hosted_changelog).toBe(false);
     expect(gating.drafts).toBe(false);
     expect(gating.approvals).toBe(false);
     expect(gating.sso).toBe(false);

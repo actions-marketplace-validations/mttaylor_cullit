@@ -208,7 +208,7 @@ const FEATURE_TIERS: Record<TeamFeature, Set<string>> = {
   approvals:          new Set(['team', 'enterprise']),
   shared_history:     new Set(['team', 'enterprise']),
   project_templates:  new Set(['team', 'enterprise']),
-  hosted_changelog:   new Set(['basic', 'pro', 'team', 'enterprise']),
+  hosted_changelog:   new Set(['pro', 'team', 'enterprise']),
   branded_widget:     new Set(['team', 'enterprise']),
   team_publishers:    new Set(['team', 'enterprise']),
   org_settings:       new Set(['team', 'enterprise']),

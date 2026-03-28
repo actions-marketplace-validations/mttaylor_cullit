@@ -59,12 +59,14 @@ export async function migrate(): Promise<void> {
       stripe_customer_id TEXT,
       stripe_subscription_id TEXT,
       github_username TEXT,
+      preferred_provider TEXT,
       created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       last_login_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `;
 
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS github_username TEXT`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_provider TEXT`;
 
   await sql`CREATE INDEX IF NOT EXISTS idx_users_api_key ON users (api_key)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_users_stripe_customer ON users (stripe_customer_id) WHERE stripe_customer_id IS NOT NULL`;
@@ -360,6 +362,7 @@ export interface DbUser {
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   github_username: string | null;
+  preferred_provider: string | null;
   created_at: Date;
   last_login_at: Date;
 }
@@ -428,6 +431,10 @@ export async function dbUpdateUserStripe(userId: string, customerId: string, sub
 export async function dbRotateApiKey(userId: string, newApiKey: string): Promise<DbUser> {
   const rows = await sql<DbUser[]>`UPDATE users SET api_key = ${newApiKey} WHERE id = ${userId} RETURNING *`;
   return rows[0];
+}
+
+export async function dbUpdatePreferredProvider(userId: string, provider: string): Promise<void> {
+  await sql`UPDATE users SET preferred_provider = ${provider} WHERE id = ${userId}`;
 }
 
 // --- Org DB operations ---

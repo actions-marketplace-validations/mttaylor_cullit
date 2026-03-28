@@ -1151,6 +1151,7 @@ export const openApiSpec = {
           orgId: { type: 'string', nullable: true },
           role: { type: 'string', enum: ['owner', 'admin', 'member'] },
           apiKey: { type: 'string' },
+          preferredProvider: { type: 'string', nullable: true, description: 'Basic tier: locked AI provider' },
           createdAt: { type: 'string', format: 'date-time' },
         },
       },

@@ -145,16 +145,19 @@ describe('handleLicenseValidate', () => {
         'free-user': {
           id: 'free-user', login: 'free@test.com', name: 'Free', email: 'free@test.com',
           avatarUrl: '', tier: 'free', orgId: null, role: 'member', apiKey: 'clt_freekey',
+          githubUsername: null, preferredProvider: null,
           createdAt: now, lastLoginAt: now,
         },
         'pro-user': {
           id: 'pro-user', login: 'pro@test.com', name: 'Pro', email: 'pro@test.com',
           avatarUrl: '', tier: 'pro', orgId: null, role: 'member', apiKey: 'clt_prokey',
+          githubUsername: null, preferredProvider: null,
           createdAt: now, lastLoginAt: now,
         },
         'team-user': {
           id: 'team-user', login: 'team@test.com', name: 'Team', email: 'team@test.com',
           avatarUrl: '', tier: 'team', orgId: null, role: 'member', apiKey: 'clt_teamkey',
+          githubUsername: null, preferredProvider: null,
           createdAt: now, lastLoginAt: now,
         },
       },

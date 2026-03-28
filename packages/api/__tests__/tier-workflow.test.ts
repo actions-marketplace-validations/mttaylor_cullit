@@ -27,6 +27,8 @@ function makeUser(input: MockUser) {
     orgId: null,
     role: 'member' as const,
     apiKey: 'clt_' + 'a'.repeat(32),
+    githubUsername: null,
+    preferredProvider: null,
     createdAt: new Date().toISOString(),
     lastLoginAt: new Date().toISOString(),
   };

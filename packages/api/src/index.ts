@@ -26,6 +26,7 @@ import { handleDocs } from './docs.js';
 import {
   handleAuthRedirect, handleAuthCallback, handleAuthMe, handleAuthLogout,
   handleRotateApiKey, handleDeleteAccount, handleLicenseValidate, resolveUser, getEffectiveTier,
+  handleUpdateMe, updatePreferredProvider,
 } from './auth.js';
 import {
   addHistoryEntry, getHistory, getHistoryCount,
@@ -468,6 +469,25 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
       return;
     }
 
+    // Provider gating — Basic tier locked to one AI provider
+    const requestedProvider = config.ai.provider;
+    if (effectiveTier === 'basic' && requestedProvider !== 'none') {
+      if (!user.preferredProvider) {
+        // First AI generation — lock to this provider
+        await updatePreferredProvider(user.id, requestedProvider);
+        user.preferredProvider = requestedProvider;
+      } else if (requestedProvider !== user.preferredProvider) {
+        json(res, 403, {
+          error: `Basic plan is locked to ${user.preferredProvider}. Upgrade to Pro for all providers.`,
+          code: ErrorCode.BILLING_UPGRADE_REQUIRED,
+          tier: effectiveTier,
+          preferredProvider: user.preferredProvider,
+          upgrade: 'https://cullit.io/pricing',
+        });
+        return;
+      }
+    }
+
     // Check cache
     const cacheKey = getCacheKey(body.from, to, format, config as CullConfig);
     const cached = getCachedResult(cacheKey);
@@ -757,6 +777,8 @@ const server = createServer(async (req, res: CorsResponse) => {
       await handleAuthCallback(req, res);
     } else if (path === '/auth/me' && req.method === 'GET') {
       await handleAuthMe(req, res, json);
+    } else if (path === '/auth/me' && req.method === 'PATCH') {
+      await handleUpdateMe(req, res, json);
     } else if (path === '/auth/logout' && req.method === 'POST') {
       handleAuthLogout(req, res, json);
     } else if (path === '/auth/rotate-key' && req.method === 'POST') {
