@@ -179,6 +179,16 @@ describe('Gate — access checks', () => {
     expect(msg).toContain('anthropic');
     expect(msg).toContain('cullit.io/pricing');
   });
+
+  it('generates tier-specific upgrade message for Pro', () => {
+    const msg = upgradeMessage('Jira enrichment', 'pro');
+    expect(msg).toContain('Pro plan or above');
+  });
+
+  it('generates tier-specific upgrade message for Team', () => {
+    const msg = upgradeMessage('drafts', 'team');
+    expect(msg).toContain('Team plan or above');
+  });
 });
 
 describe('Gate — getTierLimits', () => {

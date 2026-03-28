@@ -175,7 +175,7 @@ export async function runPipeline(
   }
 
   if (!isProviderAllowed(config.ai.provider, license)) {
-    throw new CullitError(CoreErrorCode.LICENSE_TIER_INSUFFICIENT, upgradeMessage(`AI provider "${config.ai.provider}"`));
+    throw new CullitError(CoreErrorCode.LICENSE_TIER_INSUFFICIENT, upgradeMessage(`AI provider "${config.ai.provider}"`, 'pro'));
   }
 
   // 1. COLLECT — uniform factory pattern: factory(config)
@@ -212,7 +212,7 @@ export async function runPipeline(
 
   for (const source of enrichmentSources) {
     if (!isEnrichmentAllowed(license)) {
-      log.info(`» Skipping ${source} enrichment — ${upgradeMessage(`${source} enrichment`)}`);
+      log.info(`» Skipping ${source} enrichment — ${upgradeMessage(`${source} enrichment`, 'pro')}`);
       continue;
     }
 
@@ -276,7 +276,7 @@ export async function runPipeline(
     for (const target of config.publish) {
       try {
         if (!isPublisherAllowed(target.type, license)) {
-          log.info(`» Skipping ${target.type} — ${upgradeMessage(`${target.type} publishing`)}`);
+          log.info(`» Skipping ${target.type} — ${upgradeMessage(`${target.type} publishing`, 'pro')}`);
           continue;
         }
 

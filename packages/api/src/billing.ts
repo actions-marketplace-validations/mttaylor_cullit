@@ -191,7 +191,7 @@ async function stripeRequest<T>(path: string, method: string, body?: Record<stri
 
 // --- Webhook signature verification ---
 
-function verifyWebhookSignature(payload: string, sigHeader: string): boolean {
+export function verifyWebhookSignature(payload: string, sigHeader: string): boolean {
   if (!STRIPE_WEBHOOK_SECRET) return false;
 
   const parts = sigHeader.split(',').reduce((acc, part) => {

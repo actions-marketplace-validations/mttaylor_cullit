@@ -26,13 +26,14 @@ import {
   dbGetUser, dbGetUserByApiKey, dbUpsertUser, dbRotateApiKey,
   dbUpdateUserOrg, dbGetOrg, dbGetOrgBySlug, dbCreateOrg, dbGetOrgMemberCount,
   dbAddOrgMember, dbRemoveOrgMember, dbGetOrgMembers,
-  dbRevokeToken, dbIsTokenRevoked, dbDeleteUser,
+  dbRevokeToken, dbIsTokenRevoked, dbDeleteUser, dbGetTokensRevokedBefore,
   dbGetTeamApiKeyByKey, dbUpdatePreferredProvider,
   sql,
   type DbUser, type DbOrg,
 } from './db.js';
 import { sendWelcome } from './email.js';
 import { log } from './logger.js';
+import { readBody } from './utils.js';
 import { getFeatureGating } from '@cullit/core';
 
 /** Whether PostgreSQL is available */
@@ -220,7 +221,7 @@ export function createJWT(userId: string): string {
   return `${header}.${payload}.${signature}`;
 }
 
-export function verifyJWT(token: string): { sub: string } | null {
+export function verifyJWT(token: string): { sub: string; iat: number } | null {
   const parts = token.split('.');
   if (parts.length !== 3) return null;
 
@@ -241,7 +242,7 @@ export function verifyJWT(token: string): { sub: string } | null {
     const data = JSON.parse(base64urlDecode(payload));
     if (!data.sub || typeof data.sub !== 'string') return null;
     if (!data.exp || typeof data.exp !== 'number' || data.exp < Math.floor(Date.now() / 1000)) return null;
-    return { sub: data.sub };
+    return { sub: data.sub, iat: data.iat || 0 };
   } catch {
     return null;
   }
@@ -262,7 +263,11 @@ export async function resolveUser(req: IncomingMessage): Promise<User | null> {
       // Check if token has been revoked (logout / key rotation)
       if (await isTokenRevoked(sessionToken)) return null;
       const user = await getUser(jwt.sub);
-      if (user) return user;
+      if (!user) return null;
+      // Check bulk revocation — reject tokens issued before the cutoff
+      const revokedBefore = await dbGetTokensRevokedBefore(jwt.sub);
+      if (revokedBefore && jwt.iat < Math.floor(revokedBefore.getTime() / 1000)) return null;
+      return user;
     }
   }
 
@@ -705,11 +710,15 @@ export async function handleUpdateMe(req: IncomingMessage, res: ServerResponse, 
   const user = await resolveUser(req);
   if (!user) { jsonFn(res, 401, { error: 'Not authenticated' }); return; }
 
-  const body = await new Promise<string>((resolve) => {
-    let data = '';
-    req.on('data', (chunk: Buffer) => { data += chunk; });
-    req.on('end', () => resolve(data));
-  });
+  // Basic tier cannot change their locked provider via this endpoint
+  const tier = getEffectiveTier(user);
+  if (tier === 'basic' && user.preferredProvider) {
+    jsonFn(res, 403, { error: 'Basic plan cannot change AI provider. Upgrade to Pro for all providers.', upgrade: 'https://cullit.io/pricing' });
+    return;
+  }
+
+  let body: string;
+  try { body = await readBody(req); } catch { jsonFn(res, 413, { error: 'Request body too large' }); return; }
 
   let parsed: { preferredProvider?: string };
   try { parsed = JSON.parse(body); } catch { jsonFn(res, 400, { error: 'Invalid JSON' }); return; }

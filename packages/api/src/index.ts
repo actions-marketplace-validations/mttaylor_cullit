@@ -131,8 +131,30 @@ const RATE_WINDOW = 60_000; // 1 minute
 
 const rateLimiter = createRateLimiter({ limit: RATE_LIMIT, windowMs: RATE_WINDOW });
 
+const TRUST_PROXY = process.env['TRUST_PROXY'] !== 'false'; // Trust proxy headers by default on Railway/CF
+
+/**
+ * Extract the real client IP address from the request.
+ * Checks Cloudflare/proxy headers first, falls back to socket address.
+ */
+function getClientIp(req: IncomingMessage): string {
+  if (TRUST_PROXY) {
+    // CF-Connecting-IP is authoritative when behind Cloudflare
+    const cfIp = req.headers['cf-connecting-ip'];
+    if (typeof cfIp === 'string' && cfIp) return cfIp.trim();
+
+    // X-Forwarded-For: client, proxy1, proxy2 — leftmost is the real client
+    const xff = req.headers['x-forwarded-for'];
+    if (typeof xff === 'string' && xff) {
+      const first = xff.split(',')[0].trim();
+      if (first) return first;
+    }
+  }
+  return req.socket.remoteAddress || 'unknown';
+}
+
 async function checkRateLimit(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
-  const ip = req.socket.remoteAddress || 'unknown';
+  const ip = getClientIp(req);
   const result = await rateLimiter.check(ip);
 
   res.setHeader('X-RateLimit-Limit', RATE_LIMIT);

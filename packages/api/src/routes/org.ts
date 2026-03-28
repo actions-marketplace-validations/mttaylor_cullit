@@ -212,6 +212,11 @@ export async function handleAcceptOrgInvite(req: IncomingMessage, res: ServerRes
   const invite = await dbGetOrgInviteByToken(token);
   if (!invite) { json(res, 404, { error: 'Invite not found or expired' }); return; }
 
+  // Verify the accepting user's email matches the invite
+  if (!user.email || user.email.toLowerCase() !== invite.email.toLowerCase()) {
+    json(res, 403, { error: 'This invite was sent to a different email address' }); return;
+  }
+
   const success = await addOrgMember(invite.org_id, user, invite.role as 'admin' | 'member');
   if (!success) {
     json(res, 409, { error: 'Cannot join organization (org may be full)' }); return;

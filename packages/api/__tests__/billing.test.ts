@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { createHmac } from 'crypto';
 import { isStripeConfigured, priceToPlan, planToTier, planToSeats } from '../src/billing.js';
 
 describe('Billing Module', () => {
@@ -129,5 +130,61 @@ describe('Billing — plan mapping functions', () => {
       expect(planToSeats('pro')).toBe(0);
       expect(planToSeats('free')).toBe(0);
     });
+  });
+});
+
+describe('Webhook HMAC verification', () => {
+  const TEST_SECRET = 'whsec_test_secret_for_unit_tests';
+
+  function buildSignature(payload: string, secret: string, timestamp?: number): string {
+    const ts = timestamp || Math.floor(Date.now() / 1000);
+    const sig = createHmac('sha256', secret).update(`${ts}.${payload}`).digest('hex');
+    return `t=${ts},v1=${sig}`;
+  }
+
+  beforeEach(() => {
+    vi.resetModules();
+    process.env['STRIPE_WEBHOOK_SECRET'] = TEST_SECRET;
+  });
+
+  afterEach(() => {
+    delete process.env['STRIPE_WEBHOOK_SECRET'];
+  });
+
+  it('accepts a correctly signed webhook payload', async () => {
+    const { verifyWebhookSignature } = await import('../src/billing.js');
+
+    const payload = '{"id":"evt_test","type":"checkout.session.completed"}';
+    const sigHeader = buildSignature(payload, TEST_SECRET);
+
+    expect(verifyWebhookSignature(payload, sigHeader)).toBe(true);
+  });
+
+  it('rejects a payload with wrong secret', async () => {
+    const { verifyWebhookSignature } = await import('../src/billing.js');
+
+    const payload = '{"id":"evt_test","type":"checkout.session.completed"}';
+    const sigHeader = buildSignature(payload, 'wrong_secret');
+
+    expect(verifyWebhookSignature(payload, sigHeader)).toBe(false);
+  });
+
+  it('rejects a payload with tampered body', async () => {
+    const { verifyWebhookSignature } = await import('../src/billing.js');
+
+    const payload = '{"id":"evt_test","type":"checkout.session.completed"}';
+    const sigHeader = buildSignature(payload, TEST_SECRET);
+
+    expect(verifyWebhookSignature('{"id":"evt_tampered"}', sigHeader)).toBe(false);
+  });
+
+  it('rejects a timestamp outside the 5-minute tolerance', async () => {
+    const { verifyWebhookSignature } = await import('../src/billing.js');
+
+    const payload = '{"id":"evt_test"}';
+    const oldTs = Math.floor(Date.now() / 1000) - 600; // 10 minutes ago
+    const sigHeader = buildSignature(payload, TEST_SECRET, oldTs);
+
+    expect(verifyWebhookSignature(payload, sigHeader)).toBe(false);
   });
 });

@@ -21,7 +21,13 @@
  */
 
 import postgres from 'postgres';
+import { createHash } from 'crypto';
 import { log } from './logger.js';
+
+/** SHA-256 hash of an API key for secure storage and lookup. */
+export function hashApiKey(key: string): string {
+  return createHash('sha256').update(key).digest('hex');
+}
 
 const DATABASE_URL = process.env['DATABASE_URL'] || '';
 
@@ -56,18 +62,28 @@ export async function migrate(): Promise<void> {
       org_id        TEXT,
       role          TEXT NOT NULL DEFAULT 'member',
       api_key       TEXT UNIQUE NOT NULL,
+      api_key_hash  TEXT,
       stripe_customer_id TEXT,
       stripe_subscription_id TEXT,
       github_username TEXT,
       preferred_provider TEXT,
+      tokens_revoked_before TIMESTAMPTZ,
       created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       last_login_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `;
 
-  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS github_username TEXT`;
-  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_provider TEXT`;
+  // Post-hoc migrations for existing databases (columns already in CREATE TABLE above)
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS api_key_hash TEXT`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS tokens_revoked_before TIMESTAMPTZ`;
 
+  // Backfill api_key_hash for existing users that don't have one
+  await sql`
+    UPDATE users SET api_key_hash = encode(sha256(api_key::bytea), 'hex')
+    WHERE api_key_hash IS NULL AND api_key IS NOT NULL
+  `.catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to backfill api_key_hash'); });
+
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_api_key_hash ON users (api_key_hash) WHERE api_key_hash IS NOT NULL`;
   await sql`CREATE INDEX IF NOT EXISTS idx_users_api_key ON users (api_key)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_users_stripe_customer ON users (stripe_customer_id) WHERE stripe_customer_id IS NOT NULL`;
 
@@ -307,6 +323,21 @@ export async function migrate(): Promise<void> {
   log.info('Database migrations complete');
 }
 
+// --- Periodic table cleanup (runs every hour) ---
+const CLEANUP_INTERVAL = 60 * 60 * 1000; // 1 hour
+
+if (sql) {
+  setInterval(async () => {
+    try {
+      await sql`DELETE FROM revoked_tokens WHERE expires_at < NOW()`;
+      await sql`DELETE FROM webhook_events WHERE processed_at < NOW() - INTERVAL '30 days'`;
+      log.info('Periodic DB cleanup: pruned expired tokens and old webhook events');
+    } catch (err) {
+      log.warn({ err: (err as Error).message }, 'Periodic DB cleanup failed');
+    }
+  }, CLEANUP_INTERVAL).unref();
+}
+
 // --- Token revocation DB operations ---
 
 export async function dbRevokeToken(tokenHash: string, userId: string, expiresAt: Date): Promise<void> {
@@ -324,10 +355,15 @@ export async function dbIsTokenRevoked(tokenHash: string): Promise<boolean> {
   return rows.length > 0;
 }
 
-export async function dbRevokeAllUserTokens(userId: string, expiresAt: Date): Promise<void> {
+export async function dbRevokeAllUserTokens(userId: string): Promise<void> {
   if (!sql) return;
-  // This doesn't revoke existing tokens by hash — it's used as a marker.
-  // Actual per-token revocation happens in auth.ts on logout/rotate.
+  await sql`UPDATE users SET tokens_revoked_before = NOW() WHERE id = ${userId}`;
+}
+
+export async function dbGetTokensRevokedBefore(userId: string): Promise<Date | null> {
+  if (!sql) return null;
+  const rows = await sql<{ tokens_revoked_before: Date | null }[]>`SELECT tokens_revoked_before FROM users WHERE id = ${userId}`;
+  return rows[0]?.tokens_revoked_before || null;
 }
 
 // --- Webhook idempotency DB operations ---
@@ -373,8 +409,12 @@ export async function dbGetUser(id: string): Promise<DbUser | null> {
 }
 
 export async function dbGetUserByApiKey(apiKey: string): Promise<DbUser | null> {
-  const rows = await sql<DbUser[]>`SELECT * FROM users WHERE api_key = ${apiKey}`;
-  return rows[0] || null;
+  const keyHash = hashApiKey(apiKey);
+  // Query by hash first (secure path), fall back to plaintext for un-migrated rows
+  const rows = await sql<DbUser[]>`SELECT * FROM users WHERE api_key_hash = ${keyHash}`;
+  if (rows[0]) return rows[0];
+  const fallback = await sql<DbUser[]>`SELECT * FROM users WHERE api_key = ${apiKey}`;
+  return fallback[0] || null;
 }
 
 export async function dbGetUserByStripeCustomer(customerId: string): Promise<DbUser | null> {
@@ -401,15 +441,17 @@ export async function dbUpsertUser(user: {
   avatarUrl: string; apiKey: string;
   githubUsername?: string | null;
 }): Promise<DbUser> {
+  const keyHash = hashApiKey(user.apiKey);
   const rows = await sql<DbUser[]>`
-    INSERT INTO users (id, login, name, email, avatar_url, api_key, github_username)
-    VALUES (${user.id}, ${user.login}, ${user.name}, ${user.email}, ${user.avatarUrl}, ${user.apiKey}, ${user.githubUsername || null})
+    INSERT INTO users (id, login, name, email, avatar_url, api_key, api_key_hash, github_username)
+    VALUES (${user.id}, ${user.login}, ${user.name}, ${user.email}, ${user.avatarUrl}, ${user.apiKey}, ${keyHash}, ${user.githubUsername || null})
     ON CONFLICT (id) DO UPDATE SET
       login = EXCLUDED.login,
       name = EXCLUDED.name,
       email = CASE WHEN EXCLUDED.email != '' THEN EXCLUDED.email ELSE users.email END,
       avatar_url = EXCLUDED.avatar_url,
       github_username = COALESCE(EXCLUDED.github_username, users.github_username),
+      api_key_hash = COALESCE(EXCLUDED.api_key_hash, users.api_key_hash),
       last_login_at = NOW()
     RETURNING *
   `;
@@ -429,7 +471,8 @@ export async function dbUpdateUserStripe(userId: string, customerId: string, sub
 }
 
 export async function dbRotateApiKey(userId: string, newApiKey: string): Promise<DbUser> {
-  const rows = await sql<DbUser[]>`UPDATE users SET api_key = ${newApiKey} WHERE id = ${userId} RETURNING *`;
+  const keyHash = hashApiKey(newApiKey);
+  const rows = await sql<DbUser[]>`UPDATE users SET api_key = ${newApiKey}, api_key_hash = ${keyHash} WHERE id = ${userId} RETURNING *`;
   return rows[0];
 }
 

@@ -160,9 +160,15 @@ export function isAudienceToneAllowed(license: LicenseStatus): boolean {
 
 /**
  * Build a human-readable upgrade message for a gated feature.
+ * @param feature - The feature name to include in the message.
+ * @param minTier - Optional minimum tier required (e.g. 'pro', 'team').
  */
-export function upgradeMessage(feature: string): string {
-  return `🔒 ${feature} requires a paid Cullit plan.\n` +
+export function upgradeMessage(feature: string, minTier?: string): string {
+  const tierLabel = minTier === 'team' ? 'a Team plan or above'
+    : minTier === 'pro' ? 'a Pro plan or above'
+    : minTier === 'enterprise' ? 'an Enterprise plan'
+    : 'a paid Cullit plan';
+  return `🔒 ${feature} requires ${tierLabel}.\n` +
          `   Upgrade at https://cullit.io/pricing\n` +
          `   Then set CULLIT_API_KEY in your environment.`;
 }
