@@ -2642,7 +2642,19 @@ async function loadBilling() {
     if (res.ok) {
       const sub = await res.json();
       if (sub && sub.subscription) {
-        statusEl.textContent = sub.subscription.status === 'active' ? 'Active' : sub.subscription.status;
+        if (sub.subscription.status === 'past_due') {
+          statusEl.textContent = 'Payment Failed';
+          statusEl.style.color = 'var(--terminal-red)';
+          const warningBtn = document.createElement('button');
+          warningBtn.className = 'btn-small';
+          warningBtn.style.background = 'var(--terminal-red)';
+          warningBtn.style.color = '#fff';
+          warningBtn.textContent = 'Update Payment Method';
+          warningBtn.onclick = openBillingPortal;
+          actionsEl.appendChild(warningBtn);
+        } else {
+          statusEl.textContent = sub.subscription.status === 'active' ? 'Active' : sub.subscription.status;
+        }
         if (sub.subscription.currentPeriodEnd) {
           const end = new Date(sub.subscription.currentPeriodEnd);
           statusEl.textContent += ' \u2014 renews ' + end.toLocaleDateString();

@@ -62,11 +62,13 @@ export async function migrate(): Promise<void> {
       trial_starts_at TIMESTAMPTZ,
       trial_ends_at TIMESTAMPTZ,
       trial_converted_at TIMESTAMPTZ,
+      github_username TEXT,
       created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       last_login_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `;
 
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS github_username TEXT`;
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_tier TEXT`;
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_starts_at TIMESTAMPTZ`;
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ`;
@@ -347,6 +349,7 @@ export interface DbUser {
   api_key: string;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
+  github_username: string | null;
   trial_tier: string | null;
   trial_starts_at: Date | null;
   trial_ends_at: Date | null;
@@ -375,21 +378,32 @@ export async function dbGetUserByLogin(login: string): Promise<DbUser | null> {
   return rows[0] || null;
 }
 
+export async function dbGetUserByGithubUsername(username: string): Promise<DbUser | null> {
+  const rows = await sql<DbUser[]>`SELECT * FROM users WHERE github_username = ${username}`;
+  return rows[0] || null;
+}
+
+export async function dbUpdateGithubUsername(userId: string, githubUsername: string): Promise<void> {
+  await sql`UPDATE users SET github_username = ${githubUsername} WHERE id = ${userId}`;
+}
+
 export async function dbUpsertUser(user: {
   id: string; login: string; name: string; email: string;
   avatarUrl: string; apiKey: string;
+  githubUsername?: string | null;
   trialTier?: string | null;
   trialStartsAt?: Date | null;
   trialEndsAt?: Date | null;
 }): Promise<DbUser> {
   const rows = await sql<DbUser[]>`
-    INSERT INTO users (id, login, name, email, avatar_url, api_key, trial_tier, trial_starts_at, trial_ends_at)
-    VALUES (${user.id}, ${user.login}, ${user.name}, ${user.email}, ${user.avatarUrl}, ${user.apiKey}, ${user.trialTier || null}, ${user.trialStartsAt || null}, ${user.trialEndsAt || null})
+    INSERT INTO users (id, login, name, email, avatar_url, api_key, github_username, trial_tier, trial_starts_at, trial_ends_at)
+    VALUES (${user.id}, ${user.login}, ${user.name}, ${user.email}, ${user.avatarUrl}, ${user.apiKey}, ${user.githubUsername || null}, ${user.trialTier || null}, ${user.trialStartsAt || null}, ${user.trialEndsAt || null})
     ON CONFLICT (id) DO UPDATE SET
       login = EXCLUDED.login,
       name = EXCLUDED.name,
       email = CASE WHEN EXCLUDED.email != '' THEN EXCLUDED.email ELSE users.email END,
       avatar_url = EXCLUDED.avatar_url,
+      github_username = COALESCE(EXCLUDED.github_username, users.github_username),
       last_login_at = NOW()
     RETURNING *
   `;

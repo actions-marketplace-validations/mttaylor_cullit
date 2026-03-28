@@ -196,6 +196,28 @@ export async function sendPaymentFailed(email: string, name: string): Promise<bo
   });
 }
 
+export async function sendOrgInvite(email: string, orgName: string, inviterName: string, role: string, token: string): Promise<boolean> {
+  const acceptUrl = `https://cullit.io/dashboard.html?invite=${encodeURIComponent(token)}`;
+  return send({
+    to: email,
+    subject: `You're invited to join ${orgName} on Cullit`,
+    html: `${BRAND}
+      <h2 style="color: #0f1117; margin-bottom: 16px;">You've been invited</h2>
+      <p style="color: #374151; line-height: 1.6;">
+        ${escapeHtml(inviterName)} has invited you to join <strong>${escapeHtml(orgName)}</strong> as a <strong>${escapeHtml(role)}</strong> on Cullit.
+      </p>
+      <p style="margin: 20px 0;">
+        <a href="${acceptUrl}" style="background: #5eead4; color: #0f1117; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">
+          Accept Invitation
+        </a>
+      </p>
+      <p style="color: #6b7280; font-size: 13px;">
+        This invitation expires in 7 days. If you don't have a Cullit account, you'll be prompted to create one.
+      </p>
+    ${FOOTER}`,
+  });
+}
+
 export async function sendUsageAlert(email: string, name: string, used: number, limit: number): Promise<boolean> {
   const pct = Math.round((used / limit) * 100);
   return send({

@@ -16,9 +16,10 @@ import {
   getUsageStats, getMonthlyGenerationCount,
 } from '../store.js';
 import {
-  dbCreateOrgInvite, dbListOrgInvites, dbDeleteOrgInvite, dbUpdateOrgMemberRole,
-  dbUpdateOrgSettings,
+  dbCreateOrgInvite, dbListOrgInvites, dbDeleteOrgInvite, dbGetOrgInviteByToken,
+  dbAcceptOrgInvite, dbUpdateOrgMemberRole, dbUpdateOrgSettings,
 } from '../db.js';
+import { sendOrgInvite } from '../email.js';
 import { getTierLimits } from '@cullit/core';
 
 // --- Org CRUD ---
@@ -178,6 +179,14 @@ export async function handleCreateOrgInvite(req: IncomingMessage, res: ServerRes
     createdBy: user.id,
   });
 
+  // Send invite email (non-blocking — don't fail the API call if email fails)
+  const org = await getOrg(user.orgId);
+  const orgName = org?.name || 'your organization';
+  const inviterName = user.name || user.login;
+  sendOrgInvite(invite.email, orgName, inviterName, invite.role, invite.token).catch(err =>
+    log.error({ err, email: invite.email }, 'Failed to send invite email'),
+  );
+
   log.info({ actor: user.id, action: 'org.createInvite', resource: user.orgId, email: body.email }, 'Org invite created');
   json(res, 201, { invite: { id: invite.id, email: invite.email, role: invite.role, expiresAt: invite.expires_at } });
 }
@@ -195,6 +204,24 @@ export async function handleListOrgInvites(req: IncomingMessage, res: ServerResp
       id: i.id, email: i.email, role: i.role, expiresAt: i.expires_at, createdAt: i.created_at,
     })),
   });
+}
+
+export async function handleAcceptOrgInvite(req: IncomingMessage, res: ServerResponse, token: string): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  if (user.orgId) { json(res, 409, { error: 'Already a member of an organization' }); return; }
+
+  const invite = await dbGetOrgInviteByToken(token);
+  if (!invite) { json(res, 404, { error: 'Invite not found or expired' }); return; }
+
+  const success = await addOrgMember(invite.org_id, user, invite.role as 'admin' | 'member');
+  if (!success) {
+    json(res, 409, { error: 'Cannot join organization (org may be full)' }); return;
+  }
+
+  await dbAcceptOrgInvite(invite.id);
+  log.info({ actor: user.id, action: 'org.acceptInvite', resource: invite.org_id, invite: invite.id }, 'Org invite accepted');
+  json(res, 200, { ok: true, orgId: invite.org_id });
 }
 
 export async function handleDeleteOrgInvite(req: IncomingMessage, res: ServerResponse, inviteId: string): Promise<void> {

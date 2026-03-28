@@ -27,6 +27,7 @@ import {
   dbUpdateUserOrg, dbGetOrg, dbGetOrgBySlug, dbCreateOrg, dbGetOrgMemberCount,
   dbAddOrgMember, dbRemoveOrgMember, dbGetOrgMembers,
   dbRevokeToken, dbIsTokenRevoked, dbDeleteUser,
+  sql,
   type DbUser, type DbOrg,
 } from './db.js';
 import { sendWelcome } from './email.js';
@@ -80,6 +81,7 @@ export interface User {
   name: string;
   email: string;
   avatarUrl: string;
+  githubUsername: string | null;
   tier: 'free' | 'pro' | 'team' | 'enterprise';
   orgId: string | null;  // null = no org membership
   role: 'owner' | 'admin' | 'member';
@@ -317,6 +319,7 @@ function dbUserToUser(row: DbUser): User {
   return {
     id: row.id, login: row.login, name: row.name, email: row.email,
     avatarUrl: row.avatar_url,
+    githubUsername: row.github_username || null,
     tier: row.tier as User['tier'], orgId: row.org_id, role: row.role as User['role'],
     apiKey: row.api_key,
     trialTier: (row.trial_tier === 'pro' || row.trial_tier === 'team') ? row.trial_tier : null,
@@ -370,6 +373,11 @@ function generateApiKey(): string {
 
 async function createOrUpdateUser(woUser: WorkOSUser): Promise<User> {
   const displayName = [woUser.first_name, woUser.last_name].filter(Boolean).join(' ') || woUser.email;
+
+  // Extract GitHub username from WorkOS identity provider if available
+  const ghIdentity = woUser.identities?.find(i => i.provider === 'GitHubOAuth' || i.provider === 'github');
+  const githubUsername = ghIdentity?.raw_attributes?.login || null;
+
   if (useDb) {
     const apiKey = generateApiKey();
     const isNew = !(await dbGetUser(woUser.id));
@@ -378,6 +386,7 @@ async function createOrUpdateUser(woUser: WorkOSUser): Promise<User> {
       id: woUser.id, login: woUser.email,
       name: displayName, email: woUser.email,
       avatarUrl: woUser.profile_picture_url || '', apiKey,
+      githubUsername,
       trialTier: trial?.trialTier || null,
       trialStartsAt: trial?.trialStartsAt || null,
       trialEndsAt: trial?.trialEndsAt || null,
@@ -385,6 +394,12 @@ async function createOrUpdateUser(woUser: WorkOSUser): Promise<User> {
     const user = dbUserToUser(row);
     if (isNew && user.email) {
       sendWelcome(user.email, user.name, user.apiKey).catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to send welcome email'); });
+    }
+    // Auto-link any pending GitHub installations for this user
+    if (githubUsername && sql) {
+      sql`UPDATE github_installations SET user_id = ${user.id} WHERE github_login = ${githubUsername} AND user_id IS NULL`
+        .then((rows: unknown[]) => { if (rows.length) log.info({ userId: user.id, githubUsername, count: rows.length }, 'Auto-linked pending GitHub installations'); })
+        .catch((err: Error) => { log.warn({ err: err.message }, 'Failed to auto-link GitHub installations'); });
     }
     return user;
   }
@@ -397,6 +412,7 @@ async function createOrUpdateUser(woUser: WorkOSUser): Promise<User> {
     existing.name = displayName;
     existing.email = woUser.email;
     existing.avatarUrl = woUser.profile_picture_url || existing.avatarUrl;
+    if (githubUsername) existing.githubUsername = githubUsername;
     existing.lastLoginAt = now;
     saveAuthStore();
     return existing;
@@ -406,6 +422,7 @@ async function createOrUpdateUser(woUser: WorkOSUser): Promise<User> {
     id: woUser.id, login: woUser.email,
     name: displayName, email: woUser.email,
     avatarUrl: woUser.profile_picture_url || '', tier: 'free',
+    githubUsername,
     orgId: null, role: 'member',
     apiKey: generateApiKey(),
     ...(getInitialTrialWindow() ? {
@@ -558,6 +575,11 @@ interface WorkOSUser {
   first_name: string | null;
   last_name: string | null;
   profile_picture_url: string | null;
+  identities?: Array<{
+    type: string;
+    provider: string;
+    raw_attributes?: { login?: string };
+  }>;
 }
 
 /**
@@ -688,6 +710,7 @@ export async function handleAuthMe(req: IncomingMessage, res: ServerResponse, js
     name: user.name,
     email: user.email,
     avatarUrl: user.avatarUrl,
+    githubUsername: user.githubUsername,
     tier: user.tier,
     effectiveTier,
     orgId: user.orgId,

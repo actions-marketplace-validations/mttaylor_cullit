@@ -34,7 +34,7 @@ import {
 } from './store.js';
 import { migrate, closeDb, sql,
   dbGetProjectSettings, dbUpsertProjectSettings, dbListProjectSettings,
-  dbGetExpiringTrials, dbGetJustExpiredTrials, dbGetUserByLogin,
+  dbGetExpiringTrials, dbGetJustExpiredTrials, dbGetUserByLogin, dbGetUserByGithubUsername,
 } from './db.js';
 import { handleCheckout, handleBillingPortal, handleGetSubscription, handleStripeWebhook, isStripeConfigured } from './billing.js';
 import { log } from './logger.js';
@@ -54,7 +54,7 @@ import {
 } from './routes/drafts.js';
 import {
   handleGetOrg, handleCreateOrg, handleOrgInvite, handleOrgRemoveMember,
-  handleCreateOrgInvite, handleListOrgInvites, handleDeleteOrgInvite,
+  handleCreateOrgInvite, handleListOrgInvites, handleDeleteOrgInvite, handleAcceptOrgInvite,
   handleUpdateOrgMemberRole, handleGetOrgUsage, handleUpdateOrgSettings,
 } from './routes/org.js';
 
@@ -702,10 +702,18 @@ async function handleAppInstallation(req: IncomingMessage, res: ServerResponse):
     return;
   }
 
-  // Find the Cullit user by their GitHub login
-  const user = await dbGetUserByLogin(body.githubLogin);
+  // Find the Cullit user by their GitHub username (set from WorkOS GitHub OAuth identity)
+  const user = await dbGetUserByGithubUsername(body.githubLogin) || await dbGetUserByLogin(body.githubLogin);
   if (!user) {
-    log.info({ githubLogin: body.githubLogin }, 'No Cullit user found for GitHub login — installation will be linked on next login');
+    // Store unlinked installation — will be auto-linked when the user next logs in via GitHub
+    await sql`
+      INSERT INTO github_installations (installation_id, user_id, github_login, repos, created_at)
+      VALUES (${body.installationId}, ${null}, ${body.githubLogin}, ${JSON.stringify(body.repos || [])}, NOW())
+      ON CONFLICT (installation_id) DO UPDATE SET
+        github_login = EXCLUDED.github_login,
+        repos = EXCLUDED.repos
+    `;
+    log.info({ githubLogin: body.githubLogin }, 'No Cullit user found for GitHub login — installation stored, will link on next login');
     json(res, 200, { linked: false, reason: 'User not found — will link on next login' });
     return;
   }
@@ -890,6 +898,9 @@ const server = createServer(async (req, res: CorsResponse) => {
     } else if (req.method === 'DELETE' && path.match(/^\/v1\/org\/invites\/[^/]+$/)) {
       const inviteId = path.split('/')[4];
       await handleDeleteOrgInvite(req, res, inviteId);
+    } else if (req.method === 'POST' && path.match(/^\/v1\/org\/invites\/[^/]+\/accept$/)) {
+      const token = path.split('/')[4];
+      await handleAcceptOrgInvite(req, res, token);
     } else if (req.method === 'PATCH' && path.match(/^\/v1\/org\/members\/[^/]+$/)) {
       const memberId = path.split('/')[4];
       await handleUpdateOrgMemberRole(req, res, memberId);
