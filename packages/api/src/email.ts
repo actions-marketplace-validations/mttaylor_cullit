@@ -129,7 +129,7 @@ cullit generate --from v1.0.0</pre>
   });
 }
 
-export async function sendSubscriptionConfirmed(email: string, name: string, plan: string): Promise<boolean> {
+export async function sendSubscriptionConfirmed(email: string, name: string, plan: string, apiKey?: string): Promise<boolean> {
   const planName = plan === 'team' ? 'Team ($19/seat/mo)' : 'Pro ($9/mo)';
   return send({
     to: email,
@@ -157,6 +157,13 @@ export async function sendSubscriptionConfirmed(email: string, name: string, pla
           <li>All publishers (Slack, Discord, GitHub, Teams)</li>
         `}
       </ul>
+      ${apiKey ? `
+      <p style="color: #374151; line-height: 1.6; margin-top: 16px;">Your API key:</p>
+      <div style="background: #f3f4f6; border-radius: 8px; padding: 16px; margin: 8px 0; font-family: monospace; font-size: 14px; word-break: break-all;">
+        ${escapeHtml(apiKey)}
+      </div>
+      <p style="color: #6b7280; font-size: 13px;">Use this key with the CLI, GitHub Action, or API. Keep it safe.</p>
+      ` : ''}
       <p style="color: #374151; line-height: 1.6;">
         Manage your subscription anytime from the
         <a href="https://cullit.io/dashboard.html" style="color: #5eead4;">dashboard billing tab</a>.

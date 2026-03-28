@@ -1622,6 +1622,13 @@ function showDashboard() {
     history.replaceState(null, '', 'dashboard.html');
     upgradePlan(pendingPlan);
   }
+
+  // Poll for tier update after successful Stripe checkout
+  // Stripe redirects immediately but the webhook arrives seconds later
+  if (params.get('billing') === 'success') {
+    history.replaceState(null, '', 'dashboard.html');
+    pollForTierUpdate();
+  }
 }
 
 function renderTrialBanner() {
@@ -1651,6 +1658,37 @@ function renderTrialBanner() {
     banner.style.display = 'none';
     text.textContent = '';
   }
+}
+
+async function pollForTierUpdate() {
+  const banner = document.getElementById('trialBanner');
+  const text = document.getElementById('trialBannerText');
+  if (banner) {
+    banner.style.display = '';
+    banner.style.borderColor = 'rgba(94,234,212,0.45)';
+    text.textContent = 'Processing payment… this may take a few seconds.';
+    const btn = banner.querySelector('.btn-small');
+    if (btn) btn.style.display = 'none';
+  }
+
+  for (let i = 0; i < 10; i++) {
+    await new Promise(r => setTimeout(r, 2000));
+    try {
+      const res = await apiFetch('/auth/me');
+      const data = await res.json();
+      if (data.tier && data.tier !== 'free') {
+        currentUser = data;
+        renderTrialBanner();
+        document.getElementById('navTier').textContent = data.effectiveTier || data.tier;
+        showToast('Payment confirmed — you are now on ' + capitalize(data.tier) + '!');
+        loadBilling();
+        return;
+      }
+    } catch {}
+  }
+  // After 20s, tell user to refresh
+  if (text) text.textContent = 'Payment received — please refresh the page to see your updated plan.';
+  showToast('Payment is being processed. Refresh in a moment.');
 }
 
 async function logout() {

@@ -428,7 +428,10 @@ async function handleCheckoutComplete(sessionPayload: unknown): Promise<void> {
   const subscriptionId = session.subscription;
   const plan = session.metadata?.plan || 'pro';
 
-  if (!userId || !customerId || !subscriptionId) return;
+  if (!userId || !customerId || !subscriptionId) {
+    log.warn({ userId, customerId, subscriptionId }, 'Checkout session missing required fields — skipping');
+    return;
+  }
 
   // Link Stripe customer to user
   await dbUpdateUserStripe(userId, customerId, subscriptionId);
@@ -445,10 +448,10 @@ async function handleCheckoutComplete(sessionPayload: unknown): Promise<void> {
 
   log.info({ userId, plan, customerId }, 'Checkout complete');
 
-  // Send subscription confirmation email
+  // Send subscription confirmation email (includes API key)
   const user = await dbGetUser(userId);
   if (user?.email) {
-    sendSubscriptionConfirmed(user.email, user.name || user.login, plan).catch((err) => {
+    sendSubscriptionConfirmed(user.email, user.name || user.login, plan, user.apiKey).catch((err) => {
       log.warn({ err: (err as Error).message }, 'Failed to send subscription confirmed email');
     });
   }
