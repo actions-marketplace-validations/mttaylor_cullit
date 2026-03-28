@@ -316,7 +316,7 @@ export async function handleBillingPortal(
   try {
     const session = await stripeRequest<{ url?: string }>('/billing_portal/sessions', 'POST', {
       'customer': user.stripe_customer_id,
-      'return_url': `${DASHBOARD_URL}/dashboard.html`,
+      'return_url': `${DASHBOARD_URL}/dashboard.html?billing=updated`,
     });
     if (!session.url) {
       log.error({ userId }, 'Stripe returned portal session without URL');

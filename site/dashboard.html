@@ -1629,6 +1629,12 @@ function showDashboard() {
     history.replaceState(null, '', 'dashboard.html');
     pollForTierUpdate();
   }
+
+  // Re-fetch after returning from Stripe billing portal (downgrade/cancel)
+  if (params.get('billing') === 'updated') {
+    history.replaceState(null, '', 'dashboard.html');
+    refreshAfterPortal();
+  }
 }
 
 function renderTrialBanner() {
@@ -1689,6 +1695,20 @@ async function pollForTierUpdate() {
   // After 20s, tell user to refresh
   if (text) text.textContent = 'Payment received — please refresh the page to see your updated plan.';
   showToast('Payment is being processed. Refresh in a moment.');
+}
+
+async function refreshAfterPortal() {
+  try {
+    const res = await apiFetch('/auth/me');
+    const data = await res.json();
+    if (data.tier) {
+      currentUser = data;
+      renderTrialBanner();
+      document.getElementById('navTier').textContent = data.effectiveTier || data.tier;
+      loadBilling();
+      showToast('Billing updated — you are on ' + capitalize(data.effectiveTier || data.tier) + '.');
+    }
+  } catch {}
 }
 
 async function logout() {
