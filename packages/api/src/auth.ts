@@ -393,13 +393,16 @@ async function createOrUpdateUser(woUser: WorkOSUser): Promise<User> {
     });
     const user = dbUserToUser(row);
     if (isNew && user.email) {
-      sendWelcome(user.email, user.name, user.apiKey).catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to send welcome email'); });
+      sendWelcome(user.email, user.name || 'there', user.apiKey || '').catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to send welcome email'); });
     }
     // Auto-link any pending GitHub installations for this user
     if (githubUsername && sql) {
-      sql`UPDATE github_installations SET user_id = ${user.id} WHERE github_login = ${githubUsername} AND user_id IS NULL`
-        .then((rows: unknown[]) => { if (rows.length) log.info({ userId: user.id, githubUsername, count: rows.length }, 'Auto-linked pending GitHub installations'); })
-        .catch((err: Error) => { log.warn({ err: err.message }, 'Failed to auto-link GitHub installations'); });
+      try {
+        const linked = await sql`UPDATE github_installations SET user_id = ${user.id} WHERE github_login = ${githubUsername} AND user_id IS NULL`;
+        if ((linked as unknown[]).length) log.info({ userId: user.id, githubUsername, count: (linked as unknown[]).length }, 'Auto-linked pending GitHub installations');
+      } catch (err) {
+        log.error({ err: (err as Error).message, userId: user.id, githubUsername }, 'Failed to auto-link GitHub installations');
+      }
     }
     return user;
   }

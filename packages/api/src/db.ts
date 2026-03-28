@@ -177,7 +177,7 @@ export async function migrate(): Promise<void> {
     CREATE TABLE IF NOT EXISTS release_drafts (
       id              TEXT PRIMARY KEY,
       org_id          TEXT,
-      user_id         TEXT NOT NULL REFERENCES users(id),
+      user_id         TEXT NOT NULL REFERENCES users(id),  -- owner: who the draft belongs to (for access control)
       project         TEXT NOT NULL,
       version         TEXT NOT NULL DEFAULT '',
       status          TEXT NOT NULL DEFAULT 'draft',
@@ -190,7 +190,7 @@ export async function migrate(): Promise<void> {
       formatted_md    TEXT NOT NULL DEFAULT '',
       formatted_html  TEXT NOT NULL DEFAULT '',
       raw_inputs_json JSONB,
-      created_by      TEXT NOT NULL REFERENCES users(id),
+      created_by      TEXT NOT NULL REFERENCES users(id),  -- author: who initially created the draft
       approved_by     TEXT,
       published_at    TIMESTAMPTZ,
       created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -265,7 +265,7 @@ export async function migrate(): Promise<void> {
   `;
 
   // Auto-prune expired revoked tokens (no longer needed once JWT naturally expires)
-  await sql`DELETE FROM revoked_tokens WHERE expires_at < NOW()`.catch(() => { /* best effort */ });
+  await sql`DELETE FROM revoked_tokens WHERE expires_at < NOW()`.catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to prune expired revoked tokens'); });
 
   // Stripe webhook idempotency table
   await sql`
@@ -277,7 +277,7 @@ export async function migrate(): Promise<void> {
   `;
 
   // Auto-prune webhook events older than 30 days
-  await sql`DELETE FROM webhook_events WHERE processed_at < NOW() - INTERVAL '30 days'`.catch(() => { /* best effort */ });
+  await sql`DELETE FROM webhook_events WHERE processed_at < NOW() - INTERVAL '30 days'`.catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to prune old webhook events'); });
 
   // GitHub App installation tracking
   await sql`

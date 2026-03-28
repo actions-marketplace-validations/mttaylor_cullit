@@ -52,6 +52,7 @@ export interface DailyUsage {
   generations: number;
   totalChanges: number;
   avgDuration: number;
+  _totalDuration?: number; // internal: exact cumulative duration for avg calculation
   providers: Record<string, number>;
 }
 
@@ -112,17 +113,18 @@ export async function addHistoryEntry(entry: HistoryEntry): Promise<void> {
     return;
   }
 
+  // Cap total users with history — check BEFORE mutating
+  if (!store.history[entry.userId] && Object.keys(store.history).length >= MAX_USERS_WITH_HISTORY) {
+    log.warn({ userId: entry.userId, maxUsers: MAX_USERS_WITH_HISTORY }, 'History store at user capacity — entry dropped');
+    return;
+  }
+
   const entries = store.history[entry.userId] || [];
 
   // Cap per-user history
   entries.unshift(entry);
   if (entries.length > MAX_HISTORY_PER_USER) {
     entries.length = MAX_HISTORY_PER_USER;
-  }
-
-  // Cap total users with history
-  if (!store.history[entry.userId] && Object.keys(store.history).length >= MAX_USERS_WITH_HISTORY) {
-    return; // silently skip
   }
 
   store.history[entry.userId] = entries;
@@ -144,6 +146,8 @@ export async function getHistory(userId: string, limit: number = 20, offset: num
   if (cursor) {
     const idx = entries.findIndex(e => e.id === cursor);
     if (idx >= 0) return entries.slice(idx + 1, idx + 1 + limit);
+    // Cursor entry was deleted — restart from beginning instead of silent offset fallback
+    return entries.slice(0, limit);
   }
   return entries.slice(offset, offset + limit);
 }
@@ -182,11 +186,11 @@ export async function recordUsageEvent(event: UsageEvent): Promise<void> {
     }
   }
 
-  // Update aggregates
-  const prevTotal = today.avgDuration * today.generations;
+  // Update aggregates (track total duration to avoid rounding drift)
   today.generations++;
   today.totalChanges += event.changeCount;
-  today.avgDuration = Math.round((prevTotal + event.duration) / today.generations);
+  today._totalDuration = (today._totalDuration || (today.avgDuration * (today.generations - 1))) + event.duration;
+  today.avgDuration = Math.round(today._totalDuration / today.generations);
   today.providers[event.provider] = (today.providers[event.provider] || 0) + 1;
 
   store.dailyUsage[key] = dailyEntries;

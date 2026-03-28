@@ -89,8 +89,8 @@ describe('parseJsonObject', () => {
     expect(parseJsonObject('not json')).toBeNull();
   });
 
-  it('returns parsed value for JSON array (arrays pass isRecord)', () => {
-    expect(parseJsonObject('[1,2,3]')).toEqual([1, 2, 3]);
+  it('returns null for JSON array (not a plain object)', () => {
+    expect(parseJsonObject('[1,2,3]')).toBeNull();
   });
 
   it('returns null for JSON primitive', () => {
@@ -123,8 +123,8 @@ describe('isRecord', () => {
     expect(isRecord(true)).toBe(false);
   });
 
-  it('returns true for arrays (they are objects)', () => {
-    expect(isRecord([])).toBe(true);
+  it('returns false for arrays', () => {
+    expect(isRecord([])).toBe(false);
   });
 });
 

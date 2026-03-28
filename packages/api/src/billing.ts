@@ -293,7 +293,9 @@ export async function handleCheckout(
         return;
       }
     } catch (err) {
-      log.warn({ err, userId, plan }, 'Failed to update existing subscription, falling back to new checkout');
+      log.error({ err, userId, plan, subscriptionId: existingSub.stripe_subscription_id }, 'Failed to update existing subscription');
+      jsonFn(res, 502, { error: 'Failed to update subscription. Please try again or contact support.' });
+      return;
     }
   }
 
@@ -485,9 +487,11 @@ async function handleCheckoutComplete(sessionPayload: unknown): Promise<void> {
   // Send subscription confirmation email (includes API key)
   const user = await dbGetUser(userId);
   if (user?.email) {
-    sendSubscriptionConfirmed(user.email, user.name || user.login, plan, user.apiKey).catch((err) => {
-      log.warn({ err: (err as Error).message }, 'Failed to send subscription confirmed email');
-    });
+    try {
+      await sendSubscriptionConfirmed(user.email, user.name || user.login, plan, user.apiKey);
+    } catch (err) {
+      log.error({ err: (err as Error).message, userId }, 'Failed to send subscription confirmed email — user was charged but did not receive confirmation');
+    }
   }
 }
 

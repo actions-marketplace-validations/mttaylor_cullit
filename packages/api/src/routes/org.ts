@@ -174,16 +174,19 @@ export async function handleCreateOrgInvite(req: IncomingMessage, res: ServerRes
     createdBy: user.id,
   });
 
-  // Send invite email (non-blocking — don't fail the API call if email fails)
+  // Send invite email
   const org = await getOrg(user.orgId);
   const orgName = org?.name || 'your organization';
   const inviterName = user.name || user.login;
-  sendOrgInvite(invite.email, orgName, inviterName, invite.role, invite.token).catch(err =>
-    log.error({ err, email: invite.email }, 'Failed to send invite email'),
-  );
+  let emailSent = false;
+  try {
+    emailSent = await sendOrgInvite(invite.email, orgName, inviterName, invite.role, invite.token);
+  } catch (err) {
+    log.error({ err, email: invite.email }, 'Failed to send invite email');
+  }
 
-  log.info({ actor: user.id, action: 'org.createInvite', resource: user.orgId, email: body.email }, 'Org invite created');
-  json(res, 201, { invite: { id: invite.id, email: invite.email, role: invite.role, expiresAt: invite.expires_at } });
+  log.info({ actor: user.id, action: 'org.createInvite', resource: user.orgId, email: body.email, emailSent }, 'Org invite created');
+  json(res, 201, { invite: { id: invite.id, email: invite.email, role: invite.role, expiresAt: invite.expires_at }, emailSent });
 }
 
 export async function handleListOrgInvites(req: IncomingMessage, res: ServerResponse): Promise<void> {

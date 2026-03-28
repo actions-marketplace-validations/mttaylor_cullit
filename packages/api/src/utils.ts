@@ -85,7 +85,7 @@ export async function readBody(req: IncomingMessage): Promise<string> {
 // --- Utility functions ---
 
 export function isRecord(value: unknown): value is JsonObject {
-  return typeof value === 'object' && value !== null;
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /**
