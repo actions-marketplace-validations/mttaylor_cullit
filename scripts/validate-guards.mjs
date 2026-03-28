@@ -20,7 +20,6 @@ function fail(message) {
 }
 
 const pricing = readText('site/pricing.html');
-const freeTrial = readText('site/free-trial.html');
 const terms = readText('TERMS.md');
 const appDockerfile = readText('packages/app/Dockerfile');
 
@@ -38,12 +37,6 @@ if (!hasPattern(pricing, /\$19\s*<span\s+class="period">\s*\/\s*seat\s*\/\s*mo\s
   fail('pricing page is missing Team price formatting');
 }
 
-if (!hasPattern(freeTrial, /Pro\s*\(\$9\/mo\)/i)) {
-  fail('free-trial page is missing Pro ($9/mo) copy');
-}
-if (!hasPattern(freeTrial, /Team\s*\(\$19\/seat\/mo\)/i)) {
-  fail('free-trial page is missing Team ($19/seat/mo) copy');
-}
 
 if (!hasPattern(pricing, /Cancel anytime from the\s*<a\s+href="dashboard\.html">\s*billing dashboard\s*<\/a>/i)) {
   fail('pricing page is missing billing dashboard trust link');

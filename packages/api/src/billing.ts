@@ -2,17 +2,20 @@
  * Cullit Stripe Billing
  *
  * Handles:
- *   - Checkout session creation (Pro / Team plans)
+ *   - Checkout session creation (Basic / Pro / Team 5/10/25 plans)
  *   - Webhook processing (subscription lifecycle)
  *   - Customer portal sessions
  *   - Tier sync (Stripe status → user tier in DB)
+ *   - Team API key provisioning and lifecycle (create on checkout, revoke on cancel/downgrade)
  *
  * Environment Variables:
- *   STRIPE_SECRET_KEY      — Stripe API secret key (sk_test_... or sk_live_...)
- *   STRIPE_WEBHOOK_SECRET  — Webhook endpoint signing secret (whsec_...)
- *   STRIPE_PRO_PRICE_ID         — Price ID for Pro plan ($9/mo)
- *   STRIPE_TEAM_PRICE_ID        — Price ID for Team plan ($19/seat/mo)
- *   CULLIT_BASE_URL             — Public base URL for success/cancel redirects
+ *   STRIPE_SECRET_KEY            — Stripe API secret key (sk_test_... or sk_live_...)
+ *   STRIPE_WEBHOOK_SECRET        — Webhook endpoint signing secret (whsec_...)
+ *   STRIPE_PRO_PRICE_ID          — Price ID for Pro plan ($9/mo)
+ *   STRIPE_TEAM_5_PRICE_ID       — Price ID for Team 5 plan ($44.99/mo, 5 seats)
+ *   STRIPE_TEAM_10_PRICE_ID      — Price ID for Team 10 plan ($89/mo, 10 seats)
+ *   STRIPE_TEAM_25_PRICE_ID      — Price ID for Team 25 plan ($209/mo, 25 seats)
+ *   CULLIT_BASE_URL              — Public base URL for success/cancel redirects
  *
  * NOTE: We use Stripe's REST API directly instead of the SDK
  * to maintain our zero external runtime dependency principle
@@ -22,25 +25,34 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import type { IncomingMessage, ServerResponse } from 'http';
 import {
-  dbGetUser, dbUpdateUserTier, dbUpdateUserStripe, dbClearUserTrial,
+  dbGetUser, dbUpdateUserTier, dbUpdateUserStripe,
   dbUpsertSubscription, dbGetSubscription, dbGetUserByStripeCustomer,
   dbCheckWebhookProcessed, dbMarkWebhookProcessed,
+  dbCreateTeamApiKey, dbGetActiveTeamApiKeyCount,
+  dbRevokeAllOrgTeamApiKeys, dbRevokeExcessTeamApiKeys,
 } from './db.js';
-import { getEffectiveTier, getTrialStatus, getUser } from './auth.js';
+import { getEffectiveTier, getUser, generateApiKey } from './auth.js';
+import { createOrg } from './auth.js';
 import { isRecord } from './utils.js';
 import { log } from './logger.js';
 import { sendPaymentFailed, sendSubscriptionConfirmed } from './email.js';
+import { TEAM_PLAN_SEATS } from '@cullit/core';
 
 const STRIPE_SECRET_KEY = process.env['STRIPE_SECRET_KEY'] || '';
 const STRIPE_WEBHOOK_SECRET = process.env['STRIPE_WEBHOOK_SECRET'] || '';
 const STRIPE_BASIC_PRICE_ID = process.env['STRIPE_BASIC_PRICE_ID'] || '';
 const STRIPE_PRO_PRICE_ID = process.env['STRIPE_PRO_PRICE_ID'] || '';
 const STRIPE_TEAM_PRICE_ID = process.env['STRIPE_TEAM_PRICE_ID'] || '';
+const STRIPE_TEAM_5_PRICE_ID = process.env['STRIPE_TEAM_5_PRICE_ID'] || STRIPE_TEAM_PRICE_ID;
+const STRIPE_TEAM_10_PRICE_ID = process.env['STRIPE_TEAM_10_PRICE_ID'] || '';
+const STRIPE_TEAM_25_PRICE_ID = process.env['STRIPE_TEAM_25_PRICE_ID'] || '';
 
 if (STRIPE_SECRET_KEY) {
   if (!STRIPE_BASIC_PRICE_ID) log.warn('STRIPE_BASIC_PRICE_ID not set — Basic checkout will fail');
   if (!STRIPE_PRO_PRICE_ID) log.warn('STRIPE_PRO_PRICE_ID not set — Pro checkout will fail');
-  if (!STRIPE_TEAM_PRICE_ID) log.warn('STRIPE_TEAM_PRICE_ID not set — Team checkout will fail');
+  if (!STRIPE_TEAM_5_PRICE_ID) log.warn('STRIPE_TEAM_5_PRICE_ID not set — Team 5 checkout will fail');
+  if (!STRIPE_TEAM_10_PRICE_ID) log.warn('STRIPE_TEAM_10_PRICE_ID not set — Team 10 checkout will fail');
+  if (!STRIPE_TEAM_25_PRICE_ID) log.warn('STRIPE_TEAM_25_PRICE_ID not set — Team 25 checkout will fail');
 }
 const BASE_URL = process.env['CULLIT_BASE_URL'] || 'http://localhost:3000';
 const DASHBOARD_URL = process.env['CULLIT_DASHBOARD_URL'] || BASE_URL;
@@ -209,20 +221,28 @@ function verifyWebhookSignature(payload: string, sigHeader: string): boolean {
   });
 }
 
-// --- Plan mapping ---
+// --- Plan mapping (exported for testing) ---
 
-function priceToPlan(priceId: string): string {
+export function priceToPlan(priceId: string): string {
   if (priceId === STRIPE_BASIC_PRICE_ID) return 'basic';
   if (priceId === STRIPE_PRO_PRICE_ID) return 'pro';
-  if (priceId === STRIPE_TEAM_PRICE_ID) return 'team';
+  if (priceId === STRIPE_TEAM_5_PRICE_ID) return 'team-5';
+  if (priceId === STRIPE_TEAM_10_PRICE_ID) return 'team-10';
+  if (priceId === STRIPE_TEAM_25_PRICE_ID) return 'team-25';
+  if (priceId === STRIPE_TEAM_PRICE_ID) return 'team-5'; // legacy fallback
   return 'free';
 }
 
-function planToTier(plan: string): string {
+export function planToTier(plan: string): string {
   if (plan === 'basic') return 'basic';
   if (plan === 'pro') return 'pro';
-  if (plan === 'team') return 'team';
+  if (plan === 'team' || plan.startsWith('team-')) return 'team';
   return 'free';
+}
+
+export function planToSeats(plan: string): number {
+  const seats = TEAM_PLAN_SEATS[plan as keyof typeof TEAM_PLAN_SEATS];
+  return seats || 0;
 }
 
 /** Build a subscription record for dbUpsertSubscription, eliminating repetition across webhook handlers. */
@@ -251,7 +271,7 @@ function buildSubscriptionRecord(
 
 export async function handleCheckout(
   userId: string,
-  plan: 'basic' | 'pro' | 'team',
+  plan: 'basic' | 'pro' | 'team-5' | 'team-10' | 'team-25',
   jsonFn: (res: ServerResponse, status: number, body: unknown) => void,
   res: ServerResponse,
 ): Promise<void> {
@@ -266,7 +286,11 @@ export async function handleCheckout(
     return;
   }
 
-  const priceId = plan === 'team' ? STRIPE_TEAM_PRICE_ID : plan === 'basic' ? STRIPE_BASIC_PRICE_ID : STRIPE_PRO_PRICE_ID;
+  const priceId = plan === 'team-25' ? STRIPE_TEAM_25_PRICE_ID
+    : plan === 'team-10' ? STRIPE_TEAM_10_PRICE_ID
+    : plan === 'team-5' ? STRIPE_TEAM_5_PRICE_ID
+    : plan === 'basic' ? STRIPE_BASIC_PRICE_ID
+    : STRIPE_PRO_PRICE_ID;
   if (!priceId) {
     jsonFn(res, 503, { error: `Price not configured for ${plan} plan` });
     return;
@@ -383,10 +407,9 @@ export async function handleGetSubscription(
     return;
   }
   const effectiveTier = getEffectiveTier(user);
-  const trial = getTrialStatus(user);
   const sub = await dbGetSubscription(userId);
   if (!sub) {
-    jsonFn(res, 200, { subscription: null, plan: effectiveTier, tier: user.tier || 'free', effectiveTier, trial });
+    jsonFn(res, 200, { subscription: null, plan: effectiveTier, tier: user.tier || 'free', effectiveTier });
     return;
   }
 
@@ -400,7 +423,6 @@ export async function handleGetSubscription(
     plan: sub.plan,
     tier: user.tier || sub.plan,
     effectiveTier,
-    trial,
   });
 }
 
@@ -483,7 +505,6 @@ async function handleCheckoutComplete(sessionPayload: unknown): Promise<void> {
   // Update user tier
   const tier = planToTier(plan);
   await dbUpdateUserTier(userId, tier);
-  await dbClearUserTrial(userId);
 
   // Fetch full subscription details from Stripe
   const sub = await stripeRequest<StripeSubscription>(`/subscriptions/${subscriptionId}`, 'GET');
@@ -491,6 +512,16 @@ async function handleCheckoutComplete(sessionPayload: unknown): Promise<void> {
   await dbUpsertSubscription(buildSubscriptionRecord(subscriptionId, userId, customerId, plan, sub));
 
   log.info({ userId, plan, customerId }, 'Checkout complete');
+
+  // Provision team API keys if this is a team plan
+  const seats = planToSeats(plan);
+  if (seats > 0) {
+    try {
+      await provisionTeamKeys(userId, plan, seats);
+    } catch (err) {
+      log.error({ err: (err as Error).message, userId, plan, seats }, 'Failed to provision team API keys — user was charged but keys not created. Manual intervention required.');
+    }
+  }
 
   // Send subscription confirmation email (includes API key)
   const user = await dbGetUser(userId);
@@ -501,6 +532,40 @@ async function handleCheckoutComplete(sessionPayload: unknown): Promise<void> {
       log.error({ err: (err as Error).message, userId }, 'Failed to send subscription confirmed email — user was charged but did not receive confirmation');
     }
   }
+}
+
+/**
+ * Provision team API keys after a team plan checkout or upgrade.
+ * Creates an org if the user doesn't have one, then generates keys up to the seat count.
+ */
+async function provisionTeamKeys(userId: string, plan: string, seats: number): Promise<void> {
+  const { randomBytes } = await import('crypto');
+
+  const user = await getUser(userId);
+  if (!user) return;
+
+  let orgId = user.orgId;
+
+  // Create org automatically if user doesn't have one
+  if (!orgId) {
+    const orgName = (user.name || user.login || 'Team') + "'s Team";
+    const org = await createOrg(orgName, user, seats);
+    orgId = org.id;
+    log.info({ userId, orgId, plan, seats }, 'Auto-created org for team plan');
+  }
+
+  // Generate keys up to the seat count (delta from existing active keys)
+  const existingCount = await dbGetActiveTeamApiKeyCount(orgId);
+  const toGenerate = Math.max(0, seats - existingCount);
+
+  for (let i = 0; i < toGenerate; i++) {
+    const id = randomBytes(12).toString('hex');
+    const apiKey = generateApiKey();
+    const label = `Seat ${existingCount + i + 1}`;
+    await dbCreateTeamApiKey({ id, orgId, apiKey, label });
+  }
+
+  log.info({ userId, orgId, plan, seats, generated: toGenerate, existing: existingCount }, 'Team API keys provisioned');
 }
 
 async function handleSubscriptionUpdate(subscriptionPayload: unknown): Promise<void> {
@@ -517,12 +582,33 @@ async function handleSubscriptionUpdate(subscriptionPayload: unknown): Promise<v
 
   // Update user tier
   await dbUpdateUserTier(user.id, tier);
-  if (tier !== 'free') {
-    await dbClearUserTrial(user.id);
-  }
 
   // Update subscription record
   await dbUpsertSubscription(buildSubscriptionRecord(subscription.id, user.id, customerId, plan, subscription));
+
+  // Provision additional team keys on upgrade (e.g. team-5 → team-10)
+  // or revoke excess keys on downgrade (e.g. team-10 → team-5)
+  const seats = planToSeats(plan);
+  if (seats > 0) {
+    try {
+      await provisionTeamKeys(user.id, plan, seats);
+      // Revoke excess keys if downgrading to fewer seats
+      if (user.orgId) {
+        const revoked = await dbRevokeExcessTeamApiKeys(user.orgId, seats);
+        if (revoked > 0) {
+          log.info({ userId: user.id, orgId: user.orgId, plan, revoked }, 'Revoked excess team API keys after plan downgrade');
+        }
+      }
+    } catch (err) {
+      log.error({ err: (err as Error).message, userId: user.id, plan, seats }, 'Failed to provision/adjust team API keys on subscription update');
+    }
+  } else if (user.orgId) {
+    // Downgraded from team to non-team plan — revoke all keys
+    const revoked = await dbRevokeAllOrgTeamApiKeys(user.orgId);
+    if (revoked > 0) {
+      log.info({ userId: user.id, orgId: user.orgId, revoked }, 'Revoked all team API keys after downgrade to non-team plan');
+    }
+  }
 
   log.info({ userId: user.id, plan, status: subscription.status }, 'Subscription updated');
 }
@@ -537,6 +623,14 @@ async function handleSubscriptionDeleted(subscriptionPayload: unknown): Promise<
 
   // Downgrade to free
   await dbUpdateUserTier(user.id, 'free');
+
+  // Revoke all team API keys when subscription is canceled
+  if (user.orgId) {
+    const revoked = await dbRevokeAllOrgTeamApiKeys(user.orgId);
+    if (revoked > 0) {
+      log.info({ userId: user.id, orgId: user.orgId, revoked }, 'Revoked all team API keys after subscription cancellation');
+    }
+  }
 
   // Update subscription record
   await dbUpsertSubscription(buildSubscriptionRecord(subscription.id, user.id, customerId, 'free', null, { status: 'canceled' }));

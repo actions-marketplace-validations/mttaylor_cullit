@@ -12,8 +12,6 @@ describe('Email Module', () => {
     expect(typeof email.sendSubscriptionConfirmed).toBe('function');
     expect(typeof email.sendPaymentFailed).toBe('function');
     expect(typeof email.sendUsageAlert).toBe('function');
-    expect(typeof email.sendTrialExpiryWarning).toBe('function');
-    expect(typeof email.sendTrialExpired).toBe('function');
   });
 
   it('sendWelcome returns false when RESEND_API_KEY is not set', async () => {
@@ -40,15 +38,5 @@ describe('Email Module', () => {
     expect(result).toBe(false);
   });
 
-  it('sendTrialExpiryWarning returns false when RESEND_API_KEY is not set', async () => {
-    const { sendTrialExpiryWarning } = await import('../src/email.js');
-    const result = await sendTrialExpiryWarning('test@example.com', 'Test User', 3);
-    expect(result).toBe(false);
-  });
-
-  it('sendTrialExpired returns false when RESEND_API_KEY is not set', async () => {
-    const { sendTrialExpired } = await import('../src/email.js');
-    const result = await sendTrialExpired('test@example.com', 'Test User');
-    expect(result).toBe(false);
-  });
 });
+

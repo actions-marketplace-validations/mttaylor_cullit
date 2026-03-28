@@ -103,8 +103,9 @@ flowchart TD
 ### Tier Expectations
 
 - Free: local source + template provider + stdout/file publishers.
-- Pro: AI providers + premium enrichment + premium publishers.
-- Team: Pro capabilities plus team features like drafts/team publishers.
+- Basic: Single AI provider + web dashboard.
+- Pro: AI providers + premium enrichment + premium publishers + GitHub App.
+- Team (5/10/25 seats): Pro capabilities plus team features (drafts, team publishers, org management, team API keys). Team plans are available in three sizes: Team 5 ($44.99/mo), Team 10 ($89/mo), Team 25 ($209/mo). Each seat receives a managed API key that can be labeled, assigned, rotated, and revoked by org owners/admins.
 - Enterprise: Team capabilities plus enterprise features (for example, SSO/audit logs where enabled).
 
 ## API and Dashboard Flow
@@ -119,7 +120,7 @@ sequenceDiagram
   B->>A: GET /auth/me
   A->>AU: resolveUser(cookie or Bearer clt_ key)
   AU-->>A: user or null
-  A-->>B: tier effectiveTier trial
+  A-->>B: tier effectiveTier
 
   B->>A: POST /generate
   A->>AU: resolveUser

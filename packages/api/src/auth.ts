@@ -27,6 +27,7 @@ import {
   dbUpdateUserOrg, dbGetOrg, dbGetOrgBySlug, dbCreateOrg, dbGetOrgMemberCount,
   dbAddOrgMember, dbRemoveOrgMember, dbGetOrgMembers,
   dbRevokeToken, dbIsTokenRevoked, dbDeleteUser,
+  dbGetTeamApiKeyByKey,
   sql,
   type DbUser, type DbOrg,
 } from './db.js';
@@ -64,7 +65,6 @@ const IS_HTTPS = BASE_URL.startsWith('https');
 const COOKIE_SAMESITE = 'Lax';
 const COOKIE_SECURE_FLAG = IS_HTTPS ? '; Secure' : '';
 const COOKIE_ATTRS = `; HttpOnly; SameSite=${COOKIE_SAMESITE}${COOKIE_SECURE_FLAG}; Path=/`;
-const TRIAL_DAYS = Math.max(0, parseInt(process.env['CULLIT_TRIAL_DAYS'] || '14', 10) || 14);
 
 /** Security headers for auth endpoint responses (mirrors index.ts SECURITY_HEADERS). */
 const AUTH_SECURITY_HEADERS: Record<string, string> = {
@@ -83,25 +83,12 @@ export interface User {
   email: string;
   avatarUrl: string;
   githubUsername: string | null;
-  tier: 'free' | 'pro' | 'team' | 'enterprise';
+  tier: 'free' | 'basic' | 'pro' | 'team' | 'enterprise';
   orgId: string | null;  // null = no org membership
   role: 'owner' | 'admin' | 'member';
   apiKey: string;        // clt_<random> generated on first login
-  trialTier?: 'pro' | 'team' | null;
-  trialStartsAt?: string | null;
-  trialEndsAt?: string | null;
-  trialConvertedAt?: string | null;
   createdAt: string;
   lastLoginAt: string;
-}
-
-export interface TrialState {
-  active: boolean;
-  expired: boolean;
-  tier: 'pro' | 'team' | null;
-  startsAt: string | null;
-  endsAt: string | null;
-  daysRemaining: number;
 }
 
 export interface Org {
@@ -282,7 +269,20 @@ export async function resolveUser(req: IncomingMessage): Promise<User | null> {
   const authHeader = req.headers['authorization'] || '';
   if (authHeader.startsWith('Bearer clt_')) {
     const apiKey = authHeader.slice(7);
-    return getUserByApiKey(apiKey);
+    // Check personal API key first
+    const user = await getUserByApiKey(apiKey);
+    if (user) return user;
+    // Check team API keys — resolve to the org owner
+    if (useDb) {
+      const teamKey = await dbGetTeamApiKeyByKey(apiKey);
+      if (teamKey) {
+        const org = await dbGetOrg(teamKey.org_id);
+        if (org) {
+          const owner = await getUser(org.owner_id);
+          if (owner) return owner;
+        }
+      }
+    }
   }
 
   return null;
@@ -323,52 +323,16 @@ function dbUserToUser(row: DbUser): User {
     githubUsername: row.github_username || null,
     tier: row.tier as User['tier'], orgId: row.org_id, role: row.role as User['role'],
     apiKey: row.api_key,
-    trialTier: (row.trial_tier === 'pro' || row.trial_tier === 'team') ? row.trial_tier : null,
-    trialStartsAt: row.trial_starts_at ? row.trial_starts_at.toISOString() : null,
-    trialEndsAt: row.trial_ends_at ? row.trial_ends_at.toISOString() : null,
-    trialConvertedAt: row.trial_converted_at ? row.trial_converted_at.toISOString() : null,
     createdAt: row.created_at.toISOString(),
     lastLoginAt: row.last_login_at.toISOString(),
   };
 }
 
-function getInitialTrialWindow(): { trialTier: 'pro'; trialStartsAt: Date; trialEndsAt: Date } | null {
-  if (TRIAL_DAYS <= 0) return null;
-  const start = new Date();
-  const end = new Date(start.getTime() + (TRIAL_DAYS * 24 * 60 * 60 * 1000));
-  return { trialTier: 'pro', trialStartsAt: start, trialEndsAt: end };
-}
-
-export function getTrialStatus(user: User): TrialState {
-  const tier = user.trialTier === 'pro' || user.trialTier === 'team' ? user.trialTier : null;
-  if (!tier || !user.trialEndsAt) {
-    return { active: false, expired: false, tier: null, startsAt: null, endsAt: null, daysRemaining: 0 };
-  }
-
-  const endTime = new Date(user.trialEndsAt).getTime();
-  const startTime = user.trialStartsAt ? new Date(user.trialStartsAt).getTime() : null;
-  const now = Date.now();
-  const active = user.tier === 'free' && endTime > now;
-  const expired = user.tier === 'free' && endTime <= now;
-  const daysRemaining = active ? Math.max(1, Math.ceil((endTime - now) / (24 * 60 * 60 * 1000))) : 0;
-
-  return {
-    active,
-    expired,
-    tier,
-    startsAt: startTime ? new Date(startTime).toISOString() : null,
-    endsAt: new Date(endTime).toISOString(),
-    daysRemaining,
-  };
-}
-
 export function getEffectiveTier(user: User): User['tier'] {
-  const trial = getTrialStatus(user);
-  if (trial.active && trial.tier) return trial.tier;
   return user.tier;
 }
 
-function generateApiKey(): string {
+export function generateApiKey(): string {
   return 'clt_' + randomBytes(24).toString('hex');
 }
 
@@ -382,15 +346,11 @@ async function createOrUpdateUser(woUser: WorkOSUser): Promise<User> {
   if (useDb) {
     const apiKey = generateApiKey();
     const isNew = !(await dbGetUser(woUser.id));
-    const trial = isNew ? getInitialTrialWindow() : null;
     const row = await dbUpsertUser({
       id: woUser.id, login: woUser.email,
       name: displayName, email: woUser.email,
       avatarUrl: woUser.profile_picture_url || '', apiKey,
       githubUsername,
-      trialTier: trial?.trialTier || null,
-      trialStartsAt: trial?.trialStartsAt || null,
-      trialEndsAt: trial?.trialEndsAt || null,
     });
     const user = dbUserToUser(row);
     if (isNew && user.email) {
@@ -429,11 +389,6 @@ async function createOrUpdateUser(woUser: WorkOSUser): Promise<User> {
     githubUsername,
     orgId: null, role: 'member',
     apiKey: generateApiKey(),
-    ...(getInitialTrialWindow() ? {
-      trialTier: 'pro' as const,
-      trialStartsAt: now,
-      trialEndsAt: new Date(Date.now() + (TRIAL_DAYS * 24 * 60 * 60 * 1000)).toISOString(),
-    } : {}),
     createdAt: now, lastLoginAt: now,
   };
 
@@ -473,7 +428,7 @@ function dbOrgToOrg(row: DbOrg): Org {
   };
 }
 
-export async function createOrg(name: string, owner: User): Promise<Org> {
+export async function createOrg(name: string, owner: User, maxSeats = 10): Promise<Org> {
   const id = randomBytes(12).toString('hex');
   let slug = name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').slice(0, 48);
   const now = new Date().toISOString();
@@ -485,14 +440,14 @@ export async function createOrg(name: string, owner: User): Promise<Org> {
   }
 
   if (useDb) {
-    const row = await dbCreateOrg({ id, name, slug, ownerId: owner.id, tier: 'team', maxSeats: 10 });
+    const row = await dbCreateOrg({ id, name, slug, ownerId: owner.id, tier: 'team', maxSeats });
     await dbAddOrgMember(id, owner.id, 'owner');
     await dbUpdateUserOrg(owner.id, id, 'owner', 'team');
     return dbOrgToOrg(row);
   }
 
   const org: Org = {
-    id, name, slug, ownerId: owner.id, tier: 'team', maxSeats: 10,
+    id, name, slug, ownerId: owner.id, tier: 'team', maxSeats,
     requireSeparateApprover: false,
     members: [{ userId: owner.id, role: 'owner', joinedAt: now }],
     createdAt: now,
@@ -706,7 +661,6 @@ export async function handleAuthMe(req: IncomingMessage, res: ServerResponse, js
   }
 
   const effectiveTier = getEffectiveTier(user);
-  const trial = getTrialStatus(user);
 
   jsonFn(res, 200, {
     id: user.id,
@@ -720,7 +674,6 @@ export async function handleAuthMe(req: IncomingMessage, res: ServerResponse, js
     orgId: user.orgId,
     role: user.role,
     apiKey: user.apiKey,
-    trial,
     features: getFeatureGating(effectiveTier),
     createdAt: user.createdAt,
   });

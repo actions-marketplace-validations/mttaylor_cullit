@@ -1,6 +1,6 @@
 # @cullit/licensed
 
-Private registry package for paid Cullit tiers (Pro, Team, Enterprise).
+Private registry package for paid Cullit tiers (Basic, Pro, Team, Enterprise).
 
 This package preloads paid collectors/generators/publishers and then runs the CLI.
 

@@ -34,12 +34,12 @@ import {
 } from './store.js';
 import { migrate, closeDb, sql,
   dbGetProjectSettings, dbUpsertProjectSettings, dbListProjectSettings,
-  dbGetExpiringTrials, dbGetJustExpiredTrials, dbGetUserByLogin, dbGetUserByGithubUsername,
+  dbGetUserByLogin, dbGetUserByGithubUsername,
 } from './db.js';
 import { handleCheckout, handleBillingPortal, handleGetSubscription, handleStripeWebhook, isStripeConfigured } from './billing.js';
 import { log } from './logger.js';
 import { metrics, handleMetrics } from './metrics.js';
-import { sendTrialExpiryWarning, sendTrialExpired, sendUsageAlert } from './email.js';
+import { sendUsageAlert } from './email.js';
 import {
   json, readBody, readJsonBody, parseJsonObject, isRecord, isTeamTier, ErrorCode,
   PORT, SECURITY_HEADERS, generateRequestId,
@@ -57,6 +57,10 @@ import {
   handleCreateOrgInvite, handleListOrgInvites, handleDeleteOrgInvite, handleAcceptOrgInvite,
   handleUpdateOrgMemberRole, handleGetOrgUsage, handleUpdateOrgSettings,
 } from './routes/org.js';
+import {
+  handleListTeamKeys, handleUpdateTeamKey, handleSendTeamKey,
+  handleRevokeTeamKey, handleRotateTeamKey,
+} from './routes/team-keys.js';
 
 // Load pro plugins if installed
 try { await import('@cullit/pro'); } catch { /* pro not installed */ }
@@ -104,40 +108,6 @@ if (!ALLOWED_ORIGINS) {
   log.warn('ALLOWED_ORIGINS is not set. CORS will reject cross-origin requests. Set ALLOWED_ORIGINS=* for local dev or specify your domain.');
 }
 
-// --- Trial expiry email cron (runs every 6 hours) ---
-async function checkTrialExpiry(): Promise<void> {
-  try {
-    // Warn users whose trial expires within 3 days
-    const expiring = await dbGetExpiringTrials(3);
-    const warningResults = await Promise.allSettled(
-      expiring
-        .filter(u => u.email && u.trial_ends_at)
-        .map(user => {
-          const daysRemaining = Math.max(1, Math.ceil((new Date(user.trial_ends_at!).getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
-          return sendTrialExpiryWarning(user.email!, user.name || user.login, daysRemaining);
-        }),
-    );
-    // Notify users whose trial just expired
-    const expired = await dbGetJustExpiredTrials();
-    const expiredResults = await Promise.allSettled(
-      expired
-        .filter(u => u.email)
-        .map(user => sendTrialExpired(user.email!, user.name || user.login)),
-    );
-    if (expiring.length || expired.length) {
-      const warnFailed = warningResults.filter(r => r.status === 'rejected').length;
-      const expFailed = expiredResults.filter(r => r.status === 'rejected').length;
-      log.info({ expiring: expiring.length, expired: expired.length, warnFailed, expFailed }, 'Trial expiry emails sent');
-    }
-  } catch (err) {
-    log.warn({ err: (err as Error).message }, 'Trial expiry check failed');
-  }
-}
-if (sql) {
-  // Run on startup (delayed) and every 6 hours
-  setTimeout(() => { checkTrialExpiry().catch((e) => { log.error({ err: (e as Error).message }, 'Trial expiry cron failed'); }); }, 30_000);
-  setInterval(() => { checkTrialExpiry().catch((e) => { log.error({ err: (e as Error).message }, 'Trial expiry cron failed'); }); }, 6 * 60 * 60 * 1000).unref();
-}
 const allowedOriginSet = new Set(ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean));
 
 function getCorsOrigin(req: IncomingMessage): string {
@@ -832,7 +802,11 @@ const server = createServer(async (req, res: CorsResponse) => {
       if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
       const body = await readJsonBody(req, res) as { plan?: string } | null;
       if (!body) return;
-      const plan = body.plan === 'team' ? 'team' : body.plan === 'basic' ? 'basic' : 'pro';
+      const validPlans = ['basic', 'pro', 'team-5', 'team-10', 'team-25'] as const;
+      const plan = validPlans.includes(body.plan as typeof validPlans[number])
+        ? (body.plan as typeof validPlans[number])
+        : body.plan === 'team' ? 'team-5' as const  // legacy fallback
+        : 'pro' as const;
       await handleCheckout(user.id, plan, json, res);
     } else if (path === '/v1/billing/portal' && req.method === 'POST') {
       const user = await resolveUser(req);
@@ -921,6 +895,22 @@ const server = createServer(async (req, res: CorsResponse) => {
       await handleUpdateOrgMemberRole(req, res, memberId);
     } else if (path === '/v1/org/usage' && req.method === 'GET') {
       await handleGetOrgUsage(req, res);
+
+    // --- Team API key routes ---
+    } else if (path === '/v1/org/keys' && req.method === 'GET') {
+      await handleListTeamKeys(req, res);
+    } else if (req.method === 'PATCH' && path.match(/^\/v1\/org\/keys\/[^/]+$/)) {
+      const keyId = path.split('/')[4];
+      await handleUpdateTeamKey(req, res, keyId);
+    } else if (req.method === 'POST' && path.match(/^\/v1\/org\/keys\/[^/]+\/send$/)) {
+      const keyId = path.split('/')[4];
+      await handleSendTeamKey(req, res, keyId);
+    } else if (req.method === 'POST' && path.match(/^\/v1\/org\/keys\/[^/]+\/revoke$/)) {
+      const keyId = path.split('/')[4];
+      await handleRevokeTeamKey(req, res, keyId);
+    } else if (req.method === 'POST' && path.match(/^\/v1\/org\/keys\/[^/]+\/rotate$/)) {
+      const keyId = path.split('/')[4];
+      await handleRotateTeamKey(req, res, keyId);
 
     // --- History & Analytics ---
     } else if (path === '/v1/history' && req.method === 'GET') {

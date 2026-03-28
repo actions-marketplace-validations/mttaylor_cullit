@@ -23,10 +23,6 @@ GitHub OAuth users and API keys.
 | `api_key` | TEXT UNIQUE | CULLIT_API_KEY value |
 | `stripe_customer_id` | TEXT | Stripe customer link |
 | `stripe_subscription_id` | TEXT | Stripe subscription link |
-| `trial_tier` | TEXT | Tier granted during trial |
-| `trial_starts_at` | TIMESTAMPTZ | Trial start |
-| `trial_ends_at` | TIMESTAMPTZ | Trial expiry |
-| `trial_converted_at` | TIMESTAMPTZ | When trial converted to paid |
 | `github_username` | TEXT | GitHub username (for app linking) |
 | `created_at` | TIMESTAMPTZ | Account creation |
 | `last_login_at` | TIMESTAMPTZ | Last login timestamp |

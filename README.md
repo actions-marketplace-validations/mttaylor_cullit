@@ -28,7 +28,7 @@ npm install -D cullit
 ## Distribution Model
 
 - Public npm package `cullit`: local git, template generation with `--provider none`, stdout/file output
-- Private registry package `@cullit/licensed`: paid tiers (Pro, Team, Enterprise) with AI providers, Jira/Linear enrichment, premium publishers, dashboard, API, GitHub App, and private deployment flows
+- Private registry package `@cullit/licensed`: paid tiers (Basic, Pro, Team 5/10/25, Enterprise) with AI providers, Jira/Linear enrichment, premium publishers, dashboard, API, GitHub App, and private deployment flows
 - npm is the delivery channel for the CLI runtime, not the paid entitlement layer
 
 ## Quick Start
@@ -283,7 +283,7 @@ docker compose up api
 | Package | Description |
 |---------|-------------|
 | [`cullit`](https://www.npmjs.com/package/cullit) | Public CLI installer — local/template workflow with `--provider none` |
-| `@cullit/licensed` | Private registry package for paid tiers (Pro, Team, Enterprise) |
+| `@cullit/licensed` | Private registry package for paid tiers (Basic, Pro, Team, Enterprise) |
 | [`@cullit/core`](https://www.npmjs.com/package/@cullit/core) | Core engine — pipeline, generators, publishers |
 | [`@cullit/config`](https://www.npmjs.com/package/@cullit/config) | Config loader — YAML parsing with env var resolution |
 | `@cullit/api` | REST API server (private) — OpenAPI 3.1, rate limiting, pipeline cache |
@@ -389,12 +389,13 @@ jira:
 | `WORKOS_API_KEY` | Dashboard login (WorkOS API key) |
 | `CULLIT_JWT_SECRET` | Dashboard session signing secret |
 | `CULLIT_BASE_URL` | Public base URL for OAuth callbacks |
-| `CULLIT_TRIAL_DAYS` | Trial duration override (default 14) |
 | `STRIPE_SECRET_KEY` | Stripe billing API key |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature verification |
 | `STRIPE_BASIC_PRICE_ID` | Stripe price id for Basic plan |
 | `STRIPE_PRICE_PRO_MONTHLY` | Stripe price id for Pro plan |
-| `STRIPE_PRICE_TEAM_MONTHLY` | Stripe price id for Team plan |
+| `STRIPE_TEAM_5_PRICE_ID` | Stripe price id for Team 5 plan ($44.99/mo, 5 seats) |
+| `STRIPE_TEAM_10_PRICE_ID` | Stripe price id for Team 10 plan ($89/mo, 10 seats) |
+| `STRIPE_TEAM_25_PRICE_ID` | Stripe price id for Team 25 plan ($209/mo, 25 seats) |
 | `RESEND_API_KEY` | Transactional email delivery |
 
 ## API Endpoints
@@ -424,10 +425,15 @@ jira:
 | `DELETE` | `/v1/org/invites/:id` | Revoke pending org invite |
 | `PATCH` | `/v1/org/members/:userId` | Update org member role |
 | `GET` | `/v1/org/usage` | Team usage and seat summary |
+| `GET` | `/v1/org/keys` | List team API keys |
+| `PATCH` | `/v1/org/keys/:id` | Update team key label/assignment |
+| `POST` | `/v1/org/keys/:id/send` | Email key to assigned member |
+| `POST` | `/v1/org/keys/:id/revoke` | Revoke a team key |
+| `POST` | `/v1/org/keys/:id/rotate` | Rotate a team key |
 
 ## Dashboard & Tutorials
 
-Cullit includes a hosted dashboard experience with authentication, billing, trial handling, analytics, and team workflows:
+Cullit includes a hosted dashboard experience with authentication, billing, analytics, and team workflows:
 
 - Dashboard: `site/dashboard.html`
 - Docs: `site/docs.html`

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { isStripeConfigured } from '../src/billing.js';
+import { isStripeConfigured, priceToPlan, planToTier, planToSeats } from '../src/billing.js';
 
 describe('Billing Module', () => {
   it('isStripeConfigured returns false when STRIPE_SECRET_KEY is not set', () => {
@@ -70,6 +70,64 @@ describe('Billing Module', () => {
       expect(captured).not.toBeNull();
       expect(captured!.status).toBe(400);
       expect(captured!.body.error).toContain('signature');
+    });
+  });
+});
+
+describe('Billing — plan mapping functions', () => {
+  describe('priceToPlan', () => {
+    it('returns "free" for unknown price ID', () => {
+      expect(priceToPlan('price_unknown')).toBe('free');
+    });
+  });
+
+  describe('planToTier', () => {
+    it('maps "basic" to "basic"', () => {
+      expect(planToTier('basic')).toBe('basic');
+    });
+
+    it('maps "pro" to "pro"', () => {
+      expect(planToTier('pro')).toBe('pro');
+    });
+
+    it('maps "team" to "team"', () => {
+      expect(planToTier('team')).toBe('team');
+    });
+
+    it('maps "team-5" to "team"', () => {
+      expect(planToTier('team-5')).toBe('team');
+    });
+
+    it('maps "team-10" to "team"', () => {
+      expect(planToTier('team-10')).toBe('team');
+    });
+
+    it('maps "team-25" to "team"', () => {
+      expect(planToTier('team-25')).toBe('team');
+    });
+
+    it('returns "free" for unknown plan', () => {
+      expect(planToTier('unknown')).toBe('free');
+    });
+  });
+
+  describe('planToSeats', () => {
+    it('returns 5 for "team-5"', () => {
+      expect(planToSeats('team-5')).toBe(5);
+    });
+
+    it('returns 10 for "team-10"', () => {
+      expect(planToSeats('team-10')).toBe(10);
+    });
+
+    it('returns 25 for "team-25"', () => {
+      expect(planToSeats('team-25')).toBe(25);
+    });
+
+    it('returns 0 for non-team plans', () => {
+      expect(planToSeats('basic')).toBe(0);
+      expect(planToSeats('pro')).toBe(0);
+      expect(planToSeats('free')).toBe(0);
     });
   });
 });

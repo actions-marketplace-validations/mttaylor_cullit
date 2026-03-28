@@ -2,19 +2,10 @@ import { type Page, type Route } from '@playwright/test';
 
 export type Tier = 'free' | 'pro' | 'team' | 'enterprise';
 
-export type Trial = {
-  active: boolean;
-  expired: boolean;
-  tier: 'pro' | 'team' | null;
-  startsAt: string | null;
-  endsAt: string | null;
-  daysRemaining: number;
-};
-
 export function makeUser(
   tier: Tier,
   effectiveTier?: Tier,
-  trial?: Trial,
+  _trial?: unknown,
   role: string = 'member',
 ) {
   return {
@@ -28,14 +19,6 @@ export function makeUser(
     orgId: null,
     role,
     apiKey: 'clt_' + 'a'.repeat(32),
-    trial: trial || {
-      active: false,
-      expired: false,
-      tier: null,
-      startsAt: null,
-      endsAt: null,
-      daysRemaining: 0,
-    },
     createdAt: new Date().toISOString(),
   };
 }

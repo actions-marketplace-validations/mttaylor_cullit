@@ -11,7 +11,7 @@ This directory contains the static site for cullit.io.
 - `setup.html` — guided setup flow
 - `dashboard.html` — authenticated dashboard (auth, billing, history, analytics, team, drafts)
 - `changelog.html` — hosted changelog surface
-- `free-trial.html` — free trial onboarding page
+- `free-trial.html` — redirects to dashboard
 - `releases.html` — public release notes browser
 - `privacy.html` — website privacy policy
 - `terms.html` — website terms of service

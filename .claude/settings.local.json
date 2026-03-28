@@ -4,7 +4,8 @@
       "Bash(xargs ls:*)",
       "Bash(find /c/Users/elect/OneDrive/Desktop/cullit/packages -name *.ts -o -name *.tsx)",
       "Bash(find . -name package.json -path */packages/* -type f)",
-      "Bash(wc -l packages/api/src/*.ts packages/api/src/**/*.ts)"
+      "Bash(wc -l packages/api/src/*.ts packages/api/src/**/*.ts)",
+      "Bash(gh release:*)"
     ]
   }
 }

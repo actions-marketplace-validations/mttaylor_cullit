@@ -301,7 +301,7 @@
   B->>A: GET auth me
   A->>AU: resolveUser cookie or Bearer clt key
   AU-->>A: user or null
-  A-->>B: tier effectiveTier trial
+  A-->>B: tier effectiveTier
 
   B->>A: POST generate
   A->>AU: resolveUser

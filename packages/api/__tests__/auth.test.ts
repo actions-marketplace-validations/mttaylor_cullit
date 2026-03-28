@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll, beforeEach, afterAll } from 'vitest';
-import { createJWT, verifyJWT, getEffectiveTier, getTrialStatus, handleLicenseValidate, loadAuthStore } from '../src/auth.js';
+import { createJWT, verifyJWT, getEffectiveTier, handleLicenseValidate, loadAuthStore } from '../src/auth.js';
 import { createHmac } from 'crypto';
 import { writeFileSync, existsSync, readFileSync, unlinkSync } from 'fs';
 import type { IncomingMessage, ServerResponse } from 'http';
@@ -59,29 +59,7 @@ describe('Auth Module — JWT', () => {
     expect(t1).not.toBe(t2);
   });
 
-  it('getTrialStatus returns active trial details for a free user in trial', () => {
-    const endsAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
-    const status = getTrialStatus({
-      id: '1', login: 'octo', name: 'Octo', email: '', avatarUrl: '',
-      tier: 'free', orgId: null, role: 'member', apiKey: 'clt_test',
-      trialTier: 'pro', trialStartsAt: new Date().toISOString(), trialEndsAt: endsAt,
-      createdAt: new Date().toISOString(), lastLoginAt: new Date().toISOString(),
-    });
-    expect(status.active).toBe(true);
-    expect(status.tier).toBe('pro');
-    expect(status.daysRemaining).toBeGreaterThan(0);
-  });
 
-  it('getEffectiveTier returns active trial tier before paid tier exists', () => {
-    const effective = getEffectiveTier({
-      id: '1', login: 'octo', name: 'Octo', email: '', avatarUrl: '',
-      tier: 'free', orgId: null, role: 'member', apiKey: 'clt_test',
-      trialTier: 'pro', trialStartsAt: new Date().toISOString(),
-      trialEndsAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      createdAt: new Date().toISOString(), lastLoginAt: new Date().toISOString(),
-    });
-    expect(effective).toBe('pro');
-  });
 });
 
 describe('Auth Module — JWT Security Hardening', () => {
@@ -162,38 +140,21 @@ describe('handleLicenseValidate', () => {
 
   beforeEach(() => {
     const now = new Date().toISOString();
-    const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-    const expiredTrialEnd = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     writeFileSync(STORE_PATH, JSON.stringify({
       users: {
         'free-user': {
           id: 'free-user', login: 'free@test.com', name: 'Free', email: 'free@test.com',
           avatarUrl: '', tier: 'free', orgId: null, role: 'member', apiKey: 'clt_freekey',
-          trialTier: null, trialStartsAt: null, trialEndsAt: null,
           createdAt: now, lastLoginAt: now,
         },
         'pro-user': {
           id: 'pro-user', login: 'pro@test.com', name: 'Pro', email: 'pro@test.com',
           avatarUrl: '', tier: 'pro', orgId: null, role: 'member', apiKey: 'clt_prokey',
-          trialTier: null, trialStartsAt: null, trialEndsAt: null,
           createdAt: now, lastLoginAt: now,
         },
         'team-user': {
           id: 'team-user', login: 'team@test.com', name: 'Team', email: 'team@test.com',
           avatarUrl: '', tier: 'team', orgId: null, role: 'member', apiKey: 'clt_teamkey',
-          trialTier: null, trialStartsAt: null, trialEndsAt: null,
-          createdAt: now, lastLoginAt: now,
-        },
-        'trial-user': {
-          id: 'trial-user', login: 'trial@test.com', name: 'Trial', email: 'trial@test.com',
-          avatarUrl: '', tier: 'free', orgId: null, role: 'member', apiKey: 'clt_trialkey',
-          trialTier: 'pro', trialStartsAt: now, trialEndsAt: trialEnd,
-          createdAt: now, lastLoginAt: now,
-        },
-        'expired-trial': {
-          id: 'expired-trial', login: 'expired@test.com', name: 'Expired', email: 'expired@test.com',
-          avatarUrl: '', tier: 'free', orgId: null, role: 'member', apiKey: 'clt_expiredkey',
-          trialTier: 'pro', trialStartsAt: now, trialEndsAt: expiredTrialEnd,
           createdAt: now, lastLoginAt: now,
         },
       },
@@ -202,8 +163,6 @@ describe('handleLicenseValidate', () => {
         'clt_freekey': 'free-user',
         'clt_prokey': 'pro-user',
         'clt_teamkey': 'team-user',
-        'clt_trialkey': 'trial-user',
-        'clt_expiredkey': 'expired-trial',
       },
     }));
     loadAuthStore();
@@ -268,19 +227,5 @@ describe('handleLicenseValidate', () => {
     expect(c.body).toEqual({ valid: true, tier: 'team' });
   });
 
-  it('returns trial tier when user has an active trial', async () => {
-    const { req, res, jsonFn, getCaptured } = mockReqRes('Bearer clt_trialkey');
-    await handleLicenseValidate(req, res, jsonFn);
-    const c = getCaptured()!;
-    expect(c.status).toBe(200);
-    expect(c.body).toEqual({ valid: true, tier: 'pro' });
-  });
 
-  it('returns free tier when trial has expired', async () => {
-    const { req, res, jsonFn, getCaptured } = mockReqRes('Bearer clt_expiredkey');
-    await handleLicenseValidate(req, res, jsonFn);
-    const c = getCaptured()!;
-    expect(c.status).toBe(200);
-    expect(c.body).toEqual({ valid: true, tier: 'free' });
-  });
 });

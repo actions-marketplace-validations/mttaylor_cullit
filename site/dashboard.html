@@ -915,6 +915,96 @@
     width: 100%;
     text-align: center;
   }
+
+  /* TEAM KEY CARDS */
+  .team-key-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .team-key-card.revoked { opacity: 0.5; }
+  .team-key-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .team-key-label {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-bright);
+    border: none;
+    background: transparent;
+    padding: 0.15rem 0.3rem;
+    border-radius: 4px;
+    min-width: 60px;
+    max-width: 200px;
+  }
+  .team-key-label:focus {
+    outline: 1px solid var(--accent);
+    background: var(--bg-card);
+  }
+  .team-key-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent);
+    cursor: pointer;
+    word-break: break-all;
+    padding: 0.4rem 0.6rem;
+    background: var(--bg-card);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+  .team-key-value:hover { border-color: var(--accent-dim); }
+  .team-key-assign {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .team-key-assign input {
+    font-size: 0.78rem;
+    padding: 0.3rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-card);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    flex: 1;
+    min-width: 120px;
+  }
+  .team-key-assign input:focus { border-color: var(--accent); outline: none; }
+  .team-key-actions {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+  .team-key-actions button {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-card);
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: 'Space Mono', monospace;
+  }
+  .team-key-actions button:hover { border-color: var(--accent); color: var(--accent); }
+  .team-key-actions button.danger:hover { border-color: var(--terminal-red); color: var(--terminal-red); }
+  .team-key-badge {
+    font-size: 0.65rem;
+    font-family: 'Space Mono', monospace;
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .team-key-badge.assigned { background: rgba(94,234,212,0.1); color: var(--accent); }
+  .team-key-badge.revoked-badge { background: rgba(248,113,113,0.1); color: var(--terminal-red); }
 .skip-link:focus{position:fixed!important;left:1rem!important;top:1rem!important;width:auto!important;height:auto!important;overflow:visible!important;clip:auto!important;border-radius:6px;z-index:10000;}
 </style>
 </head>
@@ -1055,16 +1145,6 @@
       <button class="dash-tab" data-tab="settings" onclick="switchDashTab('settings')">&#9881;&#65039; Settings</button>
       <button class="dash-tab" data-tab="changelog" onclick="switchDashTab('changelog')">&#128240; Changelog</button>
       <button class="dash-tab" data-tab="billing" onclick="switchDashTab('billing')">&#128179; Billing</button>
-    </div>
-
-    <div class="panel" id="trialBanner" style="display:none;margin-bottom:1rem;border-color:rgba(94,234,212,0.45)">
-      <div class="panel-body" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
-        <div>
-          <div style="font-size:0.75rem;color:var(--accent);font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.08em">Active Trial</div>
-          <div id="trialBannerText" style="font-size:0.95rem;color:var(--text-bright);margin-top:0.25rem"></div>
-        </div>
-        <button class="btn-small" onclick="switchDashTab('billing')">Upgrade Before Trial Ends</button>
-      </div>
     </div>
 
     <!-- GENERATE TAB -->
@@ -1427,16 +1507,38 @@
           </ul>
           <button class="btn-small plan-upgrade-btn" onclick="upgradePlan('pro')">Upgrade</button>
         </div>
-        <div class="billing-plan-option" id="planTeam">
-          <div class="plan-tier">Team</div>
-          <div class="plan-price">$19<span>/seat/mo</span></div>
+        <div class="billing-plan-option" id="planTeam5">
+          <div class="plan-tier">Team 5</div>
+          <div class="plan-price">$44.99<span>/mo</span></div>
           <ul class="plan-features">
+            <li>5 API keys / seats</li>
             <li>2,000 generations / month</li>
             <li>250 projects</li>
             <li>Team management</li>
+          </ul>
+          <button class="btn-small plan-upgrade-btn" onclick="upgradePlan('team-5')">Upgrade</button>
+        </div>
+        <div class="billing-plan-option" id="planTeam10">
+          <div class="plan-tier">Team 10</div>
+          <div class="plan-price">$89<span>/mo</span></div>
+          <ul class="plan-features">
+            <li>10 API keys / seats</li>
+            <li>2,000 generations / month</li>
+            <li>250 projects</li>
             <li>Priority support</li>
           </ul>
-          <button class="btn-small plan-upgrade-btn" onclick="upgradePlan('team')">Upgrade</button>
+          <button class="btn-small plan-upgrade-btn" onclick="upgradePlan('team-10')">Upgrade</button>
+        </div>
+        <div class="billing-plan-option" id="planTeam25">
+          <div class="plan-tier">Team 25</div>
+          <div class="plan-price">$209<span>/mo</span></div>
+          <ul class="plan-features">
+            <li>25 API keys / seats</li>
+            <li>2,000 generations / month</li>
+            <li>250 projects</li>
+            <li>Priority support</li>
+          </ul>
+          <button class="btn-small plan-upgrade-btn" onclick="upgradePlan('team-25')">Upgrade</button>
         </div>
         <div class="billing-plan-option" id="planEnterprise">
           <div class="plan-tier">Enterprise</div>
@@ -1448,6 +1550,17 @@
             <li>Dedicated support</li>
           </ul>
           <a class="btn-small plan-upgrade-btn" href="mailto:sales@cullit.io?subject=Cullit%20Enterprise">Contact Sales</a>
+        </div>
+      </div>
+
+      <!-- Team API Keys Panel -->
+      <div class="panel" id="teamKeysPanel" style="margin-top:1.5rem;display:none">
+        <div class="panel-header">&#128273; Team API Keys <span id="teamKeySeatCount" style="float:right;font-size:0.8rem;color:var(--text-dim)"></span></div>
+        <div class="panel-body">
+          <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:1rem">
+            These keys are shared across your team. Assign them to members and optionally send via email.
+          </p>
+          <div id="teamKeysList" style="display:flex;flex-direction:column;gap:0.75rem"></div>
         </div>
       </div>
 
@@ -1619,11 +1732,7 @@ function showDashboard() {
     avatarEl.hidden = false;
   }
   document.getElementById('navLogin').textContent = currentUser.login;
-  document.getElementById('navTier').textContent = currentUser.trial && currentUser.trial.active
-    ? (currentUser.effectiveTier || currentUser.tier) + ' trial'
-    : (currentUser.effectiveTier || currentUser.tier);
-
-  renderTrialBanner();
+  document.getElementById('navTier').textContent = currentUser.effectiveTier || currentUser.tier;
 
   checkHealth();
   loadHistory();
@@ -1634,9 +1743,9 @@ function showDashboard() {
   // Auto-trigger checkout if redirected from pricing page with ?checkout=pro|team
   const params = new URLSearchParams(location.search);
   const pendingPlan = params.get('checkout');
-  if (pendingPlan === 'pro' || pendingPlan === 'team') {
+  if (pendingPlan && ['basic', 'pro', 'team-5', 'team-10', 'team-25'].includes(pendingPlan)) {
     history.replaceState(null, '', 'dashboard.html');
-    upgradePlan(pendingPlan);
+    upgradePlan(pendingPlan === 'team' ? 'team-5' : pendingPlan);
   }
 
   // Poll for tier update after successful Stripe checkout
@@ -1653,46 +1762,7 @@ function showDashboard() {
   }
 }
 
-function renderTrialBanner() {
-  const banner = document.getElementById('trialBanner');
-  const text = document.getElementById('trialBannerText');
-  if (!currentUser || !currentUser.trial) {
-    banner.style.display = 'none';
-    text.textContent = '';
-    return;
-  }
-
-  const trial = currentUser.trial;
-
-  if (trial.active) {
-    const tier = capitalize(trial.tier || currentUser.effectiveTier || 'pro');
-    const days = trial.daysRemaining || 0;
-    text.textContent = tier + ' trial active. ' + days + ' day' + (days === 1 ? '' : 's') + ' remaining to keep AI generation, integrations, and publishing unlocked.';
-    banner.style.display = '';
-    banner.style.borderColor = 'rgba(94,234,212,0.45)';
-    banner.querySelector('.btn-small').textContent = 'Upgrade Before Trial Ends';
-  } else if (trial.expired) {
-    text.textContent = 'Your ' + capitalize(trial.tier || 'pro') + ' trial has ended. You\'ve been downgraded to Free (5 generations/month, template-only). Upgrade to keep AI, integrations, and publishing.';
-    banner.style.display = '';
-    banner.style.borderColor = 'rgba(239,68,68,0.45)';
-    banner.querySelector('.btn-small').textContent = 'Upgrade Now';
-  } else {
-    banner.style.display = 'none';
-    text.textContent = '';
-  }
-}
-
 async function pollForTierUpdate() {
-  const banner = document.getElementById('trialBanner');
-  const text = document.getElementById('trialBannerText');
-  if (banner) {
-    banner.style.display = '';
-    banner.style.borderColor = 'rgba(94,234,212,0.45)';
-    text.textContent = 'Processing payment… this may take a few seconds.';
-    const btn = banner.querySelector('.btn-small');
-    if (btn) btn.style.display = 'none';
-  }
-
   for (let i = 0; i < 10; i++) {
     await new Promise(r => setTimeout(r, 2000));
     try {
@@ -1700,7 +1770,6 @@ async function pollForTierUpdate() {
       const data = await res.json();
       if (data.tier && data.tier !== 'free') {
         currentUser = data;
-        renderTrialBanner();
         document.getElementById('navTier').textContent = data.effectiveTier || data.tier;
         showToast('Payment confirmed — you are now on ' + capitalize(data.tier) + '!');
         loadBilling();
@@ -1709,7 +1778,6 @@ async function pollForTierUpdate() {
     } catch {}
   }
   // After 20s, tell user to refresh
-  if (text) text.textContent = 'Payment received — please refresh the page to see your updated plan.';
   showToast('Payment is being processed. Refresh in a moment.');
 }
 
@@ -1719,7 +1787,6 @@ async function refreshAfterPortal() {
     const data = await res.json();
     if (data.tier) {
       currentUser = data;
-      renderTrialBanner();
       document.getElementById('navTier').textContent = data.effectiveTier || data.tier;
       loadBilling();
       showToast('Billing updated — you are on ' + capitalize(data.effectiveTier || data.tier) + '.');
@@ -2669,19 +2736,30 @@ async function loadBilling() {
   const planName = tier.charAt(0).toUpperCase() + tier.slice(1);
   document.getElementById('billingPlanName').textContent = planName;
 
-  // Highlight current plan card
+  // Highlight current plan card — team plan highlights the appropriate team-N card
   document.querySelectorAll('.billing-plan-option').forEach(el => el.classList.remove('current'));
-  const planEl = document.getElementById('plan' + planName);
-  if (planEl) planEl.classList.add('current');
+  if (tier === 'team') {
+    // Try to detect which team plan from subscription
+    const subPlan = currentUser._teamPlan || 'team-5';
+    const teamEl = document.getElementById('planTeam' + subPlan.replace('team-', ''));
+    if (teamEl) teamEl.classList.add('current');
+  } else {
+    const planEl = document.getElementById('plan' + planName);
+    if (planEl) planEl.classList.add('current');
+  }
 
   // Hide upgrade button for current plan and lower tiers (no downgrade via UI)
-  const tierRank = { free: 0, pro: 1, team: 2, enterprise: 3 };
-  const currentRank = tierRank[tier] || 0;
+  const tierRank = { free: 0, basic: 0.5, pro: 1, 'team-5': 2, 'team-10': 2.5, 'team-25': 3, enterprise: 4 };
+  const currentPlan = tier === 'team' ? (currentUser._teamPlan || 'team-5') : tier;
+  const currentRank = tierRank[currentPlan] || 0;
   document.querySelectorAll('.billing-plan-option').forEach(function(el) {
     const btn = el.querySelector('.plan-upgrade-btn');
     if (!btn) return;
-    const cardTier = (el.id || '').replace('plan', '').toLowerCase();
-    const cardRank = tierRank[cardTier] || 0;
+    const cardId = (el.id || '').replace('plan', '');
+    // Map card IDs to plan keys
+    const cardPlanMap = { Free: 'free', Basic: 'basic', Pro: 'pro', Team5: 'team-5', Team10: 'team-10', Team25: 'team-25', Enterprise: 'enterprise' };
+    const cardPlan = cardPlanMap[cardId] || cardId.toLowerCase();
+    const cardRank = tierRank[cardPlan] || 0;
     if (cardRank <= currentRank) {
       btn.style.display = 'none';
     } else {
@@ -2699,11 +2777,13 @@ async function loadBilling() {
   const statusEl = document.getElementById('billingPlanStatus');
   const actionsEl = document.getElementById('billingActions');
   actionsEl.innerHTML = '';
+  let subscriptionData = null;
 
   try {
     const res = await apiFetch('/v1/billing/subscription');
     if (res.ok) {
       const sub = await res.json();
+      subscriptionData = sub;
       if (sub && sub.subscription) {
         if (sub.subscription.status === 'past_due') {
           statusEl.textContent = 'Payment Failed';
@@ -2751,6 +2831,23 @@ async function loadBilling() {
     statusEl.textContent = '';
   }
 
+  // Detect specific team plan from subscription for card highlighting  
+  if (subscriptionData && subscriptionData.subscription && subscriptionData.subscription.plan && subscriptionData.subscription.plan.startsWith('team-')) {
+    currentUser._teamPlan = subscriptionData.subscription.plan;
+    document.querySelectorAll('.billing-plan-option').forEach(el => el.classList.remove('current'));
+    const teamEl = document.getElementById('planTeam' + subscriptionData.subscription.plan.replace('team-', ''));
+    if (teamEl) teamEl.classList.add('current');
+  }
+
+  // Show/hide team keys panel
+  const teamKeysPanel = document.getElementById('teamKeysPanel');
+  if (tier === 'team' || tier === 'enterprise') {
+    teamKeysPanel.style.display = '';
+    loadTeamKeys();
+  } else {
+    teamKeysPanel.style.display = 'none';
+  }
+
   // Usage bar
   try {
     const res = await apiFetch('/v1/analytics/usage?days=30');
@@ -2788,7 +2885,6 @@ async function upgradePlan(plan) {
       if (me.tier) {
         currentUser = me;
         document.getElementById('navTier').textContent = me.effectiveTier || me.tier;
-        renderTrialBanner();
         loadBilling();
       }
     } else if (data.url) {
@@ -2814,6 +2910,168 @@ async function openBillingPortal() {
     }
   } catch {
     showToast('Billing portal unavailable');
+  }
+}
+
+// --- Team Key Management ---
+
+async function loadTeamKeys() {
+  const list = document.getElementById('teamKeysList');
+  list.innerHTML = '<div style="color:var(--text-dim)">Loading team keys…</div>';
+  try {
+    const res = await apiFetch('/v1/org/keys');
+    if (!res.ok) { list.innerHTML = '<div style="color:var(--terminal-red)">Failed to load team keys</div>'; return; }
+    const data = await res.json();
+    const keys = data.keys || [];
+
+    // Update seat count display
+    const seatEl = document.getElementById('teamKeySeatCount');
+    const activeCount = keys.filter(function(k) { return !k.revokedAt; }).length;
+    const teamPlan = currentUser._teamPlan || 'team-5';
+    const seatLimits = { 'team-5': 5, 'team-10': 10, 'team-25': 25 };
+    const maxSeats = seatLimits[teamPlan] || activeCount;
+    seatEl.textContent = activeCount + ' of ' + maxSeats + ' seats active';
+
+    if (!keys.length) {
+      list.innerHTML = '<div style="color:var(--text-dim)">No team API keys yet. Keys are provisioned when you subscribe to a Team plan.</div>';
+      return;
+    }
+    list.innerHTML = '';
+    keys.forEach(function(k) {
+      const card = document.createElement('div');
+      card.className = 'team-key-card' + (k.revokedAt ? ' revoked' : '');
+      card.dataset.keyId = k.id;
+
+      const isRevoked = !!k.revokedAt;
+      const isAssigned = !!k.assignedToEmail;
+
+      card.innerHTML =
+        '<div class="team-key-header">' +
+          '<input class="team-key-label" value="' + escapeAttr(k.label || '') + '" placeholder="Label (e.g. Frontend Dev)" maxlength="64"' + (isRevoked ? ' disabled' : '') + '>' +
+          (isRevoked ? '<span class="team-key-badge revoked-badge">Revoked</span>' : (isAssigned ? '<span class="team-key-badge assigned">Assigned</span>' : '<span class="team-key-badge">Unassigned</span>')) +
+        '</div>' +
+        '<div class="team-key-value">' +
+          '<code class="team-key-code">' + escapeHtml(k.apiKey) + '</code>' +
+          (!isRevoked ? '<button class="team-key-copy-btn" title="Copy key">📋</button>' : '') +
+        '</div>' +
+        (!isRevoked ?
+          '<div class="team-key-assign">' +
+            '<input type="email" class="team-key-email" value="' + escapeAttr(k.assignedToEmail || '') + '" placeholder="team-member@company.com">' +
+            '<input type="text" class="team-key-name" value="' + escapeAttr(k.assignedToName || '') + '" placeholder="Name (optional)">' +
+          '</div>' : '') +
+        '<div class="team-key-actions">' +
+          (!isRevoked ? '<button class="btn-small team-key-save" title="Save label and assignment">Save</button>' : '') +
+          (!isRevoked && isAssigned ? '<button class="btn-small team-key-send" title="Email key to assignee">Send Email</button>' : '') +
+          (!isRevoked ? '<button class="btn-small team-key-rotate" title="Generate new key value">Rotate</button>' : '') +
+          (!isRevoked ? '<button class="btn-small team-key-revoke" style="background:var(--terminal-red)" title="Permanently revoke this key">Revoke</button>' : '') +
+        '</div>';
+
+      // Wire up event handlers
+      var copyBtn = card.querySelector('.team-key-copy-btn');
+      if (copyBtn) copyBtn.addEventListener('click', function() { copyTeamKey(k.apiKey); });
+
+      var saveBtn = card.querySelector('.team-key-save');
+      if (saveBtn) saveBtn.addEventListener('click', function() { saveTeamKey(card, k.id); });
+
+      var sendBtn = card.querySelector('.team-key-send');
+      if (sendBtn) sendBtn.addEventListener('click', function() { sendTeamKeyEmail(k.id); });
+
+      var rotateBtn = card.querySelector('.team-key-rotate');
+      if (rotateBtn) rotateBtn.addEventListener('click', function() { rotateTeamKey(k.id); });
+
+      var revokeBtn = card.querySelector('.team-key-revoke');
+      if (revokeBtn) revokeBtn.addEventListener('click', function() { revokeTeamKey(k.id); });
+
+      list.appendChild(card);
+    });
+  } catch {
+    list.innerHTML = '<div style="color:var(--terminal-red)">Error loading team keys</div>';
+  }
+}
+
+function copyTeamKey(apiKey) {
+  navigator.clipboard.writeText(apiKey).then(function() {
+    showToast('API key copied to clipboard');
+  }).catch(function() {
+    showToast('Failed to copy');
+  });
+}
+
+async function saveTeamKey(card, keyId) {
+  var label = card.querySelector('.team-key-label').value.trim();
+  var email = card.querySelector('.team-key-email') ? card.querySelector('.team-key-email').value.trim() : null;
+  var name = card.querySelector('.team-key-name') ? card.querySelector('.team-key-name').value.trim() : null;
+
+  try {
+    var res = await apiFetch('/v1/org/keys/' + keyId, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label: label, assignedToEmail: email || null, assignedToName: name || null }),
+    });
+    var data = await res.json();
+    if (res.ok) {
+      showToast('Saved');
+      loadTeamKeys();
+    } else {
+      showToast(data.error || 'Failed to save');
+    }
+  } catch {
+    showToast('Error saving team key');
+  }
+}
+
+async function sendTeamKeyEmail(keyId) {
+  if (!confirm('Send the API key to the assigned email address?')) return;
+  try {
+    var res = await apiFetch('/v1/org/keys/' + keyId + '/send', { method: 'POST' });
+    var data = await res.json();
+    if (res.ok) {
+      showToast(data.sent ? 'Key emailed successfully' : 'Email sending is not configured');
+    } else {
+      showToast(data.error || 'Failed to send');
+    }
+  } catch {
+    showToast('Error sending email');
+  }
+}
+
+async function revokeTeamKey(keyId) {
+  if (!confirm('Revoke this key? It will immediately stop working and cannot be undone.')) return;
+  try {
+    var res = await apiFetch('/v1/org/keys/' + keyId + '/revoke', { method: 'POST' });
+    var data = await res.json();
+    if (res.ok) {
+      showToast('Key revoked');
+      loadTeamKeys();
+    } else {
+      showToast(data.error || 'Failed to revoke');
+    }
+  } catch {
+    showToast('Error revoking key');
+  }
+}
+
+async function rotateTeamKey(keyId) {
+  if (!confirm('Rotate this key? The old key will stop working immediately. Make sure to share the new key with the team member.')) return;
+  try {
+    var res = await apiFetch('/v1/org/keys/' + keyId + '/rotate', { method: 'POST' });
+    var data = await res.json();
+    if (res.ok) {
+      if (data.apiKey) {
+        navigator.clipboard.writeText(data.apiKey).then(function() {
+          showToast('Key rotated \u2014 new key copied to clipboard');
+        }).catch(function() {
+          showToast('Key rotated \u2014 copy the new key from below');
+        });
+      } else {
+        showToast('Key rotated');
+      }
+      loadTeamKeys();
+    } else {
+      showToast(data.error || 'Failed to rotate');
+    }
+  } catch {
+    showToast('Error rotating key');
   }
 }
 

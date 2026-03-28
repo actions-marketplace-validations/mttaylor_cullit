@@ -58,10 +58,6 @@ export async function migrate(): Promise<void> {
       api_key       TEXT UNIQUE NOT NULL,
       stripe_customer_id TEXT,
       stripe_subscription_id TEXT,
-      trial_tier    TEXT,
-      trial_starts_at TIMESTAMPTZ,
-      trial_ends_at TIMESTAMPTZ,
-      trial_converted_at TIMESTAMPTZ,
       github_username TEXT,
       created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       last_login_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -69,10 +65,6 @@ export async function migrate(): Promise<void> {
   `;
 
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS github_username TEXT`;
-  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_tier TEXT`;
-  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_starts_at TIMESTAMPTZ`;
-  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ`;
-  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_converted_at TIMESTAMPTZ`;
 
   await sql`CREATE INDEX IF NOT EXISTS idx_users_api_key ON users (api_key)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_users_stripe_customer ON users (stripe_customer_id) WHERE stripe_customer_id IS NOT NULL`;
@@ -292,6 +284,24 @@ export async function migrate(): Promise<void> {
 
   await sql`CREATE INDEX IF NOT EXISTS idx_gh_install_user ON github_installations (user_id)`;
 
+  // Seat-based team API keys
+  await sql`
+    CREATE TABLE IF NOT EXISTS team_api_keys (
+      id                TEXT PRIMARY KEY,
+      org_id            TEXT NOT NULL REFERENCES orgs(id) ON DELETE CASCADE,
+      api_key           TEXT UNIQUE NOT NULL,
+      label             TEXT NOT NULL DEFAULT '',
+      assigned_to_email TEXT,
+      assigned_to_name  TEXT,
+      assigned_at       TIMESTAMPTZ,
+      revoked_at        TIMESTAMPTZ,
+      created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+
+  await sql`CREATE INDEX IF NOT EXISTS idx_team_keys_org ON team_api_keys (org_id) WHERE revoked_at IS NULL`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_team_keys_api_key ON team_api_keys (api_key) WHERE revoked_at IS NULL`;
+
   log.info('Database migrations complete');
 }
 
@@ -350,10 +360,6 @@ export interface DbUser {
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   github_username: string | null;
-  trial_tier: string | null;
-  trial_starts_at: Date | null;
-  trial_ends_at: Date | null;
-  trial_converted_at: Date | null;
   created_at: Date;
   last_login_at: Date;
 }
@@ -391,13 +397,10 @@ export async function dbUpsertUser(user: {
   id: string; login: string; name: string; email: string;
   avatarUrl: string; apiKey: string;
   githubUsername?: string | null;
-  trialTier?: string | null;
-  trialStartsAt?: Date | null;
-  trialEndsAt?: Date | null;
 }): Promise<DbUser> {
   const rows = await sql<DbUser[]>`
-    INSERT INTO users (id, login, name, email, avatar_url, api_key, github_username, trial_tier, trial_starts_at, trial_ends_at)
-    VALUES (${user.id}, ${user.login}, ${user.name}, ${user.email}, ${user.avatarUrl}, ${user.apiKey}, ${user.githubUsername || null}, ${user.trialTier || null}, ${user.trialStartsAt || null}, ${user.trialEndsAt || null})
+    INSERT INTO users (id, login, name, email, avatar_url, api_key, github_username)
+    VALUES (${user.id}, ${user.login}, ${user.name}, ${user.email}, ${user.avatarUrl}, ${user.apiKey}, ${user.githubUsername || null})
     ON CONFLICT (id) DO UPDATE SET
       login = EXCLUDED.login,
       name = EXCLUDED.name,
@@ -425,53 +428,6 @@ export async function dbUpdateUserStripe(userId: string, customerId: string, sub
 export async function dbRotateApiKey(userId: string, newApiKey: string): Promise<DbUser> {
   const rows = await sql<DbUser[]>`UPDATE users SET api_key = ${newApiKey} WHERE id = ${userId} RETURNING *`;
   return rows[0];
-}
-
-export async function dbUpdateUserTrial(userId: string, trialTier: string | null, startsAt: Date | null, endsAt: Date | null): Promise<void> {
-  await sql`
-    UPDATE users
-    SET trial_tier = ${trialTier}, trial_starts_at = ${startsAt}, trial_ends_at = ${endsAt}
-    WHERE id = ${userId}
-  `;
-}
-
-export async function dbClearUserTrial(userId: string): Promise<void> {
-  await sql`
-    UPDATE users
-    SET trial_tier = NULL,
-        trial_starts_at = NULL,
-        trial_ends_at = NULL,
-        trial_converted_at = NOW()
-    WHERE id = ${userId}
-  `;
-}
-
-/** Get users whose trial expires within the given number of days (for expiry email reminders). */
-export async function dbGetExpiringTrials(withinDays: number): Promise<DbUser[]> {
-  if (!sql) return [];
-  return sql<DbUser[]>`
-    SELECT * FROM users
-    WHERE trial_tier IS NOT NULL
-      AND trial_ends_at IS NOT NULL
-      AND trial_ends_at > NOW()
-      AND trial_ends_at <= NOW() + (${withinDays}::int || ' days')::interval
-      AND tier = 'free'
-      AND trial_converted_at IS NULL
-  `;
-}
-
-/** Get users whose trial has just expired (within the last 24 hours). */
-export async function dbGetJustExpiredTrials(): Promise<DbUser[]> {
-  if (!sql) return [];
-  return sql<DbUser[]>`
-    SELECT * FROM users
-    WHERE trial_tier IS NOT NULL
-      AND trial_ends_at IS NOT NULL
-      AND trial_ends_at <= NOW()
-      AND trial_ends_at > NOW() - INTERVAL '24 hours'
-      AND tier = 'free'
-      AND trial_converted_at IS NULL
-  `;
 }
 
 // --- Org DB operations ---
@@ -1145,4 +1101,108 @@ export async function dbDeleteOrgInvite(id: string, orgId?: string): Promise<boo
     ? await sql`DELETE FROM org_invites WHERE id = ${id} AND org_id = ${orgId}`
     : await sql`DELETE FROM org_invites WHERE id = ${id}`;
   return result.count > 0;
+}
+
+// --- Team API key DB operations ---
+
+export interface DbTeamApiKey {
+  id: string;
+  org_id: string;
+  api_key: string;
+  label: string;
+  assigned_to_email: string | null;
+  assigned_to_name: string | null;
+  assigned_at: Date | null;
+  revoked_at: Date | null;
+  created_at: Date;
+}
+
+export async function dbCreateTeamApiKey(key: {
+  id: string; orgId: string; apiKey: string; label: string;
+}): Promise<DbTeamApiKey> {
+  const rows = await sql<DbTeamApiKey[]>`
+    INSERT INTO team_api_keys (id, org_id, api_key, label)
+    VALUES (${key.id}, ${key.orgId}, ${key.apiKey}, ${key.label})
+    RETURNING *
+  `;
+  return rows[0];
+}
+
+export async function dbGetTeamApiKeys(orgId: string): Promise<DbTeamApiKey[]> {
+  return sql<DbTeamApiKey[]>`
+    SELECT * FROM team_api_keys WHERE org_id = ${orgId} ORDER BY created_at
+  `;
+}
+
+export async function dbGetActiveTeamApiKeyCount(orgId: string): Promise<number> {
+  const rows = await sql<[{ count: string }]>`
+    SELECT COUNT(*)::text AS count FROM team_api_keys WHERE org_id = ${orgId} AND revoked_at IS NULL
+  `;
+  return parseInt(rows[0].count, 10);
+}
+
+export async function dbGetTeamApiKeyByKey(apiKey: string): Promise<DbTeamApiKey | null> {
+  const rows = await sql<DbTeamApiKey[]>`
+    SELECT * FROM team_api_keys WHERE api_key = ${apiKey} AND revoked_at IS NULL
+  `;
+  return rows[0] || null;
+}
+
+export async function dbUpdateTeamApiKeyAssignment(
+  id: string, orgId: string, email: string | null, name: string | null,
+): Promise<DbTeamApiKey | null> {
+  const rows = await sql<DbTeamApiKey[]>`
+    UPDATE team_api_keys
+    SET assigned_to_email = ${email}, assigned_to_name = ${name},
+        assigned_at = ${email ? sql`NOW()` : null}
+    WHERE id = ${id} AND org_id = ${orgId}
+    RETURNING *
+  `;
+  return rows[0] || null;
+}
+
+export async function dbUpdateTeamApiKeyLabel(
+  id: string, orgId: string, label: string,
+): Promise<DbTeamApiKey | null> {
+  const rows = await sql<DbTeamApiKey[]>`
+    UPDATE team_api_keys SET label = ${label} WHERE id = ${id} AND org_id = ${orgId} RETURNING *
+  `;
+  return rows[0] || null;
+}
+
+export async function dbRevokeTeamApiKey(id: string, orgId: string): Promise<boolean> {
+  const result = await sql`
+    UPDATE team_api_keys SET revoked_at = NOW() WHERE id = ${id} AND org_id = ${orgId} AND revoked_at IS NULL
+  `;
+  return result.count > 0;
+}
+
+export async function dbRevokeAllOrgTeamApiKeys(orgId: string): Promise<number> {
+  const result = await sql`
+    UPDATE team_api_keys SET revoked_at = NOW() WHERE org_id = ${orgId} AND revoked_at IS NULL
+  `;
+  return result.count;
+}
+
+export async function dbRevokeExcessTeamApiKeys(orgId: string, maxActive: number): Promise<number> {
+  const result = await sql`
+    UPDATE team_api_keys SET revoked_at = NOW()
+    WHERE id IN (
+      SELECT id FROM team_api_keys
+      WHERE org_id = ${orgId} AND revoked_at IS NULL
+      ORDER BY created_at DESC
+      LIMIT (
+        SELECT GREATEST(0, COUNT(*) - ${maxActive})
+        FROM team_api_keys WHERE org_id = ${orgId} AND revoked_at IS NULL
+      )
+    )
+  `;
+  return result.count;
+}
+
+export async function dbRotateTeamApiKey(id: string, orgId: string, newApiKey: string): Promise<DbTeamApiKey | null> {
+  const rows = await sql<DbTeamApiKey[]>`
+    UPDATE team_api_keys SET api_key = ${newApiKey} WHERE id = ${id} AND org_id = ${orgId} AND revoked_at IS NULL RETURNING *
+  `;
+  return rows[0] || null;
 }

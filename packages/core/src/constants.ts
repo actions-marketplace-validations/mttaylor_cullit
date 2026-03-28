@@ -1,6 +1,6 @@
 // Shared constants across Cullit packages
 
-export const VERSION = '1.19.0';
+export const VERSION = '2.0.0';
 
 export const DEFAULT_CATEGORIES = ['features', 'fixes', 'breaking', 'improvements', 'chores'];
 
@@ -25,3 +25,12 @@ export const SOURCE_TYPES = ['local', 'jira', 'linear', 'gitlab', 'bitbucket', '
 export const TIERS = ['free', 'basic', 'pro', 'team', 'enterprise'] as const;
 export const PAID_TIERS = ['basic', 'pro', 'team', 'enterprise'] as const;
 export const TEAM_TIERS = ['team', 'enterprise'] as const;
+
+// Seat-based team plans
+export const TEAM_PLANS = ['team-5', 'team-10', 'team-25'] as const;
+export type TeamPlan = (typeof TEAM_PLANS)[number];
+export const TEAM_PLAN_SEATS: Record<TeamPlan, number> = {
+  'team-5': 5,
+  'team-10': 10,
+  'team-25': 25,
+};

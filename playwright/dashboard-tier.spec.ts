@@ -2,16 +2,7 @@ import { test, expect, type Page, type Route } from '@playwright/test';
 
 type Tier = 'free' | 'pro' | 'team' | 'enterprise';
 
-type Trial = {
-  active: boolean;
-  expired: boolean;
-  tier: 'pro' | 'team' | null;
-  startsAt: string | null;
-  endsAt: string | null;
-  daysRemaining: number;
-};
-
-function makeUser(tier: Tier, effectiveTier?: Tier, trial?: Trial) {
+function makeUser(tier: Tier, effectiveTier?: Tier) {
   return {
     id: 'u1',
     login: 'octocat',
@@ -23,14 +14,6 @@ function makeUser(tier: Tier, effectiveTier?: Tier, trial?: Trial) {
     orgId: null,
     role: 'member',
     apiKey: 'clt_' + 'a'.repeat(32),
-    trial: trial || {
-      active: false,
-      expired: false,
-      tier: null,
-      startsAt: null,
-      endsAt: null,
-      daysRemaining: 0,
-    },
     createdAt: new Date().toISOString(),
   };
 }
@@ -82,14 +65,6 @@ async function mockDashboardApis(page: Page, userResponse: { status: number; bod
           plan: userResponse.body?.effectiveTier || 'free',
           tier: userResponse.body?.tier || 'free',
           effectiveTier: userResponse.body?.effectiveTier || 'free',
-          trial: userResponse.body?.trial || {
-            active: false,
-            expired: false,
-            tier: null,
-            startsAt: null,
-            endsAt: null,
-            daysRemaining: 0,
-          },
         }),
       });
     }
@@ -125,7 +100,6 @@ test('free tier shows free badge and team gates remain locked', async ({ page })
   await page.goto('/dashboard.html');
 
   await expect(page.locator('#navTier')).toHaveText('free');
-  await expect(page.locator('#trialBanner')).toBeHidden();
 
   await page.getByRole('button', { name: /drafts/i }).click();
   await expect(page.locator('#draftTeamGate')).toBeVisible();
@@ -164,21 +138,4 @@ test('enterprise tier shows enterprise plan and unlocked draft flow', async ({ p
   await expect(page.locator('#billingPlanName')).toHaveText('Enterprise');
 });
 
-test('active trial user is displayed as pro trial with banner', async ({ page }) => {
-  const trial: Trial = {
-    active: true,
-    expired: false,
-    tier: 'pro',
-    startsAt: new Date(Date.now() - 60_000).toISOString(),
-    endsAt: new Date(Date.now() + 86_400_000).toISOString(),
-    daysRemaining: 1,
-  };
 
-  await mockDashboardApis(page, { status: 200, body: makeUser('free', 'pro', trial) });
-
-  await page.goto('/dashboard.html');
-
-  await expect(page.locator('#navTier')).toHaveText('pro trial');
-  await expect(page.locator('#trialBanner')).toBeVisible();
-  await expect(page.locator('#trialBannerText')).toContainText('trial active');
-});

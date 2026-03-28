@@ -68,11 +68,6 @@ DROP TABLE IF EXISTS users CASCADE;
 -- Use these instead of full table drops for minor rollbacks
 -- ============================================
 
--- Rollback trial columns:
--- ALTER TABLE users DROP COLUMN IF EXISTS trial_tier;
--- ALTER TABLE users DROP COLUMN IF EXISTS trial_starts_at;
--- ALTER TABLE users DROP COLUMN IF EXISTS trial_ends_at;
--- ALTER TABLE users DROP COLUMN IF EXISTS trial_converted_at;
 
 -- Rollback changelog user_id:
 -- ALTER TABLE changelog_releases DROP COLUMN IF EXISTS user_id;

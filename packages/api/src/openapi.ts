@@ -505,7 +505,6 @@ export const openApiSpec = {
                       'checkout_started',
                       'checkout_redirected',
                       'checkout_failed',
-                      'trial_started',
                       'paid_activated',
                       'first_generate_success',
                       'first_publish_success',
@@ -595,6 +594,130 @@ export const openApiSpec = {
         },
       },
     },
+    '/v1/org/keys': {
+      get: {
+        operationId: 'listTeamKeys',
+        summary: 'List team API keys',
+        description: 'Returns all team API keys for the caller\'s org. Admins and owners see full keys; members see masked keys.',
+        tags: ['Team'],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Team API keys',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    keys: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          id: { type: 'string' },
+                          apiKey: { type: 'string', description: 'Full key for admins, masked for members' },
+                          label: { type: 'string' },
+                          assignedToEmail: { type: 'string', nullable: true },
+                          assignedToName: { type: 'string', nullable: true },
+                          assignedAt: { type: 'string', format: 'date-time', nullable: true },
+                          revokedAt: { type: 'string', format: 'date-time', nullable: true },
+                          createdAt: { type: 'string', format: 'date-time' },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '401': { description: 'Not authenticated' },
+          '403': { description: 'No organization' },
+        },
+      },
+    },
+    '/v1/org/keys/{keyId}': {
+      patch: {
+        operationId: 'updateTeamKey',
+        summary: 'Update team key label or assignment',
+        description: 'Update a team API key\'s label, assigned email, or assigned name. Requires org owner or admin role.',
+        tags: ['Team'],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
+        parameters: [{ name: 'keyId', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  label: { type: 'string', maxLength: 64 },
+                  assignedToEmail: { type: 'string', nullable: true, format: 'email' },
+                  assignedToName: { type: 'string', nullable: true },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'Key updated' },
+          '400': { description: 'Invalid input' },
+          '401': { description: 'Not authenticated' },
+          '403': { description: 'Must be org owner or admin' },
+          '404': { description: 'Key not found' },
+        },
+      },
+    },
+    '/v1/org/keys/{keyId}/send': {
+      post: {
+        operationId: 'sendTeamKey',
+        summary: 'Email team key to assignee',
+        description: 'Sends the API key to its assigned email address. Key must have an assigned email and not be revoked.',
+        tags: ['Team'],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
+        parameters: [{ name: 'keyId', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'Email sent (or skipped if email not configured)' },
+          '400': { description: 'No email assigned or key is revoked' },
+          '401': { description: 'Not authenticated' },
+          '403': { description: 'Must be org owner or admin' },
+          '404': { description: 'Key not found' },
+        },
+      },
+    },
+    '/v1/org/keys/{keyId}/revoke': {
+      post: {
+        operationId: 'revokeTeamKey',
+        summary: 'Revoke a team API key',
+        description: 'Permanently revokes a team API key. The key will immediately stop working.',
+        tags: ['Team'],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
+        parameters: [{ name: 'keyId', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'Key revoked' },
+          '401': { description: 'Not authenticated' },
+          '403': { description: 'Must be org owner or admin' },
+          '404': { description: 'Key not found or already revoked' },
+        },
+      },
+    },
+    '/v1/org/keys/{keyId}/rotate': {
+      post: {
+        operationId: 'rotateTeamKey',
+        summary: 'Rotate a team API key',
+        description: 'Generates a new API key value, immediately invalidating the old one. Returns the new key.',
+        tags: ['Team'],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
+        parameters: [{ name: 'keyId', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': {
+            description: 'New API key',
+            content: { 'application/json': { schema: { type: 'object', properties: { apiKey: { type: 'string' } } } } },
+          },
+          '401': { description: 'Not authenticated' },
+          '403': { description: 'Must be org owner or admin' },
+          '404': { description: 'Key not found or revoked' },
+        },
+      },
+    },
     '/v1/generate': {
       post: {
         operationId: 'generateV1',
@@ -623,7 +746,7 @@ export const openApiSpec = {
               schema: {
                 type: 'object',
                 properties: {
-                  plan: { type: 'string', enum: ['pro', 'team'] },
+                  plan: { type: 'string', enum: ['basic', 'pro', 'team-5', 'team-10', 'team-25'] },
                 },
               },
             },

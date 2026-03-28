@@ -22,7 +22,7 @@ describe('Database Module', () => {
     const expectedExports = [
       'sql', 'migrate', 'closeDb',
       'dbGetUser', 'dbGetUserByApiKey', 'dbGetUserByStripeCustomer',
-      'dbUpsertUser', 'dbUpdateUserTier', 'dbUpdateUserOrg', 'dbUpdateUserStripe', 'dbUpdateUserTrial', 'dbClearUserTrial',
+      'dbUpsertUser', 'dbUpdateUserTier', 'dbUpdateUserOrg', 'dbUpdateUserStripe',
       'dbGetOrg', 'dbGetOrgBySlug', 'dbCreateOrg',
       'dbGetOrgMemberCount', 'dbAddOrgMember', 'dbRemoveOrgMember', 'dbGetOrgMembers',
       'dbAddGeneration', 'dbGetGenerations', 'dbGetGenerationCount', 'dbGetMonthlyGenerationCount',

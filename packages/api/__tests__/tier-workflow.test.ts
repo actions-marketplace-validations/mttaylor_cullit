@@ -6,15 +6,13 @@ import {
   isEnrichmentAllowed,
   isFeatureAllowed,
 } from '@cullit/core';
-import { getEffectiveTier, getTrialStatus } from '../src/auth.js';
+import { getEffectiveTier } from '../src/auth.js';
 
-type Tier = 'free' | 'pro' | 'team' | 'enterprise';
+type Tier = 'free' | 'basic' | 'pro' | 'team' | 'enterprise';
 type LicenseInfo = { tier: Tier; valid: boolean };
 
 interface MockUser {
   tier: Tier;
-  trialTier?: 'pro' | 'team' | null;
-  trialEndsAt?: string | null;
 }
 
 function makeUser(input: MockUser) {
@@ -28,9 +26,6 @@ function makeUser(input: MockUser) {
     orgId: null,
     role: 'member' as const,
     apiKey: 'clt_' + 'a'.repeat(32),
-    trialTier: input.trialTier ?? null,
-    trialStartsAt: input.trialTier ? new Date(Date.now() - 60_000).toISOString() : null,
-    trialEndsAt: input.trialEndsAt ?? null,
     createdAt: new Date().toISOString(),
     lastLoginAt: new Date().toISOString(),
   };
@@ -57,6 +52,16 @@ describe('Tier workflow matrix', () => {
       expectedEffectiveTier: 'free',
       expectAiProvider: false,
       expectSlackPublisher: false,
+      expectTeamPublisher: false,
+      expectDrafts: false,
+      expectSso: false,
+    },
+    {
+      name: 'basic plan',
+      userTier: 'basic',
+      expectedEffectiveTier: 'basic',
+      expectAiProvider: true,
+      expectSlackPublisher: true,
       expectTeamPublisher: false,
       expectDrafts: false,
       expectSso: false,
@@ -97,12 +102,10 @@ describe('Tier workflow matrix', () => {
     it(`enforces workflow for ${scenario.name}`, () => {
       const user = makeUser({ tier: scenario.userTier });
       const effectiveTier = getEffectiveTier(user);
-      const trial = getTrialStatus(user);
       const license = licenseForTier(effectiveTier);
       const limits = getTierLimits(effectiveTier);
 
       expect(effectiveTier).toBe(scenario.expectedEffectiveTier);
-      expect(trial.active).toBe(false);
 
       expect(isProviderAllowed('anthropic', license)).toBe(scenario.expectAiProvider);
       expect(isProviderAllowed('none', license)).toBe(true);
@@ -119,6 +122,9 @@ describe('Tier workflow matrix', () => {
       if (effectiveTier === 'free') {
         expect(limits.generationsPerMonth).toBe(5);
       }
+      if (effectiveTier === 'basic') {
+        expect(limits.generationsPerMonth).toBe(50);
+      }
       if (effectiveTier === 'pro') {
         expect(limits.generationsPerMonth).toBe(500);
       }
@@ -131,38 +137,5 @@ describe('Tier workflow matrix', () => {
     });
   }
 
-  it('treats active pro trial as pro workflow for a free user', () => {
-    const user = makeUser({
-      tier: 'free',
-      trialTier: 'pro',
-      trialEndsAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    });
-
-    const effectiveTier = getEffectiveTier(user);
-    const trial = getTrialStatus(user);
-    const license = licenseForTier(effectiveTier);
-
-    expect(trial.active).toBe(true);
-    expect(effectiveTier).toBe('pro');
-    expect(isProviderAllowed('anthropic', license)).toBe(true);
-    expect(isPublisherAllowed('slack', license)).toBe(true);
-    expect(isFeatureAllowed('drafts', effectiveTier)).toBe(false);
-  });
-
-  it('downgrades to free workflow after trial expiration', () => {
-    const user = makeUser({
-      tier: 'free',
-      trialTier: 'pro',
-      trialEndsAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    });
-
-    const effectiveTier = getEffectiveTier(user);
-    const trial = getTrialStatus(user);
-    const license = licenseForTier(effectiveTier);
-
-    expect(trial.expired).toBe(true);
-    expect(effectiveTier).toBe('free');
-    expect(isProviderAllowed('anthropic', license)).toBe(false);
-    expect(isPublisherAllowed('slack', license)).toBe(false);
-  });
 });
+
