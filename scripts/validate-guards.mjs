@@ -33,7 +33,7 @@ if (!hasPattern(pricing, /\$9\s*<span\s+class="period">\s*\/\s*mo\s*<\/span>/i))
 if (!hasPattern(pricing, /<div\s+class="plan-name">\s*Team\s*<\/div>/i)) {
   fail('pricing page is missing Team plan heading');
 }
-if (!hasPattern(pricing, /\$19\s*<span\s+class="period">\s*\/\s*seat\s*\/\s*mo\s*<\/span>/i)) {
+if (!hasPattern(pricing, /\$44\.99\s*<span\s+class="period">\s*\/\s*mo\s*<\/span>/i)) {
   fail('pricing page is missing Team price formatting');
 }
 
