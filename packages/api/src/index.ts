@@ -238,7 +238,6 @@ const FUNNEL_EVENTS = new Set([
   'checkout_started',
   'checkout_redirected',
   'checkout_failed',
-  'trial_started',
   'paid_activated',
   'first_generate_success',
   'first_publish_success',
@@ -450,6 +449,19 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
         code: ErrorCode.BILLING_LIMIT_REACHED,
         used: monthlyCount,
         limit: limits.generationsPerMonth,
+        tier: effectiveTier,
+        upgrade: 'https://cullit.io/pricing',
+      });
+      return;
+    }
+
+    // Audience/tone gating — Pro+ only
+    const hasCustomAudience = config.ai.audience && config.ai.audience !== 'developer';
+    const hasCustomTone = config.ai.tone && config.ai.tone !== 'professional';
+    if ((hasCustomAudience || hasCustomTone) && (effectiveTier === 'free' || effectiveTier === 'basic')) {
+      json(res, 403, {
+        error: 'Audience and tone control requires a Pro plan or above',
+        code: ErrorCode.BILLING_UPGRADE_REQUIRED,
         tier: effectiveTier,
         upgrade: 'https://cullit.io/pricing',
       });

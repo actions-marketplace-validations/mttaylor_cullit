@@ -144,17 +144,26 @@ export function isPublisherAllowed(publisherType: string, license: LicenseStatus
 
 /**
  * Check whether the current license allows enrichment (Jira/Linear).
+ * Requires Pro tier or above.
  */
 export function isEnrichmentAllowed(license: LicenseStatus): boolean {
-  return license.tier !== 'free' && license.valid;
+  return (license.tier === 'pro' || license.tier === 'team' || license.tier === 'enterprise') && license.valid;
+}
+
+/**
+ * Check whether the current license allows audience & tone control.
+ * Requires Pro tier or above.
+ */
+export function isAudienceToneAllowed(license: LicenseStatus): boolean {
+  return (license.tier === 'pro' || license.tier === 'team' || license.tier === 'enterprise') && license.valid;
 }
 
 /**
  * Build a human-readable upgrade message for a gated feature.
  */
 export function upgradeMessage(feature: string): string {
-  return `🔒 ${feature} requires a Cullit Pro license.\n` +
-         `   Get your API key at https://cullit.io/pricing\n` +
+  return `🔒 ${feature} requires a Cullit Pro plan or above.\n` +
+         `   Upgrade at https://cullit.io/pricing\n` +
          `   Then set CULLIT_API_KEY in your environment.`;
 }
 

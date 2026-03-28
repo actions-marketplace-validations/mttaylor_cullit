@@ -32,7 +32,7 @@ export const openApiSpec = {
       get: {
         operationId: 'healthCheck',
         summary: 'Health check',
-        description: 'Returns API status, version, and uptime.',
+        description: 'Returns API status. May return "degraded" if the database is unreachable.',
         tags: ['System'],
         responses: {
           '200': {
@@ -43,8 +43,6 @@ export const openApiSpec = {
                   type: 'object',
                   properties: {
                     status: { type: 'string', example: 'ok' },
-                    version: { type: 'string', example: VERSION },
-                    uptime: { type: 'number', description: 'Uptime in seconds' },
                   },
                 },
               },
@@ -510,7 +508,7 @@ export const openApiSpec = {
                       'first_publish_success',
                     ],
                   },
-                  plan: { type: 'string', enum: ['free', 'pro', 'team', 'enterprise'] },
+                  plan: { type: 'string', enum: ['free', 'basic', 'pro', 'team-5', 'team-10', 'team-25', 'enterprise'] },
                   source: { type: 'string' },
                   metadata: { type: 'object', additionalProperties: true },
                 },
@@ -1149,7 +1147,7 @@ export const openApiSpec = {
           name: { type: 'string' },
           email: { type: 'string' },
           avatarUrl: { type: 'string' },
-          tier: { type: 'string', enum: ['free', 'pro', 'team', 'enterprise'] },
+          tier: { type: 'string', enum: ['free', 'basic', 'pro', 'team', 'enterprise'] },
           orgId: { type: 'string', nullable: true },
           role: { type: 'string', enum: ['owner', 'admin', 'member'] },
           apiKey: { type: 'string' },

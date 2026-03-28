@@ -10,6 +10,7 @@ import {
   isProviderAllowed,
   isPublisherAllowed,
   isEnrichmentAllowed,
+  isAudienceToneAllowed,
   upgradeMessage,
   getTierLimits,
   isFeatureAllowed,
@@ -144,8 +145,8 @@ describe('Gate — access checks', () => {
     expect(isEnrichmentAllowed(freeLicense)).toBe(false);
   });
 
-  it('allows enrichment on basic', () => {
-    expect(isEnrichmentAllowed(basicLicense)).toBe(true);
+  it('blocks enrichment on basic', () => {
+    expect(isEnrichmentAllowed(basicLicense)).toBe(false);
   });
 
   it('allows enrichment on pro', () => {
@@ -154,6 +155,22 @@ describe('Gate — access checks', () => {
 
   it('allows enrichment on team', () => {
     expect(isEnrichmentAllowed(teamLicense)).toBe(true);
+  });
+
+  it('blocks audience/tone on free tier', () => {
+    expect(isAudienceToneAllowed(freeLicense)).toBe(false);
+  });
+
+  it('blocks audience/tone on basic tier', () => {
+    expect(isAudienceToneAllowed(basicLicense)).toBe(false);
+  });
+
+  it('allows audience/tone on pro tier', () => {
+    expect(isAudienceToneAllowed(proLicense)).toBe(true);
+  });
+
+  it('allows audience/tone on team tier', () => {
+    expect(isAudienceToneAllowed(teamLicense)).toBe(true);
   });
 
   it('generates readable upgrade message', () => {

@@ -1126,7 +1126,7 @@ async function trackEvent(event, metadata = {}) {
 }
 
 if (ctaFree) {
-  ctaFree.addEventListener('click', () => trackEvent('landing_cta_clicked', { target: 'free-trial' }));
+  ctaFree.addEventListener('click', () => trackEvent('landing_cta_clicked', { target: 'free' }));
 }
 if (ctaPricing) {
   ctaPricing.addEventListener('click', () => trackEvent('landing_cta_clicked', { target: 'pricing' }));

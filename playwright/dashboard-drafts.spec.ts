@@ -135,7 +135,7 @@ test.describe('dashboard drafts tab', () => {
   });
 
   test('team owner can submit a draft for review', async ({ page }) => {
-    const ownerUser = { ...makeUser('team', 'team', undefined, 'owner') };
+    const ownerUser = { ...makeUser('team', 'team', 'owner') };
     await mockDashboardApis(page, { status: 200, body: ownerUser });
     await mockDraftApis(page, [DRAFT]);
 

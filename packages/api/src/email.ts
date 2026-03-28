@@ -129,33 +129,76 @@ cullit generate --from v1.0.0</pre>
   });
 }
 
+const PLAN_DETAILS: Record<string, { label: string; features: string[] }> = {
+  basic: {
+    label: 'Basic ($4/mo)',
+    features: [
+      '50 generations/month',
+      '10 projects',
+      'AI generation (BYOK)',
+      'Hosted changelog',
+    ],
+  },
+  pro: {
+    label: 'Pro ($9/mo)',
+    features: [
+      '500 generations/month',
+      '100 projects',
+      'AI generation (OpenAI, Anthropic, Gemini, Ollama)',
+      'Jira & Linear enrichment',
+      'All publishers (Slack, Discord, GitHub, Teams)',
+    ],
+  },
+  'team-5': {
+    label: 'Team 5 ($44.99/mo)',
+    features: [
+      '5 API keys / seats',
+      '2,000 generations/month',
+      '250 projects',
+      'All Pro features',
+      'Team management dashboard',
+    ],
+  },
+  'team-10': {
+    label: 'Team 10 ($89/mo)',
+    features: [
+      '10 API keys / seats',
+      '2,000 generations/month',
+      '250 projects',
+      'All Pro features',
+      'GitLab & Bitbucket',
+      'Priority support',
+    ],
+  },
+  'team-25': {
+    label: 'Team 25 ($209/mo)',
+    features: [
+      '25 API keys / seats',
+      '2,000 generations/month',
+      '250 projects',
+      'All Pro features',
+      'Confluence & Notion',
+      'Priority support',
+    ],
+  },
+};
+
 export async function sendSubscriptionConfirmed(email: string, name: string, plan: string, apiKey?: string): Promise<boolean> {
-  const planName = plan === 'team' ? 'Team ($19/seat/mo)' : 'Pro ($9/mo)';
+  const details = PLAN_DETAILS[plan] || PLAN_DETAILS.pro;
+  const displayName = plan.startsWith('team') ? 'Team' : plan.charAt(0).toUpperCase() + plan.slice(1);
   return send({
     to: email,
-    subject: `You're on Cullit ${plan === 'team' ? 'Team' : 'Pro'}!`,
+    subject: `You're on Cullit ${displayName}!`,
     html: `${BRAND}
       <h2 style="color: #0f1117; margin-bottom: 16px;">Subscription confirmed</h2>
       <p style="color: #374151; line-height: 1.6;">
-        Hi ${escapeHtml(name)}, your <strong>${planName}</strong> subscription is now active.
+        Hi ${escapeHtml(name)}, your <strong>${details.label}</strong> subscription is now active.
       </p>
       <p style="color: #374151; line-height: 1.6;">
         You now have access to:
       </p>
       <ul style="color: #374151; line-height: 1.8; padding-left: 20px;">
-        ${plan === 'team' ? `
-          <li>2,000 generations/month</li>
-          <li>250 projects</li>
-          <li>Multi-repo, GitLab, Bitbucket</li>
-          <li>Confluence & Notion publishing</li>
-          <li>Team dashboard & analytics</li>
-        ` : `
-          <li>500 generations/month</li>
-          <li>100 projects</li>
-          <li>AI generation (OpenAI, Anthropic, Gemini, Ollama)</li>
-          <li>Jira & Linear enrichment</li>
-          <li>All publishers (Slack, Discord, GitHub, Teams)</li>
-        `}
+        ${details.features.map(f => `<li>${f}</li>`).join('\n        ')}
       </ul>
       ${apiKey ? `
       <p style="color: #374151; line-height: 1.6; margin-top: 16px;">Your API key:</p>

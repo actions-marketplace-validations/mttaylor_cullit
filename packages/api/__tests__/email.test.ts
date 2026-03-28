@@ -26,6 +26,30 @@ describe('Email Module', () => {
     expect(result).toBe(false);
   });
 
+  it('sendSubscriptionConfirmed handles basic plan', async () => {
+    const { sendSubscriptionConfirmed } = await import('../src/email.js');
+    const result = await sendSubscriptionConfirmed('test@example.com', 'Test User', 'basic');
+    expect(result).toBe(false);
+  });
+
+  it('sendSubscriptionConfirmed handles team-5 plan', async () => {
+    const { sendSubscriptionConfirmed } = await import('../src/email.js');
+    const result = await sendSubscriptionConfirmed('test@example.com', 'Test User', 'team-5');
+    expect(result).toBe(false);
+  });
+
+  it('sendSubscriptionConfirmed handles team-10 plan', async () => {
+    const { sendSubscriptionConfirmed } = await import('../src/email.js');
+    const result = await sendSubscriptionConfirmed('test@example.com', 'Test User', 'team-10');
+    expect(result).toBe(false);
+  });
+
+  it('sendSubscriptionConfirmed handles team-25 plan', async () => {
+    const { sendSubscriptionConfirmed } = await import('../src/email.js');
+    const result = await sendSubscriptionConfirmed('test@example.com', 'Test User', 'team-25');
+    expect(result).toBe(false);
+  });
+
   it('sendPaymentFailed returns false when RESEND_API_KEY is not set', async () => {
     const { sendPaymentFailed } = await import('../src/email.js');
     const result = await sendPaymentFailed('test@example.com', 'Test User');

@@ -1496,6 +1496,17 @@
             <li>Template-based notes</li>
           </ul>
         </div>
+        <div class="billing-plan-option" id="planBasic">
+          <div class="plan-tier">Basic</div>
+          <div class="plan-price">$4<span>/mo</span></div>
+          <ul class="plan-features">
+            <li>50 generations / month</li>
+            <li>10 projects</li>
+            <li>AI generation (BYOK)</li>
+            <li>Hosted changelog</li>
+          </ul>
+          <button class="btn-small plan-upgrade-btn" onclick="upgradePlan('basic')">Upgrade</button>
+        </div>
         <div class="billing-plan-option" id="planPro">
           <div class="plan-tier">Pro</div>
           <div class="plan-price">$9<span>/mo</span></div>
@@ -2808,24 +2819,7 @@ async function loadBilling() {
         portalBtn.textContent = 'Manage Billing';
         portalBtn.onclick = openBillingPortal;
         actionsEl.appendChild(portalBtn);
-      } else if (sub && sub.trial && sub.trial.active) {
-        statusEl.textContent = capitalize(sub.trial.tier || tier) + ' trial — ' + sub.trial.daysRemaining + ' day' + (sub.trial.daysRemaining === 1 ? '' : 's') + ' left';
-        const trialBtn = document.createElement('button');
-        trialBtn.className = 'btn-small';
-        trialBtn.textContent = 'Upgrade Now';
-        trialBtn.onclick = function() { upgradePlan('pro'); };
-        actionsEl.appendChild(trialBtn);
-      } else if (sub && sub.trial && sub.trial.expired) {
-        statusEl.textContent = capitalize(sub.trial.tier || 'pro') + ' trial expired — downgraded to Free';
-        statusEl.style.color = 'var(--terminal-red)';
-        const upgradeBtn = document.createElement('button');
-        upgradeBtn.className = 'btn-small';
-        upgradeBtn.textContent = 'Upgrade to Keep AI Features';
-        upgradeBtn.onclick = function() { upgradePlan('pro'); };
-        actionsEl.appendChild(upgradeBtn);
-      } else {
-        statusEl.textContent = tier === 'free' ? 'No active subscription' : '';
-      }
+      } else {\n        statusEl.textContent = tier === 'free' ? 'No active subscription' : '';\n      }
     }
   } catch {
     statusEl.textContent = '';

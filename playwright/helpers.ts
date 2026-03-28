@@ -1,11 +1,10 @@
 import { type Page, type Route } from '@playwright/test';
 
-export type Tier = 'free' | 'pro' | 'team' | 'enterprise';
+export type Tier = 'free' | 'basic' | 'pro' | 'team' | 'enterprise';
 
 export function makeUser(
   tier: Tier,
   effectiveTier?: Tier,
-  _trial?: unknown,
   role: string = 'member',
 ) {
   return {
@@ -85,14 +84,6 @@ export async function mockDashboardApis(
           plan: userResponse.body?.effectiveTier || 'free',
           tier: userResponse.body?.tier || 'free',
           effectiveTier: userResponse.body?.effectiveTier || 'free',
-          trial: userResponse.body?.trial || {
-            active: false,
-            expired: false,
-            tier: null,
-            startsAt: null,
-            endsAt: null,
-            daysRemaining: 0,
-          },
         }),
       });
     }

@@ -4,6 +4,7 @@ import {
   isProviderAllowed,
   isPublisherAllowed,
   isEnrichmentAllowed,
+  isAudienceToneAllowed,
   isFeatureAllowed,
 } from '@cullit/core';
 import { getEffectiveTier } from '../src/auth.js';
@@ -109,7 +110,12 @@ describe('Tier workflow matrix', () => {
 
       expect(isProviderAllowed('anthropic', license)).toBe(scenario.expectAiProvider);
       expect(isProviderAllowed('none', license)).toBe(true);
-      expect(isEnrichmentAllowed(license)).toBe(scenario.expectAiProvider);
+      expect(isEnrichmentAllowed(license)).toBe(
+        scenario.userTier === 'pro' || scenario.userTier === 'team' || scenario.userTier === 'enterprise'
+      );
+      expect(isAudienceToneAllowed(license)).toBe(
+        scenario.userTier === 'pro' || scenario.userTier === 'team' || scenario.userTier === 'enterprise'
+      );
 
       expect(isPublisherAllowed('stdout', license)).toBe(true);
       expect(isPublisherAllowed('file', license)).toBe(true);
