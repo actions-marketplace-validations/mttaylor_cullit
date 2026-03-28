@@ -162,7 +162,7 @@ export function isAudienceToneAllowed(license: LicenseStatus): boolean {
  * Build a human-readable upgrade message for a gated feature.
  */
 export function upgradeMessage(feature: string): string {
-  return `🔒 ${feature} requires a Cullit Pro plan or above.\n` +
+  return `🔒 ${feature} requires a paid Cullit plan.\n` +
          `   Upgrade at https://cullit.io/pricing\n` +
          `   Then set CULLIT_API_KEY in your environment.`;
 }
