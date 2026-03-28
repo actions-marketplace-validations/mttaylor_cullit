@@ -130,6 +130,17 @@ export function parseJsonObject(raw: string): JsonObject | null {
   }
 }
 
+/** Read request body and parse as JSON object. Returns null (and sends 400) on failure. */
+export async function readJsonBody(req: IncomingMessage, res: CorsResponse): Promise<JsonObject | null> {
+  const raw = await readBody(req);
+  const body = parseJsonObject(raw);
+  if (!body) {
+    json(res, 400, { error: 'Invalid JSON body', code: ErrorCode.VALIDATION_INVALID_JSON });
+    return null;
+  }
+  return body;
+}
+
 export function toStringArray(value: unknown, limit: number): string[] | undefined {
   if (!Array.isArray(value)) return undefined;
   return value.slice(0, limit).filter((v): v is string => typeof v === 'string');

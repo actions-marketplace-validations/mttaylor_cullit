@@ -35,6 +35,11 @@ const STRIPE_SECRET_KEY = process.env['STRIPE_SECRET_KEY'] || '';
 const STRIPE_WEBHOOK_SECRET = process.env['STRIPE_WEBHOOK_SECRET'] || '';
 const STRIPE_PRO_PRICE_ID = process.env['STRIPE_PRO_PRICE_ID'] || '';
 const STRIPE_TEAM_PRICE_ID = process.env['STRIPE_TEAM_PRICE_ID'] || '';
+
+if (STRIPE_SECRET_KEY) {
+  if (!STRIPE_PRO_PRICE_ID) log.warn('STRIPE_PRO_PRICE_ID not set — Pro checkout will fail');
+  if (!STRIPE_TEAM_PRICE_ID) log.warn('STRIPE_TEAM_PRICE_ID not set — Team checkout will fail');
+}
 const BASE_URL = process.env['CULLIT_BASE_URL'] || 'http://localhost:3000';
 const DASHBOARD_URL = process.env['CULLIT_DASHBOARD_URL'] || BASE_URL;
 

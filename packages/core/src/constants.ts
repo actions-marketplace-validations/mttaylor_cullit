@@ -20,3 +20,8 @@ export const CHANGE_CATEGORIES = ['features', 'fixes', 'breaking', 'improvements
 export const AUDIENCES = ['developer', 'end-user', 'executive'] as const;
 export const TONES = ['professional', 'casual', 'terse', 'edgy', 'hype', 'snarky'] as const;
 export const SOURCE_TYPES = ['local', 'jira', 'linear', 'gitlab', 'bitbucket', 'multi-repo'] as const;
+
+// Tier names — single source of truth for subscription tiers
+export const TIERS = ['free', 'pro', 'team', 'enterprise'] as const;
+export const PAID_TIERS = ['pro', 'team', 'enterprise'] as const;
+export const TEAM_TIERS = ['team', 'enterprise'] as const;

@@ -19,7 +19,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
 import { createHash, randomBytes } from 'crypto';
 
-import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS, getTierLimits, createRateLimiter } from '@cullit/core';
+import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS, TIERS, TEAM_TIERS, getTierLimits, createRateLimiter } from '@cullit/core';
 import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget } from '@cullit/core';
 import { openApiSpec } from './openapi.js';
 import { handleDocs } from './docs.js';
@@ -41,7 +41,7 @@ import { log } from './logger.js';
 import { metrics, handleMetrics } from './metrics.js';
 import { sendTrialExpiryWarning, sendTrialExpired } from './email.js';
 import {
-  json, checkAuth, readBody, parseJsonObject, isRecord, ErrorCode,
+  json, checkAuth, readBody, readJsonBody, parseJsonObject, isRecord, ErrorCode,
   PORT, SECURITY_HEADERS, generateRequestId,
   type CorsResponse, type JsonObject,
 } from './utils.js';
@@ -109,19 +109,25 @@ async function checkTrialExpiry(): Promise<void> {
   try {
     // Warn users whose trial expires within 3 days
     const expiring = await dbGetExpiringTrials(3);
-    for (const user of expiring) {
-      if (!user.email || !user.trial_ends_at) continue;
-      const daysRemaining = Math.max(1, Math.ceil((new Date(user.trial_ends_at).getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
-      await sendTrialExpiryWarning(user.email, user.name || user.login, daysRemaining);
-    }
+    const warningResults = await Promise.allSettled(
+      expiring
+        .filter(u => u.email && u.trial_ends_at)
+        .map(user => {
+          const daysRemaining = Math.max(1, Math.ceil((new Date(user.trial_ends_at!).getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
+          return sendTrialExpiryWarning(user.email!, user.name || user.login, daysRemaining);
+        }),
+    );
     // Notify users whose trial just expired
     const expired = await dbGetJustExpiredTrials();
-    for (const user of expired) {
-      if (!user.email) continue;
-      await sendTrialExpired(user.email, user.name || user.login);
-    }
+    const expiredResults = await Promise.allSettled(
+      expired
+        .filter(u => u.email)
+        .map(user => sendTrialExpired(user.email!, user.name || user.login)),
+    );
     if (expiring.length || expired.length) {
-      log.info({ expiring: expiring.length, expired: expired.length }, 'Trial expiry emails sent');
+      const warnFailed = warningResults.filter(r => r.status === 'rejected').length;
+      const expFailed = expiredResults.filter(r => r.status === 'rejected').length;
+      log.info({ expiring: expiring.length, expired: expired.length, warnFailed, expFailed }, 'Trial expiry emails sent');
     }
   } catch (err) {
     log.warn({ err: (err as Error).message }, 'Trial expiry check failed');
@@ -250,9 +256,7 @@ async function handleHealth(_req: IncomingMessage, res: ServerResponse): Promise
     try { await sql`SELECT 1`; dbOk = true; } catch { dbOk = false; }
   }
   const status = dbOk ? 'ok' : 'degraded';
-  // Always return 200 so the load balancer considers the server healthy.
-  // Only expose status — no version, uptime, or infrastructure details.
-  json(res, 200, { status });
+  json(res, dbOk ? 200 : 503, { status });
 }
 
 async function handleOpenAPI(_req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -289,8 +293,8 @@ async function handleTrackEvent(req: IncomingMessage, res: ServerResponse): Prom
     return;
   }
 
-  if (body.plan && !['free', 'pro', 'team', 'enterprise'].includes(body.plan)) {
-    json(res, 400, { error: 'Invalid plan. Must be one of: free, pro, team, enterprise' });
+  if (body.plan && !TIERS.includes(body.plan as typeof TIERS[number])) {
+    json(res, 400, { error: `Invalid plan. Must be one of: ${TIERS.join(', ')}` });
     return;
   }
 
@@ -455,9 +459,8 @@ function recordGeneration(
 }
 
 async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const raw = await readBody(req);
-  let body: GenerateRequest;
-  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON body' }); return; }
+  const body = await readJsonBody(req, res) as GenerateRequest | null;
+  if (!body) return;
 
   const validated = validateGenerateRequest(body, res);
   if (!validated) return;
@@ -575,7 +578,7 @@ async function handleGetAnalytics(req: IncomingMessage, res: ServerResponse): Pr
 // --- Project Settings Endpoints ---
 
 function isTeamTier(tier: string): boolean {
-  return tier === 'team' || tier === 'enterprise';
+  return (TEAM_TIERS as readonly string[]).includes(tier);
 }
 
 async function handleGetProjectSettings(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -688,9 +691,8 @@ async function handleAppInstallation(req: IncomingMessage, res: ServerResponse):
     return;
   }
 
-  const raw = await readBody(req);
-  let body: { installationId?: number; githubLogin?: string; repos?: string[] };
-  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
+  const body = await readJsonBody(req, res) as { installationId?: number; githubLogin?: string; repos?: string[] } | null;
+  if (!body) return;
 
   if (!body.installationId || !body.githubLogin) {
     json(res, 400, { error: 'installationId and githubLogin are required' });
@@ -830,9 +832,8 @@ const server = createServer(async (req, res: CorsResponse) => {
     } else if (path === '/v1/billing/checkout' && req.method === 'POST') {
       const user = await resolveUser(req);
       if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-      const raw = await readBody(req);
-      let body: { plan?: string };
-      try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
+      const body = await readJsonBody(req, res) as { plan?: string } | null;
+      if (!body) return;
       const plan = body.plan === 'team' ? 'team' : 'pro';
       await handleCheckout(user.id, plan, json, res);
     } else if (path === '/v1/billing/portal' && req.method === 'POST') {
@@ -917,8 +918,9 @@ const server = createServer(async (req, res: CorsResponse) => {
       json(res, 404, { error: 'Not found', code: ErrorCode.RESOURCE_NOT_FOUND, docs: '/openapi.json' });
     }
   } catch (err) {
-    log.error({ err, requestId: res._requestId }, 'Unhandled error');
-    json(res, 500, { error: 'Internal server error', code: ErrorCode.SERVER_INTERNAL_ERROR });
+    const msg = err instanceof Error ? err.message : 'Unknown error';
+    log.error({ err, requestId: res._requestId, path: req.url, method: req.method }, 'Unhandled error');
+    json(res, 500, { error: 'Internal server error', code: ErrorCode.SERVER_INTERNAL_ERROR, requestId: (res as CorsResponse)._requestId });
   } finally {
     metrics.httpRequest(req.method || 'UNKNOWN', res.statusCode);
   }

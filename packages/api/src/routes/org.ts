@@ -6,7 +6,7 @@
 
 import type { IncomingMessage, ServerResponse } from 'http';
 import { randomBytes } from 'crypto';
-import { json, readBody } from '../utils.js';
+import { json, readBody, readJsonBody } from '../utils.js';
 import { log } from '../logger.js';
 import {
   resolveUser, getUser, getOrg, createOrg, addOrgMember, removeOrgMember, getOrgMembers,
@@ -52,11 +52,10 @@ export async function handleCreateOrg(req: IncomingMessage, res: ServerResponse)
     json(res, 403, { error: 'Team plan required to create an organization' }); return;
   }
 
-  const raw = await readBody(req);
-  let body: { name?: string };
-  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
+  const body = await readJsonBody(req, res);
+  if (!body) return;
 
-  if (!body.name || typeof body.name !== 'string' || body.name.length < 2 || body.name.length > 64) {
+  if (!body.name || typeof body.name !== 'string' || (body.name as string).length < 2 || (body.name as string).length > 64) {
     json(res, 400, { error: '"name" is required (2-64 characters)' }); return;
   }
 
@@ -72,9 +71,8 @@ export async function handleUpdateOrgSettings(req: IncomingMessage, res: ServerR
     json(res, 403, { error: 'Only org owners can update settings' }); return;
   }
 
-  const raw = await readBody(req);
-  let body: { requireSeparateApprover?: boolean };
-  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
+  const body = await readJsonBody(req, res);
+  if (!body) return;
 
   if (typeof body.requireSeparateApprover !== 'boolean') {
     json(res, 400, { error: '"requireSeparateApprover" must be a boolean' }); return;
@@ -95,15 +93,14 @@ export async function handleOrgInvite(req: IncomingMessage, res: ServerResponse)
     json(res, 403, { error: 'Must be org owner or admin to invite members' }); return;
   }
 
-  const raw = await readBody(req);
-  let body: { userId?: string; role?: 'admin' | 'member' };
-  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
+  const body = await readJsonBody(req, res);
+  if (!body) return;
 
   if (!body.userId || typeof body.userId !== 'string') {
     json(res, 400, { error: '"userId" is required' }); return;
   }
 
-  const targetUser = await getUser(body.userId);
+  const targetUser = await getUser(body.userId as string);
   if (!targetUser) {
     json(res, 404, { error: 'User not found' }); return;
   }
@@ -130,15 +127,14 @@ export async function handleOrgRemoveMember(req: IncomingMessage, res: ServerRes
     json(res, 403, { error: 'Must be org owner or admin to remove members' }); return;
   }
 
-  const raw = await readBody(req);
-  let body: { userId?: string };
-  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
+  const body = await readJsonBody(req, res);
+  if (!body) return;
 
   if (!body.userId || typeof body.userId !== 'string') {
     json(res, 400, { error: '"userId" is required' }); return;
   }
 
-  const success = await removeOrgMember(user.orgId, body.userId);
+  const success = await removeOrgMember(user.orgId, body.userId as string);
   if (!success) {
     json(res, 409, { error: 'Cannot remove member (owner, not found, or not a member)' }); return;
   }
@@ -156,11 +152,10 @@ export async function handleCreateOrgInvite(req: IncomingMessage, res: ServerRes
     json(res, 403, { error: 'Must be org owner or admin to create invites' }); return;
   }
 
-  const raw = await readBody(req);
-  let body: { email?: string; role?: string };
-  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
+  const body = await readJsonBody(req, res);
+  if (!body) return;
 
-  if (!body.email || typeof body.email !== 'string' || !body.email.includes('@')) {
+  if (!body.email || typeof body.email !== 'string' || !(body.email as string).includes('@')) {
     json(res, 400, { error: 'Valid email is required' }); return;
   }
 
@@ -172,7 +167,7 @@ export async function handleCreateOrgInvite(req: IncomingMessage, res: ServerRes
   const invite = await dbCreateOrgInvite({
     id: randomBytes(12).toString('hex'),
     orgId: user.orgId,
-    email: body.email.toLowerCase().trim(),
+    email: (body.email as string).toLowerCase().trim(),
     role,
     token: randomBytes(24).toString('hex'),
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
@@ -246,11 +241,10 @@ export async function handleUpdateOrgMemberRole(req: IncomingMessage, res: Serve
     json(res, 403, { error: 'Only the org owner can change member roles' }); return;
   }
 
-  const raw = await readBody(req);
-  let body: { role?: string };
-  try { body = JSON.parse(raw); } catch { json(res, 400, { error: 'Invalid JSON' }); return; }
+  const body = await readJsonBody(req, res);
+  if (!body) return;
 
-  const role = body.role;
+  const role = body.role as string | undefined;
   if (role !== 'admin' && role !== 'member') {
     json(res, 400, { error: 'Role must be "admin" or "member"' }); return;
   }

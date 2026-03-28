@@ -18,8 +18,10 @@ import {
 
 const VALID_DRAFT_STATUSES = new Set(['draft', 'submitted', 'approved', 'published']);
 
+import { TEAM_TIERS } from '@cullit/core';
+
 function isTeamTier(tier: string): boolean {
-  return tier === 'team' || tier === 'enterprise';
+  return (TEAM_TIERS as readonly string[]).includes(tier);
 }
 
 function hasDraftAccess(user: { id: string; orgId: string | null }, draft: { user_id: string; org_id: string | null }): boolean {

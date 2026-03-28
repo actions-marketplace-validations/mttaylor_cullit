@@ -90,6 +90,10 @@ export function handleMetrics(req: IncomingMessage, res: ServerResponse): void {
       res.end('Forbidden\n');
       return;
     }
+  } else if (process.env['NODE_ENV'] === 'production') {
+    res.writeHead(403, { 'Content-Type': 'text/plain' });
+    res.end('METRICS_TOKEN required in production\n');
+    return;
   }
 
   const lines: string[] = [

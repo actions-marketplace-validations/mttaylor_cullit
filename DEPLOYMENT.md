@@ -158,11 +158,16 @@ Configure your load balancer or container orchestrator to use these.
 - [ ] `CULLIT_JWT_SECRET` is at least 32 characters and unique per environment
 - [ ] `ALLOWED_ORIGINS` does not contain `*` in production
 - [ ] `NODE_ENV=production` is set
+- [ ] `METRICS_TOKEN` is set (required in production)
 - [ ] Database connections use SSL in production
 - [ ] Stripe webhook secret is set
 - [ ] All secrets are stored in environment variables, not in code
 - [ ] Docker container runs as non-root user (default in provided Dockerfile)
 - [ ] HTTPS is terminated at the load balancer / reverse proxy
+
+## Rate Limiting
+
+Rate limiting is **in-memory, per-process**. In a single-instance deployment (e.g., Railway) this works correctly. In multi-instance deployments (e.g., Kubernetes with multiple replicas), each process tracks limits independently — the effective limit is multiplied by the number of instances. For strict enforcement across instances, swap `createRateLimiter()` with a Redis-backed implementation.
 
 ## Troubleshooting
 
