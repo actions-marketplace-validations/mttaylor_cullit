@@ -392,7 +392,7 @@ function validateGenerateRequest(body: GenerateRequest, res: ServerResponse): Cu
 }
 
 function recordGeneration(
-  user: { id: string; orgId?: string | null },
+  user: { id: string; orgId: string | null },
   body: GenerateRequest,
   config: CullConfig,
   format: string,
@@ -666,11 +666,11 @@ async function handlePutProjectSettings(req: IncomingMessage, res: ServerRespons
     orgId: user.orgId,
     userId: user.id,
     project,
-    defaultSource,
-    defaultProvider,
-    defaultModel,
-    defaultAudience,
-    defaultTone,
+    defaultSource: defaultSource as string | undefined,
+    defaultProvider: defaultProvider as string | undefined,
+    defaultModel: defaultModel as string | undefined,
+    defaultAudience: defaultAudience as string | undefined,
+    defaultTone: defaultTone as string | undefined,
     categoriesJson: categories,
     publishTargetsJson: publishTargets,
     widgetConfigJson: Object.keys(widgetConfig).length ? widgetConfig : undefined,

@@ -499,7 +499,7 @@ export async function dbRemoveOrgMember(orgId: string, userId: string): Promise<
 export async function dbDeleteUser(userId: string): Promise<void> {
   if (!sql) return;
   // Wrap in a transaction so partial deletes cannot leave orphaned data
-  await sql.begin(async (tx) => {
+  await sql.begin(async (tx: any) => {
     // Remove org memberships (but don't delete orgs the user owns — handled by caller)
     await tx`DELETE FROM org_members WHERE user_id = ${userId}`;
     // Anonymize generation history (keep aggregate stats, remove PII)
@@ -776,7 +776,12 @@ export async function dbGetSubscription(userId: string): Promise<{
   cancel_at_period_end: boolean;
 } | null> {
   if (!sql) return null;
-  const rows = await sql`
+  const rows = await sql<{
+    id: string; plan: string; status: string;
+    stripe_subscription_id: string; stripe_customer_id: string;
+    current_period_start: Date | null; current_period_end: Date | null;
+    cancel_at_period_end: boolean;
+  }[]>`
     SELECT * FROM subscriptions
     WHERE user_id = ${userId} AND status IN ('active', 'trialing', 'past_due')
     ORDER BY created_at DESC LIMIT 1
@@ -805,7 +810,7 @@ export async function dbPublishDraftWithRelease(draftId: string, project: string
   contributors: string[];
   formattedMd: string; formattedHtml: string;
 }): Promise<DbDraft | null> {
-  return sql.begin(async (tx) => {
+  return sql.begin(async (tx: any) => {
     await tx`
       INSERT INTO changelog_releases (project, version, date, summary, changes, contributors, formatted_md, formatted_html)
       VALUES (${project}, ${release.version}, ${release.date}, ${release.summary},

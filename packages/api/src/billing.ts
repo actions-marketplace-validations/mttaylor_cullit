@@ -527,7 +527,7 @@ async function handleCheckoutComplete(sessionPayload: unknown): Promise<void> {
   const user = await dbGetUser(userId);
   if (user?.email) {
     try {
-      await sendSubscriptionConfirmed(user.email, user.name || user.login, plan, user.apiKey);
+      await sendSubscriptionConfirmed(user.email, user.name || user.login, plan, user.api_key);
     } catch (err) {
       log.error({ err: (err as Error).message, userId }, 'Failed to send subscription confirmed email — user was charged but did not receive confirmation');
     }
@@ -593,20 +593,20 @@ async function handleSubscriptionUpdate(subscriptionPayload: unknown): Promise<v
     try {
       await provisionTeamKeys(user.id, plan, seats);
       // Revoke excess keys if downgrading to fewer seats
-      if (user.orgId) {
-        const revoked = await dbRevokeExcessTeamApiKeys(user.orgId, seats);
+      if (user.org_id) {
+        const revoked = await dbRevokeExcessTeamApiKeys(user.org_id, seats);
         if (revoked > 0) {
-          log.info({ userId: user.id, orgId: user.orgId, plan, revoked }, 'Revoked excess team API keys after plan downgrade');
+          log.info({ userId: user.id, orgId: user.org_id, plan, revoked }, 'Revoked excess team API keys after plan downgrade');
         }
       }
     } catch (err) {
       log.error({ err: (err as Error).message, userId: user.id, plan, seats }, 'Failed to provision/adjust team API keys on subscription update');
     }
-  } else if (user.orgId) {
+  } else if (user.org_id) {
     // Downgraded from team to non-team plan — revoke all keys
-    const revoked = await dbRevokeAllOrgTeamApiKeys(user.orgId);
+    const revoked = await dbRevokeAllOrgTeamApiKeys(user.org_id);
     if (revoked > 0) {
-      log.info({ userId: user.id, orgId: user.orgId, revoked }, 'Revoked all team API keys after downgrade to non-team plan');
+      log.info({ userId: user.id, orgId: user.org_id, revoked }, 'Revoked all team API keys after downgrade to non-team plan');
     }
   }
 
@@ -625,10 +625,10 @@ async function handleSubscriptionDeleted(subscriptionPayload: unknown): Promise<
   await dbUpdateUserTier(user.id, 'free');
 
   // Revoke all team API keys when subscription is canceled
-  if (user.orgId) {
-    const revoked = await dbRevokeAllOrgTeamApiKeys(user.orgId);
+  if (user.org_id) {
+    const revoked = await dbRevokeAllOrgTeamApiKeys(user.org_id);
     if (revoked > 0) {
-      log.info({ userId: user.id, orgId: user.orgId, revoked }, 'Revoked all team API keys after subscription cancellation');
+      log.info({ userId: user.id, orgId: user.org_id, revoked }, 'Revoked all team API keys after subscription cancellation');
     }
   }
 
