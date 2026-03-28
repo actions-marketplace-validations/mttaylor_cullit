@@ -2705,7 +2705,18 @@ async function upgradePlan(plan) {
       body: JSON.stringify({ plan }),
     });
     const data = await res.json();
-    if (data.url) {
+    if (data.updated) {
+      // Subscription was updated in-place (plan change, no redirect needed)
+      showToast('Plan updated to ' + capitalize(plan) + '!');
+      const meRes = await apiFetch('/auth/me');
+      const me = await meRes.json();
+      if (me.tier) {
+        currentUser = me;
+        document.getElementById('navTier').textContent = me.effectiveTier || me.tier;
+        renderTrialBanner();
+        loadBilling();
+      }
+    } else if (data.url) {
       window.location.href = data.url;
     } else {
       showToast(data.error || 'Unable to start checkout');

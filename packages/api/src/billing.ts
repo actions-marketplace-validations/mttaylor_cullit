@@ -91,7 +91,7 @@ interface StripeSubscription {
   current_period_start?: number;
   current_period_end?: number;
   cancel_at_period_end?: boolean;
-  items?: { data?: Array<{ price?: { id?: string } }> };
+  items?: { data?: Array<{ id?: string; price?: { id?: string } }> };
 }
 
 interface StripeInvoice {
@@ -130,7 +130,7 @@ function toStripeSubscription(value: unknown): StripeSubscription | null {
   }
 
   const items = isRecord(value.items) && Array.isArray(value.items.data)
-    ? { data: value.items.data.filter(isRecord).map(item => ({ price: isRecord(item.price) ? { id: typeof item.price.id === 'string' ? item.price.id : undefined } : undefined })) }
+    ? { data: value.items.data.filter(isRecord).map(item => ({ id: typeof item.id === 'string' ? item.id : undefined, price: isRecord(item.price) ? { id: typeof item.price.id === 'string' ? item.price.id : undefined } : undefined })) }
     : undefined;
 
   return {
@@ -261,6 +261,35 @@ export async function handleCheckout(
   if (!priceId) {
     jsonFn(res, 503, { error: `Price not configured for ${plan} plan` });
     return;
+  }
+
+  // If user already has an active subscription, update it instead of creating a new one
+  const existingSub = await dbGetSubscription(userId);
+  if (existingSub && existingSub.stripe_subscription_id && existingSub.status === 'active') {
+    try {
+      // Fetch the subscription to get the current item ID
+      const sub = await stripeRequest<StripeSubscription>(`/subscriptions/${existingSub.stripe_subscription_id}`, 'GET');
+      const itemId = sub.items?.data?.[0]?.id;
+      if (itemId) {
+        // Update the subscription in-place: swap price, prorate immediately
+        await stripeRequest(`/subscriptions/${existingSub.stripe_subscription_id}`, 'POST', {
+          'items[0][id]': itemId,
+          'items[0][price]': priceId,
+          'proration_behavior': 'create_prorations',
+          'metadata[plan]': plan,
+        });
+
+        // Update DB immediately (webhook will also fire, but this avoids delay)
+        const tier = planToTier(plan);
+        await dbUpdateUserTier(userId, tier);
+
+        log.info({ userId, plan, subscriptionId: existingSub.stripe_subscription_id }, 'Subscription updated (plan change)');
+        jsonFn(res, 200, { updated: true, plan });
+        return;
+      }
+    } catch (err) {
+      log.warn({ err, userId, plan }, 'Failed to update existing subscription, falling back to new checkout');
+    }
   }
 
   const params: Record<string, string> = {
