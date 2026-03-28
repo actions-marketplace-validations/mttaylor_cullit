@@ -6,7 +6,7 @@
 
 import type { IncomingMessage, ServerResponse } from 'http';
 import { randomBytes } from 'crypto';
-import { json, readBody, readJsonBody } from '../utils.js';
+import { json, readBody, readJsonBody, isTeamTier } from '../utils.js';
 import { log } from '../logger.js';
 import {
   resolveUser, getUser, getOrg, createOrg, addOrgMember, removeOrgMember, getOrgMembers,
@@ -48,7 +48,7 @@ export async function handleCreateOrg(req: IncomingMessage, res: ServerResponse)
   if (user.orgId) { json(res, 409, { error: 'Already a member of an organization' }); return; }
 
   const tier = getEffectiveTier(user);
-  if (tier !== 'team') {
+  if (!isTeamTier(tier)) {
     json(res, 403, { error: 'Team plan required to create an organization' }); return;
   }
 

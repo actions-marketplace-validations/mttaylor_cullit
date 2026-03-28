@@ -156,14 +156,14 @@ export async function handleChangelogPublish(req: IncomingMessage, res: ServerRe
       userId: user.id,
     });
   } else {
-// In-memory ownership check — ensure no other user owns this project
-      const existingReleases = changelogStore.get(project);
-      if (existingReleases && existingReleases.length > 0) {
-        const otherOwner = existingReleases.find(r => r.userId && r.userId !== user.id);
-        if (otherOwner) {
-          json(res, 403, { error: 'Project belongs to another user' });
-          return;
-        }
+    // In-memory ownership check — ensure no other user owns this project
+    const existingReleases = changelogStore.get(project);
+    if (existingReleases && existingReleases.length > 0) {
+      const otherOwner = existingReleases.find(r => r.userId && r.userId !== user.id);
+      if (otherOwner) {
+        json(res, 403, { error: 'Project belongs to another user' });
+        return;
+      }
     }
 
     if (!changelogStore.has(project) && changelogStore.size >= MAX_PROJECTS) {

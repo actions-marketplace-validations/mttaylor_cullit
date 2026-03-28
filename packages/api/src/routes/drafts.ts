@@ -6,7 +6,7 @@
 
 import type { IncomingMessage, ServerResponse } from 'http';
 import { randomBytes } from 'crypto';
-import { json, readBody, parseJsonObject, PORT } from '../utils.js';
+import { json, readBody, parseJsonObject, isTeamTier, PORT } from '../utils.js';
 import { log } from '../logger.js';
 import { resolveUser, getEffectiveTier, getOrg } from '../auth.js';
 import {
@@ -17,12 +17,6 @@ import {
 // --- Helpers ---
 
 const VALID_DRAFT_STATUSES = new Set(['draft', 'submitted', 'approved', 'published']);
-
-import { TEAM_TIERS } from '@cullit/core';
-
-function isTeamTier(tier: string): boolean {
-  return (TEAM_TIERS as readonly string[]).includes(tier);
-}
 
 function hasDraftAccess(user: { id: string; orgId: string | null }, draft: { user_id: string; org_id: string | null }): boolean {
   if (draft.user_id === user.id) return true;

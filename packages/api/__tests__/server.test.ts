@@ -85,7 +85,7 @@ describe('API Server', () => {
   });
 
   it('POST /generate rejects missing "from"', async () => {
-    const { status, body } = await apiRequest('/generate', {
+    const { status, body } = await authedRequest('/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
@@ -95,7 +95,7 @@ describe('API Server', () => {
   });
 
   it('POST /generate rejects invalid JSON', async () => {
-    const { status, body } = await apiRequest('/generate', {
+    const { status, body } = await authedRequest('/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: 'not json',
@@ -105,7 +105,7 @@ describe('API Server', () => {
   });
 
   it('POST /generate rejects invalid provider', async () => {
-    const { status, body } = await apiRequest('/generate', {
+    const { status, body } = await authedRequest('/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ from: 'v1.0.0', provider: 'bad-provider' }),
@@ -115,7 +115,7 @@ describe('API Server', () => {
   });
 
   it('POST /generate rejects invalid format', async () => {
-    const { status, body } = await apiRequest('/generate', {
+    const { status, body } = await authedRequest('/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ from: 'v1.0.0', format: 'xml' }),
@@ -125,7 +125,7 @@ describe('API Server', () => {
   });
 
   it('POST /generate rejects oversized "from"', async () => {
-    const { status, body } = await apiRequest('/generate', {
+    const { status, body } = await authedRequest('/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ from: 'x'.repeat(1001) }),
@@ -135,13 +135,23 @@ describe('API Server', () => {
   });
 
   it('POST /generate rejects invalid Jira domain', async () => {
-    const { status, body } = await apiRequest('/generate', {
+    const { status, body } = await authedRequest('/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ from: 'v1.0.0', jira: { domain: 'not a domain!' } }),
     });
     expect(status).toBe(400);
     expect(body.error).toContain('Invalid Jira domain');
+  });
+
+  it('POST /generate rejects unauthenticated requests', async () => {
+    const { status, body } = await apiRequest('/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: 'v1.0.0' }),
+    });
+    expect(status).toBe(401);
+    expect(body.error).toContain('Authentication required');
   });
 
   it('POST /generate succeeds with provider=none (template mode)', async () => {

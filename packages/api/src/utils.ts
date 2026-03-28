@@ -8,6 +8,7 @@
 import { randomBytes, timingSafeEqual } from 'crypto';
 import type { IncomingMessage, ServerResponse } from 'http';
 import createSanitizer from 'sanitize-html';
+import { TEAM_TIERS } from '@cullit/core';
 
 // --- Types ---
 
@@ -21,7 +22,6 @@ export type JsonObject = Record<string, unknown>;
 export const PORT = parseInt(process.env['PORT'] || '3000', 10);
 
 const IS_HTTPS = (process.env['CULLIT_BASE_URL'] || '').startsWith('https');
-const API_TOKEN = process.env['CULLIT_API_TOKEN'] || '';
 
 /** Generate a short, URL-safe request ID. */
 export function generateRequestId(): string {
@@ -51,18 +51,6 @@ export function json(res: CorsResponse, status: number, body: unknown): void {
     ...SECURITY_HEADERS,
   });
   res.end(payload);
-}
-
-// --- Auth helper ---
-
-export function checkAuth(req: IncomingMessage, res: ServerResponse): boolean {
-  if (!API_TOKEN) return true; // no auth configured
-  const header = req.headers['authorization'] || '';
-  const expected = `Bearer ${API_TOKEN}`;
-  if (header.length === expected.length &&
-      timingSafeEqual(Buffer.from(header), Buffer.from(expected))) return true;
-  json(res, 401, { error: 'Unauthorized — set Authorization: Bearer <token>' });
-  return false;
 }
 
 // --- Request body reader ---
@@ -144,6 +132,15 @@ export async function readJsonBody(req: IncomingMessage, res: CorsResponse): Pro
 export function toStringArray(value: unknown, limit: number): string[] | undefined {
   if (!Array.isArray(value)) return undefined;
   return value.slice(0, limit).filter((v): v is string => typeof v === 'string');
+}
+
+export function isTeamTier(tier: string): boolean {
+  return (TEAM_TIERS as readonly string[]).includes(tier);
+}
+
+export function timingSafeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
 
 /** Strip dangerous HTML tags and attributes to prevent stored XSS. */

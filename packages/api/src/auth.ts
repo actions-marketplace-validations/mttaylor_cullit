@@ -32,6 +32,7 @@ import {
 } from './db.js';
 import { sendWelcome } from './email.js';
 import { log } from './logger.js';
+import { getFeatureGating } from '@cullit/core';
 
 /** Whether PostgreSQL is available */
 export const useDb = !!process.env['DATABASE_URL'];
@@ -720,6 +721,7 @@ export async function handleAuthMe(req: IncomingMessage, res: ServerResponse, js
     role: user.role,
     apiKey: user.apiKey,
     trial,
+    features: getFeatureGating(effectiveTier),
     createdAt: user.createdAt,
   });
 }

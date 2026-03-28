@@ -19,7 +19,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
 import { createHash, randomBytes } from 'crypto';
 
-import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS, TIERS, TEAM_TIERS, getTierLimits, createRateLimiter } from '@cullit/core';
+import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS, TIERS, getTierLimits, createRateLimiter } from '@cullit/core';
 import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget } from '@cullit/core';
 import { openApiSpec } from './openapi.js';
 import { handleDocs } from './docs.js';
@@ -39,9 +39,9 @@ import { migrate, closeDb, sql,
 import { handleCheckout, handleBillingPortal, handleGetSubscription, handleStripeWebhook, isStripeConfigured } from './billing.js';
 import { log } from './logger.js';
 import { metrics, handleMetrics } from './metrics.js';
-import { sendTrialExpiryWarning, sendTrialExpired } from './email.js';
+import { sendTrialExpiryWarning, sendTrialExpired, sendUsageAlert } from './email.js';
 import {
-  json, checkAuth, readBody, readJsonBody, parseJsonObject, isRecord, ErrorCode,
+  json, readBody, readJsonBody, parseJsonObject, isRecord, isTeamTier, ErrorCode,
   PORT, SECURITY_HEADERS, generateRequestId,
   type CorsResponse, type JsonObject,
 } from './utils.js';
@@ -179,7 +179,7 @@ function checkRateLimit(req: IncomingMessage, res: ServerResponse): boolean {
   return true;
 }
 
-// Helpers (json, checkAuth, readBody) imported from utils.ts
+// Helpers (json, readBody) imported from utils.ts
 
 // --- Pipeline result cache (LRU + TTL) ---
 
@@ -419,9 +419,6 @@ function validateGenerateRequest(body: GenerateRequest, res: ServerResponse): Cu
     _to: body.to || 'HEAD',
   };
 
-  if (body.provider) config.ai.provider = body.provider;
-  if (body.model) config.ai.model = body.model;
-
   return config;
 }
 
@@ -459,6 +456,12 @@ function recordGeneration(
 }
 
 async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) {
+    json(res, 401, { error: 'Authentication required for generation', code: ErrorCode.AUTH_NOT_AUTHENTICATED });
+    return;
+  }
+
   const body = await readJsonBody(req, res) as GenerateRequest | null;
   if (!body) return;
 
@@ -468,13 +471,6 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
   const { _format: format, _to: to, ...config } = validated;
 
   try {
-    // Usage enforcement
-    const user = await resolveUser(req);
-    if (!user) {
-      json(res, 401, { error: 'Authentication required for generation', code: ErrorCode.AUTH_NOT_AUTHENTICATED });
-      return;
-    }
-
     const key = user.orgId || user.id;
     const monthlyCount = await getMonthlyGenerationCount(key);
     const effectiveTier = getEffectiveTier(user);
@@ -517,6 +513,15 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
 
     // Record history + analytics (fire-and-forget)
     recordGeneration(user, body, config as CullConfig, format, to, result);
+
+    // Usage alert at 80% and 90% thresholds (fire-and-forget)
+    const newCount = monthlyCount + 1;
+    const pct = newCount / limits.generationsPerMonth;
+    const prevPct = monthlyCount / limits.generationsPerMonth;
+    if ((pct >= 0.9 && prevPct < 0.9) || (pct >= 0.8 && prevPct < 0.8)) {
+      sendUsageAlert(user.email, user.name || 'there', newCount, limits.generationsPerMonth)
+        .catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to send usage alert'); });
+    }
   } catch (err) {
     log.error({ err: (err as Error).message }, 'Pipeline error');
     metrics.generationError();
@@ -576,10 +581,6 @@ async function handleGetAnalytics(req: IncomingMessage, res: ServerResponse): Pr
 // Draft handlers imported from routes/drafts.ts
 
 // --- Project Settings Endpoints ---
-
-function isTeamTier(tier: string): boolean {
-  return (TEAM_TIERS as readonly string[]).includes(tier);
-}
 
 async function handleGetProjectSettings(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const user = await resolveUser(req);
@@ -804,10 +805,8 @@ const server = createServer(async (req, res: CorsResponse) => {
 
     // --- Authenticated routes ---
     } else if ((path === '/generate' || path === '/v1/generate') && req.method === 'POST') {
-      if (!checkAuth(req, res)) return;
       await handleGenerate(req, res);
     } else if (path === '/v1/changelog' && req.method === 'POST') {
-      if (!checkAuth(req, res)) return;
       await handleChangelogPublish(req, res);
     } else if (req.method === 'GET' && path.match(/^\/v1\/changelog\/[^/]+\/latest$/)) {
       const project = path.split('/')[3];

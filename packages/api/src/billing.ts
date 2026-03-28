@@ -374,11 +374,15 @@ export async function handleGetSubscription(
   res: ServerResponse,
 ): Promise<void> {
   const user = await getUser(userId);
-  const effectiveTier = user ? getEffectiveTier(user) : 'free';
-  const trial = user ? getTrialStatus(user) : { active: false, expired: false, tier: null, startsAt: null, endsAt: null, daysRemaining: 0 };
+  if (!user) {
+    jsonFn(res, 404, { error: 'User not found' });
+    return;
+  }
+  const effectiveTier = getEffectiveTier(user);
+  const trial = getTrialStatus(user);
   const sub = await dbGetSubscription(userId);
   if (!sub) {
-    jsonFn(res, 200, { subscription: null, plan: effectiveTier, tier: user?.tier || 'free', effectiveTier, trial });
+    jsonFn(res, 200, { subscription: null, plan: effectiveTier, tier: user.tier || 'free', effectiveTier, trial });
     return;
   }
 
@@ -390,7 +394,7 @@ export async function handleGetSubscription(
       cancelAtPeriodEnd: sub.cancel_at_period_end,
     },
     plan: sub.plan,
-    tier: user?.tier || sub.plan,
+    tier: user.tier || sub.plan,
     effectiveTier,
     trial,
   });

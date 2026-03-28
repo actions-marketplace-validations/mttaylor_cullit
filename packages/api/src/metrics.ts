@@ -21,6 +21,7 @@
  */
 
 import type { IncomingMessage, ServerResponse } from 'http';
+import { timingSafeCompare } from './utils.js';
 
 // --- Counter storage ---
 
@@ -84,8 +85,8 @@ export function handleMetrics(req: IncomingMessage, res: ServerResponse): void {
   // Gate behind METRICS_TOKEN if set (production security)
   const token = process.env['METRICS_TOKEN'];
   if (token) {
-    const auth = req.headers['authorization'];
-    if (auth !== `Bearer ${token}`) {
+    const auth = req.headers['authorization'] || '';
+    if (!timingSafeCompare(auth, `Bearer ${token}`)) {
       res.writeHead(403, { 'Content-Type': 'text/plain' });
       res.end('Forbidden\n');
       return;

@@ -43,7 +43,7 @@ describe('Billing Module', () => {
   });
 
   describe('handleGetSubscription — no DB', () => {
-    it('returns null subscription when no DB is configured', async () => {
+    it('returns 404 for non-existent user', async () => {
       const { handleGetSubscription } = await import('../src/billing.js');
       let captured: { status: number; body: any } | null = null;
       const mockJson = (_res: any, status: number, body: unknown) => {
@@ -52,9 +52,8 @@ describe('Billing Module', () => {
       const mockRes = {} as any;
       await handleGetSubscription('user-123', mockJson, mockRes);
       expect(captured).not.toBeNull();
-      expect(captured!.status).toBe(200);
-      expect(captured!.body.subscription).toBeNull();
-      expect(captured!.body.plan).toBe('free');
+      expect(captured!.status).toBe(404);
+      expect(captured!.body.error).toContain('User not found');
     });
   });
 
