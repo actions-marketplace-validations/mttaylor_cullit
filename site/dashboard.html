@@ -2848,7 +2848,9 @@ async function loadBilling() {
         portalBtn.textContent = 'Manage Billing';
         portalBtn.onclick = openBillingPortal;
         actionsEl.appendChild(portalBtn);
-      } else {\n        statusEl.textContent = tier === 'free' ? 'No active subscription' : '';\n      }
+      } else {
+        statusEl.textContent = tier === 'free' ? 'No active subscription' : '';
+      }
     }
   } catch {
     statusEl.textContent = '';

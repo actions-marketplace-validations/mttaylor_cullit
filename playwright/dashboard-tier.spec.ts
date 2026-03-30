@@ -101,8 +101,8 @@ test('free tier shows free badge and team gates remain locked', async ({ page })
 
   await expect(page.locator('#navTier')).toHaveText('free');
 
-  await page.getByRole('button', { name: /drafts/i }).click();
-  await expect(page.locator('#draftTeamGate')).toBeVisible();
+  // Drafts tab is disabled for free tier (tab gating)
+  await expect(page.locator('.dash-tab[data-tab="drafts"]')).toBeDisabled();
 });
 
 test('pro tier unlocks pro badge but keeps team-only drafts gated', async ({ page }) => {
@@ -111,8 +111,8 @@ test('pro tier unlocks pro badge but keeps team-only drafts gated', async ({ pag
   await page.goto('/dashboard.html');
 
   await expect(page.locator('#navTier')).toHaveText('pro');
-  await page.getByRole('button', { name: /drafts/i }).click();
-  await expect(page.locator('#draftTeamGate')).toBeVisible();
+  // Drafts tab is disabled for pro tier (tab gating)
+  await expect(page.locator('.dash-tab[data-tab="drafts"]')).toBeDisabled();
   await expect(page.locator('#billingPlanName')).toHaveText('Pro');
 });
 

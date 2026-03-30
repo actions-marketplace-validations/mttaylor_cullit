@@ -76,6 +76,8 @@ export async function migrate(): Promise<void> {
   // Post-hoc migrations for existing databases (columns already in CREATE TABLE above)
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS api_key_hash TEXT`;
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS tokens_revoked_before TIMESTAMPTZ`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS github_username TEXT`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_provider TEXT`;
 
   // Backfill api_key_hash for existing users that don't have one
   await sql`

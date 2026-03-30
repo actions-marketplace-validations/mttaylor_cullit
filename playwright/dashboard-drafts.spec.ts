@@ -90,15 +90,14 @@ async function mockDraftApis(
 }
 
 test.describe('dashboard drafts tab', () => {
-  test('pro user sees team-gate banner on drafts tab', async ({ page }) => {
+  test('pro user sees drafts tab disabled (team-gated)', async ({ page }) => {
     await mockDashboardApis(page, { status: 200, body: makeUser('pro') });
 
     await page.goto('/dashboard.html');
     await expect(page.locator('#dashApp')).toBeVisible();
 
-    await page.getByRole('button', { name: /drafts/i }).click();
-
-    await expect(page.locator('#draftTeamGate')).toBeVisible();
+    // Drafts tab is disabled for pro tier (requires team+)
+    await expect(page.locator('.dash-tab[data-tab="drafts"]')).toBeDisabled();
   });
 
   test('team user sees draft list, not team gate', async ({ page }) => {
