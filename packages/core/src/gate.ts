@@ -166,6 +166,7 @@ export function isAudienceToneAllowed(license: LicenseStatus): boolean {
 export function upgradeMessage(feature: string, minTier?: string): string {
   const tierLabel = minTier === 'team' ? 'a Team plan or above'
     : minTier === 'pro' ? 'a Pro plan or above'
+    : minTier === 'basic' ? 'a Basic plan or above'
     : minTier === 'enterprise' ? 'an Enterprise plan'
     : 'a paid Cullit plan';
   return `🔒 ${feature} requires ${tierLabel}.\n` +
@@ -225,7 +226,8 @@ const FEATURE_TIERS: Record<TeamFeature, Set<string>> = {
 /**
  * Check whether a license tier grants access to a Team/Enterprise feature.
  */
-export function isFeatureAllowed(feature: TeamFeature, tier: string): boolean {
+export function isFeatureAllowed(feature: TeamFeature, tier: string, valid: boolean = true): boolean {
+  if (!valid) return false;
   const allowed = FEATURE_TIERS[feature];
   return allowed ? allowed.has(tier) : false;
 }

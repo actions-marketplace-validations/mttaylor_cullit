@@ -86,6 +86,8 @@ export async function migrate(): Promise<void> {
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_api_key_hash ON users (api_key_hash) WHERE api_key_hash IS NOT NULL`;
   await sql`CREATE INDEX IF NOT EXISTS idx_users_api_key ON users (api_key)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_users_stripe_customer ON users (stripe_customer_id) WHERE stripe_customer_id IS NOT NULL`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_users_login ON users (login)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_users_github_username ON users (github_username) WHERE github_username IS NOT NULL`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS orgs (
@@ -225,6 +227,7 @@ export async function migrate(): Promise<void> {
   `;
 
   await sql`CREATE INDEX IF NOT EXISTS idx_revisions_draft ON draft_revisions (draft_id, revision_number)`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_revisions_draft_unique ON draft_revisions (draft_id, revision_number)`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS project_settings (
@@ -308,6 +311,7 @@ export async function migrate(): Promise<void> {
       id                TEXT PRIMARY KEY,
       org_id            TEXT NOT NULL REFERENCES orgs(id) ON DELETE CASCADE,
       api_key           TEXT UNIQUE NOT NULL,
+      api_key_hash      TEXT,
       label             TEXT NOT NULL DEFAULT '',
       assigned_to_email TEXT,
       assigned_to_name  TEXT,
@@ -317,8 +321,16 @@ export async function migrate(): Promise<void> {
     )
   `;
 
+  await sql`ALTER TABLE team_api_keys ADD COLUMN IF NOT EXISTS api_key_hash TEXT`.catch((err) => { log.debug({ err: (err as Error).message }, 'ALTER TABLE team_api_keys api_key_hash'); });
   await sql`CREATE INDEX IF NOT EXISTS idx_team_keys_org ON team_api_keys (org_id) WHERE revoked_at IS NULL`;
   await sql`CREATE INDEX IF NOT EXISTS idx_team_keys_api_key ON team_api_keys (api_key) WHERE revoked_at IS NULL`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_team_keys_hash ON team_api_keys (api_key_hash) WHERE revoked_at IS NULL`;
+
+  // Backfill team api_key_hash for existing keys that don't have one
+  await sql`
+    UPDATE team_api_keys SET api_key_hash = encode(sha256(api_key::bytea), 'hex')
+    WHERE api_key_hash IS NULL AND api_key IS NOT NULL
+  `.catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to backfill team api_key_hash'); });
 
   log.info('Database migrations complete');
 }
@@ -1175,9 +1187,10 @@ export interface DbTeamApiKey {
 export async function dbCreateTeamApiKey(key: {
   id: string; orgId: string; apiKey: string; label: string;
 }): Promise<DbTeamApiKey> {
+  const keyHash = hashApiKey(key.apiKey);
   const rows = await sql<DbTeamApiKey[]>`
-    INSERT INTO team_api_keys (id, org_id, api_key, label)
-    VALUES (${key.id}, ${key.orgId}, ${key.apiKey}, ${key.label})
+    INSERT INTO team_api_keys (id, org_id, api_key, api_key_hash, label)
+    VALUES (${key.id}, ${key.orgId}, ${key.apiKey}, ${keyHash}, ${key.label})
     RETURNING *
   `;
   return rows[0];
@@ -1197,10 +1210,16 @@ export async function dbGetActiveTeamApiKeyCount(orgId: string): Promise<number>
 }
 
 export async function dbGetTeamApiKeyByKey(apiKey: string): Promise<DbTeamApiKey | null> {
+  const keyHash = hashApiKey(apiKey);
+  // Query by hash first (secure path), fall back to plaintext for un-migrated rows
   const rows = await sql<DbTeamApiKey[]>`
+    SELECT * FROM team_api_keys WHERE api_key_hash = ${keyHash} AND revoked_at IS NULL
+  `;
+  if (rows[0]) return rows[0];
+  const fallback = await sql<DbTeamApiKey[]>`
     SELECT * FROM team_api_keys WHERE api_key = ${apiKey} AND revoked_at IS NULL
   `;
-  return rows[0] || null;
+  return fallback[0] || null;
 }
 
 export async function dbUpdateTeamApiKeyAssignment(
@@ -1257,7 +1276,7 @@ export async function dbRevokeExcessTeamApiKeys(orgId: string, maxActive: number
 
 export async function dbRotateTeamApiKey(id: string, orgId: string, newApiKey: string): Promise<DbTeamApiKey | null> {
   const rows = await sql<DbTeamApiKey[]>`
-    UPDATE team_api_keys SET api_key = ${newApiKey} WHERE id = ${id} AND org_id = ${orgId} AND revoked_at IS NULL RETURNING *
+    UPDATE team_api_keys SET api_key = ${newApiKey}, api_key_hash = ${hashApiKey(newApiKey)} WHERE id = ${id} AND org_id = ${orgId} AND revoked_at IS NULL RETURNING *
   `;
   return rows[0] || null;
 }

@@ -27,14 +27,14 @@ import {
   dbUpdateUserOrg, dbGetOrg, dbGetOrgBySlug, dbCreateOrg, dbGetOrgMemberCount,
   dbAddOrgMember, dbRemoveOrgMember, dbGetOrgMembers,
   dbRevokeToken, dbIsTokenRevoked, dbDeleteUser, dbGetTokensRevokedBefore,
-  dbGetTeamApiKeyByKey, dbUpdatePreferredProvider,
+  dbGetTeamApiKeyByKey, dbUpdatePreferredProvider, dbRevokeAllUserTokens,
   sql,
   type DbUser, type DbOrg,
 } from './db.js';
 import { sendWelcome } from './email.js';
 import { log } from './logger.js';
 import { readBody } from './utils.js';
-import { getFeatureGating } from '@cullit/core';
+import { getFeatureGating, AI_PROVIDERS } from '@cullit/core';
 
 /** Whether PostgreSQL is available */
 export const useDb = !!process.env['DATABASE_URL'];
@@ -728,8 +728,14 @@ export async function handleUpdateMe(req: IncomingMessage, res: ServerResponse, 
     return;
   }
 
-  await updatePreferredProvider(user.id, parsed.preferredProvider.trim());
-  jsonFn(res, 200, { ok: true, preferredProvider: parsed.preferredProvider.trim() });
+  const provider = parsed.preferredProvider.trim();
+  if (!AI_PROVIDERS.includes(provider as typeof AI_PROVIDERS[number])) {
+    jsonFn(res, 400, { error: `Invalid provider. Must be one of: ${AI_PROVIDERS.join(', ')}` });
+    return;
+  }
+
+  await updatePreferredProvider(user.id, provider);
+  jsonFn(res, 200, { ok: true, preferredProvider: provider });
 }
 
 /**
@@ -758,6 +764,7 @@ export async function handleRotateApiKey(req: IncomingMessage, res: ServerRespon
   const newApiKey = generateApiKey();
   if (useDb) {
     await dbRotateApiKey(user.id, newApiKey);
+    await dbRevokeAllUserTokens(user.id);
   } else {
     const existing = store.users[user.id];
     if (existing) {

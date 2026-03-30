@@ -225,9 +225,13 @@ export async function runPipeline(
     log.info(`» Enriching from ${source}...`);
     const enricher = enricherFactory(config);
 
-    const enrichedTickets = await enricher.enrich(diff);
-    tickets.push(...enrichedTickets);
-    log.info(`» ${source}: found ${enrichedTickets.length} ${source === 'jira' ? 'tickets' : 'issues'}`);
+    try {
+      const enrichedTickets = await enricher.enrich(diff);
+      tickets.push(...enrichedTickets);
+      log.info(`» ${source}: found ${enrichedTickets.length} ${source === 'jira' ? 'tickets' : 'issues'}`);
+    } catch (err) {
+      log.warn(`⚠ ${source} enrichment failed: ${(err as Error).message || err} — continuing without it`);
+    }
   }
 
   const context: EnrichedContext = { diff, tickets };

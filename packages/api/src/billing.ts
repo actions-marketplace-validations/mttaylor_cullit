@@ -313,8 +313,7 @@ export async function handleCheckout(
         });
 
         // Update DB immediately (webhook will also fire, but this avoids delay)
-        const tier = planToTier(plan);
-        await dbUpdateUserTier(userId, tier);
+        // Tier update deferred to webhook — avoids granting access before payment confirms
 
         log.info({ userId, plan, subscriptionId: existingSub.stripe_subscription_id }, 'Subscription updated (plan change)');
         jsonFn(res, 200, { updated: true, plan });

@@ -31,7 +31,7 @@
     --accent: #5eead4;
     --accent-dim: #2dd4bf;
     --text: #d4d4e0;
-    --text-dim: #7e819a;
+    --text-dim: #8f92ab;
     --text-bright: #f0f0f5;
     --border: #282a3a;
     --terminal-green: #4ade80;
@@ -1744,6 +1744,9 @@ function showDashboard() {
   document.getElementById('navLogin').textContent = currentUser.login;
   document.getElementById('navTier').textContent = currentUser.effectiveTier || currentUser.tier;
 
+  // Tier-gate dashboard tabs
+  applyTabGating();
+
   checkHealth();
   loadHistory();
   loadAnalytics();
@@ -1953,6 +1956,33 @@ function escapeAttr(text) {
 }
 
 // --- Dashboard Tabs ---
+
+const TAB_MIN_TIERS = {
+  generate: 'free', history: 'free', settings: 'free', billing: 'free',
+  drafts: 'team', analytics: 'basic', team: 'team', changelog: 'pro',
+};
+const TIER_RANK = { free: 0, basic: 1, pro: 2, team: 3, enterprise: 4 };
+
+function applyTabGating() {
+  const tier = getEffectiveTierClient();
+  const rank = TIER_RANK[tier] || 0;
+  document.querySelectorAll('.dash-tab').forEach(btn => {
+    const tab = btn.dataset.tab;
+    const minTier = TAB_MIN_TIERS[tab] || 'free';
+    const minRank = TIER_RANK[minTier] || 0;
+    if (rank < minRank) {
+      btn.disabled = true;
+      btn.title = capitalize(minTier) + '+ plan required';
+      btn.style.opacity = '0.4';
+      btn.style.cursor = 'not-allowed';
+    } else {
+      btn.disabled = false;
+      btn.title = '';
+      btn.style.opacity = '';
+      btn.style.cursor = '';
+    }
+  });
+}
 
 function switchDashTab(tab) {
   document.querySelectorAll('.dash-tab').forEach(t => {

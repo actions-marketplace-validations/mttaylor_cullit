@@ -90,8 +90,8 @@ Generate release notes from your configured source and provider.
 | `--provider` | string | From config | AI provider: `anthropic`, `openai`, `gemini`, `ollama`, `none` |
 | `--model` | string | Provider default | Override the AI model (e.g., `claude-sonnet-4-6-20250514`) |
 | `--audience` | string | `developer` | Target audience: `developer`, `end-user`, `executive` |
-| `--tone` | string | `professional` | Writing tone: `professional`, `casual`, `terse` |
-| `--format` | string | `markdown` | Output format: `markdown`, `html`, `json` |
+| `--tone` | string | `professional` | Writing tone: `professional`, `casual`, `terse`, `edgy`, `hype`, `snarky` |
+| `--format` | string | `markdown` | Output format: `markdown`, `html`, `html-dark`, `html-minimal`, `html-edgy`, `json` |
 | `--template` | string | — | Named template profile from `.cullit.yml` |
 | `--source` | string | `local` | Data source: `local`, `jira`, `linear`, `gitlab`, `bitbucket`, `multi-repo` |
 | `--dry-run` | boolean | `false` | Generate but don't publish; output to stdout |
@@ -392,7 +392,7 @@ jira:
 | `STRIPE_SECRET_KEY` | Stripe billing API key |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature verification |
 | `STRIPE_BASIC_PRICE_ID` | Stripe price id for Basic plan |
-| `STRIPE_PRICE_PRO_MONTHLY` | Stripe price id for Pro plan |
+| `STRIPE_PRO_PRICE_ID` | Stripe price id for Pro plan |
 | `STRIPE_TEAM_5_PRICE_ID` | Stripe price id for Team 5 plan ($44.99/mo, 5 seats) |
 | `STRIPE_TEAM_10_PRICE_ID` | Stripe price id for Team 10 plan ($89/mo, 10 seats) |
 | `STRIPE_TEAM_25_PRICE_ID` | Stripe price id for Team 25 plan ($209/mo, 25 seats) |
