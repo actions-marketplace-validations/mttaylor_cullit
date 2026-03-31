@@ -38,7 +38,7 @@
     }
     .cullit-widget-panel {
       position: fixed;
-      z-index: 100000;
+      z-index: 10002;
       width: 380px;
       max-height: 520px;
       background: #1a1a2e;

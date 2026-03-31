@@ -11,7 +11,9 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://cullit.io/pricing">
 <meta property="og:image" content="https://cullit.io/og-image.png">
+<meta property="og:site_name" content="Cullit">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@cullit_io">
 <meta name="twitter:title" content="Pricing — Cullit">
 <meta name="twitter:description" content="Cullit pricing — AI release notes from $0/mo. Free, Pro, Team & Enterprise plans.">
 <meta name="twitter:image" content="https://cullit.io/og-image.png">
@@ -392,9 +394,6 @@
 
   @media (max-width: 768px) {
     .pricing-grid { grid-template-columns: repeat(2, 1fr); }
-  }
-
-  @media (max-width: 768px) {
     .pricing-container { padding: 6rem 1.25rem 3rem; }
     .pricing-header h1 { font-size: 1.8rem; }
     .hamburger { display: flex; }
@@ -624,6 +623,12 @@ const navLinks = document.getElementById('navLinks');
 hamburger.addEventListener('click', () => {
   hamburger.classList.toggle('open');
   navLinks.classList.toggle('open');
+});
+navLinks.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => {
+    hamburger.classList.remove('open');
+    navLinks.classList.remove('open');
+  });
 });
 
 function isPrivateIpv4(hostname) {

@@ -11,7 +11,9 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://cullit.io/privacy">
 <meta property="og:image" content="https://cullit.io/og-image.png">
+<meta property="og:site_name" content="Cullit">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@cullit_io">
 <meta name="twitter:title" content="Privacy Policy — Cullit">
 <meta name="twitter:description" content="Privacy Policy for Cullit. We believe in transparency about how your data is handled.">
 <meta name="twitter:image" content="https://cullit.io/og-image.png">
@@ -619,6 +621,12 @@ const navLinks = document.getElementById('navLinks');
 hamburger.addEventListener('click', () => {
   hamburger.classList.toggle('open');
   navLinks.classList.toggle('open');
+});
+navLinks.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => {
+    hamburger.classList.remove('open');
+    navLinks.classList.remove('open');
+  });
 });
 </script>
 

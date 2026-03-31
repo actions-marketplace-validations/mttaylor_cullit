@@ -16,7 +16,7 @@ describe('Email Module', () => {
 
   it('sendWelcome returns false when RESEND_API_KEY is not set', async () => {
     const { sendWelcome } = await import('../src/email.js');
-    const result = await sendWelcome('test@example.com', 'Test User', 'clt_test123');
+    const result = await sendWelcome('test@example.com', 'Test User');
     expect(result).toBe(false);
   });
 

@@ -378,7 +378,7 @@ async function createOrUpdateUser(woUser: WorkOSUser): Promise<User> {
     });
     const user = dbUserToUser(row);
     if (isNew && user.email) {
-      sendWelcome(user.email, user.name || 'there', user.apiKey || '').catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to send welcome email'); });
+      sendWelcome(user.email, user.name || 'there').catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to send welcome email'); });
     }
     // Auto-link any pending GitHub installations for this user
     if (githubUsername && sql) {
@@ -458,17 +458,24 @@ export async function createOrg(name: string, owner: User, maxSeats = 10): Promi
   let slug = name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').slice(0, 48);
   const now = new Date().toISOString();
 
+  if (useDb) {
+    // Retry with random suffix on slug collision (ON CONFLICT returns no rows)
+    let row: ReturnType<typeof dbCreateOrg> extends Promise<infer T> ? T : never;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const trySlug = attempt === 0 ? slug : `${slug.slice(0, 40)}-${randomBytes(4).toString('hex')}`;
+      row = await dbCreateOrg({ id, name, slug: trySlug, ownerId: owner.id, tier: 'team', maxSeats });
+      if (row) { break; }
+    }
+    if (!row!) throw new Error('Failed to create org — slug conflict after retries');
+    await dbAddOrgMember(id, owner.id, 'owner');
+    await dbUpdateUserOrg(owner.id, id, 'owner', 'team');
+    return dbOrgToOrg(row!);
+  }
+
   // Ensure slug uniqueness by appending random suffix on collision
   const existing = await getOrgBySlug(slug);
   if (existing) {
     slug = `${slug.slice(0, 40)}-${randomBytes(4).toString('hex')}`;
-  }
-
-  if (useDb) {
-    const row = await dbCreateOrg({ id, name, slug, ownerId: owner.id, tier: 'team', maxSeats });
-    await dbAddOrgMember(id, owner.id, 'owner');
-    await dbUpdateUserOrg(owner.id, id, 'owner', 'team');
-    return dbOrgToOrg(row);
   }
 
   const org: Org = {

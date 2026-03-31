@@ -80,10 +80,17 @@ export async function migrate(): Promise<void> {
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_provider TEXT`;
 
   // Backfill api_key_hash for existing users that don't have one
+  // Backfill api_key_hash for existing users that don't have one
   await sql`
     UPDATE users SET api_key_hash = encode(sha256(api_key::bytea), 'hex')
     WHERE api_key_hash IS NULL AND api_key IS NOT NULL
   `.catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to backfill api_key_hash'); });
+
+  // Null out plaintext api_key for rows that already have a hash
+  await sql`
+    UPDATE users SET api_key = NULL
+    WHERE api_key IS NOT NULL AND api_key_hash IS NOT NULL
+  `.catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to clear plaintext api_keys'); });
 
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_api_key_hash ON users (api_key_hash) WHERE api_key_hash IS NOT NULL`;
   await sql`CREATE INDEX IF NOT EXISTS idx_users_api_key ON users (api_key)`;
@@ -334,6 +341,20 @@ export async function migrate(): Promise<void> {
     WHERE api_key_hash IS NULL AND api_key IS NOT NULL
   `.catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to backfill team api_key_hash'); });
 
+  // Audit events table for tracking security-sensitive operations
+  await sql`
+    CREATE TABLE IF NOT EXISTS audit_events (
+      id         TEXT PRIMARY KEY,
+      user_id    TEXT,
+      action     TEXT NOT NULL,
+      target     TEXT,
+      metadata   JSONB,
+      ip         TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_audit_events_user ON audit_events (user_id, created_at DESC)`;
+
   log.info('Database migrations complete');
 }
 
@@ -397,6 +418,21 @@ export async function dbMarkWebhookProcessed(eventId: string, eventType: string)
   `;
 }
 
+// --- Audit events ---
+
+export async function dbRecordAuditEvent(event: {
+  userId?: string | null; action: string; target?: string | null;
+  metadata?: Record<string, unknown> | null; ip?: string | null;
+}): Promise<void> {
+  if (!sql) return;
+  const id = `ae_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  await sql`
+    INSERT INTO audit_events (id, user_id, action, target, metadata, ip)
+    VALUES (${id}, ${event.userId || null}, ${event.action}, ${event.target || null},
+            ${event.metadata ? JSON.stringify(event.metadata) : null}::jsonb, ${event.ip || null})
+  `.catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to record audit event'); });
+}
+
 // --- User DB operations ---
 
 export interface DbUser {
@@ -424,11 +460,9 @@ export async function dbGetUser(id: string): Promise<DbUser | null> {
 
 export async function dbGetUserByApiKey(apiKey: string): Promise<DbUser | null> {
   const keyHash = hashApiKey(apiKey);
-  // Query by hash first (secure path), fall back to plaintext for un-migrated rows
+  // Look up by hash only — plaintext fallback removed for security
   const rows = await sql<DbUser[]>`SELECT * FROM users WHERE api_key_hash = ${keyHash}`;
-  if (rows[0]) return rows[0];
-  const fallback = await sql<DbUser[]>`SELECT * FROM users WHERE api_key = ${apiKey}`;
-  return fallback[0] || null;
+  return rows[0] || null;
 }
 
 export async function dbGetUserByStripeCustomer(customerId: string): Promise<DbUser | null> {
@@ -466,6 +500,7 @@ export async function dbUpsertUser(user: {
       avatar_url = EXCLUDED.avatar_url,
       github_username = COALESCE(EXCLUDED.github_username, users.github_username),
       api_key_hash = COALESCE(EXCLUDED.api_key_hash, users.api_key_hash),
+      api_key = NULL,
       last_login_at = NOW()
     RETURNING *
   `;
@@ -486,7 +521,7 @@ export async function dbUpdateUserStripe(userId: string, customerId: string, sub
 
 export async function dbRotateApiKey(userId: string, newApiKey: string): Promise<DbUser> {
   const keyHash = hashApiKey(newApiKey);
-  const rows = await sql<DbUser[]>`UPDATE users SET api_key = ${newApiKey}, api_key_hash = ${keyHash} WHERE id = ${userId} RETURNING *`;
+  const rows = await sql<DbUser[]>`UPDATE users SET api_key = NULL, api_key_hash = ${keyHash} WHERE id = ${userId} RETURNING *`;
   return rows[0];
 }
 
@@ -518,9 +553,11 @@ export async function dbGetOrgBySlug(slug: string): Promise<DbOrg | null> {
 }
 
 export async function dbCreateOrg(org: { id: string; name: string; slug: string; ownerId: string; tier: string; maxSeats: number }): Promise<DbOrg> {
+  // Use ON CONFLICT to handle slug collisions atomically
   const rows = await sql<DbOrg[]>`
     INSERT INTO orgs (id, name, slug, owner_id, tier, max_seats)
     VALUES (${org.id}, ${org.name}, ${org.slug}, ${org.ownerId}, ${org.tier}, ${org.maxSeats})
+    ON CONFLICT (slug) DO NOTHING
     RETURNING *
   `;
   return rows[0];
@@ -550,11 +587,15 @@ export async function dbAddOrgMember(orgId: string, userId: string, role: string
  */
 export async function dbAddOrgMemberAtomic(orgId: string, userId: string, role: string, maxSeats: number): Promise<boolean> {
   try {
-    const result = await sql`
-      INSERT INTO org_members (org_id, user_id, role)
-      SELECT ${orgId}, ${userId}, ${role}
-      WHERE (SELECT COUNT(*) FROM org_members WHERE org_id = ${orgId}) < ${maxSeats}
-    `;
+    // Advisory lock on org prevents concurrent seat-check races
+    const result = await sql.begin(async (tx: any) => {
+      await tx`SELECT pg_advisory_xact_lock(hashtext(${orgId}))`;
+      return tx`
+        INSERT INTO org_members (org_id, user_id, role)
+        SELECT ${orgId}, ${userId}, ${role}
+        WHERE (SELECT COUNT(*) FROM org_members WHERE org_id = ${orgId}) < ${maxSeats}
+      `;
+    });
     return result.count > 0;
   } catch {
     return false; // duplicate or constraint violation
@@ -630,12 +671,12 @@ export async function dbGetGenerations(userId: string, limit: number, offset: nu
   provider: string; format: string; change_count: number; summary: string; duration: number; created_at: Date;
 }[]> {
   if (cursor) {
-    // Cursor-based: fetch rows created before the cursor row
+    // Cursor-based: composite (created_at, id) for stable pagination
     return sql`
       SELECT * FROM generations
       WHERE user_id = ${userId}
-        AND created_at < (SELECT created_at FROM generations WHERE id = ${cursor})
-      ORDER BY created_at DESC
+        AND (created_at, id) < (SELECT created_at, id FROM generations WHERE id = ${cursor})
+      ORDER BY created_at DESC, id DESC
       LIMIT ${limit}
     `;
   }

@@ -95,7 +95,7 @@ export async function handleSendTeamKey(req: IncomingMessage, res: ServerRespons
   const recipientName = key.assigned_to_name || key.assigned_to_email.split('@')[0];
 
   const emailSent = await sendTeamApiKey(
-    key.assigned_to_email, recipientName, orgName, senderName, key.api_key, key.label,
+    key.assigned_to_email, recipientName, orgName, senderName, key.label,
   );
 
   log.info({ actor: user.id, keyId, email: key.assigned_to_email }, 'Team API key sent via email');

@@ -119,27 +119,25 @@ const FOOTER = `
 </div>
 `;
 
-export async function sendWelcome(email: string, name: string, apiKey: string): Promise<boolean> {
+export async function sendWelcome(email: string, name: string): Promise<boolean> {
   return send({
     to: email,
     subject: 'Welcome to Cullit!',
     html: `${BRAND}
       <h2 style="color: #0f1117; margin-bottom: 16px;">Welcome, ${escapeHtml(name)}!</h2>
       <p style="color: #374151; line-height: 1.6;">
-        Your account is ready. Here's your API key for CLI, GitHub Action, and API access:
+        Your account is ready. You can view your API key for CLI, GitHub Action, and API access in your dashboard:
       </p>
-      <div style="background: #f3f4f6; border-radius: 8px; padding: 16px; margin: 16px 0; font-family: monospace; font-size: 14px; word-break: break-all;">
-        ${escapeHtml(apiKey)}
-      </div>
-      <p style="color: #374151; line-height: 1.6;">
-        <strong>Keep this key safe.</strong> You can view it anytime in your
-        <a href="https://cullit.io/dashboard.html" style="color: #5eead4;">dashboard</a>.
+      <p style="margin: 16px 0;">
+        <a href="https://cullit.io/dashboard.html" style="background: #5eead4; color: #0f1117; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">
+          Go to Dashboard
+        </a>
       </p>
       <p style="color: #374151; line-height: 1.6; margin-top: 16px;">
         Get started:
       </p>
       <pre style="background: #1f2937; color: #d1d5db; padding: 16px; border-radius: 8px; font-size: 13px; overflow-x: auto;">npm install -g cullit
-export CULLIT_API_KEY="${escapeHtml(apiKey)}"
+export CULLIT_API_KEY="your-key-from-dashboard"
 cullit generate --from v1.0.0</pre>
       <p style="color: #374151; line-height: 1.6; margin-top: 16px;">
         <a href="https://cullit.io/docs.html" style="color: #5eead4;">Read the docs</a> &middot;
@@ -202,7 +200,7 @@ const PLAN_DETAILS: Record<string, { label: string; features: string[] }> = {
   },
 };
 
-export async function sendSubscriptionConfirmed(email: string, name: string, plan: string, apiKey?: string): Promise<boolean> {
+export async function sendSubscriptionConfirmed(email: string, name: string, plan: string): Promise<boolean> {
   const details = PLAN_DETAILS[plan] || PLAN_DETAILS.pro;
   const displayName = plan.startsWith('team') ? 'Team' : plan.charAt(0).toUpperCase() + plan.slice(1);
   return send({
@@ -219,16 +217,9 @@ export async function sendSubscriptionConfirmed(email: string, name: string, pla
       <ul style="color: #374151; line-height: 1.8; padding-left: 20px;">
         ${details.features.map(f => `<li>${f}</li>`).join('\n        ')}
       </ul>
-      ${apiKey ? `
-      <p style="color: #374151; line-height: 1.6; margin-top: 16px;">Your API key:</p>
-      <div style="background: #f3f4f6; border-radius: 8px; padding: 16px; margin: 8px 0; font-family: monospace; font-size: 14px; word-break: break-all;">
-        ${escapeHtml(apiKey)}
-      </div>
-      <p style="color: #6b7280; font-size: 13px;">Use this key with the CLI, GitHub Action, or API. Keep it safe.</p>
-      ` : ''}
       <p style="color: #374151; line-height: 1.6;">
-        Manage your subscription anytime from the
-        <a href="https://cullit.io/dashboard.html" style="color: #5eead4;">dashboard billing tab</a>.
+        View your API key and manage your subscription from the
+        <a href="https://cullit.io/dashboard.html" style="color: #5eead4;">dashboard</a>.
       </p>
     ${FOOTER}`,
   });
@@ -280,7 +271,7 @@ export async function sendOrgInvite(email: string, orgName: string, inviterName:
   });
 }
 
-export async function sendTeamApiKey(email: string, recipientName: string, orgName: string, senderName: string, apiKey: string, label: string): Promise<boolean> {
+export async function sendTeamApiKey(email: string, recipientName: string, orgName: string, senderName: string, label: string): Promise<boolean> {
   return send({
     to: email,
     subject: `Your Cullit API key for ${orgName}`,
@@ -289,16 +280,18 @@ export async function sendTeamApiKey(email: string, recipientName: string, orgNa
       <p style="color: #374151; line-height: 1.6;">
         Hi ${escapeHtml(recipientName)}, ${escapeHtml(senderName)} has assigned you an API key for <strong>${escapeHtml(orgName)}</strong>${label ? ` (${escapeHtml(label)})` : ''}.
       </p>
-      <div style="background: #f3f4f6; border-radius: 8px; padding: 16px; margin: 16px 0; font-family: monospace; font-size: 14px; word-break: break-all;">
-        ${escapeHtml(apiKey)}
-      </div>
       <p style="color: #374151; line-height: 1.6;">
-        Use this key with the CLI, GitHub Action, or API:
+        View your API key in the dashboard:
       </p>
-      <pre style="background: #1f2937; color: #d1d5db; padding: 16px; border-radius: 8px; font-size: 13px; overflow-x: auto;">export CULLIT_API_KEY="${escapeHtml(apiKey)}"
+      <p style="margin: 16px 0;">
+        <a href="https://cullit.io/dashboard.html" style="background: #5eead4; color: #0f1117; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">
+          Go to Dashboard
+        </a>
+      </p>
+      <pre style="background: #1f2937; color: #d1d5db; padding: 16px; border-radius: 8px; font-size: 13px; overflow-x: auto;">export CULLIT_API_KEY="your-key-from-dashboard"
 cullit generate --from v1.0.0</pre>
       <p style="color: #6b7280; font-size: 13px; margin-top: 16px;">
-        <strong>Keep this key safe.</strong> If you believe it has been compromised, ask your team admin to rotate it.
+        <strong>Keep your key safe.</strong> If you believe it has been compromised, ask your team admin to rotate it.
       </p>
     ${FOOTER}`,
   });

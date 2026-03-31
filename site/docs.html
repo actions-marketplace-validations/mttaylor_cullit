@@ -11,7 +11,9 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://cullit.io/docs">
 <meta property="og:image" content="https://cullit.io/og-image.png">
+<meta property="og:site_name" content="Cullit">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@cullit_io">
 <meta name="twitter:title" content="Cullit Documentation">
 <meta name="twitter:description" content="Complete guide to Cullit — AI release notes from git, Jira, and Linear.">
 <meta name="twitter:image" content="https://cullit.io/og-image.png">
@@ -1252,6 +1254,12 @@ const navLinks = document.getElementById('navLinks');
 hamburger.addEventListener('click', () => {
   hamburger.classList.toggle('open');
   navLinks.classList.toggle('open');
+});
+navLinks.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => {
+    hamburger.classList.remove('open');
+    navLinks.classList.remove('open');
+  });
 });
 
 // Sidebar drawer toggle (mobile)

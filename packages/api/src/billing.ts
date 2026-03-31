@@ -182,6 +182,7 @@ async function stripeRequest<T>(path: string, method: string, body?: Record<stri
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: body ? new URLSearchParams(body).toString() : undefined,
+    signal: AbortSignal.timeout(15_000),
   });
 
   const data = await res.json() as StripeErrorResponse & T;
@@ -307,15 +308,19 @@ export async function handleCheckout(
       const itemId = sub.items?.data?.[0]?.id;
       if (itemId) {
         // Update the subscription in-place: swap price, prorate immediately
+        // Idempotency key prevents duplicate charges on network retry
+        const idempotencyKey = `sub_update_${userId}_${plan}_${Date.now()}`;
         await stripeRequest(`/subscriptions/${existingSub.stripe_subscription_id}`, 'POST', {
           'items[0][id]': itemId,
           'items[0][price]': priceId,
           'proration_behavior': 'create_prorations',
           'metadata[plan]': plan,
+          'Idempotency-Key': idempotencyKey,
         });
 
-        // Update DB immediately (webhook will also fire, but this avoids delay)
-        // Tier update deferred to webhook — avoids granting access before payment confirms
+        // Update tier immediately — webhook will also fire as confirmation
+        const tier = planToTier(plan);
+        await dbUpdateUserTier(userId, tier);
 
         log.info({ userId, plan, subscriptionId: existingSub.stripe_subscription_id }, 'Subscription updated (plan change)');
         jsonFn(res, 200, { updated: true, plan });
@@ -517,18 +522,29 @@ async function handleCheckoutComplete(sessionPayload: unknown): Promise<void> {
   // Provision team API keys if this is a team plan
   const seats = planToSeats(plan);
   if (seats > 0) {
-    try {
-      await provisionTeamKeys(userId, plan, seats);
-    } catch (err) {
-      log.error({ err: (err as Error).message, userId, plan, seats }, 'Failed to provision team API keys — user was charged but keys not created. Manual intervention required.');
+    // Retry up to 3 times — user was already charged, keys MUST be provisioned
+    let attempt = 0;
+    while (attempt < 3) {
+      try {
+        await provisionTeamKeys(userId, plan, seats);
+        break;
+      } catch (err) {
+        attempt++;
+        if (attempt >= 3) {
+          log.error({ err: (err as Error).message, userId, plan, seats, attempt }, 'Failed to provision team API keys after 3 attempts — user was charged but keys not created. Manual intervention required.');
+        } else {
+          log.warn({ err: (err as Error).message, userId, plan, seats, attempt }, `Team key provisioning attempt ${attempt} failed, retrying...`);
+          await new Promise(r => setTimeout(r, 1000 * attempt));
+        }
+      }
     }
   }
 
-  // Send subscription confirmation email (includes API key)
+  // Send subscription confirmation email (no plaintext key — user views key in dashboard)
   const user = await dbGetUser(userId);
   if (user?.email) {
     try {
-      await sendSubscriptionConfirmed(user.email, user.name || user.login, plan, user.api_key);
+      await sendSubscriptionConfirmed(user.email, user.name || user.login, plan);
     } catch (err) {
       log.error({ err: (err as Error).message, userId }, 'Failed to send subscription confirmed email — user was charged but did not receive confirmation');
     }
@@ -614,6 +630,10 @@ async function handleSubscriptionUpdate(subscriptionPayload: unknown): Promise<v
         const revoked = await dbRevokeExcessTeamApiKeys(user.org_id, seats);
         if (revoked > 0) {
           log.info({ userId: user.id, orgId: user.org_id, plan, revoked }, 'Revoked excess team API keys after plan downgrade');
+          // Notify org owner about revoked keys
+          if (user.email) {
+            sendSubscriptionConfirmed(user.email, user.name || user.login, plan).catch(() => {});
+          }
         }
       }
     } catch (err) {
@@ -624,6 +644,10 @@ async function handleSubscriptionUpdate(subscriptionPayload: unknown): Promise<v
     const revoked = await dbRevokeAllOrgTeamApiKeys(user.org_id);
     if (revoked > 0) {
       log.info({ userId: user.id, orgId: user.org_id, revoked }, 'Revoked all team API keys after downgrade to non-team plan');
+      // Notify user that team keys were revoked
+      if (user.email) {
+        sendSubscriptionConfirmed(user.email, user.name || user.login, plan).catch(() => {});
+      }
     }
   }
 

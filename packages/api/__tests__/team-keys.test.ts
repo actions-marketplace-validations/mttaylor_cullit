@@ -242,7 +242,7 @@ describe('handleSendTeamKey', () => {
     expect(captured.status).toBe(200);
     expect(captured.body.sent).toBe(true);
     expect(mockSendTeamApiKey).toHaveBeenCalledWith(
-      'dev@co.com', 'Dev', 'Test Org', 'Owner', 'clt_key_one_full', 'Seat 1',
+      'dev@co.com', 'Dev', 'Test Org', 'Owner', 'Seat 1',
     );
   });
 
