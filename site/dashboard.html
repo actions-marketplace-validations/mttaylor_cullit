@@ -533,6 +533,8 @@
   @media (max-width: 480px) {
     .form-row { grid-template-columns: 1fr; }
     .publish-grid { grid-template-columns: 1fr; }
+    .sidebar { min-width: 0; overflow-x: hidden; }
+    .dashboard { padding: 5rem 0.5rem 1rem; }
   }
 
   /* AUTH WALL */
@@ -1157,7 +1159,7 @@
               <button class="output-tab active" data-view="rendered" onclick="switchView('rendered')">Rendered</button>
               <button class="output-tab" data-view="raw" onclick="switchView('raw')">Raw</button>
             </div>
-            <button class="btn-copy" onclick="copyOutput()">&#128203; Copy</button>
+            <button class="btn-copy" onclick="copyOutput()" aria-label="Copy output to clipboard">&#128203; Copy</button>
           </div>
         </div>
         <div class="output-body" id="outputBody">
@@ -1925,7 +1927,8 @@ function copyOutput() {
   navigator.clipboard.writeText(currentOutput).then(() => {
     const btn = document.querySelector('.btn-copy');
     btn.textContent = '\u2713 Copied';
-    setTimeout(() => { btn.textContent = '\uD83D\uDCCB Copy'; }, 1500);
+    btn.setAttribute('aria-label', 'Copied to clipboard');
+    setTimeout(() => { btn.textContent = '\uD83D\uDCCB Copy'; btn.setAttribute('aria-label', 'Copy output to clipboard'); }, 1500);
   });
 }
 
@@ -2789,7 +2792,7 @@ async function loadBilling() {
   }
 
   // Hide upgrade button for current plan and lower tiers (no downgrade via UI)
-  const tierRank = { free: 0, basic: 0.5, pro: 1, 'team-5': 2, 'team-10': 2.5, 'team-25': 3, enterprise: 4 };
+  const tierRank = { free: 0, basic: 0.5, pro: 1, team: 2, 'team-5': 2, 'team-10': 2.5, 'team-25': 3, enterprise: 4 };
   const currentPlan = tier === 'team' ? (currentUser._teamPlan || 'team-5') : tier;
   const currentRank = tierRank[currentPlan] || 0;
   document.querySelectorAll('.billing-plan-option').forEach(function(el) {

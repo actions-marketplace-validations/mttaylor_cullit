@@ -37,7 +37,7 @@ if (!DATABASE_URL) {
 
 export const sql = DATABASE_URL
   ? postgres(DATABASE_URL, {
-      max: 25,
+      max: parseInt(process.env['DB_POOL_SIZE'] || '25', 10) || 25,
       idle_timeout: 30,
       connect_timeout: 3,
       types: { bigint: postgres.BigInt },
@@ -539,6 +539,23 @@ export async function dbAddOrgMember(orgId: string, userId: string, role: string
   try {
     await sql`INSERT INTO org_members (org_id, user_id, role) VALUES (${orgId}, ${userId}, ${role})`;
     return true;
+  } catch {
+    return false; // duplicate or constraint violation
+  }
+}
+
+/**
+ * Atomically add org member only if seat count is below max.
+ * Prevents race condition where two concurrent invites both pass the seat check.
+ */
+export async function dbAddOrgMemberAtomic(orgId: string, userId: string, role: string, maxSeats: number): Promise<boolean> {
+  try {
+    const result = await sql`
+      INSERT INTO org_members (org_id, user_id, role)
+      SELECT ${orgId}, ${userId}, ${role}
+      WHERE (SELECT COUNT(*) FROM org_members WHERE org_id = ${orgId}) < ${maxSeats}
+    `;
+    return result.count > 0;
   } catch {
     return false; // duplicate or constraint violation
   }

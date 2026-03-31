@@ -18,7 +18,26 @@ import { escapeHtml } from '@cullit/core';
 // --- Per-recipient email throttle (max 10 emails per hour) ---
 const EMAIL_THROTTLE_MAX = 10;
 const EMAIL_THROTTLE_WINDOW = 60 * 60 * 1000; // 1 hour
+const EMAIL_MAP_MAX_KEYS = 10_000; // bound memory: evict stale entries beyond this
 const emailSentTimestamps = new Map<string, number[]>();
+
+function evictStaleEntries(): void {
+  if (emailSentTimestamps.size <= EMAIL_MAP_MAX_KEYS) return;
+  const now = Date.now();
+  for (const [key, timestamps] of emailSentTimestamps) {
+    const recent = timestamps.filter(t => now - t < EMAIL_THROTTLE_WINDOW);
+    if (recent.length === 0) {
+      emailSentTimestamps.delete(key);
+    } else {
+      emailSentTimestamps.set(key, recent);
+    }
+  }
+  // If still over limit, drop oldest entries
+  while (emailSentTimestamps.size > EMAIL_MAP_MAX_KEYS) {
+    const first = emailSentTimestamps.keys().next().value;
+    if (first !== undefined) emailSentTimestamps.delete(first); else break;
+  }
+}
 
 function isEmailThrottled(to: string): boolean {
   const now = Date.now();
@@ -32,6 +51,7 @@ function recordEmailSent(to: string): void {
   const timestamps = emailSentTimestamps.get(to) || [];
   timestamps.push(Date.now());
   emailSentTimestamps.set(to, timestamps);
+  evictStaleEntries();
 }
 
 interface EmailOptions {

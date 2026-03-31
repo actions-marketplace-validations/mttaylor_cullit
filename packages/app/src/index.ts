@@ -52,6 +52,10 @@ const CULLIT_APP_SECRET = process.env['CULLIT_APP_SECRET'] || ''; // shared secr
 // --- Rate limiter (per-IP sliding window) ---
 const rateLimiter = createRateLimiter({ limit: RATE_LIMIT, windowMs: RATE_WINDOW });
 
+// --- Webhook delivery dedup (prevent replays) ---
+const DELIVERY_DEDUP_MAX = 10_000;
+const recentDeliveries = new Set<string>();
+
 async function checkRateLimit(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
   const ip = req.socket.remoteAddress || 'unknown';
   const result = await rateLimiter.check(ip);
@@ -88,6 +92,7 @@ interface InstallationToken {
   expiresAt: number;
 }
 
+const TOKEN_CACHE_MAX = 1000;
 const tokenCache = new Map<number, InstallationToken>();
 
 async function getInstallationToken(installationId: number): Promise<string> {
@@ -108,6 +113,19 @@ async function getInstallationToken(installationId: number): Promise<string> {
 
   if (!res.ok) throw new Error(`Failed to get installation token: ${res.status}`);
   const data = await res.json() as { token: string; expires_at: string };
+
+  // Evict expired entries and enforce max size
+  if (tokenCache.size >= TOKEN_CACHE_MAX) {
+    const now = Date.now();
+    for (const [id, entry] of tokenCache) {
+      if (entry.expiresAt <= now) tokenCache.delete(id);
+    }
+    // If still at max, delete oldest entry
+    if (tokenCache.size >= TOKEN_CACHE_MAX) {
+      const firstKey = tokenCache.keys().next().value;
+      if (firstKey !== undefined) tokenCache.delete(firstKey);
+    }
+  }
 
   tokenCache.set(installationId, {
     token: data.token,
@@ -542,6 +560,23 @@ const server = createServer(async (req, res) => {
     }
 
     const event = req.headers['x-github-event'] as string;
+    const deliveryId = req.headers['x-github-delivery'] as string;
+
+    // Deduplicate webhook deliveries
+    if (deliveryId && recentDeliveries.has(deliveryId)) {
+      log.debug({ deliveryId, event }, 'Duplicate webhook delivery — skipping');
+      json(res, 200, { ok: true, event, duplicate: true });
+      return;
+    }
+    if (deliveryId) {
+      recentDeliveries.add(deliveryId);
+      // Evict old entries to bound memory (keep last DELIVERY_DEDUP_MAX)
+      if (recentDeliveries.size > DELIVERY_DEDUP_MAX) {
+        const first = recentDeliveries.values().next().value;
+        if (first !== undefined) recentDeliveries.delete(first);
+      }
+    }
+
     let payload: unknown;
     try {
       payload = JSON.parse(body);

@@ -1,7 +1,7 @@
 // Cullit Service Worker
 // - Network-first for HTML navigations (always fresh content)
 // - Cache-first for static assets (images, icons)
-const CACHE_NAME = 'cullit-v2';
+const CACHE_NAME = 'cullit-v3';
 const STATIC_ASSETS = [
   '/favicon.svg',
   '/og-image.png',

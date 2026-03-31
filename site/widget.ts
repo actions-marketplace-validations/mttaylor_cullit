@@ -24,7 +24,7 @@
   const STYLES = `
     .cullit-widget-trigger {
       position: fixed;
-      z-index: 99999;
+      z-index: 10001;
       width: 48px;
       height: 48px;
       border-radius: 50%;

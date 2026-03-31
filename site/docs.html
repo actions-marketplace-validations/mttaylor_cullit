@@ -895,7 +895,47 @@ console.log(advisory.breakdown);       <span class="cmt">// { features: 4, fixes
   <tbody>
     <tr><td><code>GET</code></td><td><code>/health</code></td><td>Health check &mdash; version, uptime</td></tr>
     <tr><td><code>GET</code></td><td><code>/openapi.json</code></td><td>OpenAPI 3.1 specification</td></tr>
-    <tr><td><code>POST</code></td><td><code>/generate</code></td><td>Generate release notes</td></tr>
+    <tr><td><code>GET</code></td><td><code>/metrics</code></td><td>Server metrics (JSON)</td></tr>
+    <tr><td><code>POST</code></td><td><code>/v1/generate</code></td><td>Generate release notes</td></tr>
+    <tr><td><code>GET</code></td><td><code>/v1/history</code></td><td>Generation history</td></tr>
+    <tr><td><code>POST</code></td><td><code>/v1/events</code></td><td>Track analytics events</td></tr>
+    <tr><td><code>GET</code></td><td><code>/v1/analytics/usage</code></td><td>Usage analytics</td></tr>
+    <tr><td colspan="3" style="padding:0.5rem;font-weight:600;color:var(--text-dim)">Auth</td></tr>
+    <tr><td><code>GET</code></td><td><code>/auth/login</code></td><td>Start OAuth login (WorkOS)</td></tr>
+    <tr><td><code>GET</code></td><td><code>/auth/callback</code></td><td>OAuth callback</td></tr>
+    <tr><td><code>GET</code></td><td><code>/auth/me</code></td><td>Current user profile</td></tr>
+    <tr><td><code>PATCH</code></td><td><code>/auth/me</code></td><td>Update user settings</td></tr>
+    <tr><td><code>DELETE</code></td><td><code>/auth/me</code></td><td>Delete account</td></tr>
+    <tr><td><code>POST</code></td><td><code>/auth/logout</code></td><td>Logout (clear session)</td></tr>
+    <tr><td><code>POST</code></td><td><code>/auth/rotate-key</code></td><td>Rotate API key</td></tr>
+    <tr><td colspan="3" style="padding:0.5rem;font-weight:600;color:var(--text-dim)">Billing (requires Stripe)</td></tr>
+    <tr><td><code>POST</code></td><td><code>/v1/billing/checkout</code></td><td>Create Stripe checkout session</td></tr>
+    <tr><td><code>POST</code></td><td><code>/v1/billing/portal</code></td><td>Create Stripe customer portal session</td></tr>
+    <tr><td><code>GET</code></td><td><code>/v1/billing/subscription</code></td><td>Get subscription status</td></tr>
+    <tr><td><code>POST</code></td><td><code>/v1/billing/webhook</code></td><td>Stripe webhook handler</td></tr>
+    <tr><td colspan="3" style="padding:0.5rem;font-weight:600;color:var(--text-dim)">Changelog</td></tr>
+    <tr><td><code>POST</code></td><td><code>/v1/changelog</code></td><td>Publish changelog entry</td></tr>
+    <tr><td><code>GET</code></td><td><code>/v1/changelog/projects</code></td><td>List changelog projects</td></tr>
+    <tr><td colspan="3" style="padding:0.5rem;font-weight:600;color:var(--text-dim)">Drafts</td></tr>
+    <tr><td><code>POST</code></td><td><code>/v1/drafts</code></td><td>Create or update a draft</td></tr>
+    <tr><td><code>GET</code></td><td><code>/v1/drafts</code></td><td>List drafts</td></tr>
+    <tr><td colspan="3" style="padding:0.5rem;font-weight:600;color:var(--text-dim)">Org &amp; Team</td></tr>
+    <tr><td><code>GET</code></td><td><code>/v1/org</code></td><td>Get org details</td></tr>
+    <tr><td><code>POST</code></td><td><code>/v1/org</code></td><td>Create org</td></tr>
+    <tr><td><code>PATCH</code></td><td><code>/v1/org/settings</code></td><td>Update org settings</td></tr>
+    <tr><td><code>POST</code></td><td><code>/v1/org/invite</code></td><td>Invite member</td></tr>
+    <tr><td><code>DELETE</code></td><td><code>/v1/org/members</code></td><td>Remove member</td></tr>
+    <tr><td><code>GET</code></td><td><code>/v1/org/usage</code></td><td>Org usage stats</td></tr>
+    <tr><td><code>GET</code></td><td><code>/v1/org/keys</code></td><td>List team API keys</td></tr>
+    <tr><td><code>POST</code></td><td><code>/v1/org/invites</code></td><td>Create invite link</td></tr>
+    <tr><td><code>GET</code></td><td><code>/v1/org/invites</code></td><td>List pending invites</td></tr>
+    <tr><td colspan="3" style="padding:0.5rem;font-weight:600;color:var(--text-dim)">GitHub App</td></tr>
+    <tr><td><code>GET</code></td><td><code>/v1/github/installations</code></td><td>List GitHub App installations</td></tr>
+    <tr><td><code>POST</code></td><td><code>/v1/github/disconnect</code></td><td>Disconnect installation</td></tr>
+    <tr><td colspan="3" style="padding:0.5rem;font-weight:600;color:var(--text-dim)">Internal</td></tr>
+    <tr><td><code>POST</code></td><td><code>/v1/license/validate</code></td><td>Validate license key</td></tr>
+    <tr><td><code>POST</code></td><td><code>/v1/app/installation</code></td><td>App installation callback</td></tr>
+    <tr><td><code>GET</code></td><td><code>/v1/projects/settings</code></td><td>Per-project settings</td></tr>
   </tbody>
 </table>
 </div>
@@ -906,6 +946,8 @@ console.log(advisory.breakdown);       <span class="cmt">// { features: 4, fixes
   <thead><tr><th>Env Variable</th><th>Purpose</th><th>Default</th></tr></thead>
   <tbody>
     <tr><td><code>PORT</code></td><td>Server port</td><td><code>3000</code></td></tr>
+    <tr><td><code>DATABASE_URL</code></td><td>PostgreSQL connection string (required for persistence)</td><td>file-backed JSON</td></tr>
+    <tr><td><code>DB_POOL_SIZE</code></td><td>Database connection pool size</td><td><code>25</code></td></tr>
     <tr><td><code>CULLIT_API_TOKEN</code></td><td>Bearer token for auth</td><td>disabled</td></tr>
     <tr><td><code>ALLOWED_ORIGINS</code></td><td>CORS allowed origins</td><td><code>*</code></td></tr>
     <tr><td><code>RATE_LIMIT</code></td><td>Requests per minute per IP</td><td><code>30</code></td></tr>
@@ -918,6 +960,15 @@ console.log(advisory.breakdown);       <span class="cmt">// { features: 4, fixes
   </tbody>
 </table>
 </div>
+
+<p><strong>Subscription &amp; Downgrade Behavior:</strong></p>
+<ul style="margin:0.5rem 0 1rem 1.5rem;">
+  <li><strong>Upgrade:</strong> New tier limits apply immediately. Team plans auto-provision additional API keys up to the seat count.</li>
+  <li><strong>Downgrade (team &rarr; smaller team):</strong> Excess team API keys are revoked. Remaining keys stay active.</li>
+  <li><strong>Downgrade (team &rarr; non-team):</strong> All team API keys are revoked. The org remains but keys are deactivated.</li>
+  <li><strong>Cancellation:</strong> Tier reverts to free. All team API keys are revoked.</li>
+  <li><strong>Database required:</strong> Billing, orgs, and team features require <code>DATABASE_URL</code>. Without it, the server runs in file-backed mode (suitable for local dev only).</li>
+</ul>
 
 <h3 id="web-dashboard">Web Dashboard</h3>
 <p>Cullit includes a browser-based dashboard at <a href="dashboard.html" style="color:var(--accent)">dashboard.html</a> for visually generating release notes without the CLI.</p>

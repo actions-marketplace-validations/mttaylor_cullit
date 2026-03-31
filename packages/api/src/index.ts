@@ -64,7 +64,7 @@ import {
 } from './routes/team-keys.js';
 
 // Load pro plugins if installed
-try { await import('@cullit/pro'); } catch { /* pro not installed */ }
+try { await import('@cullit/pro'); } catch { log.info('Pro plugins not installed — running in open-core mode'); }
 
 // Run database migrations (no-op if DATABASE_URL not set).
 // Wrapped in try/catch so the server still starts if the DB is temporarily unreachable.
@@ -180,8 +180,8 @@ interface CacheEntry {
   expiresAt: number;
 }
 
-const CACHE_TTL = parseInt(process.env['CACHE_TTL'] || '300000', 10); // 5 minutes default
-const MAX_CACHE_SIZE = parseInt(process.env['MAX_CACHE_SIZE'] || '100', 10);
+const CACHE_TTL = parseInt(process.env['CACHE_TTL'] || '300000', 10) || 300_000; // 5 minutes default
+const MAX_CACHE_SIZE = parseInt(process.env['MAX_CACHE_SIZE'] || '100', 10) || 100;
 const pipelineCache = new Map<string, CacheEntry>();
 
 function stableStringify(value: unknown): string {
@@ -239,6 +239,25 @@ function setCachedResult(key: string, result: unknown): void {
 }
 
 // Changelog store and handlers imported from routes/changelog.ts
+
+// --- Per-key generation mutex (prevents TOCTOU race on limit check + increment) ---
+const generationLocks = new Map<string, Promise<void>>();
+
+async function withGenerationLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  // Wait for any pending operation on this key to finish
+  while (generationLocks.has(key)) {
+    await generationLocks.get(key);
+  }
+  let resolve!: () => void;
+  const lock = new Promise<void>(r => { resolve = r; });
+  generationLocks.set(key, lock);
+  try {
+    return await fn();
+  } finally {
+    generationLocks.delete(key);
+    resolve();
+  }
+}
 
 // --- Routes ---
 
@@ -463,20 +482,30 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
 
   try {
     const key = user.orgId || user.id;
-    const monthlyCount = await getMonthlyGenerationCount(key);
     const effectiveTier = getEffectiveTier(user);
     const limits = getTierLimits(effectiveTier);
-    if (monthlyCount >= limits.generationsPerMonth) {
+
+    // Atomic limit check — serialize per key to prevent concurrent bypass
+    const limitResult = await withGenerationLock(key, async () => {
+      const monthlyCount = await getMonthlyGenerationCount(key);
+      if (monthlyCount >= limits.generationsPerMonth) {
+        return { allowed: false as const, monthlyCount };
+      }
+      return { allowed: true as const, monthlyCount };
+    });
+
+    if (!limitResult.allowed) {
       json(res, 402, {
         error: 'Monthly generation limit reached',
         code: ErrorCode.BILLING_LIMIT_REACHED,
-        used: monthlyCount,
+        used: limitResult.monthlyCount,
         limit: limits.generationsPerMonth,
         tier: effectiveTier,
         upgrade: 'https://cullit.io/pricing',
       });
       return;
     }
+    const monthlyCount = limitResult.monthlyCount;
 
     // Audience/tone gating — Pro+ only
     const hasCustomAudience = config.ai.audience && config.ai.audience !== 'developer';

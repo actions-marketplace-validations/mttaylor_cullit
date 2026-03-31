@@ -25,9 +25,10 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import {
   dbGetUser, dbGetUserByApiKey, dbUpsertUser, dbRotateApiKey,
   dbUpdateUserOrg, dbGetOrg, dbGetOrgBySlug, dbCreateOrg, dbGetOrgMemberCount,
-  dbAddOrgMember, dbRemoveOrgMember, dbGetOrgMembers,
+  dbAddOrgMember, dbAddOrgMemberAtomic, dbRemoveOrgMember, dbGetOrgMembers,
   dbRevokeToken, dbIsTokenRevoked, dbDeleteUser, dbGetTokensRevokedBefore,
   dbGetTeamApiKeyByKey, dbUpdatePreferredProvider, dbRevokeAllUserTokens,
+  hashApiKey,
   sql,
   type DbUser, type DbOrg,
 } from './db.js';
@@ -89,6 +90,7 @@ export interface User {
   role: 'owner' | 'admin' | 'member';
   apiKey: string;        // clt_<random> generated on first login
   preferredProvider: string | null; // Basic tier: locked to one AI provider
+  _teamKeyAuth?: boolean; // true when authenticated via team API key (restricted permissions)
   createdAt: string;
   lastLoginAt: string;
 }
@@ -142,6 +144,16 @@ export function loadAuthStore(): void {
       if (data.users) store.users = data.users;
       if (data.orgs) store.orgs = data.orgs;
       if (data.apiKeyIndex) store.apiKeyIndex = data.apiKeyIndex;
+      // Migrate plaintext apiKeyIndex to hashed keys
+      let migrated = false;
+      for (const [key, userId] of Object.entries(store.apiKeyIndex)) {
+        if (!key.startsWith('sha256:')) {
+          delete store.apiKeyIndex[key];
+          store.apiKeyIndex[`sha256:${hashApiKey(key)}`] = userId as string;
+          migrated = true;
+        }
+      }
+      if (migrated) saveAuthStore();
       log.info({ users: Object.keys(store.users).length, orgs: Object.keys(store.orgs).length }, 'Loaded auth store');
     }
   } catch (err) {
@@ -278,14 +290,18 @@ export async function resolveUser(req: IncomingMessage): Promise<User | null> {
     // Check personal API key first
     const user = await getUserByApiKey(apiKey);
     if (user) return user;
-    // Check team API keys — resolve to the org owner
+    // Check team API keys — resolve to the org owner with restricted role
     if (useDb) {
       const teamKey = await dbGetTeamApiKeyByKey(apiKey);
       if (teamKey) {
         const org = await dbGetOrg(teamKey.org_id);
         if (org) {
           const owner = await getUser(org.owner_id);
-          if (owner) return owner;
+          if (owner) {
+            // Return a copy with member role to prevent privilege escalation
+            // Team keys should only grant generation access, not owner admin rights
+            return { ...owner, role: 'member' as const, _teamKeyAuth: true };
+          }
         }
       }
     }
@@ -318,7 +334,8 @@ export async function getUserByApiKey(apiKey: string): Promise<User | null> {
     const row = await dbGetUserByApiKey(apiKey);
     return row ? dbUserToUser(row) : null;
   }
-  const userId = store.apiKeyIndex[apiKey];
+  const keyHash = `sha256:${hashApiKey(apiKey)}`;
+  const userId = store.apiKeyIndex[keyHash];
   return userId ? store.users[userId] || null : null;
 }
 
@@ -401,7 +418,7 @@ async function createOrUpdateUser(woUser: WorkOSUser): Promise<User> {
   };
 
   store.users[user.id] = user;
-  store.apiKeyIndex[user.apiKey] = user.id;
+  store.apiKeyIndex[`sha256:${hashApiKey(user.apiKey)}`] = user.id;
   saveAuthStore();
   return user;
 }
@@ -473,9 +490,8 @@ export async function addOrgMember(orgId: string, user: User, role: 'admin' | 'm
   if (useDb) {
     const org = await dbGetOrg(orgId);
     if (!org) return false;
-    const count = await dbGetOrgMemberCount(orgId);
-    if (count >= org.max_seats) return false;
-    const ok = await dbAddOrgMember(orgId, user.id, role);
+    // Atomic seat check + insert to prevent race condition
+    const ok = await dbAddOrgMemberAtomic(orgId, user.id, role, org.max_seats);
     if (!ok) return false;
     await dbUpdateUserOrg(user.id, orgId, role, org.tier);
     return true;
@@ -729,8 +745,8 @@ export async function handleUpdateMe(req: IncomingMessage, res: ServerResponse, 
   }
 
   const provider = parsed.preferredProvider.trim();
-  if (!AI_PROVIDERS.includes(provider as typeof AI_PROVIDERS[number])) {
-    jsonFn(res, 400, { error: `Invalid provider. Must be one of: ${AI_PROVIDERS.join(', ')}` });
+  if (provider === 'none' || !AI_PROVIDERS.includes(provider as typeof AI_PROVIDERS[number])) {
+    jsonFn(res, 400, { error: `Invalid provider. Must be one of: ${AI_PROVIDERS.filter(p => p !== 'none').join(', ')}` });
     return;
   }
 
@@ -768,9 +784,9 @@ export async function handleRotateApiKey(req: IncomingMessage, res: ServerRespon
   } else {
     const existing = store.users[user.id];
     if (existing) {
-      delete store.apiKeyIndex[existing.apiKey];
+      delete store.apiKeyIndex[`sha256:${hashApiKey(existing.apiKey)}`];
       existing.apiKey = newApiKey;
-      store.apiKeyIndex[newApiKey] = user.id;
+      store.apiKeyIndex[`sha256:${hashApiKey(newApiKey)}`] = user.id;
       saveAuthStore();
     }
   }
@@ -795,7 +811,7 @@ export async function handleDeleteAccount(req: IncomingMessage, res: ServerRespo
     await dbDeleteUser(user.id);
   } else {
     // File-backed fallback: remove from in-memory store
-    delete store.apiKeyIndex[user.apiKey];
+    delete store.apiKeyIndex[`sha256:${hashApiKey(user.apiKey)}`];
     delete store.users[user.id];
     saveAuthStore();
   }

@@ -533,7 +533,7 @@
 
       return `
         <div class="release-card${i === 0 ? ' open' : ''}" data-version="${r.version}">
-          <div class="release-header" onclick="this.parentElement.classList.toggle('open')">
+          <div class="release-header" role="button" aria-expanded="${i === 0 ? 'true' : 'false'}" onclick="this.setAttribute('aria-expanded', this.parentElement.classList.toggle('open'))">
             <span class="release-version">${r.version}</span>
             <div class="release-meta">
               <span class="release-stats">${r.commits} commits · ${r.filesChanged} files</span>

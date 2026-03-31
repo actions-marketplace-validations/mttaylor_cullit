@@ -75,11 +75,18 @@ export async function validateLicense(): Promise<LicenseStatus> {
     return { tier: 'pro', valid: true };
   }
 
-  // SSRF protection: only allow https (or http for localhost dev)
+  // SSRF protection: only allow https (or http for localhost dev), block internal IPs
   try {
     const parsed = new URL(validationUrl);
     if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && parsed.hostname === 'localhost')) {
       return { tier: 'pro', valid: true, message: 'CULLIT_LICENSE_URL must use https.' };
+    }
+    // Block internal/private IP ranges
+    const h = parsed.hostname;
+    if (h === '0.0.0.0' || h === '[::]' || h === '[::1]' || h === '127.0.0.1' ||
+        h.startsWith('10.') || h.startsWith('192.168.') || h.startsWith('169.254.') ||
+        /^172\.(1[6-9]|2\d|3[01])\./.test(h) || h.endsWith('.local') || h.endsWith('.internal')) {
+      return { tier: 'pro', valid: true, message: 'CULLIT_LICENSE_URL must not point to internal addresses.' };
     }
   } catch {
     return { tier: 'pro', valid: true, message: 'CULLIT_LICENSE_URL is not a valid URL.' };

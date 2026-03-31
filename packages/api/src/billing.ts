@@ -25,11 +25,13 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import type { IncomingMessage, ServerResponse } from 'http';
 import {
+  sql,
   dbGetUser, dbUpdateUserTier, dbUpdateUserStripe,
   dbUpsertSubscription, dbGetSubscription, dbGetUserByStripeCustomer,
   dbCheckWebhookProcessed, dbMarkWebhookProcessed,
   dbCreateTeamApiKey, dbGetActiveTeamApiKeyCount,
   dbRevokeAllOrgTeamApiKeys, dbRevokeExcessTeamApiKeys,
+  hashApiKey,
 } from './db.js';
 import { getEffectiveTier, getUser, generateApiKey } from './auth.js';
 import { createOrg } from './auth.js';
@@ -557,11 +559,27 @@ async function provisionTeamKeys(userId: string, plan: string, seats: number): P
   const existingCount = await dbGetActiveTeamApiKeyCount(orgId);
   const toGenerate = Math.max(0, seats - existingCount);
 
-  for (let i = 0; i < toGenerate; i++) {
-    const id = randomBytes(12).toString('hex');
-    const apiKey = generateApiKey();
-    const label = `Seat ${existingCount + i + 1}`;
-    await dbCreateTeamApiKey({ id, orgId, apiKey, label });
+  if (toGenerate > 0 && sql) {
+    // Atomic: generate all keys in a single transaction
+    await sql.begin(async (tx: any) => {
+      for (let i = 0; i < toGenerate; i++) {
+        const id = randomBytes(12).toString('hex');
+        const apiKey = generateApiKey();
+        const keyHash = hashApiKey(apiKey);
+        const label = `Seat ${existingCount + i + 1}`;
+        await tx`
+          INSERT INTO team_api_keys (id, org_id, api_key, api_key_hash, label)
+          VALUES (${id}, ${orgId}, ${apiKey}, ${keyHash}, ${label})
+        `;
+      }
+    });
+  } else {
+    for (let i = 0; i < toGenerate; i++) {
+      const id = randomBytes(12).toString('hex');
+      const apiKey = generateApiKey();
+      const label = `Seat ${existingCount + i + 1}`;
+      await dbCreateTeamApiKey({ id, orgId, apiKey, label });
+    }
   }
 
   log.info({ userId, orgId, plan, seats, generated: toGenerate, existing: existingCount }, 'Team API keys provisioned');
