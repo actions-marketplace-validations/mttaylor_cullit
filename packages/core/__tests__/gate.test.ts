@@ -269,6 +269,7 @@ describe('Gate — getFeatureGating', () => {
     expect(gating.team_publishers).toBe(true);
     expect(gating.org_settings).toBe(true);
     expect(gating.audit_logs).toBe(false);          // plan-gated: team-25 only
+    expect(gating.team_analytics).toBe(false);       // plan-gated: team-25 only
     expect(gating.sso).toBe(false);
   });
 
@@ -277,6 +278,7 @@ describe('Gate — getFeatureGating', () => {
     expect(gating.drafts).toBe(true);
     expect(gating.approvals).toBe(true);
     expect(gating.audit_logs).toBe(true);
+    expect(gating.team_analytics).toBe(true);
     expect(gating.sso).toBe(true);
   });
 });
@@ -326,9 +328,22 @@ describe('Gate — isPlanFeatureAllowed', () => {
     expect(isPlanFeatureAllowed('project_templates', 'team-25', 'team')).toBe(true);
   });
 
+  it('allows team_analytics for team-25', () => {
+    expect(isPlanFeatureAllowed('team_analytics', 'team-25', 'team')).toBe(true);
+  });
+
+  it('blocks team_analytics for team-5', () => {
+    expect(isPlanFeatureAllowed('team_analytics', 'team-5', 'team')).toBe(false);
+  });
+
+  it('blocks team_analytics for team-10', () => {
+    expect(isPlanFeatureAllowed('team_analytics', 'team-10', 'team')).toBe(false);
+  });
+
   it('enterprise always passes plan feature checks', () => {
     expect(isPlanFeatureAllowed('branded_widget', 'enterprise', 'enterprise')).toBe(true);
     expect(isPlanFeatureAllowed('audit_logs', 'enterprise', 'enterprise')).toBe(true);
+    expect(isPlanFeatureAllowed('team_analytics', 'enterprise', 'enterprise')).toBe(true);
   });
 
   it('falls back to tier check for non-plan-gated features', () => {

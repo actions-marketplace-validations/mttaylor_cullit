@@ -361,6 +361,20 @@ export async function migrate(): Promise<void> {
   `;
   await sql`CREATE INDEX IF NOT EXISTS idx_audit_events_user ON audit_events (user_id, created_at DESC)`;
 
+  // Project templates table
+  await sql`
+    CREATE TABLE IF NOT EXISTS project_templates (
+      id         TEXT PRIMARY KEY,
+      org_id     TEXT NOT NULL,
+      name       TEXT NOT NULL,
+      config     JSONB NOT NULL DEFAULT '{}',
+      created_by TEXT NOT NULL REFERENCES users(id),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_project_templates_org ON project_templates (org_id)`;
+
   log.info('Database migrations complete');
 }
 
@@ -437,6 +451,68 @@ export async function dbRecordAuditEvent(event: {
     VALUES (${id}, ${event.userId || null}, ${event.action}, ${event.target || null},
             ${event.metadata ? JSON.stringify(event.metadata) : null}::jsonb, ${event.ip || null})
   `.catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to record audit event'); });
+}
+
+export async function dbGetAuditEvents(userId: string, limit: number, offset: number): Promise<{
+  events: { id: string; action: string; target: string | null; metadata: Record<string, unknown> | null; ip: string | null; created_at: string }[];
+  total: number;
+}> {
+  if (!sql) return { events: [], total: 0 };
+  const countRows = await sql<[{ count: string }]>`
+    SELECT COUNT(*)::text AS count FROM audit_events WHERE user_id = ${userId}`;
+  const total = parseInt(countRows[0].count, 10);
+  const rows = await sql<{ id: string; action: string; target: string | null; metadata: Record<string, unknown> | null; ip: string | null; created_at: Date }[]>`
+    SELECT id, action, target, metadata, ip, created_at FROM audit_events
+    WHERE user_id = ${userId}
+    ORDER BY created_at DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `;
+  return {
+    events: rows.map(r => ({ ...r, created_at: r.created_at.toISOString() })),
+    total,
+  };
+}
+
+// --- Project templates ---
+
+export interface DbProjectTemplate {
+  id: string;
+  org_id: string;
+  name: string;
+  config: Record<string, unknown>;
+  created_by: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export async function dbCreateProjectTemplate(template: {
+  id: string; orgId: string; name: string; config: Record<string, unknown>; createdBy: string;
+}): Promise<DbProjectTemplate> {
+  const rows = await sql<DbProjectTemplate[]>`
+    INSERT INTO project_templates (id, org_id, name, config, created_by)
+    VALUES (${template.id}, ${template.orgId}, ${template.name},
+            ${JSON.stringify(template.config)}::jsonb, ${template.createdBy})
+    RETURNING *
+  `;
+  return rows[0];
+}
+
+export async function dbListProjectTemplates(orgId: string): Promise<DbProjectTemplate[]> {
+  return sql<DbProjectTemplate[]>`
+    SELECT * FROM project_templates WHERE org_id = ${orgId} ORDER BY name
+  `;
+}
+
+export async function dbGetProjectTemplate(id: string, orgId: string): Promise<DbProjectTemplate | null> {
+  const rows = await sql<DbProjectTemplate[]>`
+    SELECT * FROM project_templates WHERE id = ${id} AND org_id = ${orgId}
+  `;
+  return rows[0] || null;
+}
+
+export async function dbDeleteProjectTemplate(id: string, orgId: string): Promise<boolean> {
+  const result = await sql`DELETE FROM project_templates WHERE id = ${id} AND org_id = ${orgId}`;
+  return result.count > 0;
 }
 
 // --- User DB operations ---

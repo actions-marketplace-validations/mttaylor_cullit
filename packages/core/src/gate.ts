@@ -230,6 +230,7 @@ export type TeamFeature =
   | 'team_publishers'
   | 'org_settings'
   | 'audit_logs'
+  | 'team_analytics'
   | 'sso';
 
 const FEATURE_TIERS: Record<TeamFeature, Set<string>> = {
@@ -242,6 +243,7 @@ const FEATURE_TIERS: Record<TeamFeature, Set<string>> = {
   team_publishers:    new Set(['team', 'enterprise']),
   org_settings:       new Set(['team', 'enterprise']),
   audit_logs:         new Set(['enterprise']),        // plan-gated: team-25 via PLAN_FEATURES
+  team_analytics:     new Set(['enterprise']),        // plan-gated: team-25 via PLAN_FEATURES
   sso:                new Set(['enterprise']),
 };
 
@@ -253,6 +255,7 @@ const PLAN_FEATURES: Record<string, Set<string>> = {
   branded_widget:    new Set(['team-25']),
   project_templates: new Set(['team-25']),
   audit_logs:        new Set(['team-25']),
+  team_analytics:    new Set(['team-25']),
 };
 
 /**

@@ -28,6 +28,7 @@ import {
   dbAddOrgMember, dbAddOrgMemberAtomic, dbRemoveOrgMember, dbGetOrgMembers,
   dbRevokeToken, dbIsTokenRevoked, dbDeleteUser, dbGetTokensRevokedBefore,
   dbGetTeamApiKeyByKey, dbUpdatePreferredProvider, dbRevokeAllUserTokens,
+  dbGetSubscription,
   hashApiKey,
   sql,
   type DbUser, type DbOrg,
@@ -353,6 +354,27 @@ function dbUserToUser(row: DbUser): User {
 }
 
 export function getEffectiveTier(user: User): User['tier'] {
+  return user.tier;
+}
+
+/**
+ * Resolve the user's plan (e.g. 'pro', 'team-5', 'team-10', 'team-25') from subscription.
+ * Falls back to deriving from org maxSeats for in-memory mode.
+ */
+export async function getUserPlan(user: User): Promise<string> {
+  if (useDb) {
+    const sub = await dbGetSubscription(user.id);
+    if (sub) return sub.plan;
+  }
+  // Fallback: derive from org seat count
+  if (user.orgId) {
+    const org = await getOrg(user.orgId);
+    if (org) {
+      if (org.maxSeats >= 25) return 'team-25';
+      if (org.maxSeats >= 10) return 'team-10';
+      return 'team-5';
+    }
+  }
   return user.tier;
 }
 

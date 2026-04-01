@@ -33,6 +33,8 @@ describe('Database Module', () => {
       'dbCreateRevision', 'dbGetRevisions', 'dbGetRevisionCount',
       'dbGetProjectSettings', 'dbUpsertProjectSettings', 'dbListProjectSettings',
       'dbCreateOrgInvite', 'dbListOrgInvites', 'dbGetOrgInviteByToken', 'dbAcceptOrgInvite', 'dbDeleteOrgInvite',
+      'dbRecordAuditEvent', 'dbGetAuditEvents',
+      'dbCreateProjectTemplate', 'dbListProjectTemplates', 'dbGetProjectTemplate', 'dbDeleteProjectTemplate',
     ];
     for (const name of expectedExports) {
       expect(db).toHaveProperty(name);

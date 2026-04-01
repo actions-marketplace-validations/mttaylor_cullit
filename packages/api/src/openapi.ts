@@ -953,6 +953,97 @@ export const openApiSpec = {
         responses: { 200: { description: 'Role updated' }, 404: { description: 'Member not found' } },
       },
     },
+    '/v1/audit': {
+      get: {
+        operationId: 'getAuditLog',
+        summary: 'Get audit log events',
+        description: 'Returns paginated audit log events for the authenticated user. Requires Team 25 or Enterprise plan.',
+        tags: ['Premium'],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
+        parameters: [
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 50, minimum: 1, maximum: 100 } },
+          { name: 'offset', in: 'query', schema: { type: 'integer', default: 0, minimum: 0 } },
+        ],
+        responses: {
+          '200': {
+            description: 'Paginated audit events',
+            content: { 'application/json': { schema: {
+              type: 'object',
+              properties: {
+                events: { type: 'array', items: { type: 'object', properties: {
+                  id: { type: 'string' }, userId: { type: 'string' }, action: { type: 'string' },
+                  target: { type: 'string' }, metadata: { type: 'object' }, createdAt: { type: 'string' },
+                } } },
+                total: { type: 'integer' }, limit: { type: 'integer' }, offset: { type: 'integer' },
+              },
+            } } },
+          },
+          '401': { description: 'Not authenticated' },
+          '403': { description: 'Requires Team 25 or Enterprise plan' },
+        },
+      },
+    },
+    '/v1/templates': {
+      get: {
+        operationId: 'listTemplates',
+        summary: 'List project templates',
+        description: 'Returns all project templates for the user\'s organization. Requires Team 25 or Enterprise plan.',
+        tags: ['Premium'],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
+        responses: {
+          '200': {
+            description: 'List of templates',
+            content: { 'application/json': { schema: {
+              type: 'object',
+              properties: { templates: { type: 'array', items: { $ref: '#/components/schemas/ProjectTemplate' } } },
+            } } },
+          },
+          '400': { description: 'Organization required' },
+          '401': { description: 'Not authenticated' },
+          '403': { description: 'Requires Team 25 or Enterprise plan' },
+        },
+      },
+      post: {
+        operationId: 'createTemplate',
+        summary: 'Create a project template',
+        description: 'Creates a new project template. Requires Team 25 or Enterprise plan and an organization.',
+        tags: ['Premium'],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: { 'application/json': { schema: {
+            type: 'object', required: ['name'],
+            properties: {
+              name: { type: 'string', maxLength: 100 },
+              config: { type: 'object', description: 'Template configuration (provider, audience, tone, etc.)' },
+            },
+          } } },
+        },
+        responses: {
+          '201': { description: 'Template created', content: { 'application/json': { schema: { type: 'object', properties: { template: { $ref: '#/components/schemas/ProjectTemplate' } } } } } },
+          '400': { description: 'Invalid request or organization required' },
+          '401': { description: 'Not authenticated' },
+          '403': { description: 'Requires Team 25 or Enterprise plan' },
+        },
+      },
+    },
+    '/v1/templates/{id}': {
+      delete: {
+        operationId: 'deleteTemplate',
+        summary: 'Delete a project template',
+        description: 'Deletes a project template by ID. Requires Team 25 or Enterprise plan.',
+        tags: ['Premium'],
+        security: [{ cookieAuth: [] }, { bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', pattern: '^tpl_[a-f0-9]{24}$' } }],
+        responses: {
+          '200': { description: 'Template deleted' },
+          '400': { description: 'Invalid template ID or organization required' },
+          '401': { description: 'Not authenticated' },
+          '403': { description: 'Requires Team 25 or Enterprise plan' },
+          '404': { description: 'Template not found' },
+        },
+      },
+    },
   },
   components: {
     securitySchemes: {
@@ -1237,6 +1328,19 @@ export const openApiSpec = {
           },
           monthlyGenerations: { type: 'integer' },
           tier: { type: 'string' },
+          teamAnalytics: { type: 'boolean', description: 'Whether detailed team analytics are available (Team 25+ only)' },
+        },
+      },
+      ProjectTemplate: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          orgId: { type: 'string' },
+          name: { type: 'string' },
+          config: { type: 'object', description: 'Template configuration' },
+          createdBy: { type: 'string' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
         },
       },
     },

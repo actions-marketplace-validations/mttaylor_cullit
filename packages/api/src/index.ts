@@ -19,14 +19,14 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
 import { createHash, randomBytes } from 'crypto';
 
-import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS, TIERS, getTierLimits, createRateLimiter } from '@cullit/core';
-import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget } from '@cullit/core';
+import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS, TIERS, getTierLimits, createRateLimiter, isPlanFeatureAllowed } from '@cullit/core';
+import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget, TeamFeature } from '@cullit/core';
 import { openApiSpec } from './openapi.js';
 import { handleDocs } from './docs.js';
 import {
   handleAuthRedirect, handleAuthCallback, handleAuthMe, handleAuthLogout,
   handleRotateApiKey, handleDeleteAccount, handleLicenseValidate, resolveUser, getEffectiveTier,
-  handleUpdateMe,
+  handleUpdateMe, getUserPlan,
 } from './auth.js';
 import {
   addHistoryEntry, getHistory, getHistoryCount,
@@ -36,6 +36,8 @@ import {
 import { migrate, closeDb, sql,
   dbGetProjectSettings, dbUpsertProjectSettings, dbListProjectSettings,
   dbGetUserByLogin, dbGetUserByGithubUsername,
+  dbRecordAuditEvent, dbGetAuditEvents,
+  dbCreateProjectTemplate, dbListProjectTemplates, dbGetProjectTemplate, dbDeleteProjectTemplate,
 } from './db.js';
 import { handleCheckout, handleBillingPortal, handleGetSubscription, handleStripeWebhook, isStripeConfigured } from './billing.js';
 import { log } from './logger.js';
@@ -595,6 +597,12 @@ async function handleGetAnalytics(req: IncomingMessage, res: ServerResponse): Pr
   const user = await resolveUser(req);
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
 
+  const tier = getEffectiveTier(user);
+  // Basic analytics require pro+ tier
+  if (tier === 'free') {
+    json(res, 403, { error: 'Usage analytics require a Pro plan or above', upgrade: 'https://cullit.io/pricing' }); return;
+  }
+
   const url = new URL(req.url || '/', `http://localhost:${PORT}`);
   const rawDays = parseInt(url.searchParams.get('days') || '30', 10);
   const days = Math.max(1, Math.min(isNaN(rawDays) ? 30 : rawDays, 90));
@@ -604,10 +612,15 @@ async function handleGetAnalytics(req: IncomingMessage, res: ServerResponse): Pr
   const stats = await getUsageStats(key, days);
   const monthlyCount = await getMonthlyGenerationCount(key);
 
+  // Detailed team analytics (per-member breakdown) gated to team-25+
+  const plan = await getUserPlan(user);
+  const hasTeamAnalytics = isPlanFeatureAllowed('team_analytics', plan, tier);
+
   json(res, 200, {
     ...stats,
     monthlyGenerations: monthlyCount,
     tier: user.tier,
+    teamAnalytics: hasTeamAnalytics,
   });
 }
 
@@ -691,6 +704,15 @@ async function handlePutProjectSettings(req: IncomingMessage, res: ServerRespons
   if (templateSectionOrder) currentTemplate.sectionOrder = templateSectionOrder;
   if (Object.keys(currentTemplate).length) widgetConfig.template = currentTemplate;
 
+  // Gate branded widget: disabling branding requires team-25 or enterprise
+  if (widgetConfig.branding === false) {
+    const plan = await getUserPlan(user);
+    if (!isPlanFeatureAllowed('branded_widget', plan, tier)) {
+      json(res, 403, { error: 'Branded widget (removing Cullit branding) requires Team 25 or Enterprise', upgrade: 'https://cullit.io/pricing' });
+      return;
+    }
+  }
+
   const existing = await dbGetProjectSettings(user.id, project, user.orgId);
 
   const settings = await dbUpsertProjectSettings({
@@ -712,6 +734,93 @@ async function handlePutProjectSettings(req: IncomingMessage, res: ServerRespons
 }
 
 // Org invite, member role, and usage handlers imported from routes/org.ts
+
+// --- Audit Log Endpoint ---
+
+async function handleGetAuditLog(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+
+  const tier = getEffectiveTier(user);
+  const plan = await getUserPlan(user);
+  if (!isPlanFeatureAllowed('audit_logs', plan, tier)) {
+    json(res, 403, { error: 'Audit logs require Team 25 or Enterprise', upgrade: 'https://cullit.io/pricing' }); return;
+  }
+
+  const url = new URL(req.url || '/', `http://localhost:${PORT}`);
+  const rawLimit = parseInt(url.searchParams.get('limit') || '50', 10);
+  const rawOffset = parseInt(url.searchParams.get('offset') || '0', 10);
+  const limit = Math.max(1, Math.min(isNaN(rawLimit) ? 50 : rawLimit, 100));
+  const offset = Math.max(0, isNaN(rawOffset) ? 0 : rawOffset);
+
+  const result = await dbGetAuditEvents(user.id, limit, offset);
+  json(res, 200, { events: result.events, total: result.total, limit, offset });
+}
+
+// --- Project Template Endpoints ---
+
+async function handleListTemplates(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+
+  const tier = getEffectiveTier(user);
+  const plan = await getUserPlan(user);
+  if (!isPlanFeatureAllowed('project_templates', plan, tier)) {
+    json(res, 403, { error: 'Project templates require Team 25 or Enterprise', upgrade: 'https://cullit.io/pricing' }); return;
+  }
+  if (!user.orgId) { json(res, 400, { error: 'Project templates require an organization' }); return; }
+
+  const templates = await dbListProjectTemplates(user.orgId);
+  json(res, 200, { templates });
+}
+
+async function handleCreateTemplate(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+
+  const tier = getEffectiveTier(user);
+  const plan = await getUserPlan(user);
+  if (!isPlanFeatureAllowed('project_templates', plan, tier)) {
+    json(res, 403, { error: 'Project templates require Team 25 or Enterprise', upgrade: 'https://cullit.io/pricing' }); return;
+  }
+  if (!user.orgId) { json(res, 400, { error: 'Project templates require an organization' }); return; }
+
+  const raw = await readBody(req);
+  const body = parseJsonObject(raw);
+  if (!body) { json(res, 400, { error: 'Invalid JSON' }); return; }
+
+  const name = typeof body.name === 'string' ? body.name.trim().slice(0, 100) : '';
+  if (!name) { json(res, 400, { error: 'Template name is required' }); return; }
+
+  const config = isRecord(body.config) ? body.config : {};
+  const id = `tpl_${randomBytes(12).toString('hex')}`;
+
+  const template = await dbCreateProjectTemplate({ id, orgId: user.orgId, name, config, createdBy: user.id });
+  await dbRecordAuditEvent({ userId: user.id, action: 'template.create', target: id, metadata: { name } });
+  json(res, 201, { template });
+}
+
+async function handleDeleteTemplate(req: IncomingMessage, res: ServerResponse, templateId: string): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+
+  const tier = getEffectiveTier(user);
+  const plan = await getUserPlan(user);
+  if (!isPlanFeatureAllowed('project_templates', plan, tier)) {
+    json(res, 403, { error: 'Project templates require Team 25 or Enterprise', upgrade: 'https://cullit.io/pricing' }); return;
+  }
+  if (!user.orgId) { json(res, 400, { error: 'Project templates require an organization' }); return; }
+
+  if (!/^tpl_[a-f0-9]{24}$/.test(templateId)) {
+    json(res, 400, { error: 'Invalid template ID' }); return;
+  }
+
+  const deleted = await dbDeleteProjectTemplate(templateId, user.orgId);
+  if (!deleted) { json(res, 404, { error: 'Template not found' }); return; }
+
+  await dbRecordAuditEvent({ userId: user.id, action: 'template.delete', target: templateId });
+  json(res, 200, { ok: true });
+}
 
 // --- GitHub App Installation Linking ---
 
@@ -984,6 +1093,19 @@ const server = createServer(async (req, res: CorsResponse) => {
       await handleGetHistory(req, res);
     } else if (path === '/v1/analytics/usage' && req.method === 'GET') {
       await handleGetAnalytics(req, res);
+
+    // --- Audit Log ---
+    } else if (path === '/v1/audit' && req.method === 'GET') {
+      await handleGetAuditLog(req, res);
+
+    // --- Project Templates ---
+    } else if (path === '/v1/templates' && req.method === 'GET') {
+      await handleListTemplates(req, res);
+    } else if (path === '/v1/templates' && req.method === 'POST') {
+      await handleCreateTemplate(req, res);
+    } else if (req.method === 'DELETE' && path.match(/^\/v1\/templates\/[^/]+$/)) {
+      const templateId = path.split('/')[3];
+      await handleDeleteTemplate(req, res, templateId);
 
     } else {
       json(res, 404, { error: 'Not found', code: ErrorCode.RESOURCE_NOT_FOUND, docs: '/openapi.json' });
