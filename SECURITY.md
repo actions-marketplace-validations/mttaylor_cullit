@@ -1,4 +1,4 @@
-# Security Policy\n\n> **Last updated:** June 2026
+# Security Policy\n\n> **Last updated:** March 2026
 
 ## Supported Versions
 

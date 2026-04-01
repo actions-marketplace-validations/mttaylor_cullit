@@ -151,4 +151,4 @@ Found a bug or have a feature request? Open an issue on GitHub.
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the [MIT License](LICENSE).
+By contributing, you agree that your contributions will be licensed under the same terms as this project (see [LICENSE](LICENSE)).

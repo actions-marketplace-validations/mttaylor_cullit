@@ -309,7 +309,7 @@ export async function handleCheckout(
       if (itemId) {
         // Update the subscription in-place: swap price, prorate immediately
         // Idempotency key prevents duplicate charges on network retry
-        const idempotencyKey = `sub_update_${userId}_${plan}_${Date.now()}`;
+        const idempotencyKey = `sub_update_${userId}_${plan}_${existingSub.stripe_subscription_id}`;
         await stripeRequest(`/subscriptions/${existingSub.stripe_subscription_id}`, 'POST', {
           'items[0][id]': itemId,
           'items[0][price]': priceId,
@@ -585,7 +585,7 @@ async function provisionTeamKeys(userId: string, plan: string, seats: number): P
         const label = `Seat ${existingCount + i + 1}`;
         await tx`
           INSERT INTO team_api_keys (id, org_id, api_key, api_key_hash, label)
-          VALUES (${id}, ${orgId}, ${apiKey}, ${keyHash}, ${label})
+          VALUES (${id}, ${orgId}, ${null}, ${keyHash}, ${label})
         `;
       }
     });

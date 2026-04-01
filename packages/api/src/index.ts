@@ -2,7 +2,7 @@
  * Cullit API Server
  * 
  * Lightweight REST API using Node built-in http module.
- * No external dependencies — zero-overhead, production-ready.
+ * Minimal external dependencies (pino, postgres, sanitize-html).
  * 
  * Endpoints:
  *   GET  /health                           → Health check
@@ -43,7 +43,7 @@ import { metrics, handleMetrics } from './metrics.js';
 import { sendUsageAlert } from './email.js';
 import {
   json, readBody, readJsonBody, parseJsonObject, isRecord, isTeamTier, ErrorCode,
-  PORT, SECURITY_HEADERS, generateRequestId,
+  PORT, SECURITY_HEADERS, generateRequestId, timingSafeCompare,
   type CorsResponse, type JsonObject,
 } from './utils.js';
 
@@ -739,7 +739,7 @@ const APP_SECRET = process.env['CULLIT_APP_SECRET'] || '';
 async function handleAppInstallation(req: IncomingMessage, res: ServerResponse): Promise<void> {
   // Authenticate: only the GitHub App server can call this endpoint
   const auth = req.headers['authorization'] || '';
-  if (!APP_SECRET || !auth.startsWith('Bearer ') || auth.slice(7) !== APP_SECRET) {
+  if (!APP_SECRET || !auth.startsWith('Bearer ') || !timingSafeCompare(auth.slice(7), APP_SECRET)) {
     json(res, 401, { error: 'Unauthorized', code: ErrorCode.AUTH_UNAUTHORIZED });
     return;
   }

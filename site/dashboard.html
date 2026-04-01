@@ -42,6 +42,7 @@
     --terminal-yellow: #fbbf24;
     --terminal-purple: #c084fc;
     --danger: #f87171;
+    --teal: #5eead4;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1481,7 +1482,7 @@
           <div class="usage-bar-container">
             <div class="usage-bar-labels">
               <span id="usageCount">0</span>
-              <span id="usageLimit">/ 3 generations</span>
+              <span id="usageLimit">/ 5 generations</span>
             </div>
             <div class="usage-bar-track">
               <div class="usage-bar-fill" id="usageBarFill" style="width:0%"></div>
@@ -1584,6 +1585,11 @@
           <div id="supportFree" style="display:none">
             <p style="font-size:0.85rem;color:var(--text-dim);line-height:1.6">
               <strong>Community Support</strong> &mdash; Browse the <a href="https://cullit.io/docs.html" style="color:var(--teal)">documentation</a> or email <a href="mailto:support@cullit.io" style="color:var(--teal)">support@cullit.io</a>.
+            </p>
+          </div>
+          <div id="supportBasic" style="display:none">
+            <p style="font-size:0.85rem;color:var(--text-dim);line-height:1.6">
+              <strong>Email Support</strong> &mdash; Reach us at <a href="mailto:support@cullit.io" style="color:var(--teal)">support@cullit.io</a>. Response within 3 business days.
             </p>
           </div>
           <div id="supportPro" style="display:none">
@@ -2265,7 +2271,7 @@ function showToast(msg) {
 
 // --- Billing ---
 
-const TIER_LIMITS = { free: 5, pro: 500, team: 2000, enterprise: Infinity };
+const TIER_LIMITS = { free: 5, basic: 50, pro: 500, team: 2000, enterprise: Infinity };
 
 // --- Drafts Management ---
 
@@ -2813,7 +2819,7 @@ async function loadBilling() {
   });
 
   // Show tier-appropriate support section
-  ['Free', 'Pro', 'Team', 'Enterprise'].forEach(function(t) {
+  ['Free', 'Basic', 'Pro', 'Team', 'Enterprise'].forEach(function(t) {
     const el = document.getElementById('support' + t);
     if (el) el.style.display = (t.toLowerCase() === tier) ? '' : 'none';
   });
@@ -2884,7 +2890,7 @@ async function loadBilling() {
     if (res.ok) {
       const data = await res.json();
       const used = data.monthlyGenerations || 0;
-      const limit = TIER_LIMITS[tier] || 3;
+      const limit = TIER_LIMITS[tier] || 5;
       const pct = limit === Infinity ? 0 : Math.min(100, Math.round((used / limit) * 100));
 
       document.getElementById('usageCount').textContent = used.toLocaleString();

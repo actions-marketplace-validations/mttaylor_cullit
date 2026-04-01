@@ -21,6 +21,7 @@ const mockDbUpdateTeamApiKeyLabel = vi.fn();
 const mockDbRevokeTeamApiKey = vi.fn();
 const mockDbRotateTeamApiKey = vi.fn();
 const mockDbGetActiveTeamApiKeyCount = vi.fn();
+const mockDbRecordAuditEvent = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('../src/db.js', () => ({
   dbGetTeamApiKeys: (...args: unknown[]) => mockDbGetTeamApiKeys(...args),
@@ -30,6 +31,7 @@ vi.mock('../src/db.js', () => ({
   dbRevokeTeamApiKey: (...args: unknown[]) => mockDbRevokeTeamApiKey(...args),
   dbRotateTeamApiKey: (...args: unknown[]) => mockDbRotateTeamApiKey(...args),
   dbGetActiveTeamApiKeyCount: (...args: unknown[]) => mockDbGetActiveTeamApiKeyCount(...args),
+  dbRecordAuditEvent: (...args: unknown[]) => mockDbRecordAuditEvent(...args),
 }));
 
 // Mock email module
@@ -83,17 +85,17 @@ const outsider = { id: 'u4', login: 'outsider', orgId: undefined, role: undefine
 
 const sampleKeys = [
   {
-    id: 'k1', org_id: 'org1', api_key: 'clt_key_one_full', label: 'Seat 1',
+    id: 'k1', org_id: 'org1', api_key: null, api_key_hash: 'ab12cd34ef56', label: 'Seat 1',
     assigned_to_email: 'dev@co.com', assigned_to_name: 'Dev', assigned_at: new Date(),
     revoked_at: null, created_at: new Date(),
   },
   {
-    id: 'k2', org_id: 'org1', api_key: 'clt_key_two_full', label: 'Seat 2',
+    id: 'k2', org_id: 'org1', api_key: null, api_key_hash: 'ff99aa88bb77', label: 'Seat 2',
     assigned_to_email: null, assigned_to_name: null, assigned_at: null,
     revoked_at: null, created_at: new Date(),
   },
   {
-    id: 'k3', org_id: 'org1', api_key: 'clt_key_revoked', label: 'Seat 3',
+    id: 'k3', org_id: 'org1', api_key: null, api_key_hash: '1122334455ee', label: 'Seat 3',
     assigned_to_email: 'old@co.com', assigned_to_name: 'Old', assigned_at: new Date(),
     revoked_at: new Date(), created_at: new Date(),
   },
@@ -120,31 +122,30 @@ describe('handleListTeamKeys', () => {
     expect(captured.status).toBe(403);
   });
 
-  it('returns full keys for owner', async () => {
+  it('returns key prefixes for owner', async () => {
     mockResolveUser.mockResolvedValue(owner);
     await handleListTeamKeys(mockReq(), mockRes());
     expect(captured.status).toBe(200);
-    const keys = captured.body.keys as Array<{ apiKey: string }>;
+    const keys = captured.body.keys as Array<{ apiKeyPrefix: string }>;
     expect(keys).toHaveLength(3);
-    expect(keys[0].apiKey).toBe('clt_key_one_full');
-    expect(keys[1].apiKey).toBe('clt_key_two_full');
+    expect(keys[0].apiKeyPrefix).toBe('ab12cd34...');
+    expect(keys[1].apiKeyPrefix).toBe('ff99aa88...');
   });
 
-  it('returns full keys for admin', async () => {
+  it('returns key prefixes for admin', async () => {
     mockResolveUser.mockResolvedValue(admin);
     await handleListTeamKeys(mockReq(), mockRes());
     expect(captured.status).toBe(200);
-    const keys = captured.body.keys as Array<{ apiKey: string }>;
-    expect(keys[0].apiKey).toBe('clt_key_one_full');
+    const keys = captured.body.keys as Array<{ apiKeyPrefix: string }>;
+    expect(keys[0].apiKeyPrefix).toBe('ab12cd34...');
   });
 
-  it('returns masked keys for member (non-admin)', async () => {
+  it('returns key prefixes for member (non-admin)', async () => {
     mockResolveUser.mockResolvedValue(member);
     await handleListTeamKeys(mockReq(), mockRes());
     expect(captured.status).toBe(200);
-    const keys = captured.body.keys as Array<{ apiKey: string }>;
-    expect(keys[0].apiKey).toBe('clt_key_...');
-    expect(keys[0].apiKey).not.toBe('clt_key_one_full');
+    const keys = captured.body.keys as Array<{ apiKeyPrefix: string }>;
+    expect(keys[0].apiKeyPrefix).toBe('ab12cd34...');
   });
 
   it('returns correct field mapping from snake_case to camelCase', async () => {

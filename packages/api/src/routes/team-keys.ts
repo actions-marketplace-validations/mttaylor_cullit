@@ -10,7 +10,7 @@ import { resolveUser, getOrg, generateApiKey } from '../auth.js';
 import {
   dbGetTeamApiKeys, dbCreateTeamApiKey, dbUpdateTeamApiKeyAssignment,
   dbUpdateTeamApiKeyLabel, dbRevokeTeamApiKey, dbRotateTeamApiKey,
-  dbGetActiveTeamApiKeyCount,
+  dbGetActiveTeamApiKeyCount, dbRecordAuditEvent,
 } from '../db.js';
 import { json, readJsonBody } from '../utils.js';
 import { sendTeamApiKey } from '../email.js';
@@ -27,12 +27,12 @@ export async function handleListTeamKeys(req: IncomingMessage, res: ServerRespon
 
   const keys = await dbGetTeamApiKeys(user.orgId);
 
-  // Only owners/admins see full keys; members see masked keys
+  // Only show masked key prefixes — full key is shown only at creation/rotation time
   const isAdmin = user.role === 'owner' || user.role === 'admin';
   json(res, 200, {
     keys: keys.map(k => ({
       id: k.id,
-      apiKey: isAdmin ? k.api_key : k.api_key.slice(0, 8) + '...',
+      apiKeyPrefix: (k.api_key_hash || '').slice(0, 8) + '...',
       label: k.label,
       assignedToEmail: k.assigned_to_email,
       assignedToName: k.assigned_to_name,
@@ -115,6 +115,7 @@ export async function handleRevokeTeamKey(req: IncomingMessage, res: ServerRespo
   const revoked = await dbRevokeTeamApiKey(keyId, user.orgId);
   if (!revoked) { json(res, 404, { error: 'Key not found or already revoked' }); return; }
 
+  await dbRecordAuditEvent({ actor: user.id, action: 'team_key.revoke', resource: keyId, detail: `Revoked team key in org ${user.orgId}` }).catch(() => {});
   log.info({ actor: user.id, keyId, action: 'team_key.revoke' }, 'Team API key revoked');
   json(res, 200, { revoked: true });
 }
@@ -133,6 +134,7 @@ export async function handleRotateTeamKey(req: IncomingMessage, res: ServerRespo
   const updated = await dbRotateTeamApiKey(keyId, user.orgId, newApiKey);
   if (!updated) { json(res, 404, { error: 'Key not found or revoked' }); return; }
 
+  await dbRecordAuditEvent({ actor: user.id, action: 'team_key.rotate', resource: keyId, detail: `Rotated team key in org ${user.orgId}` }).catch(() => {});
   log.info({ actor: user.id, keyId, action: 'team_key.rotate' }, 'Team API key rotated');
   json(res, 200, { apiKey: newApiKey });
 }

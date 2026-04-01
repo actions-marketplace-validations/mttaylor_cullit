@@ -164,6 +164,12 @@ export async function handleCreateOrgInvite(req: IncomingMessage, res: ServerRes
     json(res, 403, { error: 'Only the org owner can create admin invites' }); return;
   }
 
+  // Limit pending invites to prevent email abuse
+  const pendingInvites = await dbListOrgInvites(user.orgId);
+  if (pendingInvites.length >= 50) {
+    json(res, 429, { error: 'Too many pending invites (max 50). Cancel some before creating new ones.' }); return;
+  }
+
   const invite = await dbCreateOrgInvite({
     id: randomBytes(12).toString('hex'),
     orgId: user.orgId,

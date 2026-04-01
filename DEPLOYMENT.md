@@ -5,7 +5,7 @@ This guide covers deploying the Cullit API server. For CLI-only usage, no deploy
 ## Prerequisites
 
 - Node.js 22+
-- pnpm 9+
+- pnpm 10+
 - PostgreSQL 14+ (recommended for production; optional for local dev)
 - A Stripe account (for billing features)
 - A WorkOS account (for GitHub OAuth login)

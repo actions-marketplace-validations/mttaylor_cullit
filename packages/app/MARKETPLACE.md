@@ -82,7 +82,8 @@ Required environment variables:
 | Plan | Price | What you get |
 |------|-------|--------------|
 | **Free** | $0 | Template-based release notes (no AI), 5 generations/month, 3 projects |
-| **Pro** | $9/mo | AI-powered notes (BYOK), Jira/Linear, Slack/Discord/GitHub Release, 500 gen/mo, 100 projects |
+| **Basic** | $4/mo | AI-powered notes (single provider lock-in), 50 gen/mo, 10 projects |
+| **Pro** | $9/mo | AI-powered notes (BYOK, any provider), Jira/Linear, Slack/Discord/GitHub Release, 500 gen/mo, 100 projects |
 | **Team** | $19/seat/mo | Multi-repo, Confluence/Notion/Teams, hosted changelog, 10 seats, 2000 gen/mo, 250 projects |
 | **Enterprise** | Custom | SSO/SAML, SLA, on-prem, unlimited generations &amp; projects — [sales@cullit.io](mailto:sales@cullit.io) |
 

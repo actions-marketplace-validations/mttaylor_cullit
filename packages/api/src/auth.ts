@@ -704,7 +704,7 @@ export async function handleAuthMe(req: IncomingMessage, res: ServerResponse, js
     effectiveTier,
     orgId: user.orgId,
     role: user.role,
-    apiKey: user.apiKey,
+    hasApiKey: !!user.apiKey || !!user.apiKeyHash,
     preferredProvider: user.preferredProvider,
     features: getFeatureGating(effectiveTier),
     createdAt: user.createdAt,

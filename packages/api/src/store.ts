@@ -260,7 +260,7 @@ export async function getMonthlyGenerationCount(key: string): Promise<number> {
 
   const entries = store.dailyUsage[key] || [];
   const now = new Date();
-  const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const monthPrefix = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
 
   return entries
     .filter(d => d.date.startsWith(monthPrefix))

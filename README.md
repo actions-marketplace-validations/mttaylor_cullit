@@ -120,12 +120,12 @@ cullit generate --from "project = PROJ AND fixVersion = 1.5" --source jira
 cullit generate --from v1.0.0 --dry-run --verbose
 ```
 
-### `cullit version`
+### `cullit --version`
 
 Print the installed Cullit version.
 
 ```bash
-cullit version
+cullit --version
 ```
 
 ## Multi-Repo Aggregation
@@ -266,7 +266,7 @@ docker compose up api
 
 | Feature | Description |
 |---------|-------------|
-| 🧠 **5 AI Providers** | Anthropic Claude, OpenAI, Gemini, Ollama, or none (template) |
+| 🧠 **4 AI Providers + Template** | Anthropic Claude, OpenAI, Gemini, Ollama, or none (template) |
 | 🔑 **Licensed AI** | Paid AI and premium integrations are available through licensed hosted/private Cullit surfaces. |
 | ⚡ **Flexible Sources** | Git, Jira, Linear, GitLab, or Bitbucket as primary data source |
 | 🔍 **Enrichment** | Cross-reference Jira & Linear tickets from commits |

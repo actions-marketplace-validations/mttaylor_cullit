@@ -92,6 +92,12 @@ export async function migrate(): Promise<void> {
     WHERE api_key IS NOT NULL AND api_key_hash IS NOT NULL
   `.catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to clear plaintext api_keys'); });
 
+  // Null out plaintext team API keys where hash already exists
+  await sql`
+    UPDATE team_api_keys SET api_key = NULL
+    WHERE api_key IS NOT NULL AND api_key_hash IS NOT NULL
+  `.catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to clear plaintext team api_keys'); });
+
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_api_key_hash ON users (api_key_hash) WHERE api_key_hash IS NOT NULL`;
   await sql`CREATE INDEX IF NOT EXISTS idx_users_api_key ON users (api_key)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_users_stripe_customer ON users (stripe_customer_id) WHERE stripe_customer_id IS NOT NULL`;
@@ -1250,7 +1256,7 @@ export async function dbCreateTeamApiKey(key: {
   const keyHash = hashApiKey(key.apiKey);
   const rows = await sql<DbTeamApiKey[]>`
     INSERT INTO team_api_keys (id, org_id, api_key, api_key_hash, label)
-    VALUES (${key.id}, ${key.orgId}, ${key.apiKey}, ${keyHash}, ${key.label})
+    VALUES (${key.id}, ${key.orgId}, ${null}, ${keyHash}, ${key.label})
     RETURNING *
   `;
   return rows[0];
@@ -1271,15 +1277,11 @@ export async function dbGetActiveTeamApiKeyCount(orgId: string): Promise<number>
 
 export async function dbGetTeamApiKeyByKey(apiKey: string): Promise<DbTeamApiKey | null> {
   const keyHash = hashApiKey(apiKey);
-  // Query by hash first (secure path), fall back to plaintext for un-migrated rows
+  // Hash-only lookup — plaintext fallback removed for security
   const rows = await sql<DbTeamApiKey[]>`
     SELECT * FROM team_api_keys WHERE api_key_hash = ${keyHash} AND revoked_at IS NULL
   `;
-  if (rows[0]) return rows[0];
-  const fallback = await sql<DbTeamApiKey[]>`
-    SELECT * FROM team_api_keys WHERE api_key = ${apiKey} AND revoked_at IS NULL
-  `;
-  return fallback[0] || null;
+  return rows[0] || null;
 }
 
 export async function dbUpdateTeamApiKeyAssignment(
@@ -1336,7 +1338,7 @@ export async function dbRevokeExcessTeamApiKeys(orgId: string, maxActive: number
 
 export async function dbRotateTeamApiKey(id: string, orgId: string, newApiKey: string): Promise<DbTeamApiKey | null> {
   const rows = await sql<DbTeamApiKey[]>`
-    UPDATE team_api_keys SET api_key = ${newApiKey}, api_key_hash = ${hashApiKey(newApiKey)} WHERE id = ${id} AND org_id = ${orgId} AND revoked_at IS NULL RETURNING *
+    UPDATE team_api_keys SET api_key = ${null}, api_key_hash = ${hashApiKey(newApiKey)} WHERE id = ${id} AND org_id = ${orgId} AND revoked_at IS NULL RETURNING *
   `;
   return rows[0] || null;
 }
