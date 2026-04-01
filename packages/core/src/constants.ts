@@ -22,8 +22,8 @@ export const TONES = ['professional', 'casual', 'terse', 'edgy', 'hype', 'snarky
 export const SOURCE_TYPES = ['local', 'jira', 'linear', 'gitlab', 'bitbucket', 'multi-repo'] as const;
 
 // Tier names — single source of truth for subscription tiers
-export const TIERS = ['free', 'basic', 'pro', 'team', 'enterprise'] as const;
-export const PAID_TIERS = ['basic', 'pro', 'team', 'enterprise'] as const;
+export const TIERS = ['free', 'pro', 'team', 'enterprise'] as const;
+export const PAID_TIERS = ['pro', 'team', 'enterprise'] as const;
 export const TEAM_TIERS = ['team', 'enterprise'] as const;
 
 // Seat-based team plans

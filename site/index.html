@@ -37,10 +37,9 @@
     "lowPrice": "0",
     "highPrice": "209",
     "priceCurrency": "USD",
-    "offerCount": 7,
+    "offerCount": 6,
     "offers": [
       { "@type": "Offer", "price": "0", "priceCurrency": "USD", "name": "Free" },
-      { "@type": "Offer", "price": "4", "priceCurrency": "USD", "name": "Basic" },
       { "@type": "Offer", "price": "9", "priceCurrency": "USD", "name": "Pro" },
       { "@type": "Offer", "price": "44.99", "priceCurrency": "USD", "name": "Team 5" },
       { "@type": "Offer", "price": "89", "priceCurrency": "USD", "name": "Team 10" },
@@ -1069,10 +1068,36 @@
 
 <div class="section-divider"></div>
 
+<!-- SOCIAL PROOF -->
+<section style="max-width: 900px; margin: 0 auto; padding: 3rem 2rem;">
+  <h2 class="section-title" style="margin-bottom: 2rem;">Built for real release workflows</h2>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem; text-align: center;">
+    <div style="padding: 1.5rem; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-card);">
+      <div style="font-size: 2rem; font-weight: 700; color: var(--accent); font-family: 'Space Mono', monospace;">5</div>
+      <div style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.25rem;">AI providers supported</div>
+    </div>
+    <div style="padding: 1.5rem; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-card);">
+      <div style="font-size: 2rem; font-weight: 700; color: var(--accent); font-family: 'Space Mono', monospace;">12+</div>
+      <div style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.25rem;">Integrations &amp; publishers</div>
+    </div>
+    <div style="padding: 1.5rem; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-card);">
+      <div style="font-size: 2rem; font-weight: 700; color: var(--accent); font-family: 'Space Mono', monospace;">17+</div>
+      <div style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.25rem;">Releases shipped</div>
+    </div>
+    <div style="padding: 1.5rem; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-card);">
+      <div style="font-size: 2rem; font-weight: 700; color: var(--accent); font-family: 'Space Mono', monospace;">0</div>
+      <div style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.25rem;">Runtime dependencies</div>
+    </div>
+  </div>
+  <p style="text-align: center; color: var(--text-dim); margin-top: 1.5rem; font-size: 0.85rem;">Open-core architecture. Free CLI with AI included. Bring your own API key.</p>
+</section>
+
+<div class="section-divider"></div>
+
 <!-- CTA -->
 <section class="cta-section" id="cta">
   <h2>Stop writing release notes.<br>Start <span style="color: var(--accent)">culling</span> them.</h2>
-  <p>Try it free with template-based notes. Upgrade anytime for AI, Jira, Linear &amp; more.</p>
+  <p>Try it free — 3 AI generations per month included. Upgrade anytime for more volume, Jira, Linear &amp; audience control.</p>
   <div class="cta-buttons" style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin: 2rem 0 1rem;">
     <a href="dashboard.html" id="ctaFree" class="cta-btn" style="display: inline-block; background: var(--accent); color: var(--bg); padding: 0.85rem 2rem; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 1rem;">Get Started Free</a>
     <a href="pricing.html" id="ctaPricing" class="cta-btn-outline" style="display: inline-block; border: 2px solid var(--accent); color: var(--accent); padding: 0.85rem 2rem; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 1rem;">View Pricing</a>
@@ -1080,7 +1105,7 @@
   <p style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.5rem;">
     Try the free local CLI in seconds: <code style="background: var(--bg-card); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem; cursor: pointer;" onclick="navigator.clipboard.writeText('npx cullit generate --provider none'); this.textContent='✓ Copied!'; setTimeout(()=>this.textContent='npx cullit generate --provider none', 2000)">npx cullit generate --provider none</code>
   </p>
-  <p class="email-note">Paid plans from $4/mo &mdash; <a href="mailto:sales@cullit.io" style="color: var(--accent)">sales@cullit.io</a></p>
+  <p class="email-note">Pro from $9/mo &mdash; <a href="https://cullit.io/pricing" style="color: var(--accent)">See plans</a></p>
 </section>
 
 <!-- FOOTER -->

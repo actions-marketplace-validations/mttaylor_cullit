@@ -9,7 +9,7 @@ import {
 } from '@cullit/core';
 import { getEffectiveTier } from '../src/auth.js';
 
-type Tier = 'free' | 'basic' | 'pro' | 'team' | 'enterprise';
+type Tier = 'free' | 'pro' | 'team' | 'enterprise';
 type LicenseInfo = { tier: Tier; valid: boolean };
 
 interface MockUser {
@@ -53,18 +53,8 @@ describe('Tier workflow matrix', () => {
       name: 'free plan',
       userTier: 'free',
       expectedEffectiveTier: 'free',
-      expectAiProvider: false,
-      expectSlackPublisher: false,
-      expectTeamPublisher: false,
-      expectDrafts: false,
-      expectSso: false,
-    },
-    {
-      name: 'basic plan',
-      userTier: 'basic',
-      expectedEffectiveTier: 'basic',
       expectAiProvider: true,
-      expectSlackPublisher: true,
+      expectSlackPublisher: false,
       expectTeamPublisher: false,
       expectDrafts: false,
       expectSso: false,
@@ -128,10 +118,7 @@ describe('Tier workflow matrix', () => {
       expect(isFeatureAllowed('sso', effectiveTier)).toBe(scenario.expectSso);
 
       if (effectiveTier === 'free') {
-        expect(limits.generationsPerMonth).toBe(5);
-      }
-      if (effectiveTier === 'basic') {
-        expect(limits.generationsPerMonth).toBe(50);
+        expect(limits.generationsPerMonth).toBe(3);
       }
       if (effectiveTier === 'pro') {
         expect(limits.generationsPerMonth).toBe(500);

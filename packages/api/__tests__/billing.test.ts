@@ -83,8 +83,8 @@ describe('Billing — plan mapping functions', () => {
   });
 
   describe('planToTier', () => {
-    it('maps "basic" to "basic"', () => {
-      expect(planToTier('basic')).toBe('basic');
+    it('maps "basic" to "free" (basic tier removed)', () => {
+      expect(planToTier('basic')).toBe('free');
     });
 
     it('maps "pro" to "pro"', () => {
@@ -126,7 +126,6 @@ describe('Billing — plan mapping functions', () => {
     });
 
     it('returns 0 for non-team plans', () => {
-      expect(planToSeats('basic')).toBe(0);
       expect(planToSeats('pro')).toBe(0);
       expect(planToSeats('free')).toBe(0);
     });

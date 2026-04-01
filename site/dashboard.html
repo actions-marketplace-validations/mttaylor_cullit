@@ -1099,7 +1099,7 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Audience</label>
+            <label>Audience <span class="pro-badge" id="audienceProBadge" style="display:none;font-size:0.65rem;background:var(--accent);color:#000;padding:0.1rem 0.35rem;border-radius:3px;margin-left:0.3rem">Pro+</span></label>
             <select id="audience">
               <option value="developer">Developer</option>
               <option value="end-user">End User</option>
@@ -1107,7 +1107,7 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Tone</label>
+            <label>Tone <span class="pro-badge" id="toneProBadge" style="display:none;font-size:0.65rem;background:var(--accent);color:#000;padding:0.1rem 0.35rem;border-radius:3px;margin-left:0.3rem">Pro+</span></label>
             <select id="tone">
               <option value="professional">Professional</option>
               <option value="casual">Casual</option>
@@ -1281,11 +1281,11 @@
               </div>
             </div>
             <div class="member-list" id="memberList"></div>
-            <div id="inviteSection" style="margin-top:1rem;display:none">
+              <div id="inviteSection" style="margin-top:1rem;display:none">
               <div class="create-org-form">
                 <div class="form-group">
-                  <label>User ID to invite</label>
-                  <input type="text" id="inviteUserId" placeholder="User ID">
+                  <label>Email or GitHub username to invite</label>
+                  <input type="text" id="inviteUserId" placeholder="user@example.com or github-username">
                 </div>
                 <button class="btn-small" onclick="inviteMember()">Invite</button>
               </div>
@@ -1496,20 +1496,10 @@
           <div class="plan-tier">Free</div>
           <div class="plan-price">$0<span>/mo</span></div>
           <ul class="plan-features">
-            <li>5 generations / month</li>
+            <li>3 generations / month</li>
             <li>3 projects</li>
-            <li>Template-based notes</li>
-          </ul>
-        </div>
-        <div class="billing-plan-option" id="planBasic">
-          <div class="plan-tier">Basic</div>
-          <div class="plan-price">$4<span>/mo</span></div>
-          <ul class="plan-features">
-            <li>50 generations / month</li>
-            <li>10 projects</li>
             <li>AI generation (BYOK)</li>
           </ul>
-          <button class="btn-small plan-upgrade-btn" onclick="upgradePlan('basic')">Upgrade</button>
         </div>
         <div class="billing-plan-option" id="planPro">
           <div class="plan-tier">Pro</div>
@@ -1518,7 +1508,8 @@
             <li>500 generations / month</li>
             <li>100 projects</li>
             <li>AI-powered notes</li>
-            <li>All integrations</li>
+            <li>Jira &amp; Linear enrichment</li>
+            <li>Audience &amp; tone control</li>
           </ul>
           <button class="btn-small plan-upgrade-btn" onclick="upgradePlan('pro')">Upgrade</button>
         </div>
@@ -1724,7 +1715,7 @@ function copyApiKey() {
 async function rotateApiKey() {
   if (!confirm('Rotate your API key? Your current key will stop working immediately.')) return;
   try {
-    const res = await apiFetch('/v1/auth/rotate-key', { method: 'POST' });
+    const res = await apiFetch('/auth/rotate-key', { method: 'POST' });
     const data = await res.json();
     if (data.apiKey) {
       currentUser.apiKey = data.apiKey;
@@ -1757,6 +1748,9 @@ function showDashboard() {
   // Tier-gate dashboard tabs
   applyTabGating();
 
+  // Audience/tone gating for free tier
+  applyAudienceToneGating();
+
   checkHealth();
   loadHistory();
   loadAnalytics();
@@ -1766,7 +1760,7 @@ function showDashboard() {
   // Auto-trigger checkout if redirected from pricing page with ?checkout=pro|team
   const params = new URLSearchParams(location.search);
   const pendingPlan = params.get('checkout');
-  if (pendingPlan && ['basic', 'pro', 'team-5', 'team-10', 'team-25'].includes(pendingPlan)) {
+  if (pendingPlan && ['pro', 'team-5', 'team-10', 'team-25'].includes(pendingPlan)) {
     history.replaceState(null, '', 'dashboard.html');
     upgradePlan(pendingPlan === 'team' ? 'team-5' : pendingPlan);
   }
@@ -1970,9 +1964,9 @@ function escapeAttr(text) {
 
 const TAB_MIN_TIERS = {
   generate: 'free', history: 'free', settings: 'free', billing: 'free',
-  drafts: 'team', analytics: 'basic', team: 'team', changelog: 'pro',
+  drafts: 'team', analytics: 'pro', team: 'team', changelog: 'pro',
 };
-const TIER_RANK = { free: 0, basic: 1, pro: 2, team: 3, enterprise: 4 };
+const TIER_RANK = { free: 0, pro: 1, team: 2, enterprise: 3 };
 
 function applyTabGating() {
   const tier = getEffectiveTierClient();
@@ -1993,6 +1987,35 @@ function applyTabGating() {
       btn.style.cursor = '';
     }
   });
+}
+
+function applyAudienceToneGating() {
+  const tier = getEffectiveTierClient();
+  const rank = TIER_RANK[tier] || 0;
+  const proRank = TIER_RANK['pro'] || 1;
+  const isFree = rank < proRank;
+
+  // Show Pro+ badges for free users
+  const audienceBadge = document.getElementById('audienceProBadge');
+  const toneBadge = document.getElementById('toneProBadge');
+  if (audienceBadge) audienceBadge.style.display = isFree ? 'inline' : 'none';
+  if (toneBadge) toneBadge.style.display = isFree ? 'inline' : 'none';
+
+  // Disable non-default options for free users
+  const audienceSelect = document.getElementById('audience');
+  const toneSelect = document.getElementById('tone');
+  if (audienceSelect) {
+    Array.from(audienceSelect.options).forEach(opt => {
+      opt.disabled = isFree && opt.value !== 'developer';
+    });
+    if (isFree) audienceSelect.value = 'developer';
+  }
+  if (toneSelect) {
+    Array.from(toneSelect.options).forEach(opt => {
+      opt.disabled = isFree && opt.value !== 'professional';
+    });
+    if (isFree) toneSelect.value = 'professional';
+  }
 }
 
 function switchDashTab(tab) {
@@ -2219,7 +2242,7 @@ async function createOrgAction() {
 
 async function inviteMember() {
   const userId = document.getElementById('inviteUserId').value.trim();
-  if (!userId) { showToast('Enter a user ID to invite'); return; }
+  if (!userId) { showToast('Enter an email or GitHub username to invite'); return; }
 
   try {
     const res = await apiFetch('/v1/org/invite', {
@@ -2271,7 +2294,7 @@ function showToast(msg) {
 
 // --- Billing ---
 
-const TIER_LIMITS = { free: 5, basic: 50, pro: 500, team: 2000, enterprise: Infinity };
+const TIER_LIMITS = { free: 3, pro: 500, team: 2000, enterprise: Infinity };
 
 // --- Drafts Management ---
 
@@ -2800,7 +2823,7 @@ async function loadBilling() {
   }
 
   // Hide upgrade button for current plan and lower tiers (no downgrade via UI)
-  const tierRank = { free: 0, basic: 0.5, pro: 1, team: 2, 'team-5': 2, 'team-10': 2.5, 'team-25': 3, enterprise: 4 };
+  const tierRank = { free: 0, pro: 1, team: 2, 'team-5': 2, 'team-10': 2.5, 'team-25': 3, enterprise: 4 };
   const currentPlan = tier === 'team' ? (currentUser._teamPlan || 'team-5') : tier;
   const currentRank = tierRank[currentPlan] || 0;
   document.querySelectorAll('.billing-plan-option').forEach(function(el) {
@@ -2808,7 +2831,7 @@ async function loadBilling() {
     if (!btn) return;
     const cardId = (el.id || '').replace('plan', '');
     // Map card IDs to plan keys
-    const cardPlanMap = { Free: 'free', Basic: 'basic', Pro: 'pro', Team5: 'team-5', Team10: 'team-10', Team25: 'team-25', Enterprise: 'enterprise' };
+    const cardPlanMap = { Free: 'free', Pro: 'pro', Team5: 'team-5', Team10: 'team-10', Team25: 'team-25', Enterprise: 'enterprise' };
     const cardPlan = cardPlanMap[cardId] || cardId.toLowerCase();
     const cardRank = tierRank[cardPlan] || 0;
     if (cardRank <= currentRank) {
@@ -2819,7 +2842,7 @@ async function loadBilling() {
   });
 
   // Show tier-appropriate support section
-  ['Free', 'Basic', 'Pro', 'Team', 'Enterprise'].forEach(function(t) {
+  ['Free', 'Pro', 'Team', 'Enterprise'].forEach(function(t) {
     const el = document.getElementById('support' + t);
     if (el) el.style.display = (t.toLowerCase() === tier) ? '' : 'none';
   });

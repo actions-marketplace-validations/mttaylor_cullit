@@ -85,11 +85,11 @@ export interface User {
   email: string;
   avatarUrl: string;
   githubUsername: string | null;
-  tier: 'free' | 'basic' | 'pro' | 'team' | 'enterprise';
+  tier: 'free' | 'pro' | 'team' | 'enterprise';
   orgId: string | null;  // null = no org membership
   role: 'owner' | 'admin' | 'member';
   apiKey: string;        // clt_<random> generated on first login
-  preferredProvider: string | null; // Basic tier: locked to one AI provider
+  preferredProvider: string | null; // User's preferred AI provider
   _teamKeyAuth?: boolean; // true when authenticated via team API key (restricted permissions)
   createdAt: string;
   lastLoginAt: string;
@@ -712,7 +712,7 @@ export async function handleAuthMe(req: IncomingMessage, res: ServerResponse, js
 }
 
 /**
- * Update a user's preferred AI provider (Basic tier lock).
+ * Update a user's preferred AI provider.
  */
 export async function updatePreferredProvider(userId: string, provider: string): Promise<void> {
   if (useDb) {
@@ -733,12 +733,7 @@ export async function handleUpdateMe(req: IncomingMessage, res: ServerResponse, 
   const user = await resolveUser(req);
   if (!user) { jsonFn(res, 401, { error: 'Not authenticated' }); return; }
 
-  // Basic tier cannot change their locked provider via this endpoint
-  const tier = getEffectiveTier(user);
-  if (tier === 'basic' && user.preferredProvider) {
-    jsonFn(res, 403, { error: 'Basic plan cannot change AI provider. Upgrade to Pro for all providers.', upgrade: 'https://cullit.io/pricing' });
-    return;
-  }
+  // Provider preference endpoint — no tier restriction (Basic tier was removed)
 
   let body: string;
   try { body = await readBody(req); } catch { jsonFn(res, 413, { error: 'Request body too large' }); return; }

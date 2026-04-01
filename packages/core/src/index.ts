@@ -46,7 +46,7 @@ export type { CoreErrorCodeValue } from './errors';
 
 import type { CullConfig, EnrichedContext, PipelineResult, OutputFormat, EnrichedTicket, ReleaseNotes, TemplateProfile, TemplateConfig, PublishTarget } from './types';
 import { CullitError, CoreErrorCode } from './errors';
-import { validateLicense, isProviderAllowed, isPublisherAllowed, isEnrichmentAllowed, upgradeMessage } from './gate';
+import { validateLicense, isProviderAllowed, isPublisherAllowed, isEnrichmentAllowed, isAudienceToneAllowed, upgradeMessage } from './gate';
 import { GitCollector } from './collectors/git';
 import { MultiRepoCollector } from './collectors/multi-repo';
 import { TemplateGenerator } from './generators/template';
@@ -235,6 +235,13 @@ export async function runPipeline(
   }
 
   const context: EnrichedContext = { diff, tickets };
+
+  // Audience/tone gating — Pro+ only
+  const hasCustomAudience = config.ai.audience && config.ai.audience !== 'developer';
+  const hasCustomTone = config.ai.tone && config.ai.tone !== 'professional';
+  if ((hasCustomAudience || hasCustomTone) && !isAudienceToneAllowed(license)) {
+    throw new CullitError(CoreErrorCode.LICENSE_TIER_INSUFFICIENT, upgradeMessage('Audience and tone control', 'pro'));
+  }
 
   // 3. GENERATE
   const providerNames: Record<string, string> = {

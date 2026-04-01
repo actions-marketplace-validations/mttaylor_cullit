@@ -1,6 +1,6 @@
 import { type Page, type Route } from '@playwright/test';
 
-export type Tier = 'free' | 'basic' | 'pro' | 'team' | 'enterprise';
+export type Tier = 'free' | 'pro' | 'team' | 'enterprise';
 
 export function makeUser(
   tier: Tier,

@@ -1,8 +1,10 @@
 /**
  * Cullit License Gating
  *
- * Free tier (no key):  provider=none, publish to stdout/file only
- * Pro tier (with key): all providers, all publishers, all enrichments
+ * Free tier (no key):  3 AI gens/month, all providers (BYOK), publish to stdout/file only
+ * Pro tier (with key): 500 gens/month, all providers, all publishers, enrichments, audience/tone
+ * Team tier:           2000 gens/month, team management, advanced publishers
+ * Enterprise tier:     unlimited everything
  *
  * validateLicense() performs async remote validation with caching.
  * resolveLicense() remains sync for quick format-only checks (display).
@@ -10,7 +12,7 @@
 
 import { fetchWithTimeout } from './fetch';
 
-export type LicenseTier = 'free' | 'basic' | 'pro' | 'team' | 'enterprise';
+export type LicenseTier = 'free' | 'pro' | 'team' | 'enterprise';
 
 export interface LicenseStatus {
   tier: LicenseTier;
@@ -18,7 +20,7 @@ export interface LicenseStatus {
   message?: string;
 }
 
-const FREE_PROVIDERS = new Set(['none']);
+// Free tier allows all AI providers (BYOK) — enforcement is via generation count, not provider blocking
 const FREE_PUBLISHERS = new Set(['stdout', 'file']);
 const TEAM_ONLY_PUBLISHERS = new Set(['confluence', 'notion', 'teams']);
 
@@ -103,7 +105,7 @@ export async function validateLicense(): Promise<LicenseStatus> {
     if (res.ok) {
       const data = await res.json() as { valid?: boolean; tier?: string; message?: string };
       const status: LicenseStatus = {
-        tier: (data.tier === 'team' || data.tier === 'enterprise') ? data.tier : data.tier === 'pro' ? 'pro' : data.tier === 'basic' ? 'basic' : 'free',
+        tier: (data.tier === 'team' || data.tier === 'enterprise') ? data.tier : data.tier === 'pro' ? 'pro' : 'free',
         valid: data.valid !== false,
         message: data.message,
       };
@@ -131,10 +133,11 @@ export async function validateLicense(): Promise<LicenseStatus> {
 
 /**
  * Check whether the current license allows the requested provider.
+ * All tiers now allow AI providers (BYOK) — enforcement is via generation limits.
  */
 export function isProviderAllowed(provider: string, license: LicenseStatus): boolean {
-  if (license.tier !== 'free' && license.valid) return true;
-  return FREE_PROVIDERS.has(provider);
+  if (!license.valid) return provider === 'none';
+  return true;
 }
 
 /**
@@ -173,7 +176,6 @@ export function isAudienceToneAllowed(license: LicenseStatus): boolean {
 export function upgradeMessage(feature: string, minTier?: string): string {
   const tierLabel = minTier === 'team' ? 'a Team plan or above'
     : minTier === 'pro' ? 'a Pro plan or above'
-    : minTier === 'basic' ? 'a Basic plan or above'
     : minTier === 'enterprise' ? 'an Enterprise plan'
     : 'a paid Cullit plan';
   return `🔒 ${feature} requires ${tierLabel}.\n` +
@@ -189,8 +191,7 @@ export interface UsageLimits {
 }
 
 const TIER_LIMITS: Record<string, UsageLimits> = {
-  free: { generationsPerMonth: 5, maxProjects: 3 },
-  basic: { generationsPerMonth: 50, maxProjects: 10 },
+  free: { generationsPerMonth: 3, maxProjects: 3 },
   pro: { generationsPerMonth: 500, maxProjects: 100 },
   team: { generationsPerMonth: 2000, maxProjects: 250 },
   enterprise: { generationsPerMonth: Infinity, maxProjects: Infinity },

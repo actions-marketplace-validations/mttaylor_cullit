@@ -7,7 +7,7 @@
 <title>Pricing — Cullit</title>
 <meta name="description" content="Cullit pricing — AI-generated release notes grounded in git, Jira, and Linear. Start free, upgrade for model choice, audience-aware output, and team release workflows.">
 <meta property="og:title" content="Pricing — Cullit">
-<meta property="og:description" content="Cullit pricing — AI release notes from $0/mo. Free, Basic, Pro, Team & Enterprise plans.">
+<meta property="og:description" content="Cullit pricing — AI release notes from $0/mo. Free, Pro, Team & Enterprise plans.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://cullit.io/pricing">
 <meta property="og:image" content="https://cullit.io/og-image.png">
@@ -15,7 +15,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@cullit_io">
 <meta name="twitter:title" content="Pricing — Cullit">
-<meta name="twitter:description" content="Cullit pricing — AI release notes from $0/mo. Free, Basic, Pro, Team & Enterprise plans.">
+<meta name="twitter:description" content="Cullit pricing — AI release notes from $0/mo. Free, Pro, Team & Enterprise plans.">
 <meta name="twitter:image" content="https://cullit.io/og-image.png">
 <link rel="canonical" href="https://cullit.io/pricing">
 <link rel="icon" href="/favicon.ico" sizes="any">
@@ -443,7 +443,7 @@
 
   <section style="max-width:900px;margin:0 auto 2rem;padding:1rem 1.25rem;border:1px solid var(--border);border-radius:10px;background:var(--bg-card)">
     <h2 style="font-family:'Chakra Petch',sans-serif;font-size:1.2rem;margin-bottom:0.5rem">Upgrade in 4 steps</h2>
-    <ol style="margin:0;padding-left:1.2rem;color:var(--text-dim);line-height:1.7">      <li>Sign in with <strong>GitHub</strong> &mdash; no email or password required.</li>      <li>Choose Basic, Pro, or Team below and complete checkout.</li>
+    <ol style="margin:0;padding-left:1.2rem;color:var(--text-dim);line-height:1.7">      <li>Sign in with <strong>GitHub</strong> &mdash; no email or password required.</li>      <li>Choose Pro or Team below and complete checkout.</li>
       <li>Install <code style="background:#0d0d14;padding:0.1rem 0.35rem;border-radius:4px">@cullit/licensed</code> from your private registry.</li>
       <li>Set your <code style="background:#0d0d14;padding:0.1rem 0.35rem;border-radius:4px">CULLIT_API_KEY</code> and run your first generation.</li>
     </ol>
@@ -470,36 +470,19 @@
     <div class="pricing-card">
       <div class="plan-name">Free</div>
       <div class="plan-price">$0 <span class="period">/ mo</span></div>
-      <p class="plan-desc">Try the workflow with a built-in non-AI template engine.</p>
+      <p class="plan-desc">Try AI-generated release notes with your own API key — 3 generations per month.</p>
       <ul class="plan-features">
-        <li><span class="check">&#10003;</span> 5 generations / month</li>
+        <li><span class="check">&#10003;</span> 3 generations / month</li>
         <li><span class="check">&#10003;</span> 3 projects</li>
+        <li><span class="check">&#10003;</span> AI generation (BYOK)</li>
+        <li><span class="check">&#10003;</span> OpenAI, Anthropic, Gemini, Ollama</li>
         <li><span class="check">&#10003;</span> Git commit collector</li>
-        <li><span class="check">&#10003;</span> Template-based generator</li>
         <li><span class="check">&#10003;</span> Stdout &amp; file output</li>
         <li><span class="check">&#10003;</span> CLI &amp; GitHub Action</li>
-        <li><span class="dash">&mdash;</span> AI generation</li>
-        <li><span class="dash">&mdash;</span> Jira &amp; Linear enrichment</li>
-      </ul>
-      <a href="docs.html" class="plan-btn plan-btn-outline">Get Started</a>
-    </div>
-
-    <!-- BASIC -->
-    <div class="pricing-card">
-      <div class="plan-name">Basic</div>
-      <div class="plan-price">$4 <span class="period">/ mo</span></div>
-      <p class="plan-desc">AI generation for solo devs &mdash; pick one provider, BYOK.</p>
-      <ul class="plan-features">
-        <li><span class="check">&#10003;</span> 50 generations / month</li>
-        <li><span class="check">&#10003;</span> 10 projects</li>
-        <li><span class="check">&#10003;</span> AI generation (BYOK)</li>
-        <li><span class="check">&#10003;</span> 1 AI provider</li>
-        <li><span class="check">&#10003;</span> Slack, Discord &amp; GitHub publishing</li>
-        <li><span class="dash">&mdash;</span> Hosted changelog</li>
         <li><span class="dash">&mdash;</span> Jira &amp; Linear enrichment</li>
         <li><span class="dash">&mdash;</span> Audience &amp; tone control</li>
       </ul>
-      <a href="https://cullit.io/dashboard" class="plan-btn plan-btn-outline" onclick="startCheckout('basic', event)">Start Basic</a>
+      <a href="dashboard.html" class="plan-btn plan-btn-outline">Get Started</a>
     </div>
 
     <!-- PRO -->
@@ -575,7 +558,7 @@
 
     <div class="faq-item">
       <p class="faq-q">Can I use Cullit without AI?</p>
-      <p class="faq-a">Yes. The free tier uses template-based generation from your git history. No API key required.</p>
+      <p class="faq-a">Yes. Set your provider to <code style="background: var(--bg-card); padding: 0.15rem 0.4rem; border-radius: 4px;">none</code> to use template-based generation from your git history. No API key required. But the free tier also includes 3 AI generations per month &mdash; bring your own key and try it.</p>
     </div>
 
     <div class="faq-item">
@@ -697,7 +680,6 @@ function updateTeamCard() {
   document.getElementById('teamPrice').innerHTML = plan.price + ' <span class="period">/ mo</span>';
   document.getElementById('teamDesc').innerHTML = plan.desc;
   document.getElementById('teamSeats').textContent = plan.seats;
-  document.getElementById('teamCta').href = 'mailto:sales@cullit.io?subject=' + plan.subject;
   for (let i = 1; i <= 4; i++) {
     const li = document.getElementById('teamExtra' + i);
     if (i <= plan.extras.length) {

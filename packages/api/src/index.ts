@@ -26,7 +26,7 @@ import { handleDocs } from './docs.js';
 import {
   handleAuthRedirect, handleAuthCallback, handleAuthMe, handleAuthLogout,
   handleRotateApiKey, handleDeleteAccount, handleLicenseValidate, resolveUser, getEffectiveTier,
-  handleUpdateMe, updatePreferredProvider,
+  handleUpdateMe,
 } from './auth.js';
 import {
   addHistoryEntry, getHistory, getHistoryCount,
@@ -510,7 +510,7 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
     // Audience/tone gating — Pro+ only
     const hasCustomAudience = config.ai.audience && config.ai.audience !== 'developer';
     const hasCustomTone = config.ai.tone && config.ai.tone !== 'professional';
-    if ((hasCustomAudience || hasCustomTone) && (effectiveTier === 'free' || effectiveTier === 'basic')) {
+    if ((hasCustomAudience || hasCustomTone) && effectiveTier === 'free') {
       json(res, 403, {
         error: 'Audience and tone control requires a Pro plan or above',
         code: ErrorCode.BILLING_UPGRADE_REQUIRED,
@@ -518,25 +518,6 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
         upgrade: 'https://cullit.io/pricing',
       });
       return;
-    }
-
-    // Provider gating — Basic tier locked to one AI provider
-    const requestedProvider = config.ai.provider;
-    if (effectiveTier === 'basic' && requestedProvider !== 'none') {
-      if (!user.preferredProvider) {
-        // First AI generation — lock to this provider
-        await updatePreferredProvider(user.id, requestedProvider);
-        user.preferredProvider = requestedProvider;
-      } else if (requestedProvider !== user.preferredProvider) {
-        json(res, 403, {
-          error: `Basic plan is locked to ${user.preferredProvider}. Upgrade to Pro for all providers.`,
-          code: ErrorCode.BILLING_UPGRADE_REQUIRED,
-          tier: effectiveTier,
-          preferredProvider: user.preferredProvider,
-          upgrade: 'https://cullit.io/pricing',
-        });
-        return;
-      }
     }
 
     // Check cache
@@ -887,7 +868,7 @@ const server = createServer(async (req, res: CorsResponse) => {
       if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
       const body = await readJsonBody(req, res) as { plan?: string } | null;
       if (!body) return;
-      const validPlans = ['basic', 'pro', 'team-5', 'team-10', 'team-25'] as const;
+      const validPlans = ['pro', 'team-5', 'team-10', 'team-25'] as const;
       const plan = validPlans.includes(body.plan as typeof validPlans[number])
         ? (body.plan as typeof validPlans[number])
         : body.plan === 'team' ? 'team-5' as const  // legacy fallback

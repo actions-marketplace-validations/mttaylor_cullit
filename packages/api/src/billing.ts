@@ -2,7 +2,7 @@
  * Cullit Stripe Billing
  *
  * Handles:
- *   - Checkout session creation (Basic / Pro / Team 5/10/25 plans)
+ *   - Checkout session creation (Pro / Team 5/10/25 plans)
  *   - Webhook processing (subscription lifecycle)
  *   - Customer portal sessions
  *   - Tier sync (Stripe status → user tier in DB)
@@ -42,7 +42,6 @@ import { TEAM_PLAN_SEATS } from '@cullit/core';
 
 const STRIPE_SECRET_KEY = process.env['STRIPE_SECRET_KEY'] || '';
 const STRIPE_WEBHOOK_SECRET = process.env['STRIPE_WEBHOOK_SECRET'] || '';
-const STRIPE_BASIC_PRICE_ID = process.env['STRIPE_BASIC_PRICE_ID'] || '';
 const STRIPE_PRO_PRICE_ID = process.env['STRIPE_PRO_PRICE_ID'] || '';
 const STRIPE_TEAM_PRICE_ID = process.env['STRIPE_TEAM_PRICE_ID'] || '';
 const STRIPE_TEAM_5_PRICE_ID = process.env['STRIPE_TEAM_5_PRICE_ID'] || STRIPE_TEAM_PRICE_ID;
@@ -50,7 +49,6 @@ const STRIPE_TEAM_10_PRICE_ID = process.env['STRIPE_TEAM_10_PRICE_ID'] || '';
 const STRIPE_TEAM_25_PRICE_ID = process.env['STRIPE_TEAM_25_PRICE_ID'] || '';
 
 if (STRIPE_SECRET_KEY) {
-  if (!STRIPE_BASIC_PRICE_ID) log.warn('STRIPE_BASIC_PRICE_ID not set — Basic checkout will fail');
   if (!STRIPE_PRO_PRICE_ID) log.warn('STRIPE_PRO_PRICE_ID not set — Pro checkout will fail');
   if (!STRIPE_TEAM_5_PRICE_ID) log.warn('STRIPE_TEAM_5_PRICE_ID not set — Team 5 checkout will fail');
   if (!STRIPE_TEAM_10_PRICE_ID) log.warn('STRIPE_TEAM_10_PRICE_ID not set — Team 10 checkout will fail');
@@ -227,7 +225,6 @@ export function verifyWebhookSignature(payload: string, sigHeader: string): bool
 // --- Plan mapping (exported for testing) ---
 
 export function priceToPlan(priceId: string): string {
-  if (priceId === STRIPE_BASIC_PRICE_ID) return 'basic';
   if (priceId === STRIPE_PRO_PRICE_ID) return 'pro';
   if (priceId === STRIPE_TEAM_5_PRICE_ID) return 'team-5';
   if (priceId === STRIPE_TEAM_10_PRICE_ID) return 'team-10';
@@ -237,7 +234,6 @@ export function priceToPlan(priceId: string): string {
 }
 
 export function planToTier(plan: string): string {
-  if (plan === 'basic') return 'basic';
   if (plan === 'pro') return 'pro';
   if (plan === 'team' || plan.startsWith('team-')) return 'team';
   return 'free';
@@ -274,7 +270,7 @@ function buildSubscriptionRecord(
 
 export async function handleCheckout(
   userId: string,
-  plan: 'basic' | 'pro' | 'team-5' | 'team-10' | 'team-25',
+  plan: 'pro' | 'team-5' | 'team-10' | 'team-25',
   jsonFn: (res: ServerResponse, status: number, body: unknown) => void,
   res: ServerResponse,
 ): Promise<void> {
@@ -292,7 +288,6 @@ export async function handleCheckout(
   const priceId = plan === 'team-25' ? STRIPE_TEAM_25_PRICE_ID
     : plan === 'team-10' ? STRIPE_TEAM_10_PRICE_ID
     : plan === 'team-5' ? STRIPE_TEAM_5_PRICE_ID
-    : plan === 'basic' ? STRIPE_BASIC_PRICE_ID
     : STRIPE_PRO_PRICE_ID;
   if (!priceId) {
     jsonFn(res, 503, { error: `Price not configured for ${plan} plan` });

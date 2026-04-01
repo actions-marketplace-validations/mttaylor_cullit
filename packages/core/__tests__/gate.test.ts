@@ -57,7 +57,6 @@ describe('Gate — resolveLicense', () => {
 
 describe('Gate — access checks', () => {
   const freeLicense = { tier: 'free' as const, valid: true };
-  const basicLicense = { tier: 'basic' as const, valid: true };
   const proLicense = { tier: 'pro' as const, valid: true };
   const teamLicense = { tier: 'team' as const, valid: true };
   const invalidPro = { tier: 'pro' as const, valid: false };
@@ -66,13 +65,9 @@ describe('Gate — access checks', () => {
     expect(isProviderAllowed('none', freeLicense)).toBe(true);
   });
 
-  it('blocks "anthropic" on free tier', () => {
-    expect(isProviderAllowed('anthropic', freeLicense)).toBe(false);
-  });
-
-  it('allows any provider on basic', () => {
-    expect(isProviderAllowed('anthropic', basicLicense)).toBe(true);
-    expect(isProviderAllowed('openai', basicLicense)).toBe(true);
+  it('allows AI providers on free tier (BYOK)', () => {
+    expect(isProviderAllowed('anthropic', freeLicense)).toBe(true);
+    expect(isProviderAllowed('openai', freeLicense)).toBe(true);
   });
 
   it('allows any provider on pro', () => {
@@ -92,22 +87,6 @@ describe('Gate — access checks', () => {
   it('allows stdout/file publishers on free tier', () => {
     expect(isPublisherAllowed('stdout', freeLicense)).toBe(true);
     expect(isPublisherAllowed('file', freeLicense)).toBe(true);
-  });
-
-  it('allows stdout/file publishers on basic tier', () => {
-    expect(isPublisherAllowed('stdout', basicLicense)).toBe(true);
-    expect(isPublisherAllowed('file', basicLicense)).toBe(true);
-  });
-
-  it('allows slack/discord on basic tier', () => {
-    expect(isPublisherAllowed('slack', basicLicense)).toBe(true);
-    expect(isPublisherAllowed('discord', basicLicense)).toBe(true);
-  });
-
-  it('blocks confluence/notion/teams on basic tier (team-only)', () => {
-    expect(isPublisherAllowed('confluence', basicLicense)).toBe(false);
-    expect(isPublisherAllowed('notion', basicLicense)).toBe(false);
-    expect(isPublisherAllowed('teams', basicLicense)).toBe(false);
   });
 
   it('blocks slack/discord/teams on free tier', () => {
@@ -145,10 +124,6 @@ describe('Gate — access checks', () => {
     expect(isEnrichmentAllowed(freeLicense)).toBe(false);
   });
 
-  it('blocks enrichment on basic', () => {
-    expect(isEnrichmentAllowed(basicLicense)).toBe(false);
-  });
-
   it('allows enrichment on pro', () => {
     expect(isEnrichmentAllowed(proLicense)).toBe(true);
   });
@@ -159,10 +134,6 @@ describe('Gate — access checks', () => {
 
   it('blocks audience/tone on free tier', () => {
     expect(isAudienceToneAllowed(freeLicense)).toBe(false);
-  });
-
-  it('blocks audience/tone on basic tier', () => {
-    expect(isAudienceToneAllowed(basicLicense)).toBe(false);
   });
 
   it('allows audience/tone on pro tier', () => {
@@ -194,14 +165,8 @@ describe('Gate — access checks', () => {
 describe('Gate — getTierLimits', () => {
   it('returns free tier limits', () => {
     const limits = getTierLimits('free');
-    expect(limits.generationsPerMonth).toBe(5);
+    expect(limits.generationsPerMonth).toBe(3);
     expect(limits.maxProjects).toBe(3);
-  });
-
-  it('returns basic tier limits', () => {
-    const limits = getTierLimits('basic');
-    expect(limits.generationsPerMonth).toBe(50);
-    expect(limits.maxProjects).toBe(10);
   });
 
   it('returns pro tier limits', () => {
@@ -224,7 +189,7 @@ describe('Gate — getTierLimits', () => {
 
   it('falls back to free for unknown tier', () => {
     const limits = getTierLimits('nonexistent');
-    expect(limits.generationsPerMonth).toBe(5);
+    expect(limits.generationsPerMonth).toBe(3);
     expect(limits.maxProjects).toBe(3);
   });
 });
@@ -279,14 +244,6 @@ describe('Gate — getFeatureGating', () => {
     expect(gating.hosted_changelog).toBe(false);
     expect(gating.sso).toBe(false);
     expect(gating.audit_logs).toBe(false);
-  });
-
-  it('returns hosted changelog blocked for basic tier', () => {
-    const gating = getFeatureGating('basic');
-    expect(gating.hosted_changelog).toBe(false);
-    expect(gating.drafts).toBe(false);
-    expect(gating.approvals).toBe(false);
-    expect(gating.sso).toBe(false);
   });
 
   it('returns hosted changelog enabled for pro tier', () => {
