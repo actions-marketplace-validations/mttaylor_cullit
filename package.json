@@ -5,7 +5,7 @@
   "description": "Cull the noise from your releases. AI-powered release notes.",
   "author": "Cullit <matt@cullit.io>",
   "license": "SEE LICENSE IN LICENSE",
-  "packageManager": "pnpm@10.32.1",
+  "packageManager": "pnpm@10.33.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/mttaylor/cullit"
