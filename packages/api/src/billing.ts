@@ -31,7 +31,7 @@ import {
   dbCheckWebhookProcessed, dbMarkWebhookProcessed,
   dbCreateTeamApiKey, dbGetActiveTeamApiKeyCount,
   dbRevokeAllOrgTeamApiKeys, dbRevokeExcessTeamApiKeys,
-  hashApiKey,
+  hashApiKey, dbRecordAuditEvent,
 } from './db.js';
 import { getEffectiveTier, getUser, generateApiKey } from './auth.js';
 import { createOrg } from './auth.js';
@@ -333,6 +333,8 @@ export async function handleCheckout(
     }
   }
 
+  // Idempotency key prevents duplicate checkout sessions on network retry
+  const idempotencyKey = `checkout_${userId}_${plan}_${Math.floor(Date.now() / 60_000)}`;
   const params: Record<string, string> = {
     'mode': 'subscription',
     'line_items[0][price]': priceId,
@@ -342,6 +344,7 @@ export async function handleCheckout(
     'client_reference_id': userId,
     'metadata[user_id]': userId,
     'metadata[plan]': plan,
+    'Idempotency-Key': idempotencyKey,
   };
 
   // If user already has a Stripe customer ID, reuse it
@@ -468,6 +471,12 @@ export async function handleStripeWebhook(
   }
 
   try {
+    // Mark processed BEFORE handling to close the race window where a duplicate
+    // webhook could slip through during processing. If handling fails, the
+    // catch block returns 500 so Stripe will retry (and the idempotent handler
+    // will silently skip the already-processed event).
+    await markWebhookProcessed(event.id, event.type);
+
     switch (event.type) {
       case 'checkout.session.completed':
         await handleCheckoutComplete(event.data?.object);
@@ -483,7 +492,6 @@ export async function handleStripeWebhook(
         break;
     }
 
-    await markWebhookProcessed(event.id, event.type);
     jsonFn(res, 200, { received: true });
   } catch (err) {
     log.error({ err: (err as Error).message }, 'Stripe webhook error');
@@ -524,19 +532,38 @@ async function handleCheckoutComplete(sessionPayload: unknown): Promise<void> {
   if (seats > 0) {
     // Retry up to 3 times — user was already charged, keys MUST be provisioned
     let attempt = 0;
+    let provisioned = false;
     while (attempt < 3) {
       try {
         await provisionTeamKeys(userId, plan, seats);
+        provisioned = true;
         break;
       } catch (err) {
         attempt++;
-        if (attempt >= 3) {
-          log.error({ err: (err as Error).message, userId, plan, seats, attempt }, 'Failed to provision team API keys after 3 attempts — user was charged but keys not created. Manual intervention required.');
-        } else {
+        if (attempt < 3) {
           log.warn({ err: (err as Error).message, userId, plan, seats, attempt }, `Team key provisioning attempt ${attempt} failed, retrying...`);
           await new Promise(r => setTimeout(r, 1000 * attempt));
         }
       }
+    }
+
+    if (!provisioned) {
+      log.error({ userId, plan, seats }, 'Failed to provision team API keys after 3 attempts — recording for recovery');
+      // Record audit event so the failure is durable and queryable for recovery
+      await dbRecordAuditEvent({
+        userId, action: 'team_key_provisioning_failed',
+        target: subscriptionId,
+        metadata: { plan, seats, attempts: 3 },
+      });
+      // Schedule one final async retry after 30s — last chance before manual intervention
+      setTimeout(async () => {
+        try {
+          await provisionTeamKeys(userId, plan, seats);
+          log.info({ userId, plan, seats }, 'Deferred team key provisioning succeeded');
+        } catch (err) {
+          log.error({ err: (err as Error).message, userId, plan, seats }, 'Deferred team key provisioning also failed — manual intervention required');
+        }
+      }, 30_000);
     }
   }
 

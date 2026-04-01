@@ -30,7 +30,7 @@ inputs:
     required: false
     default: 'professional'
   source:
-    description: 'Source type: local, jira, linear, gitlab, bitbucket, or multi-repo'
+    description: 'Source type: local (free), jira (pro), linear (pro), gitlab (pro), bitbucket (pro), or multi-repo (pro). Non-local sources require a CULLIT_API_KEY.'
     required: false
     default: 'local'
   format:

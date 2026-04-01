@@ -19,7 +19,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { execFileSync } from 'child_process';
-import { mkdtempSync, rmSync } from 'fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { runPipeline, VERSION, DEFAULT_CATEGORIES, createRateLimiter } from '@cullit/core';
@@ -215,11 +215,16 @@ async function getPreviousTag(token: string, owner: string, repo: string, curren
 
 function cloneRepo(owner: string, repo: string, token: string): string {
   const tempDir = mkdtempSync(join(tmpdir(), 'cullit-app-'));
-  const cloneUrl = `https://x-access-token:${token}@github.com/${owner}/${repo}.git`;
+  const cloneUrl = `https://github.com/${owner}/${repo}.git`;
+  // Use GIT_ASKPASS to supply the token instead of embedding it in the URL.
+  // This avoids leaking credentials in process listings (/proc/*/cmdline).
+  const askPassScript = join(tempDir, '.git-askpass');
+  writeFileSync(askPassScript, `#!/bin/sh\necho "${token}"`, { mode: 0o700 });
   execFileSync('git', ['clone', '--depth=500', '--single-branch', cloneUrl, tempDir], {
     encoding: 'utf-8',
     timeout: 120_000,
     stdio: 'pipe',
+    env: { ...process.env, GIT_ASKPASS: askPassScript, GIT_TERMINAL_PROMPT: '0' },
   });
   return tempDir;
 }

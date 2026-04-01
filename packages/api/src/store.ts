@@ -71,6 +71,22 @@ export function loadHistoryStore(): void {
       const data = JSON.parse(readFileSync(HISTORY_FILE, 'utf-8'));
       if (data.history) store.history = data.history;
       if (data.dailyUsage) store.dailyUsage = data.dailyUsage;
+
+      // Enforce 90-day retention on history entries (matches TERMS.md)
+      const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+      let pruned = false;
+      for (const userId of Object.keys(store.history)) {
+        const before = store.history[userId].length;
+        store.history[userId] = store.history[userId].filter(e => e.createdAt >= cutoff);
+        if (store.history[userId].length === 0) {
+          delete store.history[userId];
+          pruned = true;
+        } else if (store.history[userId].length < before) {
+          pruned = true;
+        }
+      }
+      if (pruned) saveHistoryStore();
+
       const userCount = Object.keys(store.history).length;
       log.info({ users: userCount }, 'Loaded history store');
     }
