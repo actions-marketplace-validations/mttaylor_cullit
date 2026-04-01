@@ -17,7 +17,7 @@ GitHub OAuth users and API keys.
 | `name` | TEXT | Display name |
 | `email` | TEXT | Email address |
 | `avatar_url` | TEXT | Profile avatar |
-| `tier` | TEXT | `free`, `basic`, `pro`, `team`, `enterprise` |
+| `tier` | TEXT | `free`, `pro`, `team`, `enterprise` (legacy `basic` maps to `free`) |
 | `org_id` | TEXT | FK → `orgs.id` (nullable) |
 | `role` | TEXT | `member` or `admin` |
 | `api_key` | TEXT UNIQUE | CULLIT_API_KEY value |
@@ -135,7 +135,7 @@ Stripe billing state.
 | `user_id` | TEXT | FK → `users.id` |
 | `stripe_subscription_id` | TEXT UNIQUE | Stripe subscription ID |
 | `stripe_customer_id` | TEXT | Stripe customer ID |
-| `plan` | TEXT | `free`, `basic`, `pro`, `team` |
+| `plan` | TEXT | `free`, `pro`, `team-5`, `team-10`, `team-25` (legacy `basic` maps to `free`) |
 | `status` | TEXT | `active`, `past_due`, `canceled` |
 | `current_period_start` | TIMESTAMPTZ | Billing period start |
 | `current_period_end` | TIMESTAMPTZ | Billing period end |

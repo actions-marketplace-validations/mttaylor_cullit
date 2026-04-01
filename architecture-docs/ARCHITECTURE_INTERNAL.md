@@ -102,11 +102,13 @@ flowchart TD
 
 ### Tier Expectations
 
-- Free: local source + template provider + stdout/file publishers.
-- Basic: Single AI provider + web dashboard.
-- Pro: AI providers + premium enrichment + premium publishers + GitHub App.
-- Team (5/10/25 seats): Pro capabilities plus team features (drafts, team publishers, org management, team API keys). Team plans are available in three sizes: Team 5 ($44.99/mo), Team 10 ($89/mo), Team 25 ($209/mo). Each seat receives a managed API key that can be labeled, assigned, rotated, and revoked by org owners/admins.
-- Enterprise: Team capabilities plus enterprise features (for example, SSO/audit logs where enabled).
+- Free: local source + template provider + stdout/file publishers. 3 AI gens/month (BYOK).
+- Pro: AI providers + premium enrichment + premium publishers + GitHub App. 500 gens/month, 100 projects.
+- Team 5/10: Pro capabilities plus team features (drafts, team publishers, org management, team API keys). 2,000 gens/month, 250 projects. Team 5 ($44.99/mo, 5 seats), Team 10 ($89/mo, 10 seats).
+- Team 25 ($209/mo, 25 seats): Everything in Team 10, plus branded widget, project templates, audit logs. 5,000 gens/month, 500 projects.
+- Enterprise: All Team 25 capabilities plus SSO/SAML, self-hosted/on-prem, unlimited gens/projects.
+
+All paid plans offer annual billing at 15% discount.
 
 ## API and Dashboard Flow
 
