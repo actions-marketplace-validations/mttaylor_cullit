@@ -270,6 +270,66 @@
     color: var(--accent);
   }
 
+  /* BILLING TOGGLE */
+  .billing-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+  }
+  .billing-toggle label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: color 0.2s;
+    user-select: none;
+  }
+  .billing-toggle label.active {
+    color: var(--text-bright);
+  }
+  .toggle-track {
+    width: 48px;
+    height: 26px;
+    background: var(--border);
+    border-radius: 13px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s;
+  }
+  .toggle-track.on {
+    background: var(--accent);
+  }
+  .toggle-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    background: var(--bg);
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+  .toggle-track.on .toggle-thumb {
+    transform: translateX(22px);
+  }
+  .billing-save-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    background: rgba(94, 234, 212, 0.15);
+    color: var(--accent);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+  }
+  .plan-annual-note {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: -0.1rem;
+    margin-bottom: 0.25rem;
+  }
+
   /* Team selector dropdown */
   .team-select {
     appearance: none;
@@ -441,6 +501,15 @@
     <p>Start free. Upgrade when you need AI synthesis, model choice, richer integrations, or shared release workflows.</p>
   </header>
 
+  <div class="billing-toggle">
+    <label id="lblMonthly" class="active" onclick="setBilling(false)">Monthly</label>
+    <div class="toggle-track" id="billingToggle" onclick="setBilling(!window._annual)" role="switch" aria-checked="false" tabindex="0">
+      <div class="toggle-thumb"></div>
+    </div>
+    <label id="lblAnnual" onclick="setBilling(true)">Annual</label>
+    <span class="billing-save-badge">Save 15%</span>
+  </div>
+
   <section style="max-width:900px;margin:0 auto 2rem;padding:1rem 1.25rem;border:1px solid var(--border);border-radius:10px;background:var(--bg-card)">
     <h2 style="font-family:'Chakra Petch',sans-serif;font-size:1.2rem;margin-bottom:0.5rem">Upgrade in 4 steps</h2>
     <ol style="margin:0;padding-left:1.2rem;color:var(--text-dim);line-height:1.7">      <li>Sign in with <strong>GitHub</strong> &mdash; no email or password required.</li>      <li>Choose Pro or Team below and complete checkout.</li>
@@ -488,7 +557,8 @@
     <!-- PRO -->
     <div class="pricing-card featured">
       <div class="plan-name">Pro</div>
-      <div class="plan-price">$9 <span class="period">/ mo</span></div>
+      <div class="plan-price" id="proPrice">$9 <span class="period">/ mo</span></div>
+      <p class="plan-annual-note" id="proAnnualNote" style="display:none"></p>
       <p class="plan-desc">AI-generated notes with model choice, audience control, and enrichment.</p>
       <ul class="plan-features">
         <li><span class="check">&#10003;</span> 500 generations / month</li>
@@ -513,11 +583,12 @@
         <option value="team-25">25 seats</option>
       </select>
       <div class="plan-price" id="teamPrice">$44.99 <span class="period">/ mo</span></div>
+      <p class="plan-annual-note" id="teamAnnualNote" style="display:none"></p>
       <p class="plan-desc" id="teamDesc">5 seats &mdash; shared AI release workflow for small teams.</p>
       <ul class="plan-features" id="teamFeatures">
         <li><span class="check">&#10003;</span> <span id="teamSeats">5</span> API keys / seats</li>
-        <li><span class="check">&#10003;</span> 2,000 generations / month</li>
-        <li><span class="check">&#10003;</span> 250 projects</li>
+        <li><span class="check">&#10003;</span> <span id="teamGens">2,000</span> generations / month</li>
+        <li><span class="check">&#10003;</span> <span id="teamProjects">250</span> projects</li>
         <li><span class="check">&#10003;</span> All Pro features</li>
         <li><span class="check">&#10003;</span> <span id="teamExtra1">Multi-repo collectors</span></li>
         <li><span class="check">&#10003;</span> <span id="teamExtra2">Team management dashboard</span></li>
@@ -652,34 +723,96 @@ trackEvent('pricing_viewed');
 const TEAM_PLANS = {
   'team-5': {
     price: '$44.99',
+    annualPrice: '$38.24',
+    annualTotal: '$458.88',
     seats: '5',
+    gens: '2,000',
+    projects: '250',
     desc: '5 seats &mdash; shared AI release workflow for small teams.',
     extras: ['Multi-repo collectors', 'Team management dashboard'],
     subject: 'Cullit%20Team%205',
   },
   'team-10': {
     price: '$89',
+    annualPrice: '$75.65',
+    annualTotal: '$907.80',
     seats: '10',
+    gens: '2,000',
+    projects: '250',
     desc: '10 seats &mdash; multi-source collectors with priority support.',
     extras: ['GitLab &amp; Bitbucket collectors', 'Confluence &amp; Notion publishing', 'Priority support'],
     subject: 'Cullit%20Team%2010',
   },
   'team-25': {
     price: '$209',
+    annualPrice: '$177.65',
+    annualTotal: '$2,131.80',
     seats: '25',
-    desc: '25 seats &mdash; full platform access with team usage dashboard.',
-    extras: ['GitLab &amp; Bitbucket collectors', 'Confluence &amp; Notion publishing', 'Team usage dashboard', 'Priority support'],
+    gens: '5,000',
+    projects: '500',
+    desc: '25 seats &mdash; premium platform with audit logs, branding &amp; templates.',
+    extras: ['Branded changelog widget', 'Project templates', 'Audit logs', 'Team usage analytics'],
     subject: 'Cullit%20Team%2025',
   },
 };
+
+const PRO_PLAN = {
+  price: '$9',
+  annualPrice: '$7.65',
+  annualTotal: '$91.80',
+};
+
+window._annual = false;
+
+function setBilling(annual) {
+  window._annual = annual;
+  const track = document.getElementById('billingToggle');
+  const lblM = document.getElementById('lblMonthly');
+  const lblA = document.getElementById('lblAnnual');
+  track.classList.toggle('on', annual);
+  track.setAttribute('aria-checked', String(annual));
+  lblM.classList.toggle('active', !annual);
+  lblA.classList.toggle('active', annual);
+
+  // Update Pro card
+  const proPrice = document.getElementById('proPrice');
+  const proNote = document.getElementById('proAnnualNote');
+  if (annual) {
+    proPrice.innerHTML = PRO_PLAN.annualPrice + ' <span class="period">/ mo</span>';
+    proNote.textContent = 'Billed as ' + PRO_PLAN.annualTotal + '/yr';
+    proNote.style.display = '';
+  } else {
+    proPrice.innerHTML = PRO_PLAN.price + ' <span class="period">/ mo</span>';
+    proNote.style.display = 'none';
+  }
+
+  // Update Team card
+  updateTeamCard();
+  trackEvent('billing_toggle', { annual });
+}
+
+document.getElementById('billingToggle').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setBilling(!window._annual); }
+});
 
 function updateTeamCard() {
   const sel = document.getElementById('teamSelect');
   const plan = TEAM_PLANS[sel.value];
   if (!plan) return;
-  document.getElementById('teamPrice').innerHTML = plan.price + ' <span class="period">/ mo</span>';
+  const annual = window._annual;
+  const price = annual ? plan.annualPrice : plan.price;
+  document.getElementById('teamPrice').innerHTML = price + ' <span class="period">/ mo</span>';
+  const teamNote = document.getElementById('teamAnnualNote');
+  if (annual) {
+    teamNote.textContent = 'Billed as ' + plan.annualTotal + '/yr';
+    teamNote.style.display = '';
+  } else {
+    teamNote.style.display = 'none';
+  }
   document.getElementById('teamDesc').innerHTML = plan.desc;
   document.getElementById('teamSeats').textContent = plan.seats;
+  document.getElementById('teamGens').textContent = plan.gens;
+  document.getElementById('teamProjects').textContent = plan.projects;
   for (let i = 1; i <= 4; i++) {
     const li = document.getElementById('teamExtra' + i);
     if (i <= plan.extras.length) {
@@ -695,30 +828,31 @@ updateTeamCard();
 
 async function startCheckout(plan, e) {
   e.preventDefault();
-  trackEvent('checkout_started', { plan });
+  const annual = window._annual;
+  trackEvent('checkout_started', { plan, annual });
   try {
     const res = await fetch(getApiUrl() + '/v1/billing/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ plan }),
+      body: JSON.stringify({ plan, annual }),
     });
     if (res.status === 401) {
-      trackEvent('checkout_failed', { plan, reason: 'unauthenticated' });
+      trackEvent('checkout_failed', { plan, annual, reason: 'unauthenticated' });
       // Send to login, which will redirect back to dashboard with ?checkout= to resume
-      window.location.href = getApiUrl() + '/auth/login?returnTo=' + encodeURIComponent('/dashboard.html?checkout=' + plan);
+      window.location.href = getApiUrl() + '/auth/login?returnTo=' + encodeURIComponent('/dashboard.html?checkout=' + plan + (annual ? '&annual=1' : ''));
       return;
     }
     const data = await res.json();
     if (data.url) {
-      trackEvent('checkout_redirected', { plan });
+      trackEvent('checkout_redirected', { plan, annual });
       window.location.href = data.url;
     } else {
-      trackEvent('checkout_failed', { plan, reason: data.error || 'unknown' });
+      trackEvent('checkout_failed', { plan, annual, reason: data.error || 'unknown' });
       alert(data.error || 'Could not start checkout. Please try again.');
     }
   } catch {
-    trackEvent('checkout_failed', { plan, reason: 'network_error' });
+    trackEvent('checkout_failed', { plan, annual, reason: 'network_error' });
     alert('Could not reach billing service at ' + getApiUrl() + '. Check your API URL/server and try again.');
   }
 }

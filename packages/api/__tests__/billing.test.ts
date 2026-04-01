@@ -23,7 +23,7 @@ describe('Billing Module', () => {
         captured = { status, body };
       };
       const mockRes = {} as any;
-      await handleCheckout('user-123', 'pro', mockJson, mockRes);
+      await handleCheckout('user-123', 'pro', false, mockJson, mockRes);
       expect(captured).not.toBeNull();
       expect(captured!.status).toBe(503);
     });

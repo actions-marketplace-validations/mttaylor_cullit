@@ -4,6 +4,7 @@
  * Free tier (no key):  3 AI gens/month, all providers (BYOK), publish to stdout/file only
  * Pro tier (with key): 500 gens/month, all providers, all publishers, enrichments, audience/tone
  * Team tier:           2000 gens/month, team management, advanced publishers
+ * Team 25:             5000 gens/month, 500 projects, branded widget, project templates, audit logs
  * Enterprise tier:     unlimited everything
  *
  * validateLicense() performs async remote validation with caching.
@@ -197,11 +198,24 @@ const TIER_LIMITS: Record<string, UsageLimits> = {
   enterprise: { generationsPerMonth: Infinity, maxProjects: Infinity },
 };
 
+/** Plan-specific limit overrides (e.g. team-25 gets higher limits than other team plans). */
+const PLAN_LIMITS: Record<string, UsageLimits> = {
+  'team-25': { generationsPerMonth: 5000, maxProjects: 500 },
+};
+
 /**
  * Get usage limits for a license tier.
  */
 export function getTierLimits(tier: string): UsageLimits {
   return TIER_LIMITS[tier] || TIER_LIMITS.free;
+}
+
+/**
+ * Get usage limits for a specific plan, falling back to tier defaults.
+ * Use when the plan is known (API context); use getTierLimits when only tier is known (CLI).
+ */
+export function getPlanLimits(plan: string, tier: string): UsageLimits {
+  return PLAN_LIMITS[plan] || TIER_LIMITS[tier] || TIER_LIMITS.free;
 }
 
 // --- Feature gating by tier ---
@@ -222,13 +236,23 @@ const FEATURE_TIERS: Record<TeamFeature, Set<string>> = {
   drafts:             new Set(['team', 'enterprise']),
   approvals:          new Set(['team', 'enterprise']),
   shared_history:     new Set(['team', 'enterprise']),
-  project_templates:  new Set(['team', 'enterprise']),
+  project_templates:  new Set(['enterprise']),       // plan-gated: team-25 via PLAN_FEATURES
   hosted_changelog:   new Set(['pro', 'team', 'enterprise']),
-  branded_widget:     new Set(['team', 'enterprise']),
+  branded_widget:     new Set(['enterprise']),        // plan-gated: team-25 via PLAN_FEATURES
   team_publishers:    new Set(['team', 'enterprise']),
   org_settings:       new Set(['team', 'enterprise']),
-  audit_logs:         new Set(['enterprise']),
+  audit_logs:         new Set(['enterprise']),        // plan-gated: team-25 via PLAN_FEATURES
   sso:                new Set(['enterprise']),
+};
+
+/**
+ * Plan-specific feature overrides — features gated to specific plans within a tier.
+ * Enterprise always bypasses these checks.
+ */
+const PLAN_FEATURES: Record<string, Set<string>> = {
+  branded_widget:    new Set(['team-25']),
+  project_templates: new Set(['team-25']),
+  audit_logs:        new Set(['team-25']),
 };
 
 /**
@@ -238,6 +262,20 @@ export function isFeatureAllowed(feature: TeamFeature, tier: string, valid: bool
   if (!valid) return false;
   const allowed = FEATURE_TIERS[feature];
   return allowed ? allowed.has(tier) : false;
+}
+
+/**
+ * Check whether a specific plan grants access to a feature.
+ * Use when the plan is known (API context); enterprise always passes.
+ * Falls back to tier-level check for features without plan restrictions.
+ */
+export function isPlanFeatureAllowed(feature: TeamFeature, plan: string, tier: string, valid: boolean = true): boolean {
+  if (!valid) return false;
+  if (tier === 'enterprise') return true;
+  const planSet = PLAN_FEATURES[feature];
+  if (planSet) return planSet.has(plan);
+  const tierSet = FEATURE_TIERS[feature];
+  return tierSet ? tierSet.has(tier) : false;
 }
 
 /**

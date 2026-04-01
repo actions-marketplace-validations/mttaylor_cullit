@@ -239,7 +239,10 @@ async function runGenerate(from: string, to: string, opts: Record<string, string
   // Show license tier
   const license = resolveLicense();
   if (logLevel !== 'quiet') {
-    const tierLabel = license.tier === 'pro' ? '🔑 Pro' : '🆓 Free';
+    const tierLabel = license.tier === 'enterprise' ? '🏢 Enterprise'
+      : license.tier === 'team' ? '👥 Team'
+      : license.tier === 'pro' ? '🔑 Pro'
+      : '🆓 Free';
     logger.info(`» License: ${tierLabel}`);
   }
 

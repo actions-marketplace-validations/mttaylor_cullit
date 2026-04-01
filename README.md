@@ -28,7 +28,7 @@ npm install -D cullit
 ## Distribution Model
 
 - Public npm package `cullit`: local git, template generation with `--provider none`, stdout/file output
-- Private registry package `@cullit/licensed`: paid tiers (Basic, Pro, Team 5/10/25, Enterprise) with AI providers, Jira/Linear enrichment, premium publishers, dashboard, API, GitHub App, and private deployment flows
+- Private registry package `@cullit/licensed`: paid tiers (Pro, Team 5/10/25, Enterprise) with AI providers, Jira/Linear enrichment, premium publishers, dashboard, API, GitHub App, and private deployment flows
 - npm is the delivery channel for the CLI runtime, not the paid entitlement layer
 
 ## Quick Start
@@ -283,7 +283,7 @@ docker compose up api
 | Package | Description |
 |---------|-------------|
 | [`cullit`](https://www.npmjs.com/package/cullit) | Public CLI installer — local/template workflow with `--provider none` |
-| `@cullit/licensed` | Private registry package for paid tiers (Basic, Pro, Team, Enterprise) |
+| `@cullit/licensed` | Private registry package for paid tiers (Pro, Team, Enterprise) |
 | [`@cullit/core`](https://www.npmjs.com/package/@cullit/core) | Core engine — pipeline, generators, publishers |
 | [`@cullit/config`](https://www.npmjs.com/package/@cullit/config) | Config loader — YAML parsing with env var resolution |
 | `@cullit/api` | REST API server (private) — OpenAPI 3.1, rate limiting, pipeline cache |
@@ -391,11 +391,14 @@ jira:
 | `CULLIT_BASE_URL` | Public base URL for OAuth callbacks |
 | `STRIPE_SECRET_KEY` | Stripe billing API key |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature verification |
-| `STRIPE_BASIC_PRICE_ID` | Stripe price id for Basic plan |
 | `STRIPE_PRO_PRICE_ID` | Stripe price id for Pro plan |
+| `STRIPE_PRO_ANNUAL_PRICE_ID` | Stripe price id for Pro annual plan (15% off) |
 | `STRIPE_TEAM_5_PRICE_ID` | Stripe price id for Team 5 plan ($44.99/mo, 5 seats) |
+| `STRIPE_TEAM_5_ANNUAL_PRICE_ID` | Stripe price id for Team 5 annual plan (15% off) |
 | `STRIPE_TEAM_10_PRICE_ID` | Stripe price id for Team 10 plan ($89/mo, 10 seats) |
+| `STRIPE_TEAM_10_ANNUAL_PRICE_ID` | Stripe price id for Team 10 annual plan (15% off) |
 | `STRIPE_TEAM_25_PRICE_ID` | Stripe price id for Team 25 plan ($209/mo, 25 seats) |
+| `STRIPE_TEAM_25_ANNUAL_PRICE_ID` | Stripe price id for Team 25 annual plan (15% off) |
 | `RESEND_API_KEY` | Transactional email delivery |
 
 ## API Endpoints

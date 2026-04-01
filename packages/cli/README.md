@@ -46,7 +46,7 @@ cullit generate --from v1.8.0 --provider none --template customer-facing
 ## Licensing
 
 - Public npm package: free local/template workflow only
-- Paid tiers (Basic, Pro, Team, Enterprise): delivered through the private package `@cullit/licensed`
+- Paid tiers (Pro, Team, Enterprise): delivered through the private package `@cullit/licensed`
 - `CULLIT_API_KEY`: used by licensed hosted/private Cullit surfaces
 - Need Pro or Team access: https://cullit.io/pricing
 

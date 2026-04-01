@@ -2913,7 +2913,7 @@ async function loadBilling() {
     if (res.ok) {
       const data = await res.json();
       const used = data.monthlyGenerations || 0;
-      const limit = TIER_LIMITS[tier] || 5;
+      const limit = TIER_LIMITS[tier] || 3;
       const pct = limit === Infinity ? 0 : Math.min(100, Math.round((used / limit) * 100));
 
       document.getElementById('usageCount').textContent = used.toLocaleString();

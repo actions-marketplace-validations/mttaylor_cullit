@@ -12,9 +12,13 @@
  *   STRIPE_SECRET_KEY            — Stripe API secret key (sk_test_... or sk_live_...)
  *   STRIPE_WEBHOOK_SECRET        — Webhook endpoint signing secret (whsec_...)
  *   STRIPE_PRO_PRICE_ID          — Price ID for Pro plan ($9/mo)
+ *   STRIPE_PRO_ANNUAL_PRICE_ID   — Price ID for Pro annual plan (~$91.80/yr, 15% off)
  *   STRIPE_TEAM_5_PRICE_ID       — Price ID for Team 5 plan ($44.99/mo, 5 seats)
+ *   STRIPE_TEAM_5_ANNUAL_PRICE_ID  — Price ID for Team 5 annual plan (~$458.90/yr, 15% off)
  *   STRIPE_TEAM_10_PRICE_ID      — Price ID for Team 10 plan ($89/mo, 10 seats)
+ *   STRIPE_TEAM_10_ANNUAL_PRICE_ID — Price ID for Team 10 annual plan (~$907.80/yr, 15% off)
  *   STRIPE_TEAM_25_PRICE_ID      — Price ID for Team 25 plan ($209/mo, 25 seats)
+ *   STRIPE_TEAM_25_ANNUAL_PRICE_ID — Price ID for Team 25 annual plan (~$2131.80/yr, 15% off)
  *   CULLIT_BASE_URL              — Public base URL for success/cancel redirects
  *
  * NOTE: We use Stripe's REST API directly instead of the SDK
@@ -42,11 +46,17 @@ import { TEAM_PLAN_SEATS } from '@cullit/core';
 
 const STRIPE_SECRET_KEY = process.env['STRIPE_SECRET_KEY'] || '';
 const STRIPE_WEBHOOK_SECRET = process.env['STRIPE_WEBHOOK_SECRET'] || '';
+// Monthly price IDs
 const STRIPE_PRO_PRICE_ID = process.env['STRIPE_PRO_PRICE_ID'] || '';
 const STRIPE_TEAM_PRICE_ID = process.env['STRIPE_TEAM_PRICE_ID'] || '';
 const STRIPE_TEAM_5_PRICE_ID = process.env['STRIPE_TEAM_5_PRICE_ID'] || STRIPE_TEAM_PRICE_ID;
 const STRIPE_TEAM_10_PRICE_ID = process.env['STRIPE_TEAM_10_PRICE_ID'] || '';
 const STRIPE_TEAM_25_PRICE_ID = process.env['STRIPE_TEAM_25_PRICE_ID'] || '';
+// Annual price IDs (15% discount, billed yearly)
+const STRIPE_PRO_ANNUAL_PRICE_ID = process.env['STRIPE_PRO_ANNUAL_PRICE_ID'] || '';
+const STRIPE_TEAM_5_ANNUAL_PRICE_ID = process.env['STRIPE_TEAM_5_ANNUAL_PRICE_ID'] || '';
+const STRIPE_TEAM_10_ANNUAL_PRICE_ID = process.env['STRIPE_TEAM_10_ANNUAL_PRICE_ID'] || '';
+const STRIPE_TEAM_25_ANNUAL_PRICE_ID = process.env['STRIPE_TEAM_25_ANNUAL_PRICE_ID'] || '';
 
 if (STRIPE_SECRET_KEY) {
   if (!STRIPE_PRO_PRICE_ID) log.warn('STRIPE_PRO_PRICE_ID not set — Pro checkout will fail');
@@ -225,10 +235,10 @@ export function verifyWebhookSignature(payload: string, sigHeader: string): bool
 // --- Plan mapping (exported for testing) ---
 
 export function priceToPlan(priceId: string): string {
-  if (priceId === STRIPE_PRO_PRICE_ID) return 'pro';
-  if (priceId === STRIPE_TEAM_5_PRICE_ID) return 'team-5';
-  if (priceId === STRIPE_TEAM_10_PRICE_ID) return 'team-10';
-  if (priceId === STRIPE_TEAM_25_PRICE_ID) return 'team-25';
+  if (priceId === STRIPE_PRO_PRICE_ID || priceId === STRIPE_PRO_ANNUAL_PRICE_ID) return 'pro';
+  if (priceId === STRIPE_TEAM_5_PRICE_ID || priceId === STRIPE_TEAM_5_ANNUAL_PRICE_ID) return 'team-5';
+  if (priceId === STRIPE_TEAM_10_PRICE_ID || priceId === STRIPE_TEAM_10_ANNUAL_PRICE_ID) return 'team-10';
+  if (priceId === STRIPE_TEAM_25_PRICE_ID || priceId === STRIPE_TEAM_25_ANNUAL_PRICE_ID) return 'team-25';
   if (priceId === STRIPE_TEAM_PRICE_ID) return 'team-5'; // legacy fallback
   return 'free';
 }
@@ -236,7 +246,7 @@ export function priceToPlan(priceId: string): string {
 export function planToTier(plan: string): string {
   if (plan === 'pro') return 'pro';
   if (plan === 'team' || plan.startsWith('team-')) return 'team';
-  return 'free';
+  return 'free'; // includes legacy 'basic' plan — maps to free tier
 }
 
 export function planToSeats(plan: string): number {
@@ -271,6 +281,7 @@ function buildSubscriptionRecord(
 export async function handleCheckout(
   userId: string,
   plan: 'pro' | 'team-5' | 'team-10' | 'team-25',
+  annual: boolean,
   jsonFn: (res: ServerResponse, status: number, body: unknown) => void,
   res: ServerResponse,
 ): Promise<void> {
@@ -285,10 +296,16 @@ export async function handleCheckout(
     return;
   }
 
-  const priceId = plan === 'team-25' ? STRIPE_TEAM_25_PRICE_ID
+  // Resolve price ID — prefer annual if requested and configured, fall back to monthly
+  const monthlyPriceId = plan === 'team-25' ? STRIPE_TEAM_25_PRICE_ID
     : plan === 'team-10' ? STRIPE_TEAM_10_PRICE_ID
     : plan === 'team-5' ? STRIPE_TEAM_5_PRICE_ID
     : STRIPE_PRO_PRICE_ID;
+  const annualPriceId = plan === 'team-25' ? STRIPE_TEAM_25_ANNUAL_PRICE_ID
+    : plan === 'team-10' ? STRIPE_TEAM_10_ANNUAL_PRICE_ID
+    : plan === 'team-5' ? STRIPE_TEAM_5_ANNUAL_PRICE_ID
+    : STRIPE_PRO_ANNUAL_PRICE_ID;
+  const priceId = (annual && annualPriceId) ? annualPriceId : monthlyPriceId;
   if (!priceId) {
     jsonFn(res, 503, { error: `Price not configured for ${plan} plan` });
     return;

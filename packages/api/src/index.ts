@@ -866,14 +866,15 @@ const server = createServer(async (req, res: CorsResponse) => {
     } else if (path === '/v1/billing/checkout' && req.method === 'POST') {
       const user = await resolveUser(req);
       if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-      const body = await readJsonBody(req, res) as { plan?: string } | null;
+      const body = await readJsonBody(req, res) as { plan?: string; annual?: boolean } | null;
       if (!body) return;
       const validPlans = ['pro', 'team-5', 'team-10', 'team-25'] as const;
       const plan = validPlans.includes(body.plan as typeof validPlans[number])
         ? (body.plan as typeof validPlans[number])
         : body.plan === 'team' ? 'team-5' as const  // legacy fallback
         : 'pro' as const;
-      await handleCheckout(user.id, plan, json, res);
+      const annual = body.annual === true;
+      await handleCheckout(user.id, plan, annual, json, res);
     } else if (path === '/v1/billing/portal' && req.method === 'POST') {
       const user = await resolveUser(req);
       if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }

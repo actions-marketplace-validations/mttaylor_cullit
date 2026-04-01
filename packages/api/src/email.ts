@@ -148,14 +148,6 @@ cullit generate --from v1.0.0</pre>
 }
 
 const PLAN_DETAILS: Record<string, { label: string; features: string[] }> = {
-  basic: {
-    label: 'Basic ($4/mo)',
-    features: [
-      '50 generations/month',
-      '10 projects',
-      'AI generation (BYOK)',
-    ],
-  },
   pro: {
     label: 'Pro ($9/mo)',
     features: [
@@ -191,11 +183,13 @@ const PLAN_DETAILS: Record<string, { label: string; features: string[] }> = {
     label: 'Team 25 ($209/mo)',
     features: [
       '25 API keys / seats',
-      '2,000 generations/month',
-      '250 projects',
-      'All Pro features',
-      'Confluence & Notion',
-      'Priority support',
+      '5,000 generations/month',
+      '500 projects',
+      'All Team features',
+      'Branded changelog widget',
+      'Project templates',
+      'Audit logs',
+      'Team usage analytics',
     ],
   },
 };

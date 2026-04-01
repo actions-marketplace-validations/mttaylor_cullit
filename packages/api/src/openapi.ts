@@ -745,6 +745,7 @@ export const openApiSpec = {
                 type: 'object',
                 properties: {
                   plan: { type: 'string', enum: ['pro', 'team-5', 'team-10', 'team-25'] },
+                  annual: { type: 'boolean', description: 'Use annual billing (15% discount)' },
                 },
               },
             },

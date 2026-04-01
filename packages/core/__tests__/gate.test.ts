@@ -13,7 +13,9 @@ import {
   isAudienceToneAllowed,
   upgradeMessage,
   getTierLimits,
+  getPlanLimits,
   isFeatureAllowed,
+  isPlanFeatureAllowed,
   getFeatureGating,
 } from '@cullit/core';
 
@@ -231,8 +233,12 @@ describe('Gate — isFeatureAllowed', () => {
     expect(isFeatureAllowed('approvals', 'team')).toBe(true);
   });
 
-  it('allows project_templates on team tier', () => {
-    expect(isFeatureAllowed('project_templates', 'team')).toBe(true);
+  it('blocks project_templates on team tier (plan-gated to team-25)', () => {
+    expect(isFeatureAllowed('project_templates', 'team')).toBe(false);
+  });
+
+  it('allows project_templates on enterprise tier', () => {
+    expect(isFeatureAllowed('project_templates', 'enterprise')).toBe(true);
   });
 });
 
@@ -257,12 +263,12 @@ describe('Gate — getFeatureGating', () => {
     expect(gating.drafts).toBe(true);
     expect(gating.approvals).toBe(true);
     expect(gating.shared_history).toBe(true);
-    expect(gating.project_templates).toBe(true);
+    expect(gating.project_templates).toBe(false); // plan-gated: team-25 only
     expect(gating.hosted_changelog).toBe(true);
-    expect(gating.branded_widget).toBe(true);
+    expect(gating.branded_widget).toBe(false);     // plan-gated: team-25 only
     expect(gating.team_publishers).toBe(true);
     expect(gating.org_settings).toBe(true);
-    expect(gating.audit_logs).toBe(false);
+    expect(gating.audit_logs).toBe(false);          // plan-gated: team-25 only
     expect(gating.sso).toBe(false);
   });
 
@@ -272,5 +278,61 @@ describe('Gate — getFeatureGating', () => {
     expect(gating.approvals).toBe(true);
     expect(gating.audit_logs).toBe(true);
     expect(gating.sso).toBe(true);
+  });
+});
+
+describe('Gate — getPlanLimits', () => {
+  it('returns team-25 upgraded limits', () => {
+    const limits = getPlanLimits('team-25', 'team');
+    expect(limits.generationsPerMonth).toBe(5000);
+    expect(limits.maxProjects).toBe(500);
+  });
+
+  it('falls back to tier limits for team-5', () => {
+    const limits = getPlanLimits('team-5', 'team');
+    expect(limits.generationsPerMonth).toBe(2000);
+    expect(limits.maxProjects).toBe(250);
+  });
+
+  it('falls back to tier limits for team-10', () => {
+    const limits = getPlanLimits('team-10', 'team');
+    expect(limits.generationsPerMonth).toBe(2000);
+    expect(limits.maxProjects).toBe(250);
+  });
+});
+
+describe('Gate — isPlanFeatureAllowed', () => {
+  it('allows branded_widget for team-25', () => {
+    expect(isPlanFeatureAllowed('branded_widget', 'team-25', 'team')).toBe(true);
+  });
+
+  it('blocks branded_widget for team-5', () => {
+    expect(isPlanFeatureAllowed('branded_widget', 'team-5', 'team')).toBe(false);
+  });
+
+  it('blocks branded_widget for team-10', () => {
+    expect(isPlanFeatureAllowed('branded_widget', 'team-10', 'team')).toBe(false);
+  });
+
+  it('allows audit_logs for team-25', () => {
+    expect(isPlanFeatureAllowed('audit_logs', 'team-25', 'team')).toBe(true);
+  });
+
+  it('blocks audit_logs for team-5', () => {
+    expect(isPlanFeatureAllowed('audit_logs', 'team-5', 'team')).toBe(false);
+  });
+
+  it('allows project_templates for team-25', () => {
+    expect(isPlanFeatureAllowed('project_templates', 'team-25', 'team')).toBe(true);
+  });
+
+  it('enterprise always passes plan feature checks', () => {
+    expect(isPlanFeatureAllowed('branded_widget', 'enterprise', 'enterprise')).toBe(true);
+    expect(isPlanFeatureAllowed('audit_logs', 'enterprise', 'enterprise')).toBe(true);
+  });
+
+  it('falls back to tier check for non-plan-gated features', () => {
+    expect(isPlanFeatureAllowed('drafts', 'team-5', 'team')).toBe(true);
+    expect(isPlanFeatureAllowed('drafts', 'pro', 'pro')).toBe(false);
   });
 });
