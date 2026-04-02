@@ -99,6 +99,14 @@ cullit --version
 - `--to <ref>` target ref (defaults to `HEAD`)
 - `--provider <name>` `anthropic|openai|gemini|ollama|none`
 - `--model <id>` override model
+- `--source <type>` `local|jira|linear|gitlab|bitbucket|multi-repo` (default: `local`)
+- `--format <fmt>` `markdown|html|json` (default: `markdown`)
+- `--audience <who>` `developer|end-user|executive`
+- `--tone <style>` `professional|casual|terse|edgy|hype|snarky`
+- `--dry-run` print to stdout without publishing
+- `--template <name>` use a named template profile from `.cullit.yml`
+
+> **Note:** Sources other than `local`, and providers other than `none`, require a paid tier via `@cullit/licensed`.
 - `--audience <type>` tune output for `developer|end-user|executive`
 - `--tone <style>` tone controls for generated output
 - `--format <fmt>` output format

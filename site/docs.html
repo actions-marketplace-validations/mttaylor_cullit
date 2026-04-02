@@ -805,6 +805,12 @@
 <pre><code><span class="key">publish</span>:
   - <span class="key">type</span>: <span class="str">github-release</span></code></pre>
 
+<h3 id="pub-gitlab-release">GitLab Release <span style="font-size:0.7em; color:var(--accent); border:1px solid var(--accent); padding:0.1rem 0.4rem; border-radius:4px; margin-left:0.5rem;">Pro</span></h3>
+<p>Create or update a GitLab Release via the GitLab API. Supports self-hosted GitLab instances. Requires <code>GITLAB_TOKEN</code> with <code>api</code> scope:</p>
+<pre><code><span class="key">publish</span>:
+  - <span class="key">type</span>: <span class="str">gitlab-release</span></code></pre>
+<p>Set <code>GITLAB_URL</code> for self-hosted instances (defaults to <code>https://gitlab.com</code>). The project is auto-detected from your git remote or can be set with <code>GITLAB_PROJECT_ID</code>.</p>
+
 <h3 id="pub-teams">Microsoft Teams</h3>
 <p>Post release notes to a Teams channel via <a href="https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook" target="_blank" rel="noopener noreferrer">incoming webhook</a>:</p>
 <pre><code><span class="key">publish</span>:

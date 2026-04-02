@@ -1,9 +1,10 @@
-# Security Policy\n\n> **Last updated:** March 2026
+# Security Policy\n\n> **Last updated:** April 2026
 
 ## Supported Versions
 
 | Version | Supported          |
-|---------|--------------------|
+|---------|--------------------||
+| 2.x     | :white_check_mark: |
 | 1.x     | :white_check_mark: |
 | < 1.0   | :x:                |
 
