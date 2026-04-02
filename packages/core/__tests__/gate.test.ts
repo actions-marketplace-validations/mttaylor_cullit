@@ -7,6 +7,7 @@ vi.mock('@cullit/core', async (importOriginal) => {
 
 import {
   resolveLicense,
+  validateLicense,
   isProviderAllowed,
   isPublisherAllowed,
   isEnrichmentAllowed,
@@ -14,6 +15,7 @@ import {
   upgradeMessage,
   getTierLimits,
   getPlanLimits,
+  reportUsage,
   isFeatureAllowed,
   isPlanFeatureAllowed,
   getFeatureGating,
@@ -349,5 +351,169 @@ describe('Gate — isPlanFeatureAllowed', () => {
   it('falls back to tier check for non-plan-gated features', () => {
     expect(isPlanFeatureAllowed('drafts', 'team-5', 'team')).toBe(true);
     expect(isPlanFeatureAllowed('drafts', 'pro', 'pro')).toBe(false);
+  });
+});
+
+describe('Gate — getFeatureGating with plan', () => {
+  it('returns plan-aware gating for team-25', () => {
+    const gating = getFeatureGating('team', 'team-25');
+    expect(gating.branded_widget).toBe(true);
+    expect(gating.project_templates).toBe(true);
+    expect(gating.audit_logs).toBe(true);
+    expect(gating.team_analytics).toBe(true);
+    expect(gating.drafts).toBe(true);
+  });
+
+  it('returns plan-aware gating for team-5 (no premium features)', () => {
+    const gating = getFeatureGating('team', 'team-5');
+    expect(gating.branded_widget).toBe(false);
+    expect(gating.project_templates).toBe(false);
+    expect(gating.audit_logs).toBe(false);
+    expect(gating.team_analytics).toBe(false);
+    expect(gating.drafts).toBe(true);
+  });
+
+  it('returns plan-aware gating for team-10 (no premium features)', () => {
+    const gating = getFeatureGating('team', 'team-10');
+    expect(gating.branded_widget).toBe(false);
+    expect(gating.project_templates).toBe(false);
+    expect(gating.audit_logs).toBe(false);
+    expect(gating.team_analytics).toBe(false);
+    expect(gating.drafts).toBe(true);
+  });
+
+  it('without plan param falls back to tier-only (backward compat)', () => {
+    const gating = getFeatureGating('team');
+    expect(gating.branded_widget).toBe(false);
+    expect(gating.drafts).toBe(true);
+  });
+
+  it('enterprise with plan shows all features', () => {
+    const gating = getFeatureGating('enterprise', 'enterprise');
+    expect(gating.branded_widget).toBe(true);
+    expect(gating.audit_logs).toBe(true);
+    expect(gating.sso).toBe(true);
+  });
+});
+
+describe('Gate — getPlanLimits edge cases', () => {
+  it('pro plan falls back to pro tier limits', () => {
+    const limits = getPlanLimits('pro', 'pro');
+    expect(limits.generationsPerMonth).toBe(500);
+    expect(limits.maxProjects).toBe(100);
+  });
+
+  it('unknown plan with unknown tier falls back to free', () => {
+    const limits = getPlanLimits('unknown-plan', 'unknown-tier');
+    expect(limits.generationsPerMonth).toBe(3);
+    expect(limits.maxProjects).toBe(3);
+  });
+
+  it('enterprise plan falls back to enterprise tier limits', () => {
+    const limits = getPlanLimits('enterprise', 'enterprise');
+    expect(limits.generationsPerMonth).toBe(Infinity);
+    expect(limits.maxProjects).toBe(Infinity);
+  });
+});
+
+describe('Gate — validateLicense', () => {
+  const savedKey = process.env.CULLIT_API_KEY;
+  const savedUrl = process.env.CULLIT_LICENSE_URL;
+
+  afterEach(() => {
+    if (savedKey) process.env.CULLIT_API_KEY = savedKey;
+    else delete process.env.CULLIT_API_KEY;
+    if (savedUrl) process.env.CULLIT_LICENSE_URL = savedUrl;
+    else delete process.env.CULLIT_LICENSE_URL;
+  });
+
+  it('returns free tier when no key is set', async () => {
+    delete process.env.CULLIT_API_KEY;
+    delete process.env.CULLIT_LICENSE_URL;
+    const result = await validateLicense();
+    expect(result.tier).toBe('free');
+    expect(result.valid).toBe(true);
+  });
+
+  it('returns invalid for bad key format', async () => {
+    process.env.CULLIT_API_KEY = 'bad_key';
+    delete process.env.CULLIT_LICENSE_URL;
+    const result = await validateLicense();
+    expect(result.tier).toBe('free');
+    expect(result.valid).toBe(false);
+    expect(result.message).toContain('Invalid');
+  });
+
+  it('returns pro when no validation URL is configured', async () => {
+    process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
+    delete process.env.CULLIT_LICENSE_URL;
+    const result = await validateLicense();
+    expect(result.tier).toBe('pro');
+    expect(result.valid).toBe(true);
+  });
+
+  it('blocks internal IP addresses in license URL', async () => {
+    process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
+    process.env.CULLIT_LICENSE_URL = 'https://192.168.1.1/validate';
+    const result = await validateLicense();
+    expect(result.tier).toBe('pro');
+    expect(result.message).toContain('internal');
+  });
+
+  it('blocks non-https license URL', async () => {
+    process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
+    process.env.CULLIT_LICENSE_URL = 'http://example.com/validate';
+    const result = await validateLicense();
+    expect(result.tier).toBe('pro');
+    expect(result.message).toContain('https');
+  });
+
+  it('falls back to free on network error with no cache', async () => {
+    process.env.CULLIT_API_KEY = 'clt_' + 'c'.repeat(32);
+    process.env.CULLIT_LICENSE_URL = 'https://license.cullit.io/validate';
+    // Real fetch will fail (no server) — validateLicense catches and falls back
+    const result = await validateLicense();
+    expect(result.tier).toBe('free');
+    expect(result.valid).toBe(true);
+    expect(result.message).toContain('offline');
+  });
+});
+
+describe('Gate — reportUsage', () => {
+  const savedKey = process.env.CULLIT_API_KEY;
+  const savedUrl = process.env.CULLIT_METER_URL;
+
+  afterEach(() => {
+    if (savedKey) process.env.CULLIT_API_KEY = savedKey;
+    else delete process.env.CULLIT_API_KEY;
+    if (savedUrl) process.env.CULLIT_METER_URL = savedUrl;
+    else delete process.env.CULLIT_METER_URL;
+  });
+
+  it('does nothing when metering is not configured', async () => {
+    delete process.env.CULLIT_API_KEY;
+    delete process.env.CULLIT_METER_URL;
+    await expect(reportUsage()).resolves.toBeUndefined();
+  });
+
+  it('does nothing when only key is set (no meter URL)', async () => {
+    process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
+    delete process.env.CULLIT_METER_URL;
+    await expect(reportUsage()).resolves.toBeUndefined();
+  });
+
+  it('posts to metering endpoint when both key and URL configured', async () => {
+    process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
+    process.env.CULLIT_METER_URL = 'https://meter.cullit.io/v1/usage';
+    // reportUsage uses internal fetchWithTimeout (not the @cullit/core re-export)
+    // so we verify it completes without throwing — the real fetch will fail silently
+    await expect(reportUsage('my-project')).resolves.toBeUndefined();
+  });
+
+  it('swallows errors silently', async () => {
+    process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
+    process.env.CULLIT_METER_URL = 'https://meter.cullit.io/v1/usage';
+    // Real fetch will fail (no server) but reportUsage catches all errors
+    await expect(reportUsage()).resolves.toBeUndefined();
   });
 });

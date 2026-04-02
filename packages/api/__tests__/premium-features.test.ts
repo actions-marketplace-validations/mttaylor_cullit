@@ -158,4 +158,28 @@ describe('getFeatureGating includes all premium features', () => {
     expect(gating.audit_logs).toBe(false);
     expect(gating.team_analytics).toBe(false);
   });
+
+  it('team-25 plan enables premium features via plan param', () => {
+    const gating = getFeatureGating('team', 'team-25');
+    expect(gating.branded_widget).toBe(true);
+    expect(gating.project_templates).toBe(true);
+    expect(gating.audit_logs).toBe(true);
+    expect(gating.team_analytics).toBe(true);
+  });
+
+  it('team-10 plan does NOT enable premium features', () => {
+    const gating = getFeatureGating('team', 'team-10');
+    expect(gating.branded_widget).toBe(false);
+    expect(gating.project_templates).toBe(false);
+    expect(gating.audit_logs).toBe(false);
+    expect(gating.team_analytics).toBe(false);
+  });
+
+  it('team-5 plan does NOT enable premium features', () => {
+    const gating = getFeatureGating('team', 'team-5');
+    expect(gating.branded_widget).toBe(false);
+    expect(gating.project_templates).toBe(false);
+    expect(gating.audit_logs).toBe(false);
+    expect(gating.team_analytics).toBe(false);
+  });
 });

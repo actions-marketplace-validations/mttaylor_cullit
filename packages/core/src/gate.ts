@@ -284,11 +284,14 @@ export function isPlanFeatureAllowed(feature: TeamFeature, plan: string, tier: s
 
 /**
  * Build a gating summary for a tier — which features are unlocked.
+ * When plan is provided, uses plan-aware feature checks.
  */
-export function getFeatureGating(tier: string): Record<TeamFeature, boolean> {
+export function getFeatureGating(tier: string, plan?: string): Record<TeamFeature, boolean> {
   const result: Record<string, boolean> = {};
   for (const feature of Object.keys(FEATURE_TIERS) as TeamFeature[]) {
-    result[feature] = isFeatureAllowed(feature, tier);
+    result[feature] = plan
+      ? isPlanFeatureAllowed(feature, plan, tier)
+      : isFeatureAllowed(feature, tier);
   }
   return result as Record<TeamFeature, boolean>;
 }

@@ -19,7 +19,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
 import { createHash, randomBytes } from 'crypto';
 
-import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS, TIERS, getTierLimits, createRateLimiter, isPlanFeatureAllowed } from '@cullit/core';
+import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS, TIERS, getTierLimits, getPlanLimits, createRateLimiter, isPlanFeatureAllowed } from '@cullit/core';
 import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget, TeamFeature } from '@cullit/core';
 import { openApiSpec } from './openapi.js';
 import { handleDocs } from './docs.js';
@@ -346,7 +346,10 @@ interface GenerateRequest {
   linear?: { apiKey?: string };
 }
 
-// --- SSRF protection for Jira domains ---
+// --- SSRF protection for user-provided domains ---
+// Only jira.domain accepts a user-provided hostname via the hosted API.
+// Linear uses an API key (no URL). GitLab/Bitbucket source types are rejected above.
+// Confluence/Notion/Teams publishing is CLI-only (not exposed via API).
 
 const SSRF_BLOCKED_SUFFIXES = [
   '.nip.io', '.xip.io', '.sslip.io', '.localtest.me', '.lvh.me',
@@ -485,7 +488,8 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
   try {
     const key = user.orgId || user.id;
     const effectiveTier = getEffectiveTier(user);
-    const limits = getTierLimits(effectiveTier);
+    const plan = await getUserPlan(user);
+    const limits = getPlanLimits(plan, effectiveTier);
 
     // Atomic limit check — serialize per key to prevent concurrent bypass
     const limitResult = await withGenerationLock(key, async () => {
