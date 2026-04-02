@@ -1027,10 +1027,28 @@
   }
   .team-key-badge.assigned { background: rgba(94,234,212,0.1); color: var(--accent); }
   .team-key-badge.revoked-badge { background: rgba(248,113,113,0.1); color: var(--terminal-red); }
+  /* Upgrade modal */
+  .upgrade-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:9000; align-items:center; justify-content:center; }
+  .upgrade-overlay.visible { display:flex; }
+  .upgrade-card { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:2rem; max-width:420px; width:90%; text-align:center; }
+  .upgrade-card h3 { font-family:'Chakra Petch',sans-serif; font-size:1.2rem; color:var(--text-bright); margin-bottom:0.75rem; }
+  .upgrade-card p { color:var(--text-dim); font-size:0.9rem; line-height:1.6; margin-bottom:1.25rem; }
+  .upgrade-card .btn-upgrade { display:inline-block; padding:0.6rem 1.6rem; background:var(--accent); color:var(--bg); font-weight:600; border:none; border-radius:6px; cursor:pointer; font-size:0.9rem; text-decoration:none; margin-right:0.5rem; }
+  .upgrade-card .btn-upgrade:hover { opacity:0.9; }
+  .upgrade-card .btn-dismiss { display:inline-block; padding:0.6rem 1.2rem; background:transparent; color:var(--text-dim); border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:0.85rem; }
 .skip-link:focus{position:fixed!important;left:1rem!important;top:1rem!important;width:auto!important;height:auto!important;overflow:visible!important;clip:auto!important;border-radius:6px;z-index:10000;}
 </style>
 </head>
 <body>
+<!-- Upgrade Modal -->
+<div class="upgrade-overlay" id="upgradeOverlay" onclick="if(event.target===this)dismissUpgrade()">
+  <div class="upgrade-card">
+    <h3 id="upgradeTitle">Upgrade Required</h3>
+    <p id="upgradeMsg"></p>
+    <a class="btn-upgrade" id="upgradeAction" href="pricing.html">View Plans</a>
+    <button class="btn-dismiss" onclick="dismissUpgrade()">Not now</button>
+  </div>
+</div>
 <a href="#main" class="skip-link" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;z-index:9999;padding:0.5rem 1rem;background:var(--accent,#5eead4);color:#0f1117;font-weight:700;text-decoration:none;">Skip to content</a>
 <noscript><p style="background:#161822;color:#d4d4e0;padding:1rem;text-align:center;">JavaScript is required for the full Cullit experience. Core content is still accessible.</p></noscript>
 
@@ -1530,6 +1548,7 @@
             <li>Audience &amp; tone control</li>
           </ul>
           <button class="btn-small plan-upgrade-btn" onclick="upgradePlan('pro')">Upgrade</button>
+          <span style="display:block;font-size:0.7rem;color:var(--accent);margin-top:0.4rem;opacity:0.85">Save 15% with annual billing</span>
         </div>
         <div class="billing-plan-option" id="planTeam5">
           <div class="plan-tier">Team 5</div>
@@ -1541,6 +1560,7 @@
             <li>Team management</li>
           </ul>
           <button class="btn-small plan-upgrade-btn" onclick="upgradePlan('team-5')">Upgrade</button>
+          <span style="display:block;font-size:0.7rem;color:var(--accent);margin-top:0.4rem;opacity:0.85">Save 15% with annual billing</span>
         </div>
         <div class="billing-plan-option" id="planTeam10">
           <div class="plan-tier">Team 10</div>
@@ -1552,6 +1572,7 @@
             <li>Priority support</li>
           </ul>
           <button class="btn-small plan-upgrade-btn" onclick="upgradePlan('team-10')">Upgrade</button>
+          <span style="display:block;font-size:0.7rem;color:var(--accent);margin-top:0.4rem;opacity:0.85">Save 15% with annual billing</span>
         </div>
         <div class="billing-plan-option" id="planTeam25">
           <div class="plan-tier">Team 25</div>
@@ -1564,6 +1585,7 @@
             <li>Audit logs</li>
           </ul>
           <button class="btn-small plan-upgrade-btn" onclick="upgradePlan('team-25')">Upgrade</button>
+          <span style="display:block;font-size:0.7rem;color:var(--accent);margin-top:0.4rem;opacity:0.85">Save 15% with annual billing</span>
         </div>
         <div class="billing-plan-option" id="planEnterprise">
           <div class="plan-tier">Enterprise</div>
@@ -1582,10 +1604,22 @@
       <div class="panel" id="teamKeysPanel" style="margin-top:1.5rem;display:none">
         <div class="panel-header">&#128273; Team API Keys <span id="teamKeySeatCount" style="float:right;font-size:0.8rem;color:var(--text-dim)"></span></div>
         <div class="panel-body">
+          <p id="seatUtilMsg" style="display:none;font-size:0.8rem;color:var(--terminal-yellow);margin-bottom:0.75rem;line-height:1.5"></p>
           <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:1rem">
             These keys are shared across your team. Assign them to members and optionally send via email.
           </p>
           <div id="teamKeysList" style="display:flex;flex-direction:column;gap:0.75rem"></div>
+        </div>
+      </div>
+
+      <!-- Usage Analytics Quick Link -->
+      <div class="panel" id="analyticsQuickLink" style="margin-top:1.5rem;display:none">
+        <div class="panel-header">&#128200; Usage Analytics</div>
+        <div class="panel-body">
+          <p id="analyticsQuickMsg" style="font-size:0.85rem;color:var(--text-dim);line-height:1.6;margin-bottom:0.75rem">
+            View generation stats, provider breakdown, and daily usage trends.
+          </p>
+          <button class="btn-small" id="analyticsQuickBtn" onclick="switchDashTab('analytics')" style="font-size:0.8rem">Open Analytics &rarr;</button>
         </div>
       </div>
 
@@ -1807,13 +1841,18 @@ async function pollForTierUpdate() {
       if (data.tier && data.tier !== 'free') {
         currentUser = data;
         document.getElementById('navTier').textContent = data.effectiveTier || data.tier;
-        showToast('Payment confirmed — you are now on ' + capitalize(data.tier) + '!');
+        const tierName = capitalize(data.effectiveTier || data.tier);
+        showUpgradeModal(
+          'Welcome to ' + tierName + '!',
+          'Your upgrade is confirmed. All ' + tierName + ' features are now unlocked. Generate release notes, explore new publishers, and make the most of your plan.',
+          'Start Generating', '#'
+        );
+        document.getElementById('upgradeAction').onclick = function(e) { e.preventDefault(); dismissUpgrade(); switchDashTab('generate'); };
         loadBilling();
         return;
       }
     } catch {}
   }
-  // After 20s, tell user to refresh
   showToast('Payment is being processed. Refresh in a moment.');
 }
 
@@ -1857,6 +1896,21 @@ async function checkHealth() {
   }
 }
 
+// --- Upgrade Modal ---
+
+function showUpgradeModal(title, msg, actionText, actionHref) {
+  document.getElementById('upgradeTitle').textContent = title;
+  document.getElementById('upgradeMsg').textContent = msg;
+  const btn = document.getElementById('upgradeAction');
+  btn.textContent = actionText || 'View Plans';
+  btn.href = actionHref || 'pricing.html';
+  document.getElementById('upgradeOverlay').classList.add('visible');
+}
+
+function dismissUpgrade() {
+  document.getElementById('upgradeOverlay').classList.remove('visible');
+}
+
 // --- Generate ---
 
 async function generate() {
@@ -1897,7 +1951,17 @@ async function generate() {
     const data = await res.json();
     if (res.status === 402) {
       switchDashTab('billing');
-      showToast('Monthly generation limit reached. Upgrade your plan to continue.');
+      showUpgradeModal(
+        'Generation Limit Reached',
+        'You\u2019ve used all ' + (data.limit || 'your') + ' generations this month. Upgrade to get more.',
+        'Upgrade Now', 'pricing.html'
+      );
+    } else if (res.status === 403) {
+      showUpgradeModal(
+        'Feature Locked',
+        data.error || 'This feature requires a higher plan.',
+        'View Plans', 'pricing.html'
+      );
     }
     if (!res.ok) throw new Error(data.error || 'Generation failed');
 
@@ -2034,6 +2098,22 @@ function applyAudienceToneGating() {
       opt.disabled = isFree && opt.value !== 'professional';
     });
     if (isFree) toneSelect.value = 'professional';
+  }
+
+  // Show upgrade modal when free user clicks gated dropdowns
+  if (isFree) {
+    [audienceSelect, toneSelect].forEach(select => {
+      if (!select) return;
+      select.addEventListener('focus', function handler() {
+        if (getEffectiveTierClient() === 'free' || (TIER_RANK[getEffectiveTierClient()] || 0) < (TIER_RANK['pro'] || 1)) {
+          showUpgradeModal(
+            'Audience & Tone Control',
+            'Custom audience and tone settings require a Pro plan or above. Upgrade to tailor output for customers, executives, or any audience.',
+            'Upgrade to Pro', 'pricing.html'
+          );
+        }
+      }, { once: true });
+    });
   }
 }
 
@@ -2854,9 +2934,23 @@ async function loadBilling() {
     const cardPlan = cardPlanMap[cardId] || cardId.toLowerCase();
     const cardRank = tierRank[cardPlan] || 0;
     if (cardRank <= currentRank) {
-      btn.style.display = 'none';
+      // Show downgrade button for paid plans below current (not for free)
+      if (cardRank > 0 && cardRank < currentRank) {
+        btn.textContent = 'Downgrade';
+        btn.style.display = '';
+        btn.style.background = 'transparent';
+        btn.style.border = '1px solid var(--border)';
+        btn.style.color = 'var(--text-dim)';
+        btn.onclick = function() { openBillingPortal(); };
+      } else {
+        btn.style.display = 'none';
+      }
     } else {
+      btn.textContent = 'Upgrade';
       btn.style.display = '';
+      btn.style.background = '';
+      btn.style.border = '';
+      btn.style.color = '';
     }
   });
 
@@ -2926,6 +3020,16 @@ async function loadBilling() {
     teamKeysPanel.style.display = 'none';
   }
 
+  // Show analytics quick link for Pro+ (hidden for free)
+  const analyticsPanel = document.getElementById('analyticsQuickLink');
+  if (analyticsPanel) {
+    if (tier !== 'free') {
+      analyticsPanel.style.display = '';
+    } else {
+      analyticsPanel.style.display = 'none';
+    }
+  }
+
   // Usage bar
   try {
     const res = await apiFetch('/v1/analytics/usage?days=30');
@@ -2947,11 +3051,11 @@ async function loadBilling() {
 
       const warn = document.getElementById('usageWarning');
       if (limit !== Infinity && pct >= 90) {
-        warn.textContent = 'You\u2019ve used ' + used.toLocaleString() + ' of ' + limit.toLocaleString() + ' generations this month. Upgrade your plan for more.';
+        warn.innerHTML = 'You\u2019ve used ' + used.toLocaleString() + ' of ' + limit.toLocaleString() + ' generations this month. <a href="pricing.html" style="color:inherit;font-weight:600;text-decoration:underline">Upgrade your plan</a> for more.';
         warn.className = 'usage-warning warn-red';
         warn.style.display = '';
-      } else if (limit !== Infinity && pct >= 70) {
-        warn.textContent = 'Approaching your limit \u2014 ' + used.toLocaleString() + ' of ' + limit.toLocaleString() + ' generations used this month.';
+      } else if (limit !== Infinity && pct >= 66) {
+        warn.innerHTML = 'Approaching your limit &mdash; ' + used.toLocaleString() + ' of ' + limit.toLocaleString() + ' generations used. <a href="pricing.html" style="color:inherit;font-weight:600;text-decoration:underline">View upgrade options</a>';
         warn.className = 'usage-warning warn-yellow';
         warn.style.display = '';
       } else {
@@ -3023,6 +3127,21 @@ async function loadTeamKeys() {
     const seatLimits = { 'team-5': 5, 'team-10': 10, 'team-25': 25 };
     const maxSeats = seatLimits[teamPlan] || activeCount;
     seatEl.textContent = activeCount + ' of ' + maxSeats + ' seats active';
+
+    // Seat utilization messaging
+    const seatUtilEl = document.getElementById('seatUtilMsg');
+    if (seatUtilEl) {
+      const unused = maxSeats - activeCount;
+      if (unused > Math.ceil(maxSeats * 0.5)) {
+        seatUtilEl.textContent = 'You\u2019re using ' + activeCount + ' of ' + maxSeats + ' seats. Invite more team members or consider a smaller plan.';
+        seatUtilEl.style.display = '';
+      } else if (activeCount >= maxSeats) {
+        seatUtilEl.textContent = 'All ' + maxSeats + ' seats are in use. Need more? Upgrade your team plan.';
+        seatUtilEl.style.display = '';
+      } else {
+        seatUtilEl.style.display = 'none';
+      }
+    }
 
     if (!keys.length) {
       list.innerHTML = '<div style="color:var(--text-dim)">No team API keys yet. Keys are provisioned when you subscribe to a Team plan.</div>';
