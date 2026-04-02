@@ -869,6 +869,23 @@
   }
   .usage-bar-fill.warning { background: var(--terminal-yellow); }
   .usage-bar-fill.danger { background: var(--terminal-red); }
+  .usage-warning {
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    line-height: 1.4;
+  }
+  .usage-warning.warn-yellow {
+    color: var(--terminal-yellow);
+    background: rgba(250, 204, 21, 0.08);
+    border: 1px solid rgba(250, 204, 21, 0.2);
+  }
+  .usage-warning.warn-red {
+    color: var(--terminal-red);
+    background: rgba(248, 113, 113, 0.08);
+    border: 1px solid rgba(248, 113, 113, 0.2);
+  }
   .billing-plans-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -1488,6 +1505,7 @@
               <div class="usage-bar-fill" id="usageBarFill" style="width:0%"></div>
             </div>
           </div>
+          <div class="usage-warning" id="usageWarning" style="display:none"></div>
         </div>
       </div>
 
@@ -1529,8 +1547,8 @@
           <div class="plan-price">$89<span>/mo</span></div>
           <ul class="plan-features">
             <li>10 API keys / seats</li>
-            <li>2,000 generations / month</li>
-            <li>250 projects</li>
+            <li>4,000 generations / month</li>
+            <li>350 projects</li>
             <li>Priority support</li>
           </ul>
           <button class="btn-small plan-upgrade-btn" onclick="upgradePlan('team-10')">Upgrade</button>
@@ -2295,7 +2313,7 @@ function showToast(msg) {
 
 // --- Billing ---
 
-const TIER_LIMITS = { free: 3, pro: 500, team: 2000, enterprise: Infinity };
+const TIER_LIMITS = { free: 3, pro: 500, team: 2000, 'team-5': 2000, 'team-10': 4000, 'team-25': 5000, enterprise: Infinity };
 
 // --- Drafts Management ---
 
@@ -2914,7 +2932,8 @@ async function loadBilling() {
     if (res.ok) {
       const data = await res.json();
       const used = data.monthlyGenerations || 0;
-      const limit = TIER_LIMITS[tier] || 3;
+      const planKey = (tier === 'team' && currentUser._teamPlan) ? currentUser._teamPlan : tier;
+      const limit = TIER_LIMITS[planKey] || TIER_LIMITS[tier] || 3;
       const pct = limit === Infinity ? 0 : Math.min(100, Math.round((used / limit) * 100));
 
       document.getElementById('usageCount').textContent = used.toLocaleString();
@@ -2925,6 +2944,19 @@ async function loadBilling() {
       const bar = document.getElementById('usageBarFill');
       bar.style.width = pct + '%';
       bar.className = 'usage-bar-fill' + (pct >= 90 ? ' danger' : pct >= 70 ? ' warning' : '');
+
+      const warn = document.getElementById('usageWarning');
+      if (limit !== Infinity && pct >= 90) {
+        warn.textContent = 'You\u2019ve used ' + used.toLocaleString() + ' of ' + limit.toLocaleString() + ' generations this month. Upgrade your plan for more.';
+        warn.className = 'usage-warning warn-red';
+        warn.style.display = '';
+      } else if (limit !== Infinity && pct >= 70) {
+        warn.textContent = 'Approaching your limit \u2014 ' + used.toLocaleString() + ' of ' + limit.toLocaleString() + ' generations used this month.';
+        warn.className = 'usage-warning warn-yellow';
+        warn.style.display = '';
+      } else {
+        warn.style.display = 'none';
+      }
     }
   } catch {}
 }

@@ -330,6 +330,14 @@
     margin-bottom: 0.25rem;
   }
 
+  .per-seat-cost {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-top: 0.15rem;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+  }
+
   /* Team selector dropdown */
   .team-select {
     appearance: none;
@@ -403,6 +411,54 @@
   }
 
   .faq-a a:hover { text-decoration: underline; }
+
+  /* COMPARISON TABLE */
+  .compare-section {
+    max-width: 1100px;
+    margin: 3rem auto;
+    padding: 0 2rem;
+  }
+  .compare-section h2 {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.6rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: var(--text);
+  }
+  .compare-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  .compare-table th,
+  .compare-table td {
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+    white-space: nowrap;
+  }
+  .compare-table th:first-child,
+  .compare-table td:first-child {
+    text-align: left;
+    white-space: normal;
+    min-width: 200px;
+  }
+  .compare-table thead th {
+    font-family: 'Chakra Petch', sans-serif;
+    font-weight: 600;
+    color: var(--accent);
+    font-size: 0.9rem;
+    padding-bottom: 0.75rem;
+  }
+  .compare-table tbody tr:hover {
+    background: rgba(94, 234, 212, 0.04);
+  }
+  .compare-table .cmp-check { color: var(--accent); }
+  .compare-table .cmp-dash { color: var(--text-dim); }
 
   /* FOOTER */
   footer {
@@ -578,10 +634,11 @@
     <div class="pricing-card" id="teamCard">
       <div class="plan-name">Team</div>
       <div class="plan-price" id="teamPrice">$44.99 <span class="period">/ mo</span></div>
+      <div class="per-seat-cost" id="teamPerSeat">$9.00 / seat</div>
       <select id="teamSelect" class="team-select" onchange="updateTeamCard()">
         <option value="team-5">5 seats</option>
         <option value="team-10">10 seats</option>
-        <option value="team-25">25 seats</option>
+        <option value="team-25">25 seats — best value</option>
       </select>
       <p class="plan-annual-note" id="teamAnnualNote" style="display:none"></p>
       <p class="plan-desc" id="teamDesc">5 seats &mdash; shared AI release workflow for small teams.</p>
@@ -590,10 +647,11 @@
         <li><span class="check">&#10003;</span> <span id="teamGens">2,000</span> generations / month</li>
         <li><span class="check">&#10003;</span> <span id="teamProjects">250</span> projects</li>
         <li><span class="check">&#10003;</span> All Pro features</li>
-        <li><span class="check">&#10003;</span> <span id="teamExtra1">Multi-repo collectors</span></li>
-        <li><span class="check">&#10003;</span> <span id="teamExtra2">Team management dashboard</span></li>
-        <li id="teamExtra3" style="display:none"><span class="check">&#10003;</span> <span></span></li>
+        <li><span class="check">&#10003;</span> <span id="teamExtra1">Release drafts &amp; approvals</span></li>
+        <li><span class="check">&#10003;</span> <span id="teamExtra2">Multi-repo collectors</span></li>
+        <li><span class="check">&#10003;</span> <span id="teamExtra3">Team management dashboard</span></li>
         <li id="teamExtra4" style="display:none"><span class="check">&#10003;</span> <span></span></li>
+        <li id="teamExtra5" style="display:none"><span class="check">&#10003;</span> <span></span></li>
       </ul>
       <a id="teamCta" href="https://cullit.io/dashboard" class="plan-btn plan-btn-outline" onclick="startCheckout(document.getElementById('teamSelect').value, event)">Start Team</a>
     </div>
@@ -617,6 +675,52 @@
     </div>
 
   </div>
+
+  <!-- Comparison table -->
+  <section class="compare-section">
+    <h2>Compare all plans</h2>
+    <div class="compare-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Free</th>
+            <th>Pro</th>
+            <th>Team 5</th>
+            <th>Team 10</th>
+            <th>Team 25</th>
+            <th>Enterprise</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Generations / month</td><td>3</td><td>500</td><td>2,000</td><td>4,000</td><td>5,000</td><td>Unlimited</td></tr>
+          <tr><td>Projects</td><td>3</td><td>100</td><td>250</td><td>350</td><td>500</td><td>Unlimited</td></tr>
+          <tr><td>Seats</td><td>1</td><td>1</td><td>5</td><td>10</td><td>25</td><td>Unlimited</td></tr>
+          <tr><td>Price / month</td><td>Free</td><td>$9</td><td>$44.99</td><td>$89</td><td>$209</td><td>Custom</td></tr>
+          <tr><td>Per-seat cost</td><td>&mdash;</td><td>&mdash;</td><td>$9.00</td><td>$8.90</td><td>$8.36</td><td>Custom</td></tr>
+          <tr><td>Annual billing (15% off)</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-dash">&mdash;</td></tr>
+          <tr><td>AI providers (BYOK)</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>Template engine (no AI)</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>Audience &amp; tone control</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>Jira &amp; Linear enrichment</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>Slack, Discord &amp; GitHub Release</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>Hosted changelog page</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>GitHub App &amp; Action (AI mode)</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>Release drafts &amp; approvals</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>Multi-repo aggregation</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>Confluence, Notion &amp; Teams</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>Shared generation history</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>Branded changelog widget</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>Project templates</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>Audit logs</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>Team usage analytics</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>SSO &amp; SAML</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>Self-hosted / on-prem</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>Dedicated support &amp; SLA</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 
   <!-- FAQ -->
   <section class="faq-section">
@@ -728,8 +832,10 @@ const TEAM_PLANS = {
     seats: '5',
     gens: '2,000',
     projects: '250',
+    perSeat: '$9.00',
+    perSeatAnnual: '$7.65',
     desc: '5 seats &mdash; shared AI release workflow for small teams.',
-    extras: ['Multi-repo collectors', 'Team management dashboard'],
+    extras: ['Release drafts &amp; approvals', 'Multi-repo collectors', 'Team management dashboard'],
     subject: 'Cullit%20Team%205',
   },
   'team-10': {
@@ -737,10 +843,12 @@ const TEAM_PLANS = {
     annualPrice: '$75.65',
     annualTotal: '$907.80',
     seats: '10',
-    gens: '2,000',
-    projects: '250',
-    desc: '10 seats &mdash; multi-source collectors with priority support.',
-    extras: ['GitLab &amp; Bitbucket collectors', 'Confluence &amp; Notion publishing', 'Priority support'],
+    gens: '4,000',
+    projects: '350',
+    perSeat: '$8.90',
+    perSeatAnnual: '$7.57',
+    desc: '10 seats &mdash; 2&times; capacity with GitLab, Bitbucket &amp; priority support.',
+    extras: ['Release drafts &amp; approvals', 'GitLab &amp; Bitbucket collectors', 'Confluence &amp; Notion publishing', 'Priority support'],
     subject: 'Cullit%20Team%2010',
   },
   'team-25': {
@@ -750,8 +858,10 @@ const TEAM_PLANS = {
     seats: '25',
     gens: '5,000',
     projects: '500',
-    desc: '25 seats &mdash; premium platform with audit logs, branding &amp; templates.',
-    extras: ['Branded changelog widget', 'Project templates', 'Audit logs', 'Team usage analytics'],
+    perSeat: '$8.36',
+    perSeatAnnual: '$7.11',
+    desc: '25 seats &mdash; best per-seat value with premium features &amp; 5k gens/month.',
+    extras: ['Release drafts &amp; approvals', 'Branded changelog widget', 'Project templates', 'Audit logs &amp; team analytics'],
     subject: 'Cullit%20Team%2025',
   },
 };
@@ -802,6 +912,7 @@ function updateTeamCard() {
   const annual = window._annual;
   const price = annual ? plan.annualPrice : plan.price;
   document.getElementById('teamPrice').innerHTML = price + ' <span class="period">/ mo</span>';
+  document.getElementById('teamPerSeat').textContent = (annual ? plan.perSeatAnnual : plan.perSeat) + ' / seat';
   const teamNote = document.getElementById('teamAnnualNote');
   if (annual) {
     teamNote.textContent = 'Billed as ' + plan.annualTotal + '/yr';
@@ -813,7 +924,7 @@ function updateTeamCard() {
   document.getElementById('teamSeats').textContent = plan.seats;
   document.getElementById('teamGens').textContent = plan.gens;
   document.getElementById('teamProjects').textContent = plan.projects;
-  for (let i = 1; i <= 4; i++) {
+  for (let i = 1; i <= 5; i++) {
     const li = document.getElementById('teamExtra' + i);
     if (i <= plan.extras.length) {
       li.style.display = '';

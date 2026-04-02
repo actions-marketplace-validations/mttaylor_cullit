@@ -296,10 +296,10 @@ describe('Gate — getPlanLimits', () => {
     expect(limits.maxProjects).toBe(250);
   });
 
-  it('falls back to tier limits for team-10', () => {
+  it('returns team-10 upgraded limits', () => {
     const limits = getPlanLimits('team-10', 'team');
-    expect(limits.generationsPerMonth).toBe(2000);
-    expect(limits.maxProjects).toBe(250);
+    expect(limits.generationsPerMonth).toBe(4000);
+    expect(limits.maxProjects).toBe(350);
   });
 });
 

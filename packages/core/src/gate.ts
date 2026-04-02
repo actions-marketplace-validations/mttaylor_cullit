@@ -200,6 +200,7 @@ const TIER_LIMITS: Record<string, UsageLimits> = {
 
 /** Plan-specific limit overrides (e.g. team-25 gets higher limits than other team plans). */
 const PLAN_LIMITS: Record<string, UsageLimits> = {
+  'team-10': { generationsPerMonth: 4000, maxProjects: 350 },
   'team-25': { generationsPerMonth: 5000, maxProjects: 500 },
 };
 
