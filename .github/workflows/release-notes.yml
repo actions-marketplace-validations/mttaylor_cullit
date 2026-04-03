@@ -39,8 +39,17 @@ jobs:
       - name: Install Ollama
         run: curl -fsSL https://ollama.com/install.sh | sh
 
+      - name: Start Ollama server
+        run: ollama serve &
+        
       - name: Pull Ollama model
-        run: ollama pull llama3.2:3b
+        run: |
+          # Wait for Ollama server to be ready
+          for i in $(seq 1 30); do
+            if ollama list >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          ollama pull llama3.2:3b
 
       - name: Generate release notes
         env:
