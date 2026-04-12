@@ -398,7 +398,7 @@
   </header>
 
   <nav class="legal-nav" id="legalNav">
-    <h3 onclick="document.getElementById('legalNav').classList.toggle('open')">Contents <span class="toc-toggle">&#9660;</span></h3>
+    <h3 data-legal-nav-toggle="legalNav" tabindex="0" role="button">Contents <span class="toc-toggle">&#9660;</span></h3>
     <ol>
       <li><a href="#intro">Introduction</a></li>
       <li><a href="#collect">Information We Collect</a></li>
@@ -428,7 +428,7 @@
     <h3>Information You Provide</h3>
     <ul>
       <li><strong>Account information:</strong> When you log in via our authentication provider (WorkOS AuthKit), we collect your user ID, display name, email address, and profile picture URL. We also generate and store a Cullit API key, your subscription tier, organization membership, role, and login timestamps.</li>
-      <li><strong>Organization data:</strong> If you create or join an organization, we store the organization name, membership roster (user IDs and roles), subscription tier, and seat allocation. For Team plans (5, 10, or 25 seats), we also store team API keys including: key value, label, assigned email and name, status (active/revoked), and creation/revocation timestamps.</li>
+      <li><strong>Organization data:</strong> If you create or join an organization, we store the organization name, membership roster (user IDs and roles), subscription tier, and seat allocation. For Team plans (minimum 5 seats, scalable up to 100), we also store team API keys including: key value, label, assigned email and name, status (active/revoked), and creation/revocation timestamps.</li>
       <li><strong>Payment information:</strong> If you subscribe to a paid plan, payment is processed by Stripe. We do not store your credit card information directly. See <a href="https://stripe.com/privacy" target="_blank" rel="noopener" style="color: var(--accent);">Stripe&rsquo;s privacy policy</a>.</li>
       <li><strong>Configuration data:</strong> Settings you provide in your <code style="background: var(--bg-card); padding: 0.15em 0.4em; border-radius: 4px; font-family: 'Space Mono', monospace; font-size: 0.85em;">.cullit.yml</code> configuration file, including AI provider preferences and integration settings.</li>
     </ul>
@@ -615,25 +615,10 @@
   </div>
 </footer>
 
-<script>
-const hamburger = document.getElementById('hamburger');
-const navLinks = document.getElementById('navLinks');
-hamburger.addEventListener('click', () => {
-  hamburger.classList.toggle('open');
-  navLinks.classList.toggle('open');
-});
-navLinks.querySelectorAll('a').forEach(a => {
-  a.addEventListener('click', () => {
-    hamburger.classList.remove('open');
-    navLinks.classList.remove('open');
-  });
-});
-</script>
-
+<script src="assets/site-common.js" defer></script>
+<script src="assets/simple-page.js" defer></script>
 <div id="cookie-consent" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#161822;border-top:1px solid #282a3a;padding:1rem 2rem;z-index:10000;font-family:'DM Sans',sans-serif;font-size:0.85rem;color:#d4d4e0;text-align:center;">
-This site uses essential cookies only &mdash; no tracking. <button onclick="document.getElementById('cookie-consent').style.display='none';localStorage.setItem('cullit_consent','1')" style="margin-left:1rem;padding:0.4rem 1.2rem;background:#5eead4;color:#0f1117;border:none;border-radius:4px;font-weight:700;cursor:pointer;">OK</button>
+This site uses essential cookies only &mdash; no tracking. <button type="button" data-cookie-consent-accept style="margin-left:1rem;padding:0.4rem 1.2rem;background:#5eead4;color:#0f1117;border:none;border-radius:4px;font-weight:700;cursor:pointer;">OK</button>
 </div>
-<script>if(!localStorage.getItem('cullit_consent'))document.getElementById('cookie-consent').style.display='block';</script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 </body>
 </html>

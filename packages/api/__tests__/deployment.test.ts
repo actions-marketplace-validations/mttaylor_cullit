@@ -83,7 +83,9 @@ describe('Deployment configuration', () => {
 });
 
 describe('Dashboard XSS hardening', () => {
-  const dashboard = readFileSync(join(ROOT, 'site', 'dashboard.html'), 'utf-8');
+  const dashboardHtml = readFileSync(join(ROOT, 'site', 'dashboard.html'), 'utf-8');
+  const dashboardJs = readFileSync(join(ROOT, 'site', 'assets', 'dashboard.js'), 'utf-8');
+  const dashboard = dashboardHtml + '\n' + dashboardJs;
 
   it('escapes d.provider and d.model in draft list view', () => {
     // Draft list should use escapeHtml() on provider/model fields

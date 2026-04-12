@@ -366,7 +366,7 @@
   </header>
 
   <nav class="legal-nav" id="legalNav">
-    <h3 onclick="document.getElementById('legalNav').classList.toggle('open')">Contents <span class="toc-toggle">&#9660;</span></h3>
+    <h3 data-legal-nav-toggle="legalNav" tabindex="0" role="button">Contents <span class="toc-toggle">&#9660;</span></h3>
     <ol>
       <li><a href="#agreement">Agreement to Terms</a></li>
       <li><a href="#description">Description of Service</a></li>
@@ -417,7 +417,7 @@
 
   <section id="paid" class="legal-section">
     <h2>5. Paid Services</h2>
-    <p>Certain features of the Service may require a paid subscription (&ldquo;Pro,&rdquo; &ldquo;Team,&rdquo; or &ldquo;Enterprise&rdquo; plans). Team plans are offered in three seat tiers: Team 5 (5 seats), Team 10 (10 seats), and Team 25 (25 seats). By subscribing to a paid plan:</p>
+    <p>Certain features of the Service may require a paid subscription (&ldquo;Pro,&rdquo; &ldquo;Team,&rdquo; or &ldquo;Enterprise&rdquo; plans). Team plans start at 5 seats and scale up to 100 seats. By subscribing to a paid plan:</p>
     <ul>
       <li>You agree to pay the applicable fees as described on our pricing page.</li>
       <li>Fees are billed in advance on a monthly or annual basis, depending on the plan selected.</li>
@@ -538,25 +538,10 @@
   </div>
 </footer>
 
-<script>
-const hamburger = document.getElementById('hamburger');
-const navLinks = document.getElementById('navLinks');
-hamburger.addEventListener('click', () => {
-  hamburger.classList.toggle('open');
-  navLinks.classList.toggle('open');
-});
-navLinks.querySelectorAll('a').forEach(a => {
-  a.addEventListener('click', () => {
-    hamburger.classList.remove('open');
-    navLinks.classList.remove('open');
-  });
-});
-</script>
-
+<script src="assets/site-common.js" defer></script>
+<script src="assets/simple-page.js" defer></script>
 <div id="cookie-consent" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#161822;border-top:1px solid #282a3a;padding:1rem 2rem;z-index:10000;font-family:'DM Sans',sans-serif;font-size:0.85rem;color:#d4d4e0;text-align:center;">
-This site uses essential cookies only &mdash; no tracking. <button onclick="document.getElementById('cookie-consent').style.display='none';localStorage.setItem('cullit_consent','1')" style="margin-left:1rem;padding:0.4rem 1.2rem;background:#5eead4;color:#0f1117;border:none;border-radius:4px;font-weight:700;cursor:pointer;">OK</button>
+This site uses essential cookies only &mdash; no tracking. <button type="button" data-cookie-consent-accept style="margin-left:1rem;padding:0.4rem 1.2rem;background:#5eead4;color:#0f1117;border:none;border-radius:4px;font-weight:700;cursor:pointer;">OK</button>
 </div>
-<script>if(!localStorage.getItem('cullit_consent'))document.getElementById('cookie-consent').style.display='block';</script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 </body>
 </html>

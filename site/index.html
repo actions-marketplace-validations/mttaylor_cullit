@@ -675,7 +675,7 @@
 <section class="hero">
 
   <h1><span class="accent">Cullit.</span> Ship release notes in minutes, not hours</h1>
-  <p style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 1rem; background: rgba(94,234,212,0.08); border: 1px solid rgba(94,234,212,0.2); border-radius: 100px; font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--accent); width: fit-content; margin-bottom: 0.75rem;"><a href="releases.html" style="color: var(--accent); text-decoration: none; font-weight: 600;">New in v2.4.1: Per-user project limits, atomic billing &amp; draft safety fixes &rarr;</a></p>
+  <p style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 1rem; background: rgba(94,234,212,0.08); border: 1px solid rgba(94,234,212,0.2); border-radius: 100px; font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--accent); width: fit-content; margin-bottom: 0.75rem;"><a href="releases.html" style="color: var(--accent); text-decoration: none; font-weight: 600;">New in v2.5.0: Full CSP hardening, billing telemetry &amp; zero inline scripts &rarr;</a></p>
   <p style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 1rem; background: rgba(94,234,212,0.08); border: 1px solid rgba(94,234,212,0.2); border-radius: 100px; font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--accent); width: fit-content; margin-bottom: 2rem;"><a href="pricing.html" style="color: var(--accent); text-decoration: none; font-weight: 600;">View Pricing &rarr;</a></p>
   <p class="hero-sub">From git commits to polished release announcements &mdash; automatically. Cullit pulls context from Jira, Linear, and your git history, then generates audience-aware notes with Claude, OpenAI, Gemini, or Ollama. Publish everywhere your team and customers already look.</p>
   <div class="hero-actions">
@@ -1104,9 +1104,9 @@
     <a href="pricing.html" id="ctaPricing" class="cta-btn-outline" style="display: inline-block; border: 2px solid var(--accent); color: var(--accent); padding: 0.85rem 2rem; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 1rem;">View Pricing</a>
   </div>
   <p style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.5rem;">
-    Try the free local CLI in seconds: <code style="background: var(--bg-card); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem; cursor: pointer;" onclick="navigator.clipboard.writeText('npx cullit generate --provider none'); this.textContent='✓ Copied!'; setTimeout(()=>this.textContent='npx cullit generate --provider none', 2000)">npx cullit generate --provider none</code>
+    Try the free local CLI in seconds: <code style="background: var(--bg-card); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem; cursor: pointer;" data-copy-text="npx cullit generate --provider none" data-copy-label="npx cullit generate --provider none" data-copy-success="✓ Copied!">npx cullit generate --provider none</code>
   </p>
-  <p class="email-note">Pro from $9/mo &mdash; <a href="https://cullit.io/pricing" style="color: var(--accent)">See plans</a></p>
+  <p class="email-note">Pro from $9/mo &mdash; Team from $40/mo for 5 seats. <a href="https://cullit.io/pricing" style="color: var(--accent)">See plans</a></p>
 </section>
 
 <!-- FOOTER -->
@@ -1122,72 +1122,10 @@
   </div>
 </footer>
 
-<script>
-// Smooth reveal on scroll
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      entry.target.style.opacity = '1';
-      entry.target.style.transform = 'translateY(0)';
-    }
-  });
-}, { threshold: 0.1 });
-
-document.querySelectorAll('.feature-card, .step, .integration-chip').forEach(el => {
-  el.style.opacity = '0';
-  el.style.transform = 'translateY(20px)';
-  el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-  observer.observe(el);
-});
-
-// Hamburger nav toggle
-const hamburger = document.getElementById('hamburger');
-const navLinks = document.getElementById('navLinks');
-const ctaFree = document.getElementById('ctaFree');
-const ctaPricing = document.getElementById('ctaPricing');
-
-function getApiUrl() {
-  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return 'http://localhost:3000';
-  return 'https://api.cullit.io';
-}
-
-async function trackEvent(event, metadata = {}) {
-  try {
-    await fetch(getApiUrl() + '/v1/events', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ event, source: 'landing', metadata }),
-    });
-  } catch {
-    // best effort only
-  }
-}
-
-if (ctaFree) {
-  ctaFree.addEventListener('click', () => trackEvent('landing_cta_clicked', { target: 'free' }));
-}
-if (ctaPricing) {
-  ctaPricing.addEventListener('click', () => trackEvent('landing_cta_clicked', { target: 'pricing' }));
-}
-
-hamburger.addEventListener('click', () => {
-  hamburger.classList.toggle('open');
-  navLinks.classList.toggle('open');
-});
-// Close menu when a nav link is clicked
-navLinks.querySelectorAll('a').forEach(a => {
-  a.addEventListener('click', () => {
-    hamburger.classList.remove('open');
-    navLinks.classList.remove('open');
-  });
-});
-</script>
-
+<script src="assets/site-common.js" defer></script>
+<script src="assets/landing.js" defer></script>
 <div id="cookie-consent" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#161822;border-top:1px solid #282a3a;padding:1rem 2rem;z-index:10000;font-family:'DM Sans',sans-serif;font-size:0.85rem;color:#d4d4e0;text-align:center;">
-This site uses essential cookies only &mdash; no tracking. <button onclick="document.getElementById('cookie-consent').style.display='none';localStorage.setItem('cullit_consent','1')" style="margin-left:1rem;padding:0.4rem 1.2rem;background:#5eead4;color:#0f1117;border:none;border-radius:4px;font-weight:700;cursor:pointer;">OK</button>
+This site uses essential cookies only &mdash; no tracking. <button type="button" data-cookie-consent-accept style="margin-left:1rem;padding:0.4rem 1.2rem;background:#5eead4;color:#0f1117;border:none;border-radius:4px;font-weight:700;cursor:pointer;">OK</button>
 </div>
-<script>if(!localStorage.getItem('cullit_consent'))document.getElementById('cookie-consent').style.display='block';</script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 </body>
 </html>

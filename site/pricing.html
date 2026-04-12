@@ -560,15 +560,15 @@
 <main class="pricing-container">
   <header class="pricing-header">
     <h1>Simple, transparent <span style="color: var(--accent)">pricing</span></h1>
-    <p>Start free. Upgrade when you need AI synthesis, model choice, richer integrations, or shared release workflows.</p>
+    <p>Start free. Upgrade when you need AI synthesis, model choice, richer integrations, or shared release workflows. Team starts at $40/month for 5 seats.</p>
   </header>
 
   <div class="billing-toggle">
-    <label id="lblMonthly" class="active" onclick="setBilling(false)">Monthly</label>
-    <div class="toggle-track" id="billingToggle" onclick="setBilling(!window._annual)" role="switch" aria-checked="false" tabindex="0">
+    <label id="lblMonthly" class="active">Monthly</label>
+    <div class="toggle-track" id="billingToggle" role="switch" aria-checked="false" tabindex="0">
       <div class="toggle-thumb"></div>
     </div>
-    <label id="lblAnnual" onclick="setBilling(true)">Annual</label>
+    <label id="lblAnnual">Annual</label>
     <span class="billing-save-badge">Save 15%</span>
   </div>
 
@@ -632,7 +632,7 @@
         <li><span class="check">&#10003;</span> Slack, Discord &amp; GitHub Release</li>
         <li><span class="check">&#10003;</span> Styled HTML themes</li>
       </ul>
-      <a href="https://cullit.io/dashboard" class="plan-btn plan-btn-primary" onclick="startCheckout('pro', event)">Start Pro</a>
+      <a href="https://cullit.io/dashboard" id="proCta" class="plan-btn plan-btn-primary">Start Pro</a>
     </div>
 
     <!-- TEAM -->
@@ -642,10 +642,10 @@
       <p class="plan-annual-note" id="teamAnnualNote" style="display:none"></p>
       <div class="seat-selector">
         <label for="teamSeats">Seats:</label>
-        <input type="number" id="teamSeats" class="seat-input" min="5" max="100" value="5" onchange="updateTeamCard()" oninput="updateTeamCard()">
+        <input type="number" id="teamSeats" class="seat-input" min="5" max="100" value="5">
       </div>
       <div class="seat-total" id="teamTotal">Total: $40 / mo</div>
-      <p class="plan-desc">Everything in Pro, plus collaboration and governance for teams.</p>
+      <p class="plan-desc">Everything in Pro, plus collaboration and governance for teams. Starts at 5 seats and scales to 100.</p>
       <ul class="plan-features">
         <li><span class="check">&#10003;</span> All Pro features</li>
         <li><span class="check">&#10003;</span> Drafts &amp; approvals</li>
@@ -657,7 +657,7 @@
         <li><span class="check">&#10003;</span> Team analytics</li>
         <li><span class="check">&#10003;</span> Org settings &amp; shared history</li>
       </ul>
-      <a id="teamCta" href="https://cullit.io/dashboard" class="plan-btn plan-btn-primary" onclick="startCheckout('team', event)">Get Team</a>
+      <a id="teamCta" href="https://cullit.io/dashboard" class="plan-btn plan-btn-primary">Get Team</a>
     </div>
 
     <!-- ENTERPRISE -->
@@ -696,7 +696,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td>Price</td><td>$0</td><td>$9/mo</td><td>$8/seat/mo</td><td>Custom</td></tr>
+          <tr><td>Price</td><td>$0</td><td>$9/mo</td><td>$8/seat/mo (5-seat min)</td><td>Custom</td></tr>
           <tr><td>Annual price</td><td class="cmp-dash">&mdash;</td><td>$7.65/mo</td><td>$6.80/seat/mo</td><td class="cmp-dash">&mdash;</td></tr>
           <tr><td>Seats</td><td>1</td><td>1</td><td>5 &ndash; 100</td><td>Unlimited</td></tr>
           <tr><td>Generations / month</td><td>3</td><td>500</td><td>100/seat (min 2,000)</td><td>Unlimited</td></tr>
@@ -770,12 +770,12 @@
 
     <div class="faq-item">
       <p class="faq-q">Can I add team members to my Pro plan?</p>
-      <p class="faq-a">Pro is a single-user plan. When you need collaboration features like drafts &amp; approvals, team API keys, Confluence/Notion/Teams publishing, and shared history, upgrade to the <strong>Team</strong> plan. Team starts at 5 seats and scales up to 100.</p>
+      <p class="faq-a">Pro is a single-user plan. When you need collaboration features like drafts &amp; approvals, team API keys, Confluence/Notion/Teams publishing, and shared history, upgrade to the <strong>Team</strong> plan. Team starts at $40/month for 5 seats and scales up to 100 seats.</p>
     </div>
 
     <div class="faq-item">
       <p class="faq-q">How does Team pricing scale?</p>
-      <p class="faq-a">Team is $8/seat/month ($6.80/seat on annual billing). The minimum is 5 seats. Limits scale with your team: 100 generations per seat (min 2,000) and 5 projects per seat (min 250). Add seats anytime from the <a href="dashboard.html">billing dashboard</a>.</p>
+      <p class="faq-a">Team is $8/seat/month ($6.80/seat on annual billing). The minimum is 5 seats, so the starter package is $40/month before annual savings. Limits scale with your team: 100 generations per seat (min 2,000) and 5 projects per seat (min 250). Add seats anytime from the <a href="dashboard.html">billing dashboard</a>.</p>
     </div>
   </section>
 </main>
@@ -791,164 +791,10 @@
   </div>
 </footer>
 
-<script>
-const hamburger = document.getElementById('hamburger');
-const navLinks = document.getElementById('navLinks');
-hamburger.addEventListener('click', () => {
-  hamburger.classList.toggle('open');
-  navLinks.classList.toggle('open');
-});
-navLinks.querySelectorAll('a').forEach(a => {
-  a.addEventListener('click', () => {
-    hamburger.classList.remove('open');
-    navLinks.classList.remove('open');
-  });
-});
-
-function isPrivateIpv4(hostname) {
-  return /^10\./.test(hostname)
-    || /^192\.168\./.test(hostname)
-    || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname);
-}
-
-function isLocalContext() {
-  return location.hostname === 'localhost' || location.hostname === '127.0.0.1' || isPrivateIpv4(location.hostname);
-}
-
-function getApiUrl() {
-  const saved = localStorage.getItem('cullit_api_url');
-  if (isLocalContext() && (!saved || /api\.cullit\.io/i.test(saved))) return 'http://localhost:3000';
-  if (saved) return saved.replace(/\/+$/, '');
-  if (isLocalContext()) {
-    return 'http://localhost:3000';
-  }
-  return 'https://api.cullit.io';
-}
-
-async function trackEvent(event, metadata = {}) {
-  try {
-    await fetch(getApiUrl() + '/v1/events', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ event, source: 'pricing', metadata }),
-    });
-  } catch {
-    // best effort only
-  }
-}
-
-trackEvent('pricing_viewed');
-
-const PRO_PLAN = {
-  monthly: 9,
-  annual: 7.65,
-};
-
-const TEAM_PLAN = {
-  monthlySeat: 8,
-  annualSeat: 6.80,
-};
-
-window._annual = false;
-
-function setBilling(annual) {
-  window._annual = annual;
-  const track = document.getElementById('billingToggle');
-  const lblM = document.getElementById('lblMonthly');
-  const lblA = document.getElementById('lblAnnual');
-  track.classList.toggle('on', annual);
-  track.setAttribute('aria-checked', String(annual));
-  lblM.classList.toggle('active', !annual);
-  lblA.classList.toggle('active', annual);
-
-  // Update Pro card
-  const proPrice = document.getElementById('proPrice');
-  const proNote = document.getElementById('proAnnualNote');
-  if (annual) {
-    proPrice.innerHTML = '$' + PRO_PLAN.annual.toFixed(2) + ' <span class="period">/ mo</span>';
-    proNote.textContent = 'Billed as $' + (PRO_PLAN.annual * 12).toFixed(2) + '/yr';
-    proNote.style.display = '';
-  } else {
-    proPrice.innerHTML = '$' + PRO_PLAN.monthly + ' <span class="period">/ mo</span>';
-    proNote.style.display = 'none';
-  }
-
-  // Update Team card
-  updateTeamCard();
-  trackEvent('billing_toggle', { annual });
-}
-
-document.getElementById('billingToggle').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setBilling(!window._annual); }
-});
-
-function updateTeamCard() {
-  const seatInput = document.getElementById('teamSeats');
-  let seats = parseInt(seatInput.value, 10);
-  if (isNaN(seats) || seats < 5) seats = 5;
-  if (seats > 100) seats = 100;
-  const annual = window._annual;
-  const perSeat = annual ? TEAM_PLAN.annualSeat : TEAM_PLAN.monthlySeat;
-  const total = (perSeat * seats).toFixed(2);
-
-  const teamPrice = document.getElementById('teamPrice');
-  teamPrice.innerHTML = '$' + perSeat.toFixed(2) + ' <span class="period">/ seat / mo</span>';
-
-  const teamTotal = document.getElementById('teamTotal');
-  teamTotal.textContent = 'Total: $' + total + ' / mo';
-
-  const teamNote = document.getElementById('teamAnnualNote');
-  if (annual) {
-    teamNote.textContent = 'Billed as $' + (perSeat * seats * 12).toFixed(2) + '/yr';
-    teamNote.style.display = '';
-  } else {
-    teamNote.style.display = 'none';
-  }
-}
-
-updateTeamCard();
-
-async function startCheckout(plan, e) {
-  e.preventDefault();
-  const annual = window._annual;
-  const body = { plan, annual };
-  if (plan === 'team') {
-    const seatInput = document.getElementById('teamSeats');
-    body.seats = parseInt(seatInput ? seatInput.value : '5', 10);
-  }
-  trackEvent('checkout_started', { plan, annual, seats: body.seats });
-  try {
-    const res = await fetch(getApiUrl() + '/v1/billing/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(body),
-    });
-    if (res.status === 401) {
-      trackEvent('checkout_failed', { plan, annual, reason: 'unauthenticated' });
-      window.location.href = getApiUrl() + '/auth/login?returnTo=' + encodeURIComponent('/dashboard.html?checkout=' + plan + (annual ? '&annual=1' : ''));
-      return;
-    }
-    const data = await res.json();
-    if (data.url) {
-      trackEvent('checkout_redirected', { plan, annual });
-      window.location.href = data.url;
-    } else {
-      trackEvent('checkout_failed', { plan, annual, reason: data.error || 'unknown' });
-      alert(data.error || 'Could not start checkout. Please try again.');
-    }
-  } catch {
-    trackEvent('checkout_failed', { plan, annual, reason: 'network_error' });
-    alert('Could not reach billing service at ' + getApiUrl() + '. Check your API URL/server and try again.');
-  }
-}
-</script>
-
+<script src="assets/site-common.js" defer></script>
+<script src="assets/pricing.js" defer></script>
 <div id="cookie-consent" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#161822;border-top:1px solid #282a3a;padding:1rem 2rem;z-index:10000;font-family:'DM Sans',sans-serif;font-size:0.85rem;color:#d4d4e0;text-align:center;">
-This site uses essential cookies only &mdash; no tracking. <button onclick="document.getElementById('cookie-consent').style.display='none';localStorage.setItem('cullit_consent','1')" style="margin-left:1rem;padding:0.4rem 1.2rem;background:#5eead4;color:#0f1117;border:none;border-radius:4px;font-weight:700;cursor:pointer;">OK</button>
+This site uses essential cookies only &mdash; no tracking. <button type="button" data-cookie-consent-accept style="margin-left:1rem;padding:0.4rem 1.2rem;background:#5eead4;color:#0f1117;border:none;border-radius:4px;font-weight:700;cursor:pointer;">OK</button>
 </div>
-<script>if(!localStorage.getItem('cullit_consent'))document.getElementById('cookie-consent').style.display='block';</script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 </body>
 </html>

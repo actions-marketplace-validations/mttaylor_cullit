@@ -438,6 +438,20 @@ export async function handleGetSubscription(
   });
 }
 
+async function recordBillingAudit(
+  action: string,
+  target?: string | null,
+  metadata?: Record<string, unknown> | null,
+  userId?: string | null,
+): Promise<void> {
+  await dbRecordAuditEvent({
+    userId: userId || null,
+    action,
+    target: target || null,
+    metadata: metadata || null,
+  });
+}
+
 // --- Webhook handler ---
 
 export async function handleStripeWebhook(
@@ -449,6 +463,7 @@ export async function handleStripeWebhook(
   const sigHeader = req.headers['stripe-signature'] as string || '';
 
   if (!verifyWebhookSignature(rawBody, sigHeader)) {
+    await recordBillingAudit('billing.webhook_invalid_signature', null, { hasSignature: !!sigHeader });
     jsonFn(res, 400, { error: 'Invalid webhook signature' });
     return;
   }
@@ -458,17 +473,20 @@ export async function handleStripeWebhook(
     const parsed = JSON.parse(rawBody) as unknown;
     const normalized = toStripeEvent(parsed);
     if (!normalized) {
+      await recordBillingAudit('billing.webhook_invalid_payload');
       jsonFn(res, 400, { error: 'Invalid Stripe event payload' });
       return;
     }
     event = normalized;
   } catch {
+    await recordBillingAudit('billing.webhook_invalid_json');
     jsonFn(res, 400, { error: 'Invalid JSON' });
     return;
   }
 
   // Idempotency: skip already-processed events (DB-backed + in-memory cache)
   if (await isWebhookProcessed(event.id)) {
+    await recordBillingAudit('billing.webhook_duplicate', event.id, { type: event.type });
     jsonFn(res, 200, { received: true, duplicate: true });
     return;
   }
@@ -494,6 +512,10 @@ export async function handleStripeWebhook(
 
     jsonFn(res, 200, { received: true });
   } catch (err) {
+    await recordBillingAudit('billing.webhook_processing_failed', event.id, {
+      type: event.type,
+      error: (err as Error).message,
+    });
     log.error({ err: (err as Error).message }, 'Stripe webhook error');
     jsonFn(res, 500, { error: 'Webhook processing failed' });
   }
@@ -523,14 +545,16 @@ async function handleCheckoutComplete(sessionPayload: unknown): Promise<void> {
   // Fetch full subscription details from Stripe
   const sub = await stripeRequest<StripeSubscription>(`/subscriptions/${subscriptionId}`, 'GET');
 
+  const seats = plan === 'team'
+    ? Math.max(TEAM_MIN_SEATS, parseInt(session.metadata?.seats || String(TEAM_MIN_SEATS), 10))
+    : 0;
+
   await dbUpsertSubscription(buildSubscriptionRecord(subscriptionId, userId, customerId, plan, sub));
+  await recordBillingAudit('billing.checkout_completed', subscriptionId, { customerId, plan, seats }, userId);
 
   log.info({ userId, plan, customerId }, 'Checkout complete');
 
   // Provision team API keys if this is a team plan
-  const seats = plan === 'team'
-    ? Math.max(TEAM_MIN_SEATS, parseInt(session.metadata?.seats || String(TEAM_MIN_SEATS), 10))
-    : 0;
   if (seats > 0) {
     // Retry up to 3 times — user was already charged, keys MUST be provisioned
     let attempt = 0;
@@ -673,6 +697,11 @@ async function handleSubscriptionUpdate(subscriptionPayload: unknown): Promise<v
         }
       }
     } catch (err) {
+      await recordBillingAudit('billing.team_sync_failed', subscription.id, {
+        plan,
+        seats,
+        error: (err as Error).message,
+      }, user.id);
       log.error({ err: (err as Error).message, userId: user.id, plan, seats }, 'Failed to provision/adjust team API keys on subscription update');
     }
   } else if (user.org_id) {
@@ -696,6 +725,12 @@ async function handleSubscriptionUpdate(subscriptionPayload: unknown): Promise<v
     }
   }
 
+  await recordBillingAudit('billing.subscription_updated', subscription.id, {
+    plan,
+    seats,
+    status: subscription.status,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end,
+  }, user.id);
   log.info({ userId: user.id, plan, status: subscription.status }, 'Subscription updated');
 }
 
@@ -721,6 +756,10 @@ async function handleSubscriptionDeleted(subscriptionPayload: unknown): Promise<
   // Update subscription record
   await dbUpsertSubscription(buildSubscriptionRecord(subscription.id, user.id, customerId, 'free', null, { status: 'canceled' }));
 
+  await recordBillingAudit('billing.subscription_deleted', subscription.id, {
+    customerId,
+    status: subscription.status,
+  }, user.id);
   log.info({ userId: user.id, customerId }, 'Subscription canceled');
 }
 
@@ -742,6 +781,10 @@ async function handlePaymentFailed(invoicePayload: unknown): Promise<void> {
     await dbUpsertSubscription(buildSubscriptionRecord(subscriptionId, user.id, customerId, plan, null, { status: 'past_due' }));
   }
 
+  await recordBillingAudit('billing.payment_failed', invoice.id, {
+    customerId,
+    subscriptionId: invoice.subscription,
+  }, user.id);
   log.info({ userId: user.id, customerId, invoiceId: invoice.id }, 'Payment failed');
 
   // Notify the user so they can update their payment method
