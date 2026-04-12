@@ -26,15 +26,9 @@ describe('Email Module', () => {
     expect(result).toBe(false);
   });
 
-  it('sendSubscriptionConfirmed handles team-10 plan', async () => {
+  it('sendSubscriptionConfirmed handles team plan', async () => {
     const { sendSubscriptionConfirmed } = await import('../src/email.js');
-    const result = await sendSubscriptionConfirmed('test@example.com', 'Test User', 'team-10');
-    expect(result).toBe(false);
-  });
-
-  it('sendSubscriptionConfirmed handles team-25 plan', async () => {
-    const { sendSubscriptionConfirmed } = await import('../src/email.js');
-    const result = await sendSubscriptionConfirmed('test@example.com', 'Test User', 'team-25');
+    const result = await sendSubscriptionConfirmed('test@example.com', 'Test User', 'team');
     expect(result).toBe(false);
   });
 

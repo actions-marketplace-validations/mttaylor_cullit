@@ -42,8 +42,9 @@ export class GitCollector implements Collector {
   }
 
   private getLog(from: string, to: string): string {
-    // Format: hash|shortHash|author|date|subject|body
-    const format = '%H|%h|%an|%aI|%s|%b';
+    // Format: hash<RS>shortHash<RS>author<RS>date<RS>subject<RS>body
+    // Uses ASCII Record Separator (%x1e) to avoid conflicts with pipe in commit messages
+    const format = '%H%x1e%h%x1e%an%x1e%aI%x1e%s%x1e%b';
     const separator = '---CULLIT_COMMIT---';
 
     try {
@@ -75,9 +76,9 @@ export class GitCollector implements Collector {
     const entries = log.split(separator).filter(e => e.trim());
 
     return entries.map(entry => {
-      const parts = entry.trim().split('|');
+      const parts = entry.trim().split('\x1e');
       const [hash, shortHash, author, date, message, ...bodyParts] = parts;
-      const body = bodyParts.join('|').trim() || undefined;
+      const body = bodyParts.join('\x1e').trim() || undefined;
       const fullMessage = body ? `${message}\n${body}` : message;
 
       return {
@@ -171,7 +172,7 @@ export function getCommitsSince(from: string, to: string, cwd: string = process.
   validateRef(from);
   validateRef(to);
 
-  const format = '%H|%h|%an|%aI|%s';
+  const format = '%H%x1e%h%x1e%an%x1e%aI%x1e%s';
   const separator = '---CULLIT_COMMIT---';
 
   const log = execFileSync(
@@ -183,13 +184,13 @@ export function getCommitsSince(from: string, to: string, cwd: string = process.
   if (!log.trim()) return [];
 
   return log.split(separator).filter(e => e.trim()).map(entry => {
-    const [hash, shortHash, author, date, ...msgParts] = entry.trim().split('|');
+    const [hash, shortHash, author, date, ...msgParts] = entry.trim().split('\x1e');
     return {
       hash: hash.trim(),
       shortHash: shortHash.trim(),
       author: author.trim(),
       date: date.trim(),
-      message: msgParts.join('|').trim(),
+      message: msgParts.join('\x1e').trim(),
     };
   });
 }

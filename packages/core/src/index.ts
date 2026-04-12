@@ -14,9 +14,8 @@ export {
   AI_PROVIDERS, OUTPUT_FORMATS, PUBLISHER_TYPES, ENRICHMENT_TYPES,
   CHANGE_CATEGORIES, AUDIENCES, TONES, SOURCE_TYPES,
   TIERS, PAID_TIERS, TEAM_TIERS,
-  TEAM_PLANS, TEAM_PLAN_SEATS,
+  TEAM_SEAT_PRICE, TEAM_MIN_SEATS, TEAM_ANNUAL_DISCOUNT,
 } from './constants';
-export type { TeamPlan } from './constants';
 export { createLogger } from './logger';
 export type { Logger, LogLevel } from './logger';
 import { DEFAULT_MODELS } from './constants';
@@ -29,7 +28,7 @@ export { formatNotes, registerFormatter, getFormatter, listFormatters, escapeHtm
 export { StdoutPublisher, FilePublisher } from './publishers/index';
 export { analyzeReleaseReadiness } from './advisor';
 export type { ReleaseAdvisory, SemverBump } from './advisor';
-export { resolveLicense, validateLicense, isProviderAllowed, isPublisherAllowed, isEnrichmentAllowed, isAudienceToneAllowed, upgradeMessage, getTierLimits, getPlanLimits, reportUsage, isFeatureAllowed, isPlanFeatureAllowed, getFeatureGating } from './gate';
+export { resolveLicense, validateLicense, isProviderAllowed, isPublisherAllowed, isEnrichmentAllowed, isAudienceToneAllowed, upgradeMessage, getTierLimits, getTeamLimits, reportUsage, isFeatureAllowed, isPlanFeatureAllowed, getFeatureGating } from './gate';
 export type { LicenseTier, LicenseStatus, UsageLimits, TeamFeature } from './gate';
 export {
   registerCollector, registerEnricher, registerGenerator, registerPublisher,

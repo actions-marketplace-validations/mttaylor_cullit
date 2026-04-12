@@ -2,23 +2,25 @@
  * Cullit Stripe Billing
  *
  * Handles:
- *   - Checkout session creation (Pro / Team 5/10/25 plans)
+ *   - Checkout session creation (Pro / Team with dynamic seats)
  *   - Webhook processing (subscription lifecycle)
  *   - Customer portal sessions
  *   - Tier sync (Stripe status → user tier in DB)
  *   - Team API key provisioning and lifecycle (create on checkout, revoke on cancel/downgrade)
+ *
+ * Simplified pricing model:
+ *   Free  → $0 (3 gens/month)
+ *   Pro   → $9/mo single user (500 gens/month)
+ *   Team  → $8/seat/mo, min 5 seats (dynamic limits)
+ *   Enterprise → custom
  *
  * Environment Variables:
  *   STRIPE_SECRET_KEY            — Stripe API secret key (sk_test_... or sk_live_...)
  *   STRIPE_WEBHOOK_SECRET        — Webhook endpoint signing secret (whsec_...)
  *   STRIPE_PRO_PRICE_ID          — Price ID for Pro plan ($9/mo)
  *   STRIPE_PRO_ANNUAL_PRICE_ID   — Price ID for Pro annual plan (~$91.80/yr, 15% off)
- *   STRIPE_TEAM_5_PRICE_ID       — Price ID for Team 5 plan ($44.99/mo, 5 seats)
- *   STRIPE_TEAM_5_ANNUAL_PRICE_ID  — Price ID for Team 5 annual plan (~$458.90/yr, 15% off)
- *   STRIPE_TEAM_10_PRICE_ID      — Price ID for Team 10 plan ($89/mo, 10 seats)
- *   STRIPE_TEAM_10_ANNUAL_PRICE_ID — Price ID for Team 10 annual plan (~$907.80/yr, 15% off)
- *   STRIPE_TEAM_25_PRICE_ID      — Price ID for Team 25 plan ($209/mo, 25 seats)
- *   STRIPE_TEAM_25_ANNUAL_PRICE_ID — Price ID for Team 25 annual plan (~$2131.80/yr, 15% off)
+ *   STRIPE_TEAM_PRICE_ID         — Price ID for Team per-seat ($8/seat/mo)
+ *   STRIPE_TEAM_ANNUAL_PRICE_ID  — Price ID for Team per-seat annual ($6.80/seat/mo)
  *   CULLIT_BASE_URL              — Public base URL for success/cancel redirects
  *
  * NOTE: We use Stripe's REST API directly instead of the SDK
@@ -42,27 +44,19 @@ import { createOrg } from './auth.js';
 import { isRecord } from './utils.js';
 import { log } from './logger.js';
 import { sendPaymentFailed, sendSubscriptionConfirmed } from './email.js';
-import { TEAM_PLAN_SEATS } from '@cullit/core';
+import { TEAM_MIN_SEATS } from '@cullit/core';
 
 const STRIPE_SECRET_KEY = process.env['STRIPE_SECRET_KEY'] || '';
 const STRIPE_WEBHOOK_SECRET = process.env['STRIPE_WEBHOOK_SECRET'] || '';
-// Monthly price IDs
+// Price IDs
 const STRIPE_PRO_PRICE_ID = process.env['STRIPE_PRO_PRICE_ID'] || '';
-const STRIPE_TEAM_PRICE_ID = process.env['STRIPE_TEAM_PRICE_ID'] || '';
-const STRIPE_TEAM_5_PRICE_ID = process.env['STRIPE_TEAM_5_PRICE_ID'] || STRIPE_TEAM_PRICE_ID;
-const STRIPE_TEAM_10_PRICE_ID = process.env['STRIPE_TEAM_10_PRICE_ID'] || '';
-const STRIPE_TEAM_25_PRICE_ID = process.env['STRIPE_TEAM_25_PRICE_ID'] || '';
-// Annual price IDs (15% discount, billed yearly)
 const STRIPE_PRO_ANNUAL_PRICE_ID = process.env['STRIPE_PRO_ANNUAL_PRICE_ID'] || '';
-const STRIPE_TEAM_5_ANNUAL_PRICE_ID = process.env['STRIPE_TEAM_5_ANNUAL_PRICE_ID'] || '';
-const STRIPE_TEAM_10_ANNUAL_PRICE_ID = process.env['STRIPE_TEAM_10_ANNUAL_PRICE_ID'] || '';
-const STRIPE_TEAM_25_ANNUAL_PRICE_ID = process.env['STRIPE_TEAM_25_ANNUAL_PRICE_ID'] || '';
+const STRIPE_TEAM_PRICE_ID = process.env['STRIPE_TEAM_PRICE_ID'] || '';
+const STRIPE_TEAM_ANNUAL_PRICE_ID = process.env['STRIPE_TEAM_ANNUAL_PRICE_ID'] || '';
 
 if (STRIPE_SECRET_KEY) {
   if (!STRIPE_PRO_PRICE_ID) log.warn('STRIPE_PRO_PRICE_ID not set — Pro checkout will fail');
-  if (!STRIPE_TEAM_5_PRICE_ID) log.warn('STRIPE_TEAM_5_PRICE_ID not set — Team 5 checkout will fail');
-  if (!STRIPE_TEAM_10_PRICE_ID) log.warn('STRIPE_TEAM_10_PRICE_ID not set — Team 10 checkout will fail');
-  if (!STRIPE_TEAM_25_PRICE_ID) log.warn('STRIPE_TEAM_25_PRICE_ID not set — Team 25 checkout will fail');
+  if (!STRIPE_TEAM_PRICE_ID) log.warn('STRIPE_TEAM_PRICE_ID not set — Team checkout will fail');
 }
 const BASE_URL = process.env['CULLIT_BASE_URL'] || 'http://localhost:3000';
 const DASHBOARD_URL = process.env['CULLIT_DASHBOARD_URL'] || BASE_URL;
@@ -108,7 +102,7 @@ interface StripeEvent {
 
 interface StripeCheckoutSession {
   client_reference_id?: string;
-  metadata?: { user_id?: string; plan?: string };
+  metadata?: { user_id?: string; plan?: string; seats?: string };
   customer?: string;
   subscription?: string;
 }
@@ -120,7 +114,7 @@ interface StripeSubscription {
   current_period_start?: number;
   current_period_end?: number;
   cancel_at_period_end?: boolean;
-  items?: { data?: Array<{ id?: string; price?: { id?: string } }> };
+  items?: { data?: Array<{ id?: string; quantity?: number; price?: { id?: string } }> };
 }
 
 interface StripeInvoice {
@@ -146,6 +140,7 @@ function toStripeCheckoutSession(value: unknown): StripeCheckoutSession | null {
       ? {
           user_id: typeof value.metadata.user_id === 'string' ? value.metadata.user_id : undefined,
           plan: typeof value.metadata.plan === 'string' ? value.metadata.plan : undefined,
+          seats: typeof value.metadata.seats === 'string' ? value.metadata.seats : undefined,
         }
       : undefined,
     customer: typeof value.customer === 'string' ? value.customer : undefined,
@@ -159,7 +154,7 @@ function toStripeSubscription(value: unknown): StripeSubscription | null {
   }
 
   const items = isRecord(value.items) && Array.isArray(value.items.data)
-    ? { data: value.items.data.filter(isRecord).map(item => ({ id: typeof item.id === 'string' ? item.id : undefined, price: isRecord(item.price) ? { id: typeof item.price.id === 'string' ? item.price.id : undefined } : undefined })) }
+    ? { data: value.items.data.filter(isRecord).map(item => ({ id: typeof item.id === 'string' ? item.id : undefined, quantity: typeof item.quantity === 'number' ? item.quantity : undefined, price: isRecord(item.price) ? { id: typeof item.price.id === 'string' ? item.price.id : undefined } : undefined })) }
     : undefined;
 
   return {
@@ -236,22 +231,19 @@ export function verifyWebhookSignature(payload: string, sigHeader: string): bool
 
 export function priceToPlan(priceId: string): string {
   if (priceId === STRIPE_PRO_PRICE_ID || priceId === STRIPE_PRO_ANNUAL_PRICE_ID) return 'pro';
-  if (priceId === STRIPE_TEAM_5_PRICE_ID || priceId === STRIPE_TEAM_5_ANNUAL_PRICE_ID) return 'team-5';
-  if (priceId === STRIPE_TEAM_10_PRICE_ID || priceId === STRIPE_TEAM_10_ANNUAL_PRICE_ID) return 'team-10';
-  if (priceId === STRIPE_TEAM_25_PRICE_ID || priceId === STRIPE_TEAM_25_ANNUAL_PRICE_ID) return 'team-25';
-  if (priceId === STRIPE_TEAM_PRICE_ID) return 'team-5'; // legacy fallback
+  if (priceId === STRIPE_TEAM_PRICE_ID || priceId === STRIPE_TEAM_ANNUAL_PRICE_ID) return 'team';
   return 'free';
 }
 
 export function planToTier(plan: string): string {
   if (plan === 'pro') return 'pro';
-  if (plan === 'team' || plan.startsWith('team-')) return 'team';
-  return 'free'; // includes legacy 'basic' plan — maps to free tier
+  if (plan === 'team') return 'team';
+  return 'free';
 }
 
-export function planToSeats(plan: string): number {
-  const seats = TEAM_PLAN_SEATS[plan as keyof typeof TEAM_PLAN_SEATS];
-  return seats || 0;
+export function planToSeats(plan: string, subscriptionQuantity?: number): number {
+  if (plan === 'team') return subscriptionQuantity || TEAM_MIN_SEATS;
+  return 0;
 }
 
 /** Build a subscription record for dbUpsertSubscription, eliminating repetition across webhook handlers. */
@@ -280,10 +272,11 @@ function buildSubscriptionRecord(
 
 export async function handleCheckout(
   userId: string,
-  plan: 'pro' | 'team-5' | 'team-10' | 'team-25',
+  plan: 'pro' | 'team',
   annual: boolean,
   jsonFn: (res: ServerResponse, status: number, body: unknown) => void,
   res: ServerResponse,
+  seats?: number,
 ): Promise<void> {
   if (!STRIPE_SECRET_KEY) {
     jsonFn(res, 503, { error: 'Billing is not configured' });
@@ -296,15 +289,12 @@ export async function handleCheckout(
     return;
   }
 
-  // Resolve price ID — prefer annual if requested and configured, fall back to monthly
-  const monthlyPriceId = plan === 'team-25' ? STRIPE_TEAM_25_PRICE_ID
-    : plan === 'team-10' ? STRIPE_TEAM_10_PRICE_ID
-    : plan === 'team-5' ? STRIPE_TEAM_5_PRICE_ID
-    : STRIPE_PRO_PRICE_ID;
-  const annualPriceId = plan === 'team-25' ? STRIPE_TEAM_25_ANNUAL_PRICE_ID
-    : plan === 'team-10' ? STRIPE_TEAM_10_ANNUAL_PRICE_ID
-    : plan === 'team-5' ? STRIPE_TEAM_5_ANNUAL_PRICE_ID
-    : STRIPE_PRO_ANNUAL_PRICE_ID;
+  // Team requires minimum 5 seats
+  const seatCount = plan === 'team' ? Math.max(TEAM_MIN_SEATS, Math.min(seats || TEAM_MIN_SEATS, 100)) : 1;
+
+  // Resolve price ID
+  const monthlyPriceId = plan === 'team' ? STRIPE_TEAM_PRICE_ID : STRIPE_PRO_PRICE_ID;
+  const annualPriceId = plan === 'team' ? STRIPE_TEAM_ANNUAL_PRICE_ID : STRIPE_PRO_ANNUAL_PRICE_ID;
   const priceId = (annual && annualPriceId) ? annualPriceId : monthlyPriceId;
   if (!priceId) {
     jsonFn(res, 503, { error: `Price not configured for ${plan} plan` });
@@ -319,14 +309,15 @@ export async function handleCheckout(
       const sub = await stripeRequest<StripeSubscription>(`/subscriptions/${existingSub.stripe_subscription_id}`, 'GET');
       const itemId = sub.items?.data?.[0]?.id;
       if (itemId) {
-        // Update the subscription in-place: swap price, prorate immediately
-        // Idempotency key prevents duplicate charges on network retry
-        const idempotencyKey = `sub_update_${userId}_${plan}_${existingSub.stripe_subscription_id}`;
+        // Update the subscription in-place: swap price, update quantity, prorate immediately
+        const idempotencyKey = `sub_update_${userId}_${plan}_${seatCount}_${existingSub.stripe_subscription_id}`;
         await stripeRequest(`/subscriptions/${existingSub.stripe_subscription_id}`, 'POST', {
           'items[0][id]': itemId,
           'items[0][price]': priceId,
+          'items[0][quantity]': String(seatCount),
           'proration_behavior': 'create_prorations',
           'metadata[plan]': plan,
+          'metadata[seats]': String(seatCount),
           'Idempotency-Key': idempotencyKey,
         });
 
@@ -334,8 +325,8 @@ export async function handleCheckout(
         const tier = planToTier(plan);
         await dbUpdateUserTier(userId, tier);
 
-        log.info({ userId, plan, subscriptionId: existingSub.stripe_subscription_id }, 'Subscription updated (plan change)');
-        jsonFn(res, 200, { updated: true, plan });
+        log.info({ userId, plan, seats: seatCount, subscriptionId: existingSub.stripe_subscription_id }, 'Subscription updated (plan change)');
+        jsonFn(res, 200, { updated: true, plan, seats: seatCount });
         return;
       }
     } catch (err) {
@@ -346,16 +337,17 @@ export async function handleCheckout(
   }
 
   // Idempotency key prevents duplicate checkout sessions on network retry
-  const idempotencyKey = `checkout_${userId}_${plan}_${Math.floor(Date.now() / 60_000)}`;
+  const idempotencyKey = `checkout_${userId}_${plan}_${seatCount}_${Math.floor(Date.now() / 60_000)}`;
   const params: Record<string, string> = {
     'mode': 'subscription',
     'line_items[0][price]': priceId,
-    'line_items[0][quantity]': '1',
+    'line_items[0][quantity]': String(seatCount),
     'success_url': `${DASHBOARD_URL}/dashboard.html?billing=success`,
     'cancel_url': `${DASHBOARD_URL}/dashboard.html?billing=cancelled`,
     'client_reference_id': userId,
     'metadata[user_id]': userId,
     'metadata[plan]': plan,
+    'metadata[seats]': String(seatCount),
     'Idempotency-Key': idempotencyKey,
   };
 
@@ -483,12 +475,6 @@ export async function handleStripeWebhook(
   }
 
   try {
-    // Mark processed BEFORE handling to close the race window where a duplicate
-    // webhook could slip through during processing. If handling fails, the
-    // catch block returns 500 so Stripe will retry (and the idempotent handler
-    // will silently skip the already-processed event).
-    await markWebhookProcessed(event.id, event.type);
-
     switch (event.type) {
       case 'checkout.session.completed':
         await handleCheckoutComplete(event.data?.object);
@@ -503,6 +489,9 @@ export async function handleStripeWebhook(
         await handlePaymentFailed(event.data?.object);
         break;
     }
+
+    // Mark processed AFTER successful handling so Stripe can retry on failure
+    await markWebhookProcessed(event.id, event.type);
 
     jsonFn(res, 200, { received: true });
   } catch (err) {
@@ -540,7 +529,9 @@ async function handleCheckoutComplete(sessionPayload: unknown): Promise<void> {
   log.info({ userId, plan, customerId }, 'Checkout complete');
 
   // Provision team API keys if this is a team plan
-  const seats = planToSeats(plan);
+  const seats = plan === 'team'
+    ? Math.max(TEAM_MIN_SEATS, parseInt(session.metadata?.seats || String(TEAM_MIN_SEATS), 10))
+    : 0;
   if (seats > 0) {
     // Retry up to 3 times — user was already charged, keys MUST be provisioned
     let attempt = 0;
@@ -649,6 +640,7 @@ async function handleSubscriptionUpdate(subscriptionPayload: unknown): Promise<v
   if (!user) return;
 
   const priceId = subscription.items?.data?.[0]?.price?.id || '';
+  const quantity = subscription.items?.data?.[0]?.quantity || TEAM_MIN_SEATS;
   const plan = priceToPlan(priceId);
   const tier = planToTier(plan);
 
@@ -658,9 +650,8 @@ async function handleSubscriptionUpdate(subscriptionPayload: unknown): Promise<v
   // Update subscription record
   await dbUpsertSubscription(buildSubscriptionRecord(subscription.id, user.id, customerId, plan, subscription));
 
-  // Provision additional team keys on upgrade (e.g. team-5 → team-10)
-  // or revoke excess keys on downgrade (e.g. team-10 → team-5)
-  const seats = planToSeats(plan);
+  // Provision additional team keys on upgrade or revoke excess on downgrade
+  const seats = planToSeats(plan, quantity);
   if (seats > 0) {
     try {
       await provisionTeamKeys(user.id, plan, seats);
@@ -668,11 +659,7 @@ async function handleSubscriptionUpdate(subscriptionPayload: unknown): Promise<v
       if (user.org_id) {
         const revoked = await dbRevokeExcessTeamApiKeys(user.org_id, seats);
         if (revoked > 0) {
-          log.info({ userId: user.id, orgId: user.org_id, plan, revoked }, 'Revoked excess team API keys after plan downgrade');
-          // Notify org owner about revoked keys
-          if (user.email) {
-            sendSubscriptionConfirmed(user.email, user.name || user.login, plan).catch(() => {});
-          }
+          log.info({ userId: user.id, orgId: user.org_id, plan, revoked }, 'Revoked excess team API keys after seat reduction');
         }
       }
     } catch (err) {
@@ -683,10 +670,6 @@ async function handleSubscriptionUpdate(subscriptionPayload: unknown): Promise<v
     const revoked = await dbRevokeAllOrgTeamApiKeys(user.org_id);
     if (revoked > 0) {
       log.info({ userId: user.id, orgId: user.org_id, revoked }, 'Revoked all team API keys after downgrade to non-team plan');
-      // Notify user that team keys were revoked
-      if (user.email) {
-        sendSubscriptionConfirmed(user.email, user.name || user.login, plan).catch(() => {});
-      }
     }
   }
 

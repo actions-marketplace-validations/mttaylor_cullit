@@ -43,8 +43,8 @@ describe('analyzeReleaseReadiness', () => {
       if (argsArr.includes('-1') && argsArr.some((a: string) => a.includes('%aI'))) return `${tagIso}\n`;
       if (argsArr.includes('--no-merges')) {
         return [
-          `aaa|aaa|matt|${c1Iso}|chore: update deps|${sep}`,
-          `bbb|bbb|matt|${c2Iso}|docs: fix typo|${sep}`,
+          `aaa\x1eaaa\x1ematt\x1e${c1Iso}\x1echore: update deps\x1e${sep}`,
+          `bbb\x1ebbb\x1ematt\x1e${c2Iso}\x1edocs: fix typo\x1e${sep}`,
         ].join('\n');
       }
       if (argsArr.includes('tag')) return 'v1.0.0\n';
@@ -69,11 +69,11 @@ describe('analyzeReleaseReadiness', () => {
       if (argsArr.includes('-1') && argsArr.some((a: string) => a.includes('%aI'))) return '2026-03-01T00:00:00Z\n';
       if (argsArr.includes('--no-merges')) {
         return [
-          `aaa|aaa|alice|2026-03-12|feat: add SSO support|${sep}`,
-          `bbb|bbb|bob|2026-03-11|fix: login crash|${sep}`,
-          `ccc|ccc|alice|2026-03-10|feat: add dark mode|${sep}`,
-          `ddd|ddd|alice|2026-03-09|feat: add export|${sep}`,
-          `eee|eee|bob|2026-03-08|chore: deps|${sep}`,
+          `aaa\x1eaaa\x1ealice\x1e2026-03-12\x1efeat: add SSO support\x1e${sep}`,
+          `bbb\x1ebbb\x1ebob\x1e2026-03-11\x1efix: login crash\x1e${sep}`,
+          `ccc\x1eccc\x1ealice\x1e2026-03-10\x1efeat: add dark mode\x1e${sep}`,
+          `ddd\x1eddd\x1ealice\x1e2026-03-09\x1efeat: add export\x1e${sep}`,
+          `eee\x1eeee\x1ebob\x1e2026-03-08\x1echore: deps\x1e${sep}`,
         ].join('\n');
       }
       if (argsArr.includes('tag')) return 'v1.0.0\n';
@@ -98,7 +98,7 @@ describe('analyzeReleaseReadiness', () => {
       if (argsArr.includes('describe')) return 'v2.0.0\n';
       if (argsArr.includes('-1') && argsArr.some((a: string) => a.includes('%aI'))) return '2026-03-11T00:00:00Z\n';
       if (argsArr.includes('--no-merges')) {
-        return `aaa|aaa|matt|2026-03-12|feat!: redesign config format|${sep}\n`;
+        return `aaa\x1eaaa\x1ematt\x1e2026-03-12\x1efeat!: redesign config format\x1e${sep}\n`;
       }
       if (argsArr.includes('tag')) return 'v2.0.0\n';
       return '';
@@ -120,7 +120,7 @@ describe('analyzeReleaseReadiness', () => {
       if (argsArr.includes('describe')) return 'v1.0.0\n';
       if (argsArr.includes('-1') && argsArr.some((a: string) => a.includes('%aI'))) return '2026-03-11T00:00:00Z\n';
       if (argsArr.includes('--no-merges')) {
-        return `aaa|aaa|matt|2026-03-12|fix: security vulnerability in auth|${sep}\n`;
+        return `aaa\x1eaaa\x1ematt\x1e2026-03-12\x1efix: security vulnerability in auth\x1e${sep}\n`;
       }
       if (argsArr.includes('tag')) return 'v1.0.0\n';
       return '';
@@ -141,7 +141,7 @@ describe('analyzeReleaseReadiness', () => {
       if (argsArr.includes('describe')) return 'v1.0.0\n';
       if (argsArr.includes('-1') && argsArr.some((a: string) => a.includes('%aI'))) return `${oldDate}\n`;
       if (argsArr.includes('--no-merges')) {
-        return `aaa|aaa|matt|2026-03-01|chore: update deps|${sep}\n`;
+        return `aaa\x1eaaa\x1ematt\x1e2026-03-01\x1echore: update deps\x1e${sep}\n`;
       }
       if (argsArr.includes('tag')) return 'v1.0.0\n';
       return '';
@@ -179,7 +179,7 @@ describe('analyzeReleaseReadiness', () => {
       if (argsArr.includes('describe')) return 'v2.3.4\n';
       if (argsArr.includes('-1') && argsArr.some((a: string) => a.includes('%aI'))) return '2026-03-11T00:00:00Z\n';
       if (argsArr.includes('--no-merges')) {
-        return `aaa|aaa|matt|2026-03-12|fix: typo|${sep}\n`;
+        return `aaa\x1eaaa\x1ematt\x1e2026-03-12\x1efix: typo\x1e${sep}\n`;
       }
       if (argsArr.includes('tag')) return 'v2.3.4\n';
       return '';

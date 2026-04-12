@@ -1550,42 +1550,29 @@
           <button class="btn-small plan-upgrade-btn" onclick="upgradePlan('pro')">Upgrade</button>
           <span style="display:block;font-size:0.7rem;color:var(--accent);margin-top:0.4rem;opacity:0.85">Save 15% with annual billing</span>
         </div>
-        <div class="billing-plan-option" id="planTeam5">
-          <div class="plan-tier">Team 5</div>
-          <div class="plan-price">$44.99<span>/mo</span></div>
+        <div class="billing-plan-option" id="planTeam">
+          <div class="plan-tier">Team</div>
+          <div class="plan-price">$8<span>/seat/mo</span></div>
           <ul class="plan-features">
-            <li>5 API keys / seats</li>
+            <li>Min 5 seats</li>
             <li>2,000 generations / month</li>
             <li>250 projects</li>
-            <li>Team management</li>
+            <li>All team features + analytics</li>
           </ul>
-          <button class="btn-small plan-upgrade-btn" onclick="upgradePlan('team-5')">Upgrade</button>
-          <span style="display:block;font-size:0.7rem;color:var(--accent);margin-top:0.4rem;opacity:0.85">Save 15% with annual billing</span>
-        </div>
-        <div class="billing-plan-option" id="planTeam10">
-          <div class="plan-tier">Team 10</div>
-          <div class="plan-price">$89<span>/mo</span></div>
-          <ul class="plan-features">
-            <li>10 API keys / seats</li>
-            <li>4,000 generations / month</li>
-            <li>350 projects</li>
-            <li>Priority support</li>
-          </ul>
-          <button class="btn-small plan-upgrade-btn" onclick="upgradePlan('team-10')">Upgrade</button>
-          <span style="display:block;font-size:0.7rem;color:var(--accent);margin-top:0.4rem;opacity:0.85">Save 15% with annual billing</span>
-        </div>
-        <div class="billing-plan-option" id="planTeam25">
-          <div class="plan-tier">Team 25</div>
-          <div class="plan-price">$209<span>/mo</span></div>
-          <ul class="plan-features">
-            <li>25 API keys / seats</li>
-            <li>5,000 generations / month</li>
-            <li>500 projects</li>
-            <li>Branded widget &amp; templates</li>
-            <li>Audit logs</li>
-          </ul>
-          <button class="btn-small plan-upgrade-btn" onclick="upgradePlan('team-25')">Upgrade</button>
-          <span style="display:block;font-size:0.7rem;color:var(--accent);margin-top:0.4rem;opacity:0.85">Save 15% with annual billing</span>
+          <div style="margin-top:0.6rem;text-align:center">
+            <label style="font-size:0.75rem;color:var(--text-dim)">Seats</label>
+            <input type="number" id="dashTeamSeats" min="5" max="100" value="5" oninput="updateTeamTotal()" style="width:4rem;margin:0 0.4rem;background:var(--card-bg);color:var(--text);border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:0.2rem 0.4rem;font-size:0.75rem;text-align:center">
+            <span id="dashTeamTotal" style="font-size:0.8rem;font-weight:600;color:var(--accent)">$40/mo</span>
+          </div>
+          <button class="btn-small plan-upgrade-btn" style="margin-top:0.5rem" onclick="upgradePlan('team')">Upgrade</button>
+          <div id="manageSeatsSection" style="display:none;margin-top:0.5rem;text-align:center">
+            <div style="display:flex;align-items:center;justify-content:center;gap:0.3rem;margin-bottom:0.4rem">
+              <button class="btn-small" id="seatDecrBtn" onclick="adjustSeats(-1)" style="width:2rem;height:2rem;padding:0;font-size:1rem;line-height:1">−</button>
+              <button class="btn-small" id="seatIncrBtn" onclick="adjustSeats(1)" style="width:2rem;height:2rem;padding:0;font-size:1rem;line-height:1">+</button>
+            </div>
+            <button class="btn-small" id="updateSeatsBtn" onclick="updateTeamSeats()" style="display:none;margin-top:0.3rem;width:100%;background:var(--teal);color:#fff">Update Seats</button>
+            <p id="prorationNote" style="display:none;font-size:0.7rem;color:var(--text-dim);margin-top:0.3rem;line-height:1.4">Changes are prorated — you'll be charged or credited for the remainder of your billing cycle.</p>
+          </div>
         </div>
         <div class="billing-plan-option" id="planEnterprise">
           <div class="plan-tier">Enterprise</div>
@@ -1671,6 +1658,7 @@
 let currentOutput = '';
 let currentView = 'rendered';
 let currentUser = null;
+let manageSeatCount = 5;
 
 function capitalize(text) {
   return text ? text.charAt(0).toUpperCase() + text.slice(1) : '';
@@ -1813,9 +1801,9 @@ function showDashboard() {
   // Auto-trigger checkout if redirected from pricing page with ?checkout=pro|team
   const params = new URLSearchParams(location.search);
   const pendingPlan = params.get('checkout');
-  if (pendingPlan && ['pro', 'team-5', 'team-10', 'team-25'].includes(pendingPlan)) {
+  if (pendingPlan && ['pro', 'team'].includes(pendingPlan)) {
     history.replaceState(null, '', 'dashboard.html');
-    upgradePlan(pendingPlan === 'team' ? 'team-5' : pendingPlan);
+    upgradePlan(pendingPlan);
   }
 
   // Poll for tier update after successful Stripe checkout
@@ -2393,7 +2381,70 @@ function showToast(msg) {
 
 // --- Billing ---
 
-const TIER_LIMITS = { free: 3, pro: 500, team: 2000, 'team-5': 2000, 'team-10': 4000, 'team-25': 5000, enterprise: Infinity };
+const TIER_LIMITS = { free: 3, pro: 500, team: 2000, enterprise: Infinity };
+
+function updateTeamTotal() {
+  const input = document.getElementById('dashTeamSeats');
+  const display = document.getElementById('dashTeamTotal');
+  if (input && display) {
+    const seats = Math.max(5, parseInt(input.value) || 5);
+    display.textContent = '$' + (seats * 8) + '/mo';
+  }
+  // Toggle Update button when manage section is visible
+  const manageSection = document.getElementById('manageSeatsSection');
+  if (manageSection && manageSection.style.display !== 'none' && input) {
+    const seats = Math.max(5, parseInt(input.value) || 5);
+    const changed = seats !== manageSeatCount;
+    const updateBtn = document.getElementById('updateSeatsBtn');
+    const proNote = document.getElementById('prorationNote');
+    if (updateBtn) updateBtn.style.display = changed ? '' : 'none';
+    if (proNote) proNote.style.display = changed ? '' : 'none';
+  }
+}
+
+function adjustSeats(delta) {
+  const input = document.getElementById('dashTeamSeats');
+  if (!input) return;
+  const current = parseInt(input.value) || 5;
+  const newVal = Math.max(5, Math.min(100, current + delta));
+  input.value = newVal;
+  updateTeamTotal();
+  document.getElementById('seatDecrBtn').disabled = newVal <= 5;
+  document.getElementById('seatIncrBtn').disabled = newVal >= 100;
+}
+
+async function updateTeamSeats() {
+  const input = document.getElementById('dashTeamSeats');
+  const newSeats = Math.max(5, Math.min(100, parseInt(input ? input.value : '5', 10)));
+  if (newSeats === manageSeatCount) { showToast('Seat count unchanged'); return; }
+
+  const delta = Math.abs(newSeats - manageSeatCount);
+  const verb = newSeats > manageSeatCount ? 'Add' : 'Remove';
+  if (!confirm(verb + ' ' + delta + ' seat(s)? Your subscription will be updated with prorated billing.')) return;
+
+  const btn = document.getElementById('updateSeatsBtn');
+  try {
+    if (btn) { btn.disabled = true; btn.textContent = 'Updating\u2026'; }
+    const res = await apiFetch('/v1/billing/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan: 'team', seats: newSeats }),
+    });
+    const data = await res.json();
+    if (data.updated) {
+      manageSeatCount = data.seats || newSeats;
+      showToast('Seats updated to ' + manageSeatCount + '!');
+      const meRes = await apiFetch('/auth/me');
+      currentUser = await meRes.json();
+      loadBilling();
+    } else if (data.url) {
+      window.location.href = data.url;
+    } else {
+      showToast(data.error || 'Unable to update seats');
+    }
+  } catch { showToast('Failed to update seats. Please try again.'); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = 'Update Seats'; } }
+}
 
 // --- Drafts Management ---
 
@@ -2909,29 +2960,19 @@ async function loadBilling() {
   const planName = tier.charAt(0).toUpperCase() + tier.slice(1);
   document.getElementById('billingPlanName').textContent = planName;
 
-  // Highlight current plan card — team plan highlights the appropriate team-N card
+  // Highlight current plan card
   document.querySelectorAll('.billing-plan-option').forEach(el => el.classList.remove('current'));
-  if (tier === 'team') {
-    // Try to detect which team plan from subscription
-    const subPlan = currentUser._teamPlan || 'team-5';
-    const teamEl = document.getElementById('planTeam' + subPlan.replace('team-', ''));
-    if (teamEl) teamEl.classList.add('current');
-  } else {
-    const planEl = document.getElementById('plan' + planName);
-    if (planEl) planEl.classList.add('current');
-  }
+  const cardPlanMap = { planFree: 'free', planPro: 'pro', planTeam: 'team', planEnterprise: 'enterprise' };
+  const planEl = document.getElementById('plan' + planName);
+  if (planEl) planEl.classList.add('current');
 
   // Hide upgrade button for current plan and lower tiers (no downgrade via UI)
-  const tierRank = { free: 0, pro: 1, team: 2, 'team-5': 2, 'team-10': 2.5, 'team-25': 3, enterprise: 4 };
-  const currentPlan = tier === 'team' ? (currentUser._teamPlan || 'team-5') : tier;
-  const currentRank = tierRank[currentPlan] || 0;
+  const tierRank = { free: 0, pro: 1, team: 2, enterprise: 3 };
+  const currentRank = tierRank[tier] || 0;
   document.querySelectorAll('.billing-plan-option').forEach(function(el) {
     const btn = el.querySelector('.plan-upgrade-btn');
     if (!btn) return;
-    const cardId = (el.id || '').replace('plan', '');
-    // Map card IDs to plan keys
-    const cardPlanMap = { Free: 'free', Pro: 'pro', Team5: 'team-5', Team10: 'team-10', Team25: 'team-25', Enterprise: 'enterprise' };
-    const cardPlan = cardPlanMap[cardId] || cardId.toLowerCase();
+    const cardPlan = cardPlanMap[el.id] || 'free';
     const cardRank = tierRank[cardPlan] || 0;
     if (cardRank <= currentRank) {
       // Show downgrade button for paid plans below current (not for free)
@@ -2953,6 +2994,20 @@ async function loadBilling() {
       btn.style.color = '';
     }
   });
+
+  // Show/hide manage seats for current team subscribers
+  const manageSection = document.getElementById('manageSeatsSection');
+  if (manageSection) {
+    if (tier === 'team') {
+      manageSection.style.display = '';
+      var updateBtn = document.getElementById('updateSeatsBtn');
+      var proNote = document.getElementById('prorationNote');
+      if (updateBtn) updateBtn.style.display = 'none';
+      if (proNote) proNote.style.display = 'none';
+    } else {
+      manageSection.style.display = 'none';
+    }
+  }
 
   // Show tier-appropriate support section
   ['Free', 'Pro', 'Team', 'Enterprise'].forEach(function(t) {
@@ -3003,19 +3058,16 @@ async function loadBilling() {
     statusEl.textContent = '';
   }
 
-  // Detect specific team plan from subscription for card highlighting  
-  if (subscriptionData && subscriptionData.subscription && subscriptionData.subscription.plan && subscriptionData.subscription.plan.startsWith('team-')) {
-    currentUser._teamPlan = subscriptionData.subscription.plan;
-    document.querySelectorAll('.billing-plan-option').forEach(el => el.classList.remove('current'));
-    const teamEl = document.getElementById('planTeam' + subscriptionData.subscription.plan.replace('team-', ''));
-    if (teamEl) teamEl.classList.add('current');
-  }
-
   // Show/hide team keys panel
   const teamKeysPanel = document.getElementById('teamKeysPanel');
   if (tier === 'team' || tier === 'enterprise') {
     teamKeysPanel.style.display = '';
-    loadTeamKeys();
+    await loadTeamKeys();
+    // Populate seat input with current count for existing team subscribers
+    if (tier === 'team') {
+      const seatInput = document.getElementById('dashTeamSeats');
+      if (seatInput) { seatInput.value = manageSeatCount; updateTeamTotal(); }
+    }
   } else {
     teamKeysPanel.style.display = 'none';
   }
@@ -3036,8 +3088,7 @@ async function loadBilling() {
     if (res.ok) {
       const data = await res.json();
       const used = data.monthlyGenerations || 0;
-      const planKey = (tier === 'team' && currentUser._teamPlan) ? currentUser._teamPlan : tier;
-      const limit = TIER_LIMITS[planKey] || TIER_LIMITS[tier] || 3;
+      const limit = TIER_LIMITS[tier] || 3;
       const pct = limit === Infinity ? 0 : Math.min(100, Math.round((used / limit) * 100));
 
       document.getElementById('usageCount').textContent = used.toLocaleString();
@@ -3067,10 +3118,16 @@ async function loadBilling() {
 
 async function upgradePlan(plan) {
   try {
+    const body = { plan };
+    // Team: include seat count from dashboard input
+    if (plan === 'team') {
+      const seatInput = document.getElementById('dashTeamSeats');
+      body.seats = parseInt(seatInput ? seatInput.value : '5', 10);
+    }
     const res = await apiFetch('/v1/billing/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan }),
+      body: JSON.stringify(body),
     });
     const data = await res.json();
     if (data.updated) {
@@ -3123,20 +3180,18 @@ async function loadTeamKeys() {
     // Update seat count display
     const seatEl = document.getElementById('teamKeySeatCount');
     const activeCount = keys.filter(function(k) { return !k.revokedAt; }).length;
-    const teamPlan = currentUser._teamPlan || 'team-5';
-    const seatLimits = { 'team-5': 5, 'team-10': 10, 'team-25': 25 };
-    const maxSeats = seatLimits[teamPlan] || activeCount;
-    seatEl.textContent = activeCount + ' of ' + maxSeats + ' seats active';
+    manageSeatCount = Math.max(activeCount, 5);
+    seatEl.textContent = activeCount + ' of ' + manageSeatCount + ' seats active';
 
     // Seat utilization messaging
     const seatUtilEl = document.getElementById('seatUtilMsg');
     if (seatUtilEl) {
-      const unused = maxSeats - activeCount;
-      if (unused > Math.ceil(maxSeats * 0.5)) {
-        seatUtilEl.textContent = 'You\u2019re using ' + activeCount + ' of ' + maxSeats + ' seats. Invite more team members or consider a smaller plan.';
+      const unused = manageSeatCount - activeCount;
+      if (unused > Math.ceil(manageSeatCount * 0.5)) {
+        seatUtilEl.textContent = 'You\u2019re using ' + activeCount + ' of ' + manageSeatCount + ' seats. Invite more team members or consider a smaller plan.';
         seatUtilEl.style.display = '';
-      } else if (activeCount >= maxSeats) {
-        seatUtilEl.textContent = 'All ' + maxSeats + ' seats are in use. Need more? Upgrade your team plan.';
+      } else if (activeCount >= manageSeatCount) {
+        seatUtilEl.textContent = 'All ' + manageSeatCount + ' seats are in use. Add more seats above to expand your team.';
         seatUtilEl.style.display = '';
       } else {
         seatUtilEl.style.display = 'none';

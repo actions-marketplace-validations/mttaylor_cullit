@@ -115,7 +115,7 @@ export async function handleRevokeTeamKey(req: IncomingMessage, res: ServerRespo
   const revoked = await dbRevokeTeamApiKey(keyId, user.orgId);
   if (!revoked) { json(res, 404, { error: 'Key not found or already revoked' }); return; }
 
-  await dbRecordAuditEvent({ actor: user.id, action: 'team_key.revoke', resource: keyId, detail: `Revoked team key in org ${user.orgId}` }).catch(() => {});
+  await dbRecordAuditEvent({ userId: user.id, action: 'team_key.revoke', target: keyId, metadata: { orgId: user.orgId } }).catch(() => {});
   log.info({ actor: user.id, keyId, action: 'team_key.revoke' }, 'Team API key revoked');
   json(res, 200, { revoked: true });
 }
@@ -134,7 +134,7 @@ export async function handleRotateTeamKey(req: IncomingMessage, res: ServerRespo
   const updated = await dbRotateTeamApiKey(keyId, user.orgId, newApiKey);
   if (!updated) { json(res, 404, { error: 'Key not found or revoked' }); return; }
 
-  await dbRecordAuditEvent({ actor: user.id, action: 'team_key.rotate', resource: keyId, detail: `Rotated team key in org ${user.orgId}` }).catch(() => {});
+  await dbRecordAuditEvent({ userId: user.id, action: 'team_key.rotate', target: keyId, metadata: { orgId: user.orgId } }).catch(() => {});
   log.info({ actor: user.id, keyId, action: 'team_key.rotate' }, 'Team API key rotated');
   json(res, 200, { apiKey: newApiKey });
 }

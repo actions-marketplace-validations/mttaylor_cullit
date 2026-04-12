@@ -358,22 +358,19 @@ export function getEffectiveTier(user: User): User['tier'] {
 }
 
 /**
- * Resolve the user's plan (e.g. 'pro', 'team-5', 'team-10', 'team-25') from subscription.
- * Falls back to deriving from org maxSeats for in-memory mode.
+ * Resolve the user's plan (e.g. 'pro', 'team') from subscription.
+ * Team plans use a single 'team' tier with dynamic seat count.
+ * Falls back to deriving from org membership for in-memory mode.
  */
 export async function getUserPlan(user: User): Promise<string> {
   if (useDb) {
     const sub = await dbGetSubscription(user.id);
     if (sub) return sub.plan;
   }
-  // Fallback: derive from org seat count
+  // Fallback: any org membership implies the team plan
   if (user.orgId) {
     const org = await getOrg(user.orgId);
-    if (org) {
-      if (org.maxSeats >= 25) return 'team-25';
-      if (org.maxSeats >= 10) return 'team-10';
-      return 'team-5';
-    }
+    if (org) return 'team';
   }
   return user.tier;
 }

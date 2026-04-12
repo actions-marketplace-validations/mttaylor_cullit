@@ -1,6 +1,6 @@
 // Shared constants across Cullit packages
 
-export const VERSION = '2.3.1';
+export const VERSION = '2.4.0';
 
 export const DEFAULT_CATEGORIES = ['features', 'fixes', 'breaking', 'improvements', 'chores'];
 
@@ -26,11 +26,7 @@ export const TIERS = ['free', 'pro', 'team', 'enterprise'] as const;
 export const PAID_TIERS = ['pro', 'team', 'enterprise'] as const;
 export const TEAM_TIERS = ['team', 'enterprise'] as const;
 
-// Seat-based team plans
-export const TEAM_PLANS = ['team-5', 'team-10', 'team-25'] as const;
-export type TeamPlan = (typeof TEAM_PLANS)[number];
-export const TEAM_PLAN_SEATS: Record<TeamPlan, number> = {
-  'team-5': 5,
-  'team-10': 10,
-  'team-25': 25,
-};
+// Seat-based team pricing (single tier, dynamic seat count)
+export const TEAM_SEAT_PRICE = 8;        // $8/month per seat
+export const TEAM_MIN_SEATS = 5;         // minimum 5 seats
+export const TEAM_ANNUAL_DISCOUNT = 0.15; // 15% annual discount

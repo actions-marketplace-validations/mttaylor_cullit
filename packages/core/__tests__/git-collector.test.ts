@@ -16,7 +16,7 @@ describe('GitCollector', () => {
 
   it('parses a single commit correctly', async () => {
     const separator = '---CULLIT_COMMIT---';
-    const log = `abc123def456789a|abc123d|matt|2026-03-12T10:00:00Z|feat: add auth module|${separator}`;
+    const log = `abc123def456789a\x1eabc123d\x1ematt\x1e2026-03-12T10:00:00Z\x1efeat: add auth module\x1e${separator}`;
 
     mockedExecSync
       .mockReturnValueOnce(log)     // git log
@@ -38,8 +38,8 @@ describe('GitCollector', () => {
   it('parses multiple commits', async () => {
     const sep = '---CULLIT_COMMIT---';
     const log = [
-      `aaa111aaa111aaa1|aaa111a|alice|2026-03-12|feat: new feature|${sep}`,
-      `bbb222bbb222bbb2|bbb222b|bob|2026-03-11|fix: bug fix|${sep}`,
+      `aaa111aaa111aaa1\x1eaaa111a\x1ealice\x1e2026-03-12\x1efeat: new feature\x1e${sep}`,
+      `bbb222bbb222bbb2\x1ebbb222b\x1ebob\x1e2026-03-11\x1efix: bug fix\x1e${sep}`,
     ].join('\n');
 
     mockedExecSync
@@ -56,7 +56,7 @@ describe('GitCollector', () => {
 
   it('extracts PR numbers from commit messages', async () => {
     const sep = '---CULLIT_COMMIT---';
-    const log = `aaa111aaa111aaa1|aaa111a|matt|2026-03-12|feat: add auth (#42)|${sep}`;
+    const log = `aaa111aaa111aaa1\x1eaaa111a\x1ematt\x1e2026-03-12\x1efeat: add auth (#42)\x1e${sep}`;
 
     mockedExecSync
       .mockReturnValueOnce(log)
@@ -70,7 +70,7 @@ describe('GitCollector', () => {
 
   it('extracts issue keys from commit messages', async () => {
     const sep = '---CULLIT_COMMIT---';
-    const log = `aaa111aaa111aaa1|aaa111a|matt|2026-03-12|fix: resolve PROJ-123 and ENG-456|${sep}`;
+    const log = `aaa111aaa111aaa1\x1eaaa111a\x1ematt\x1e2026-03-12\x1efix: resolve PROJ-123 and ENG-456\x1e${sep}`;
 
     mockedExecSync
       .mockReturnValueOnce(log)
@@ -85,7 +85,7 @@ describe('GitCollector', () => {
 
   it('deduplicates issue keys', async () => {
     const sep = '---CULLIT_COMMIT---';
-    const log = `aaa111aaa111aaa1|aaa111a|matt|2026-03-12|fix: PROJ-123 again PROJ-123|${sep}`;
+    const log = `aaa111aaa111aaa1\x1eaaa111a\x1ematt\x1e2026-03-12\x1efix: PROJ-123 again PROJ-123\x1e${sep}`;
 
     mockedExecSync
       .mockReturnValueOnce(log)

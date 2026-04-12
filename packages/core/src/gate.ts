@@ -3,8 +3,7 @@
  *
  * Free tier (no key):  3 AI gens/month, all providers (BYOK), publish to stdout/file only
  * Pro tier (with key): 500 gens/month, all providers, all publishers, enrichments, audience/tone
- * Team tier:           2000 gens/month, team management, advanced publishers
- * Team 25:             5000 gens/month, 500 projects, branded widget, project templates, audit logs
+ * Team tier (5+ seats): all team features, dynamic limits based on seat count
  * Enterprise tier:     unlimited everything
  *
  * validateLicense() performs async remote validation with caching.
@@ -12,6 +11,7 @@
  */
 
 import { fetchWithTimeout } from './fetch';
+import { TEAM_MIN_SEATS } from './constants';
 
 export type LicenseTier = 'free' | 'pro' | 'team' | 'enterprise';
 
@@ -29,6 +29,25 @@ const TEAM_ONLY_PUBLISHERS = new Set(['confluence', 'notion', 'teams']);
 const LICENSE_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours for successful validations
 const LICENSE_FAILURE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes for failures (retry sooner)
 let cachedValidation: { status: LicenseStatus; key: string; expiresAt: number } | null = null;
+
+/**
+ * Check whether a URL hostname resolves to an internal/private address.
+ * Blocks RFC1918, loopback, link-local, IPv6 private ranges, and metadata endpoints.
+ */
+function isInternalHost(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  // IPv4 private ranges + loopback
+  if (h === '0.0.0.0' || h === '127.0.0.1' ||
+      h.startsWith('10.') || h.startsWith('192.168.') || h.startsWith('169.254.') ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true;
+  // IPv6 loopback, unspecified, link-local, unique local, IPv4-mapped
+  if (h === '[::]' || h === '[::1]' ||
+      h.startsWith('[::ffff:') || h.startsWith('[fc') || h.startsWith('[fd') ||
+      h.startsWith('[fe80:') || h.startsWith('[fe80')) return true;
+  // DNS-based private names
+  if (h === 'localhost' || h.endsWith('.local') || h.endsWith('.internal')) return true;
+  return false;
+}
 
 /**
  * Resolve the user's license tier from CULLIT_API_KEY env var.
@@ -84,11 +103,7 @@ export async function validateLicense(): Promise<LicenseStatus> {
     if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && parsed.hostname === 'localhost')) {
       return { tier: 'pro', valid: true, message: 'CULLIT_LICENSE_URL must use https.' };
     }
-    // Block internal/private IP ranges
-    const h = parsed.hostname;
-    if (h === '0.0.0.0' || h === '[::]' || h === '[::1]' || h === '127.0.0.1' ||
-        h.startsWith('10.') || h.startsWith('192.168.') || h.startsWith('169.254.') ||
-        /^172\.(1[6-9]|2\d|3[01])\./.test(h) || h.endsWith('.local') || h.endsWith('.internal')) {
+    if (isInternalHost(parsed.hostname)) {
       return { tier: 'pro', valid: true, message: 'CULLIT_LICENSE_URL must not point to internal addresses.' };
     }
   } catch {
@@ -198,12 +213,6 @@ const TIER_LIMITS: Record<string, UsageLimits> = {
   enterprise: { generationsPerMonth: Infinity, maxProjects: Infinity },
 };
 
-/** Plan-specific limit overrides (e.g. team-25 gets higher limits than other team plans). */
-const PLAN_LIMITS: Record<string, UsageLimits> = {
-  'team-10': { generationsPerMonth: 4000, maxProjects: 350 },
-  'team-25': { generationsPerMonth: 5000, maxProjects: 500 },
-};
-
 /**
  * Get usage limits for a license tier.
  */
@@ -212,11 +221,16 @@ export function getTierLimits(tier: string): UsageLimits {
 }
 
 /**
- * Get usage limits for a specific plan, falling back to tier defaults.
- * Use when the plan is known (API context); use getTierLimits when only tier is known (CLI).
+ * Get usage limits scaled by seat count for team plans.
+ * Seats scale limits: 100 gens/seat, 5 projects/seat (with tier base as minimum).
  */
-export function getPlanLimits(plan: string, tier: string): UsageLimits {
-  return PLAN_LIMITS[plan] || TIER_LIMITS[tier] || TIER_LIMITS.free;
+export function getTeamLimits(seats: number): UsageLimits {
+  const base = TIER_LIMITS.team;
+  if (seats <= TEAM_MIN_SEATS) return base;
+  return {
+    generationsPerMonth: Math.max(base.generationsPerMonth, seats * 100),
+    maxProjects: Math.max(base.maxProjects, seats * 5),
+  };
 }
 
 // --- Feature gating by tier ---
@@ -238,25 +252,14 @@ const FEATURE_TIERS: Record<TeamFeature, Set<string>> = {
   drafts:             new Set(['team', 'enterprise']),
   approvals:          new Set(['team', 'enterprise']),
   shared_history:     new Set(['team', 'enterprise']),
-  project_templates:  new Set(['enterprise']),       // plan-gated: team-25 via PLAN_FEATURES
+  project_templates:  new Set(['team', 'enterprise']),
   hosted_changelog:   new Set(['pro', 'team', 'enterprise']),
-  branded_widget:     new Set(['enterprise']),        // plan-gated: team-25 via PLAN_FEATURES
+  branded_widget:     new Set(['team', 'enterprise']),
   team_publishers:    new Set(['team', 'enterprise']),
   org_settings:       new Set(['team', 'enterprise']),
-  audit_logs:         new Set(['enterprise']),        // plan-gated: team-25 via PLAN_FEATURES
-  team_analytics:     new Set(['enterprise']),        // plan-gated: team-25 via PLAN_FEATURES
+  audit_logs:         new Set(['team', 'enterprise']),
+  team_analytics:     new Set(['team', 'enterprise']),  // all team plans get analytics now
   sso:                new Set(['enterprise']),
-};
-
-/**
- * Plan-specific feature overrides — features gated to specific plans within a tier.
- * Enterprise always bypasses these checks.
- */
-const PLAN_FEATURES: Record<string, Set<string>> = {
-  branded_widget:    new Set(['team-25']),
-  project_templates: new Set(['team-25']),
-  audit_logs:        new Set(['team-25']),
-  team_analytics:    new Set(['team-25']),
 };
 
 /**
@@ -269,22 +272,18 @@ export function isFeatureAllowed(feature: TeamFeature, tier: string, valid: bool
 }
 
 /**
- * Check whether a specific plan grants access to a feature.
- * Use when the plan is known (API context); enterprise always passes.
- * Falls back to tier-level check for features without plan restrictions.
+ * Check whether a plan/tier grants access to a feature.
+ * Enterprise gets everything. Team gets all team features.
  */
 export function isPlanFeatureAllowed(feature: TeamFeature, plan: string, tier: string, valid: boolean = true): boolean {
   if (!valid) return false;
   if (tier === 'enterprise') return true;
-  const planSet = PLAN_FEATURES[feature];
-  if (planSet) return planSet.has(plan);
   const tierSet = FEATURE_TIERS[feature];
   return tierSet ? tierSet.has(tier) : false;
 }
 
 /**
  * Build a gating summary for a tier — which features are unlocked.
- * When plan is provided, uses plan-aware feature checks.
  */
 export function getFeatureGating(tier: string, plan?: string): Record<TeamFeature, boolean> {
   const result: Record<string, boolean> = {};
@@ -305,6 +304,14 @@ export async function reportUsage(project: string = 'default'): Promise<void> {
   const meterUrl = process.env.CULLIT_METER_URL?.trim();
 
   if (!meterUrl || !key) return; // No metering configured
+
+  // SSRF protection: block internal addresses
+  try {
+    const parsed = new URL(meterUrl);
+    if (isInternalHost(parsed.hostname)) return;
+  } catch {
+    return;
+  }
 
   try {
     await fetchWithTimeout(meterUrl, {

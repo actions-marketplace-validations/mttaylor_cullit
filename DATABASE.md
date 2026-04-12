@@ -135,7 +135,7 @@ Stripe billing state.
 | `user_id` | TEXT | FK → `users.id` |
 | `stripe_subscription_id` | TEXT UNIQUE | Stripe subscription ID |
 | `stripe_customer_id` | TEXT | Stripe customer ID |
-| `plan` | TEXT | `free`, `pro`, `team-5`, `team-10`, `team-25` (legacy `basic` maps to `free`) |
+| `plan` | TEXT | `free`, `pro`, `team` (legacy `basic` maps to `free`) |
 | `status` | TEXT | `active`, `past_due`, `canceled` |
 | `current_period_start` | TIMESTAMPTZ | Billing period start |
 | `current_period_end` | TIMESTAMPTZ | Billing period end |

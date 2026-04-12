@@ -508,7 +508,7 @@ export const openApiSpec = {
                       'first_publish_success',
                     ],
                   },
-                  plan: { type: 'string', enum: ['free', 'pro', 'team-5', 'team-10', 'team-25', 'enterprise'] },
+                  plan: { type: 'string', enum: ['free', 'pro', 'team', 'enterprise'] },
                   source: { type: 'string' },
                   metadata: { type: 'object', additionalProperties: true },
                 },
@@ -744,8 +744,9 @@ export const openApiSpec = {
               schema: {
                 type: 'object',
                 properties: {
-                  plan: { type: 'string', enum: ['pro', 'team-5', 'team-10', 'team-25'] },
+                  plan: { type: 'string', enum: ['pro', 'team'] },
                   annual: { type: 'boolean', description: 'Use annual billing (15% discount)' },
+                  seats: { type: 'integer', description: 'Number of seats (team plan only, min 5, max 100)', minimum: 5, maximum: 100 },
                 },
               },
             },

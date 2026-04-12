@@ -41,7 +41,7 @@ describe('GitCollector ref validation', () => {
   it('allows valid tag-like refs', async () => {
     const sep = '---CULLIT_COMMIT---';
     mockedExecSync
-      .mockReturnValueOnce(`aaa111|aaa|matt|2026-01-01|test|${sep}`)
+      .mockReturnValueOnce(`aaa111\x1eaaa\x1ematt\x1e2026-01-01\x1etest\x1e${sep}`)
       .mockReturnValueOnce('1 file changed');
 
     const collector = new GitCollector('/test');
@@ -52,7 +52,7 @@ describe('GitCollector ref validation', () => {
   it('allows HEAD~N syntax', async () => {
     const sep = '---CULLIT_COMMIT---';
     mockedExecSync
-      .mockReturnValueOnce(`aaa111|aaa|matt|2026-01-01|test|${sep}`)
+      .mockReturnValueOnce(`aaa111\x1eaaa\x1ematt\x1e2026-01-01\x1etest\x1e${sep}`)
       .mockReturnValueOnce('');
 
     const collector = new GitCollector('/test');
@@ -63,7 +63,7 @@ describe('GitCollector ref validation', () => {
   it('allows branch names with slashes', async () => {
     const sep = '---CULLIT_COMMIT---';
     mockedExecSync
-      .mockReturnValueOnce(`aaa111|aaa|matt|2026-01-01|test|${sep}`)
+      .mockReturnValueOnce(`aaa111\x1eaaa\x1ematt\x1e2026-01-01\x1etest\x1e${sep}`)
       .mockReturnValueOnce('');
 
     const collector = new GitCollector('/test');

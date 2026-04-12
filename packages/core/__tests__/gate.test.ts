@@ -14,7 +14,7 @@ import {
   isAudienceToneAllowed,
   upgradeMessage,
   getTierLimits,
-  getPlanLimits,
+  getTeamLimits,
   reportUsage,
   isFeatureAllowed,
   isPlanFeatureAllowed,
@@ -179,7 +179,7 @@ describe('Gate — getTierLimits', () => {
     expect(limits.maxProjects).toBe(100);
   });
 
-  it('returns team tier limits', () => {
+  it('returns team tier base limits', () => {
     const limits = getTierLimits('team');
     expect(limits.generationsPerMonth).toBe(2000);
     expect(limits.maxProjects).toBe(250);
@@ -195,6 +195,32 @@ describe('Gate — getTierLimits', () => {
     const limits = getTierLimits('nonexistent');
     expect(limits.generationsPerMonth).toBe(3);
     expect(limits.maxProjects).toBe(3);
+  });
+});
+
+describe('Gate — getTeamLimits', () => {
+  it('returns base team limits for 5 seats (minimum)', () => {
+    const limits = getTeamLimits(5);
+    expect(limits.generationsPerMonth).toBe(2000);
+    expect(limits.maxProjects).toBe(250);
+  });
+
+  it('scales limits for 10 seats', () => {
+    const limits = getTeamLimits(10);
+    expect(limits.generationsPerMonth).toBe(2000); // max(2000, 10*100) = 2000
+    expect(limits.maxProjects).toBe(250); // max(250, 10*5) = 250
+  });
+
+  it('scales limits for 25 seats', () => {
+    const limits = getTeamLimits(25);
+    expect(limits.generationsPerMonth).toBe(2500); // max(2000, 25*100) = 2500
+    expect(limits.maxProjects).toBe(250); // max(250, 25*5) = 250
+  });
+
+  it('scales limits for 50 seats', () => {
+    const limits = getTeamLimits(50);
+    expect(limits.generationsPerMonth).toBe(5000); // max(2000, 50*100) = 5000
+    expect(limits.maxProjects).toBe(250); // max(250, 50*5) = 250
   });
 });
 
@@ -215,8 +241,8 @@ describe('Gate — isFeatureAllowed', () => {
     expect(isFeatureAllowed('drafts', 'enterprise')).toBe(true);
   });
 
-  it('blocks audit_logs on team tier (enterprise-only)', () => {
-    expect(isFeatureAllowed('audit_logs', 'team')).toBe(false);
+  it('allows audit_logs on team tier', () => {
+    expect(isFeatureAllowed('audit_logs', 'team')).toBe(true);
   });
 
   it('allows audit_logs on enterprise tier', () => {
@@ -235,12 +261,20 @@ describe('Gate — isFeatureAllowed', () => {
     expect(isFeatureAllowed('approvals', 'team')).toBe(true);
   });
 
-  it('blocks project_templates on team tier (plan-gated to team-25)', () => {
-    expect(isFeatureAllowed('project_templates', 'team')).toBe(false);
+  it('allows project_templates on team tier', () => {
+    expect(isFeatureAllowed('project_templates', 'team')).toBe(true);
   });
 
   it('allows project_templates on enterprise tier', () => {
     expect(isFeatureAllowed('project_templates', 'enterprise')).toBe(true);
+  });
+
+  it('allows team_analytics on team tier', () => {
+    expect(isFeatureAllowed('team_analytics', 'team')).toBe(true);
+  });
+
+  it('allows team_analytics on enterprise tier', () => {
+    expect(isFeatureAllowed('team_analytics', 'enterprise')).toBe(true);
   });
 });
 
@@ -252,12 +286,14 @@ describe('Gate — getFeatureGating', () => {
     expect(gating.hosted_changelog).toBe(false);
     expect(gating.sso).toBe(false);
     expect(gating.audit_logs).toBe(false);
+    expect(gating.team_analytics).toBe(false);
   });
 
   it('returns hosted changelog enabled for pro tier', () => {
     const gating = getFeatureGating('pro');
     expect(gating.hosted_changelog).toBe(true);
     expect(gating.drafts).toBe(false);
+    expect(gating.team_analytics).toBe(false);
   });
 
   it('returns team features enabled for team tier', () => {
@@ -265,13 +301,13 @@ describe('Gate — getFeatureGating', () => {
     expect(gating.drafts).toBe(true);
     expect(gating.approvals).toBe(true);
     expect(gating.shared_history).toBe(true);
-    expect(gating.project_templates).toBe(false); // plan-gated: team-25 only
+    expect(gating.project_templates).toBe(true);
     expect(gating.hosted_changelog).toBe(true);
-    expect(gating.branded_widget).toBe(false);     // plan-gated: team-25 only
+    expect(gating.branded_widget).toBe(true);
     expect(gating.team_publishers).toBe(true);
     expect(gating.org_settings).toBe(true);
-    expect(gating.audit_logs).toBe(false);          // plan-gated: team-25 only
-    expect(gating.team_analytics).toBe(false);       // plan-gated: team-25 only
+    expect(gating.audit_logs).toBe(true);
+    expect(gating.team_analytics).toBe(true);
     expect(gating.sso).toBe(false);
   });
 
@@ -285,61 +321,29 @@ describe('Gate — getFeatureGating', () => {
   });
 });
 
-describe('Gate — getPlanLimits', () => {
-  it('returns team-25 upgraded limits', () => {
-    const limits = getPlanLimits('team-25', 'team');
-    expect(limits.generationsPerMonth).toBe(5000);
-    expect(limits.maxProjects).toBe(500);
-  });
-
-  it('falls back to tier limits for team-5', () => {
-    const limits = getPlanLimits('team-5', 'team');
-    expect(limits.generationsPerMonth).toBe(2000);
-    expect(limits.maxProjects).toBe(250);
-  });
-
-  it('returns team-10 upgraded limits', () => {
-    const limits = getPlanLimits('team-10', 'team');
-    expect(limits.generationsPerMonth).toBe(4000);
-    expect(limits.maxProjects).toBe(350);
-  });
-});
-
 describe('Gate — isPlanFeatureAllowed', () => {
-  it('allows branded_widget for team-25', () => {
-    expect(isPlanFeatureAllowed('branded_widget', 'team-25', 'team')).toBe(true);
+  it('allows branded_widget for team plan', () => {
+    expect(isPlanFeatureAllowed('branded_widget', 'team', 'team')).toBe(true);
   });
 
-  it('blocks branded_widget for team-5', () => {
-    expect(isPlanFeatureAllowed('branded_widget', 'team-5', 'team')).toBe(false);
+  it('allows branded_widget for enterprise', () => {
+    expect(isPlanFeatureAllowed('branded_widget', 'enterprise', 'enterprise')).toBe(true);
   });
 
-  it('blocks branded_widget for team-10', () => {
-    expect(isPlanFeatureAllowed('branded_widget', 'team-10', 'team')).toBe(false);
+  it('blocks branded_widget for pro (single user)', () => {
+    expect(isPlanFeatureAllowed('branded_widget', 'pro', 'pro')).toBe(false);
   });
 
-  it('allows audit_logs for team-25', () => {
-    expect(isPlanFeatureAllowed('audit_logs', 'team-25', 'team')).toBe(true);
+  it('blocks branded_widget for free', () => {
+    expect(isPlanFeatureAllowed('branded_widget', 'free', 'free')).toBe(false);
   });
 
-  it('blocks audit_logs for team-5', () => {
-    expect(isPlanFeatureAllowed('audit_logs', 'team-5', 'team')).toBe(false);
+  it('allows team_analytics for team plan', () => {
+    expect(isPlanFeatureAllowed('team_analytics', 'team', 'team')).toBe(true);
   });
 
-  it('allows project_templates for team-25', () => {
-    expect(isPlanFeatureAllowed('project_templates', 'team-25', 'team')).toBe(true);
-  });
-
-  it('allows team_analytics for team-25', () => {
-    expect(isPlanFeatureAllowed('team_analytics', 'team-25', 'team')).toBe(true);
-  });
-
-  it('blocks team_analytics for team-5', () => {
-    expect(isPlanFeatureAllowed('team_analytics', 'team-5', 'team')).toBe(false);
-  });
-
-  it('blocks team_analytics for team-10', () => {
-    expect(isPlanFeatureAllowed('team_analytics', 'team-10', 'team')).toBe(false);
+  it('allows team_analytics for enterprise', () => {
+    expect(isPlanFeatureAllowed('team_analytics', 'enterprise', 'enterprise')).toBe(true);
   });
 
   it('enterprise always passes plan feature checks', () => {
@@ -349,14 +353,14 @@ describe('Gate — isPlanFeatureAllowed', () => {
   });
 
   it('falls back to tier check for non-plan-gated features', () => {
-    expect(isPlanFeatureAllowed('drafts', 'team-5', 'team')).toBe(true);
+    expect(isPlanFeatureAllowed('drafts', 'team', 'team')).toBe(true);
     expect(isPlanFeatureAllowed('drafts', 'pro', 'pro')).toBe(false);
   });
 });
 
 describe('Gate — getFeatureGating with plan', () => {
-  it('returns plan-aware gating for team-25', () => {
-    const gating = getFeatureGating('team', 'team-25');
+  it('returns plan-aware gating for team', () => {
+    const gating = getFeatureGating('team', 'team');
     expect(gating.branded_widget).toBe(true);
     expect(gating.project_templates).toBe(true);
     expect(gating.audit_logs).toBe(true);
@@ -364,28 +368,11 @@ describe('Gate — getFeatureGating with plan', () => {
     expect(gating.drafts).toBe(true);
   });
 
-  it('returns plan-aware gating for team-5 (no premium features)', () => {
-    const gating = getFeatureGating('team', 'team-5');
-    expect(gating.branded_widget).toBe(false);
-    expect(gating.project_templates).toBe(false);
-    expect(gating.audit_logs).toBe(false);
-    expect(gating.team_analytics).toBe(false);
-    expect(gating.drafts).toBe(true);
-  });
-
-  it('returns plan-aware gating for team-10 (no premium features)', () => {
-    const gating = getFeatureGating('team', 'team-10');
-    expect(gating.branded_widget).toBe(false);
-    expect(gating.project_templates).toBe(false);
-    expect(gating.audit_logs).toBe(false);
-    expect(gating.team_analytics).toBe(false);
-    expect(gating.drafts).toBe(true);
-  });
-
-  it('without plan param falls back to tier-only (backward compat)', () => {
+  it('without plan param still shows all team features', () => {
     const gating = getFeatureGating('team');
-    expect(gating.branded_widget).toBe(false);
+    expect(gating.branded_widget).toBe(true);
     expect(gating.drafts).toBe(true);
+    expect(gating.team_analytics).toBe(true);
   });
 
   it('enterprise with plan shows all features', () => {
@@ -393,26 +380,6 @@ describe('Gate — getFeatureGating with plan', () => {
     expect(gating.branded_widget).toBe(true);
     expect(gating.audit_logs).toBe(true);
     expect(gating.sso).toBe(true);
-  });
-});
-
-describe('Gate — getPlanLimits edge cases', () => {
-  it('pro plan falls back to pro tier limits', () => {
-    const limits = getPlanLimits('pro', 'pro');
-    expect(limits.generationsPerMonth).toBe(500);
-    expect(limits.maxProjects).toBe(100);
-  });
-
-  it('unknown plan with unknown tier falls back to free', () => {
-    const limits = getPlanLimits('unknown-plan', 'unknown-tier');
-    expect(limits.generationsPerMonth).toBe(3);
-    expect(limits.maxProjects).toBe(3);
-  });
-
-  it('enterprise plan falls back to enterprise tier limits', () => {
-    const limits = getPlanLimits('enterprise', 'enterprise');
-    expect(limits.generationsPerMonth).toBe(Infinity);
-    expect(limits.maxProjects).toBe(Infinity);
   });
 });
 
@@ -455,6 +422,22 @@ describe('Gate — validateLicense', () => {
   it('blocks internal IP addresses in license URL', async () => {
     process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
     process.env.CULLIT_LICENSE_URL = 'https://192.168.1.1/validate';
+    const result = await validateLicense();
+    expect(result.tier).toBe('pro');
+    expect(result.message).toContain('internal');
+  });
+
+  it('blocks IPv6 loopback in license URL', async () => {
+    process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
+    process.env.CULLIT_LICENSE_URL = 'https://[::1]/validate';
+    const result = await validateLicense();
+    expect(result.tier).toBe('pro');
+    expect(result.message).toContain('internal');
+  });
+
+  it('blocks IPv4-mapped IPv6 addresses', async () => {
+    process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
+    process.env.CULLIT_LICENSE_URL = 'https://[::ffff:127.0.0.1]/validate';
     const result = await validateLicense();
     expect(result.tier).toBe('pro');
     expect(result.message).toContain('internal');
@@ -505,15 +488,12 @@ describe('Gate — reportUsage', () => {
   it('posts to metering endpoint when both key and URL configured', async () => {
     process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
     process.env.CULLIT_METER_URL = 'https://meter.cullit.io/v1/usage';
-    // reportUsage uses internal fetchWithTimeout (not the @cullit/core re-export)
-    // so we verify it completes without throwing — the real fetch will fail silently
     await expect(reportUsage('my-project')).resolves.toBeUndefined();
   });
 
   it('swallows errors silently', async () => {
     process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
     process.env.CULLIT_METER_URL = 'https://meter.cullit.io/v1/usage';
-    // Real fetch will fail (no server) but reportUsage catches all errors
     await expect(reportUsage()).resolves.toBeUndefined();
   });
 });

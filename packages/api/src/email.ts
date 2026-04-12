@@ -158,38 +158,14 @@ const PLAN_DETAILS: Record<string, { label: string; features: string[] }> = {
       'All publishers (Slack, Discord, GitHub, Teams)',
     ],
   },
-  'team-5': {
-    label: 'Team 5 ($44.99/mo)',
+  team: {
+    label: 'Team ($8/seat/mo)',
     features: [
-      '5 API keys / seats',
-      '2,000 generations/month',
-      '250 projects',
+      'Dynamic seats (5 minimum)',
       'All Pro features',
       'Team management dashboard',
-    ],
-  },
-  'team-10': {
-    label: 'Team 10 ($89/mo)',
-    features: [
-      '10 API keys / seats',
-      '2,000 generations/month',
-      '250 projects',
-      'All Pro features',
       'GitLab & Bitbucket',
       'Priority support',
-    ],
-  },
-  'team-25': {
-    label: 'Team 25 ($209/mo)',
-    features: [
-      '25 API keys / seats',
-      '5,000 generations/month',
-      '500 projects',
-      'All Team features',
-      'Branded changelog widget',
-      'Project templates',
-      'Audit logs',
-      'Team usage analytics',
     ],
   },
 };

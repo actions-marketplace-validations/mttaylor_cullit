@@ -1,6 +1,6 @@
 {
   "name": "@cullit/core",
-  "version": "2.3.1",
+  "version": "2.4.0",
   "type": "module",
   "description": "Core engine for Cullit — AI-powered release note generation.",
   "license": "SEE LICENSE IN LICENSE",

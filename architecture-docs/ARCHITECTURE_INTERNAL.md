@@ -104,9 +104,7 @@ flowchart TD
 
 - Free: local source + template provider + stdout/file publishers. 3 AI gens/month (BYOK).
 - Pro: AI providers + premium enrichment + premium publishers + GitHub App. 500 gens/month, 100 projects.
-- Team 5 ($44.99/mo, 5 seats): Pro capabilities plus team features (drafts, team publishers, org management, team API keys). 2,000 gens/month, 250 projects.
-- Team 10 ($89/mo, 10 seats): Everything in Team 5 with higher limits. 4,000 gens/month, 350 projects.
-- Team 25 ($209/mo, 25 seats): Everything in Team 10, plus branded widget, project templates, audit logs, team analytics. 5,000 gens/month, 500 projects.
+- Team ($8/seat/mo, min 5 seats): Pro capabilities plus team features (drafts, team publishers, org management, team API keys). Base: 2,000 gens/month, 250 projects. Scales with seat count.
 - Enterprise: All Team 25 capabilities plus SSO/SAML, self-hosted/on-prem, unlimited gens/projects.
 
 All paid plans offer annual billing at 15% discount.

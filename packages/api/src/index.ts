@@ -19,7 +19,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
 import { createHash, randomBytes } from 'crypto';
 
-import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS, TIERS, getTierLimits, getPlanLimits, createRateLimiter, isPlanFeatureAllowed } from '@cullit/core';
+import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS, TIERS, getTierLimits, getTeamLimits, createRateLimiter, isPlanFeatureAllowed } from '@cullit/core';
 import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget, TeamFeature } from '@cullit/core';
 import { openApiSpec } from './openapi.js';
 import { handleDocs } from './docs.js';
@@ -133,7 +133,7 @@ const RATE_WINDOW = 60_000; // 1 minute
 
 const rateLimiter = createRateLimiter({ limit: RATE_LIMIT, windowMs: RATE_WINDOW });
 
-const TRUST_PROXY = process.env['TRUST_PROXY'] !== 'false'; // Trust proxy headers by default on Railway/CF
+const TRUST_PROXY = process.env['TRUST_PROXY'] === 'true'; // Explicitly opt-in to trusting proxy headers
 
 /**
  * Extract the real client IP address from the request.
@@ -488,8 +488,7 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
   try {
     const key = user.orgId || user.id;
     const effectiveTier = getEffectiveTier(user);
-    const plan = await getUserPlan(user);
-    const limits = getPlanLimits(plan, effectiveTier);
+    const limits = getTierLimits(effectiveTier);
 
     // Atomic limit check — serialize per key to prevent concurrent bypass
     const limitResult = await withGenerationLock(key, async () => {
@@ -616,7 +615,7 @@ async function handleGetAnalytics(req: IncomingMessage, res: ServerResponse): Pr
   const stats = await getUsageStats(key, days);
   const monthlyCount = await getMonthlyGenerationCount(key);
 
-  // Detailed team analytics (per-member breakdown) gated to team-25+
+  // Detailed team analytics (per-member breakdown) gated to team plan+
   const plan = await getUserPlan(user);
   const hasTeamAnalytics = isPlanFeatureAllowed('team_analytics', plan, tier);
 
@@ -708,11 +707,11 @@ async function handlePutProjectSettings(req: IncomingMessage, res: ServerRespons
   if (templateSectionOrder) currentTemplate.sectionOrder = templateSectionOrder;
   if (Object.keys(currentTemplate).length) widgetConfig.template = currentTemplate;
 
-  // Gate branded widget: disabling branding requires team-25 or enterprise
+  // Gate branded widget: disabling branding requires team plan or enterprise
   if (widgetConfig.branding === false) {
     const plan = await getUserPlan(user);
     if (!isPlanFeatureAllowed('branded_widget', plan, tier)) {
-      json(res, 403, { error: 'Branded widget (removing Cullit branding) requires Team 25 or Enterprise', upgrade: 'https://cullit.io/pricing' });
+      json(res, 403, { error: 'Branded widget (removing Cullit branding) requires a Team plan', upgrade: 'https://cullit.io/pricing' });
       return;
     }
   }
@@ -748,7 +747,7 @@ async function handleGetAuditLog(req: IncomingMessage, res: ServerResponse): Pro
   const tier = getEffectiveTier(user);
   const plan = await getUserPlan(user);
   if (!isPlanFeatureAllowed('audit_logs', plan, tier)) {
-    json(res, 403, { error: 'Audit logs require Team 25 or Enterprise', upgrade: 'https://cullit.io/pricing' }); return;
+    json(res, 403, { error: 'Audit logs require a Team plan', upgrade: 'https://cullit.io/pricing' }); return;
   }
 
   const url = new URL(req.url || '/', `http://localhost:${PORT}`);
@@ -770,7 +769,7 @@ async function handleListTemplates(req: IncomingMessage, res: ServerResponse): P
   const tier = getEffectiveTier(user);
   const plan = await getUserPlan(user);
   if (!isPlanFeatureAllowed('project_templates', plan, tier)) {
-    json(res, 403, { error: 'Project templates require Team 25 or Enterprise', upgrade: 'https://cullit.io/pricing' }); return;
+    json(res, 403, { error: 'Project templates require a Team plan', upgrade: 'https://cullit.io/pricing' }); return;
   }
   if (!user.orgId) { json(res, 400, { error: 'Project templates require an organization' }); return; }
 
@@ -785,7 +784,7 @@ async function handleCreateTemplate(req: IncomingMessage, res: ServerResponse): 
   const tier = getEffectiveTier(user);
   const plan = await getUserPlan(user);
   if (!isPlanFeatureAllowed('project_templates', plan, tier)) {
-    json(res, 403, { error: 'Project templates require Team 25 or Enterprise', upgrade: 'https://cullit.io/pricing' }); return;
+    json(res, 403, { error: 'Project templates require a Team plan', upgrade: 'https://cullit.io/pricing' }); return;
   }
   if (!user.orgId) { json(res, 400, { error: 'Project templates require an organization' }); return; }
 
@@ -811,7 +810,7 @@ async function handleDeleteTemplate(req: IncomingMessage, res: ServerResponse, t
   const tier = getEffectiveTier(user);
   const plan = await getUserPlan(user);
   if (!isPlanFeatureAllowed('project_templates', plan, tier)) {
-    json(res, 403, { error: 'Project templates require Team 25 or Enterprise', upgrade: 'https://cullit.io/pricing' }); return;
+    json(res, 403, { error: 'Project templates require a Team plan', upgrade: 'https://cullit.io/pricing' }); return;
   }
   if (!user.orgId) { json(res, 400, { error: 'Project templates require an organization' }); return; }
 
@@ -979,15 +978,15 @@ const server = createServer(async (req, res: CorsResponse) => {
     } else if (path === '/v1/billing/checkout' && req.method === 'POST') {
       const user = await resolveUser(req);
       if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-      const body = await readJsonBody(req, res) as { plan?: string; annual?: boolean } | null;
+      const body = await readJsonBody(req, res) as { plan?: string; annual?: boolean; seats?: number } | null;
       if (!body) return;
-      const validPlans = ['pro', 'team-5', 'team-10', 'team-25'] as const;
+      const validPlans = ['pro', 'team'] as const;
       const plan = validPlans.includes(body.plan as typeof validPlans[number])
         ? (body.plan as typeof validPlans[number])
-        : body.plan === 'team' ? 'team-5' as const  // legacy fallback
         : 'pro' as const;
       const annual = body.annual === true;
-      await handleCheckout(user.id, plan, annual, json, res);
+      const seats = typeof body.seats === 'number' ? body.seats : undefined;
+      await handleCheckout(user.id, plan, annual, json, res, seats);
     } else if (path === '/v1/billing/portal' && req.method === 'POST') {
       const user = await resolveUser(req);
       if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }

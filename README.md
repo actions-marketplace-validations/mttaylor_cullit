@@ -393,12 +393,8 @@ jira:
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature verification |
 | `STRIPE_PRO_PRICE_ID` | Stripe price id for Pro plan |
 | `STRIPE_PRO_ANNUAL_PRICE_ID` | Stripe price id for Pro annual plan (15% off) |
-| `STRIPE_TEAM_5_PRICE_ID` | Stripe price id for Team 5 plan ($44.99/mo, 5 seats) |
-| `STRIPE_TEAM_5_ANNUAL_PRICE_ID` | Stripe price id for Team 5 annual plan (15% off) |
-| `STRIPE_TEAM_10_PRICE_ID` | Stripe price id for Team 10 plan ($89/mo, 10 seats) |
-| `STRIPE_TEAM_10_ANNUAL_PRICE_ID` | Stripe price id for Team 10 annual plan (15% off) |
-| `STRIPE_TEAM_25_PRICE_ID` | Stripe price id for Team 25 plan ($209/mo, 25 seats) |
-| `STRIPE_TEAM_25_ANNUAL_PRICE_ID` | Stripe price id for Team 25 annual plan (15% off) |
+| `STRIPE_TEAM_PRICE_ID` | Per-seat price id for Team plan ($8/seat/mo, min 5 seats) |
+| `STRIPE_TEAM_ANNUAL_PRICE_ID` | Per-seat price id for Team annual ($81.60/seat/yr — 15% off) |
 | `RESEND_API_KEY` | Transactional email delivery |
 
 ## API Endpoints
