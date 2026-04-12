@@ -237,13 +237,31 @@ Rules:
     return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
   }
 
+  private async resolveOllamaModel(baseUrl: string, model?: string): Promise<string> {
+    if (model && model !== 'auto') return model;
+    // Auto-detect: query Ollama for available models, prefer smallest local model
+    try {
+      const resp = await this.fetch(`${baseUrl}/api/tags`, { method: 'GET' });
+      if (resp.ok) {
+        const data = await resp.json() as { models?: Array<{ name: string; size: number }> };
+        if (data.models?.length) {
+          // Sort by size ascending, pick smallest
+          const sorted = [...data.models].sort((a, b) => (a.size || 0) - (b.size || 0));
+          return sorted[0].name;
+        }
+      }
+    } catch { /* Ollama not reachable */ }
+    return 'llama3.2:3b'; // fallback
+  }
+
   private async callOllama(prompt: string, model?: string): Promise<string> {
     const baseUrl = process.env.OLLAMA_HOST || 'http://localhost:11434';
+    const resolvedModel = await this.resolveOllamaModel(baseUrl, model);
     const response = await this.fetch(`${baseUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: model || 'llama3.2:3b',
+        model: resolvedModel,
         messages: [{ role: 'user', content: prompt }],
         stream: false,
         options: { temperature: 0.3 },

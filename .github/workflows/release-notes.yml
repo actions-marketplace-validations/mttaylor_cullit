@@ -57,7 +57,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           CULLIT_API_KEY: ${{ secrets.CULLIT_API_KEY }}
-        run: node scripts/generate-release-notes.mjs --providers anthropic,openai,gemini,ollama ${{ github.ref_name }}
+        run: node scripts/generate-release-notes.mjs ${{ github.ref_name }}
 
       - name: Commit & push release notes
         run: |

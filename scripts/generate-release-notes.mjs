@@ -85,10 +85,43 @@ function getFilesChanged(from, to) {
   }
 }
 
+// --- Detect Ollama model ---
+function detectOllamaModel() {
+  try {
+    const out = execSync('ollama list', { encoding: 'utf-8', timeout: 5000, stdio: ['pipe', 'pipe', 'pipe'] });
+    const lines = out.trim().split('\n').slice(1); // skip header
+    const candidates = [];
+    for (const line of lines) {
+      const cols = line.split(/\s+/);
+      const name = cols[0];
+      if (!name || name.includes(':cloud')) continue;
+      // Parse size (e.g. "4.9 GB", "42 GB", "2.0 GB")
+      const sizeMatch = line.match(/([\d.]+)\s*(GB|MB)/i);
+      const sizeGb = sizeMatch
+        ? (sizeMatch[2].toUpperCase() === 'GB' ? parseFloat(sizeMatch[1]) : parseFloat(sizeMatch[1]) / 1024)
+        : 999;
+      candidates.push({ name, sizeGb });
+    }
+    // Prefer smallest model that fits in memory (< 20GB is safe for most systems)
+    candidates.sort((a, b) => a.sizeGb - b.sizeGb);
+    const usable = candidates.find(c => c.sizeGb < 20);
+    return usable ? usable.name : (candidates[0]?.name || null);
+  } catch { /* Ollama not available */ }
+  return null;
+}
+
+const ollamaModel = detectOllamaModel();
+if (providers.includes('ollama') && !ollamaModel) {
+  console.log('⚠ Ollama not available or no local models found — skipping ollama provider\n');
+  providers = providers.filter(p => p !== 'ollama');
+} else if (ollamaModel) {
+  console.log(`🦙 Ollama model detected: ${ollamaModel}\n`);
+}
+
 // --- Generate with cullit ---
 function generateNotes(from, to, provider, format) {
   try {
-    const modelFlag = provider === 'ollama' ? ' --model llama3.2:3b' : '';
+    const modelFlag = provider === 'ollama' && ollamaModel ? ` --model ${ollamaModel}` : '';
     const cmd = `node "${CULLIT}" generate --from ${from} --to ${to} --provider ${provider}${modelFlag} --format ${format} --dry-run`;
     const output = execSync(cmd, {
       cwd: ROOT,
