@@ -26,7 +26,7 @@ import { handleDocs } from './docs.js';
 import {
   handleAuthRedirect, handleAuthCallback, handleAuthMe, handleAuthLogout,
   handleRotateApiKey, handleDeleteAccount, handleLicenseValidate, resolveUser, getEffectiveTier,
-  handleUpdateMe, getUserPlan,
+  handleUpdateMe, getUserPlan, getOrg,
 } from './auth.js';
 import {
   addHistoryEntry, getHistory, getHistoryCount,
@@ -89,13 +89,13 @@ const IS_HTTPS = (process.env['CULLIT_BASE_URL'] || '').startsWith('https');
 const IS_PROD = process.env['NODE_ENV'] === 'production';
 if (IS_PROD) {
   if (!process.env['CULLIT_JWT_SECRET']) {
-    log.warn('CULLIT_JWT_SECRET is not set — sessions will not survive restarts. Set this in production.');
+    throw new Error('CULLIT_JWT_SECRET is required in production. Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
+  }
+  if (!process.env['DATABASE_URL']) {
+    throw new Error('DATABASE_URL is required in production. Set a PostgreSQL connection string.');
   }
   if (!ALLOWED_ORIGINS || ALLOWED_ORIGINS === '*') {
     log.warn('ALLOWED_ORIGINS is empty or wildcard (*) in production. Set to an explicit domain for security.');
-  }
-  if (!process.env['DATABASE_URL']) {
-    log.warn('DATABASE_URL is not set — file-backed stores will lose data on container restart. Set a PostgreSQL connection string in production.');
   }
   // IMPORTANT: Rate limiting is in-memory and per-process. In multi-instance
   // deployments (multiple containers/pods), each instance tracks limits independently.
@@ -488,7 +488,11 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
   try {
     const key = user.orgId || user.id;
     const effectiveTier = getEffectiveTier(user);
-    const limits = getTierLimits(effectiveTier);
+    let limits = getTierLimits(effectiveTier);
+    if (effectiveTier === 'team' && user.orgId) {
+      const org = await getOrg(user.orgId);
+      if (org) limits = getTeamLimits(org.maxSeats);
+    }
 
     // Atomic limit check — serialize per key to prevent concurrent bypass
     const limitResult = await withGenerationLock(key, async () => {

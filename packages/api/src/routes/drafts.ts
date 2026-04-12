@@ -181,6 +181,9 @@ export async function handleDraftSubmit(req: IncomingMessage, res: ServerRespons
   }
 
   const updated = await dbUpdateDraftStatus(draftId, 'submitted');
+  if (!updated) {
+    json(res, 409, { error: 'Draft status changed concurrently — please retry' }); return;
+  }
   log.info({ actor: user.id, action: 'draft.submit', resource: draftId }, 'Draft submitted for review');
   json(res, 200, { draft: updated });
 }
@@ -230,6 +233,9 @@ export async function handleDraftApprove(req: IncomingMessage, res: ServerRespon
   }
 
   const updated = await dbUpdateDraftStatus(draftId, 'approved', user.id);
+  if (!updated) {
+    json(res, 409, { error: 'Draft status changed concurrently — please retry' }); return;
+  }
   log.info({ actor: user.id, action: 'draft.approve', resource: draftId }, 'Draft approved');
   json(res, 200, { draft: updated });
 }
@@ -276,6 +282,9 @@ export async function handleDraftPublish(req: IncomingMessage, res: ServerRespon
 
   // No version — just mark as published (no changelog entry)
   const updated = await dbUpdateDraftStatus(draftId, 'published');
+  if (!updated) {
+    json(res, 409, { error: 'Draft status changed concurrently — please retry' }); return;
+  }
   log.info({ actor: user.id, action: 'draft.publish', resource: draftId, project: draft.project, version: draft.version }, 'Draft published');
   json(res, 200, { draft: updated });
 }

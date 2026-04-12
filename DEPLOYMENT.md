@@ -145,7 +145,7 @@ pg_dump $DATABASE_URL > backup.sql
 
 The API exposes health check endpoints:
 
-- `GET /health` — returns `{ status: "ok", version, uptime }`
+- `GET /health` — returns `{ status: "ok" }` (200) or `{ status: "degraded" }` (503) if the database is unreachable
 - `GET /healthz` — alias for `/health`
 
 Configure your load balancer or container orchestrator to use these.
@@ -169,7 +169,20 @@ Configure your load balancer or container orchestrator to use these.
 
 ## Rate Limiting
 
-Rate limiting is **in-memory, per-process**. In a single-instance deployment (e.g., Railway) this works correctly. In multi-instance deployments (e.g., Kubernetes with multiple replicas), each process tracks limits independently — the effective limit is multiplied by the number of instances. For strict enforcement across instances, swap `createRateLimiter()` with a Redis-backed implementation.
+Rate limiting is **in-memory, per-process**. In a single-instance deployment (e.g., Railway) this works correctly. In multi-instance deployments (e.g., Kubernetes with multiple replicas), each process tracks limits independently — the effective limit is multiplied by the number of instances.
+
+### Redis-Backed Rate Limiting (recommended for production)
+
+Set `REDIS_URL` to enable shared rate limiting across all API instances. The rate limiter auto-detects `REDIS_URL` and switches from in-memory to Redis:
+
+```bash
+# Any Redis-compatible server (Redis, Upstash, Dragonfly, etc.)
+export REDIS_URL=https://your-upstash-url.upstash.io
+# or for standard Redis:
+export REDIS_URL=redis://your-redis-server:6379
+```
+
+⚠️ **Without Redis, multi-instance deployments have an effective rate limit of `RATE_LIMIT × instance_count`.** Example: 3 instances with `RATE_LIMIT=30` = 90 requests/minute effective limit per IP.
 
 ## Troubleshooting
 

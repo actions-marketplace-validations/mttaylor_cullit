@@ -123,14 +123,18 @@ class RedisRateLimiter implements RateLimiter {
     const redisKey = this.prefix + key;
 
     try {
+      // Pipeline: cleanup + count + add + expire in a single request
+      // Use MULTI/EXEC for atomicity of ZADD + PEXPIRE
       const res = await fetch(this.redisUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify([
           ['ZREMRANGEBYSCORE', redisKey, '0', String(windowStart)],
           ['ZCARD', redisKey],
+          ['MULTI'],
           ['ZADD', redisKey, String(now), `${now}-${Math.random().toString(36).slice(2, 8)}`],
           ['PEXPIRE', redisKey, String(this.windowMs)],
+          ['EXEC'],
         ]),
         signal: AbortSignal.timeout(3_000),
       });

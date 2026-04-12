@@ -28,7 +28,7 @@ import {
   dbAddOrgMember, dbAddOrgMemberAtomic, dbRemoveOrgMember, dbGetOrgMembers,
   dbRevokeToken, dbIsTokenRevoked, dbDeleteUser, dbGetTokensRevokedBefore,
   dbGetTeamApiKeyByKey, dbUpdatePreferredProvider, dbRevokeAllUserTokens,
-  dbGetSubscription,
+  dbGetSubscription, dbUpdateOrgMaxSeats,
   hashApiKey,
   sql,
   type DbUser, type DbOrg,
@@ -52,6 +52,9 @@ const JWT_SECRET = (() => {
       throw new Error('CULLIT_JWT_SECRET must be at least 32 characters. Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
     }
     return envSecret;
+  }
+  if (process.env['NODE_ENV'] === 'production') {
+    throw new Error('CULLIT_JWT_SECRET is required in production. Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
   }
   const fallback = randomBytes(32).toString('hex');
   log.warn('CULLIT_JWT_SECRET is not set — using random key. Sessions will not survive restarts.');
@@ -182,8 +185,8 @@ if (!useDb && process.env['NODE_ENV'] === 'production') {
   );
 }
 
-// --- Token revocation (in-memory fast-path + DB-backed) ---
-const revokedTokensCache = new Set<string>();
+// --- Token revocation (LRU cache + DB-backed) ---
+const revokedTokensCache = new Map<string, number>(); // hash → last-access timestamp
 const MAX_REVOKED_CACHE = 5000;
 
 function hashToken(token: string): string {
@@ -192,15 +195,21 @@ function hashToken(token: string): string {
 
 async function isTokenRevoked(token: string): Promise<boolean> {
   const h = hashToken(token);
-  if (revokedTokensCache.has(h)) return true;
+  if (revokedTokensCache.has(h)) {
+    // LRU: update access time
+    revokedTokensCache.delete(h);
+    revokedTokensCache.set(h, Date.now());
+    return true;
+  }
   return dbIsTokenRevoked(h);
 }
 
 async function revokeToken(token: string, userId: string): Promise<void> {
   const h = hashToken(token);
-  revokedTokensCache.add(h);
+  revokedTokensCache.set(h, Date.now());
   if (revokedTokensCache.size > MAX_REVOKED_CACHE) {
-    const first = revokedTokensCache.values().next().value;
+    // Evict least-recently-used (oldest by Map insertion order after LRU re-inserts)
+    const first = revokedTokensCache.keys().next().value;
     if (first) revokedTokensCache.delete(first);
   }
   // Revoke until the token's natural expiry (7 days)
@@ -510,6 +519,18 @@ export async function createOrg(name: string, owner: User, maxSeats = 10): Promi
   owner.tier = 'team';
   saveAuthStore();
   return org;
+}
+
+export async function updateOrgMaxSeats(orgId: string, maxSeats: number): Promise<void> {
+  if (useDb) {
+    await dbUpdateOrgMaxSeats(orgId, maxSeats);
+    return;
+  }
+  const org = store.orgs[orgId];
+  if (org) {
+    org.maxSeats = maxSeats;
+    saveAuthStore();
+  }
 }
 
 export async function addOrgMember(orgId: string, user: User, role: 'admin' | 'member' = 'member'): Promise<boolean> {

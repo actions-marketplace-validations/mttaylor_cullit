@@ -649,6 +649,10 @@ export async function dbUpdateOrgSettings(orgId: string, settings: { requireSepa
   await sql`UPDATE orgs SET require_separate_approver = ${settings.requireSeparateApprover} WHERE id = ${orgId}`;
 }
 
+export async function dbUpdateOrgMaxSeats(orgId: string, maxSeats: number): Promise<void> {
+  await sql`UPDATE orgs SET max_seats = ${maxSeats} WHERE id = ${orgId}`;
+}
+
 export async function dbGetOrgMemberCount(orgId: string): Promise<number> {
   const rows = await sql<[{ count: string }]>`SELECT COUNT(*)::text AS count FROM org_members WHERE org_id = ${orgId}`;
   return parseInt(rows[0].count, 10);
@@ -931,6 +935,11 @@ export async function dbGetProjectCount(): Promise<number> {
   return parseInt(rows[0].count, 10);
 }
 
+export async function dbGetUserProjectCount(userId: string): Promise<number> {
+  const rows = await sql<[{ count: string }]>`SELECT COUNT(DISTINCT project)::text AS count FROM changelog_releases WHERE user_id = ${userId}`;
+  return parseInt(rows[0].count, 10);
+}
+
 export async function dbDeleteRelease(project: string, version: string, userId?: string): Promise<boolean> {
   const result = userId
     ? await sql`DELETE FROM changelog_releases WHERE project = ${project} AND version = ${version} AND user_id = ${userId}`
@@ -1138,13 +1147,19 @@ export async function dbUpdateDraftStatus(id: string, status: DraftStatus, actor
   if (status === 'approved' && actorId) {
     const rows = await sql<DbDraft[]>`
       UPDATE release_drafts SET status = ${status}, approved_by = ${actorId}, updated_at = NOW()
-      WHERE id = ${id} RETURNING *`;
+      WHERE id = ${id} AND status = 'submitted' RETURNING *`;
     return rows[0] || null;
   }
   if (status === 'published') {
     const rows = await sql<DbDraft[]>`
       UPDATE release_drafts SET status = ${status}, published_at = NOW(), updated_at = NOW()
-      WHERE id = ${id} RETURNING *`;
+      WHERE id = ${id} AND status = 'approved' RETURNING *`;
+    return rows[0] || null;
+  }
+  if (status === 'submitted') {
+    const rows = await sql<DbDraft[]>`
+      UPDATE release_drafts SET status = ${status}, updated_at = NOW()
+      WHERE id = ${id} AND status = 'draft' RETURNING *`;
     return rows[0] || null;
   }
   const rows = await sql<DbDraft[]>`

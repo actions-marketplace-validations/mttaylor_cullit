@@ -93,7 +93,7 @@ Generate release notes from your configured source and provider.
 | `--tone` | string | `professional` | Writing tone: `professional`, `casual`, `terse`, `edgy`, `hype`, `snarky` |
 | `--format` | string | `markdown` | Output format: `markdown`, `html`, `html-dark`, `html-minimal`, `html-edgy`, `json` |
 | `--template` | string | — | Named template profile from `.cullit.yml` |
-| `--source` | string | `local` | Data source: `local`, `jira`, `linear`, `gitlab`, `bitbucket`, `multi-repo` |
+| `--source` | string | `local` | Data source: `local`, `jira`, `linear`, `gitlab` (CLI-only), `bitbucket` (CLI-only), `multi-repo` |
 | `--dry-run` | boolean | `false` | Generate but don't publish; output to stdout |
 | `--verbose` | boolean | `false` | Show detailed progress and debug info |
 | `--quiet` | boolean | `false` | Suppress all output except the result |
@@ -270,7 +270,7 @@ docker compose up api
 | 🔑 **Licensed AI** | Paid AI and premium integrations are available through licensed hosted/private Cullit surfaces. |
 | ⚡ **Flexible Sources** | Git, Jira, Linear, GitLab, or Bitbucket as primary data source |
 | 🔍 **Enrichment** | Cross-reference Jira & Linear tickets from commits |
-| 📤 **Multi-Publish** | Slack, Discord, Teams, GitHub Release, GitLab Release, Confluence, Notion, Hosted Changelog, Embed Widget, file, stdout |
+| 📤 **Multi-Publish** | Slack, Discord, GitHub Release, GitLab Release, Hosted Changelog, Embed Widget, file, stdout (Pro); Teams, Confluence, Notion (Team+) |
 | 🎯 **Audience Modes** | Developer, end-user, or executive summaries |
 | 📋 **Smart Categories** | Features, fixes, breaking changes, improvements, chores |
 | 🔇 **Structured Logging** | `--verbose` and `--quiet` flags for CI-friendly output |

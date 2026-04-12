@@ -8,8 +8,9 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { readFileSync, writeFileSync, existsSync, renameSync } from 'fs';
 import { json, readBody, parseJsonObject, toStringArray, isRecord, sanitizeHtml, PORT } from '../utils.js';
-import { resolveUser, useDb } from '../auth.js';
-import { dbPublishRelease, dbGetReleases, dbGetProjectCount, dbDeleteRelease, dbGetProjectOwner, dbGetUserProjects } from '../db.js';
+import { resolveUser, useDb, getEffectiveTier, getOrg } from '../auth.js';
+import { dbPublishRelease, dbGetReleases, dbGetProjectCount, dbGetUserProjectCount, dbDeleteRelease, dbGetProjectOwner, dbGetUserProjects } from '../db.js';
+import { getTierLimits, getTeamLimits } from '@cullit/core';
 import { log } from '../logger.js';
 
 // --- Changelog types & store ---
@@ -130,6 +131,14 @@ export async function handleChangelogPublish(req: IncomingMessage, res: ServerRe
 
   const MAX_PROJECTS = 1000;
 
+  // Per-user project limit based on tier
+  const effectiveTier = getEffectiveTier(user);
+  let tierLimits = getTierLimits(effectiveTier);
+  if (effectiveTier === 'team' && user.orgId) {
+    const org = await getOrg(user.orgId);
+    if (org) tierLimits = getTeamLimits(org.maxSeats);
+  }
+
   // DB-backed persistence when available
   if (useDb) {
     // Project ownership check — prevent cross-user changelog hijacking
@@ -139,10 +148,25 @@ export async function handleChangelogPublish(req: IncomingMessage, res: ServerRe
       return;
     }
 
-    const projectCount = await dbGetProjectCount();
-    if (projectCount >= MAX_PROJECTS) {
-      json(res, 409, { error: 'Maximum number of projects reached' });
-      return;
+    // Enforce per-user tier project limit (and global system cap)
+    if (!owner) {
+      const userProjectCount = await dbGetUserProjectCount(user.id);
+      if (userProjectCount >= tierLimits.maxProjects) {
+        json(res, 402, {
+          error: `Project limit reached (${userProjectCount}/${tierLimits.maxProjects}). Upgrade your plan for more projects.`,
+          code: 'BILLING_PROJECT_LIMIT',
+          used: userProjectCount,
+          limit: tierLimits.maxProjects,
+          tier: effectiveTier,
+          upgrade: 'https://cullit.io/pricing',
+        });
+        return;
+      }
+      const globalCount = await dbGetProjectCount();
+      if (globalCount >= MAX_PROJECTS) {
+        json(res, 409, { error: 'System project limit reached' });
+        return;
+      }
     }
     await dbPublishRelease(project, {
       version: release.version,
@@ -166,9 +190,24 @@ export async function handleChangelogPublish(req: IncomingMessage, res: ServerRe
       }
     }
 
-    if (!changelogStore.has(project) && changelogStore.size >= MAX_PROJECTS) {
-      json(res, 409, { error: 'Maximum number of projects reached' });
-      return;
+    // In-memory per-user project limit
+    if (!changelogStore.has(project)) {
+      const userProjects = [...changelogStore.entries()].filter(([, rels]) => rels.some(r => r.userId === user.id));
+      if (userProjects.length >= tierLimits.maxProjects) {
+        json(res, 402, {
+          error: `Project limit reached (${userProjects.length}/${tierLimits.maxProjects}). Upgrade your plan for more projects.`,
+          code: 'BILLING_PROJECT_LIMIT',
+          used: userProjects.length,
+          limit: tierLimits.maxProjects,
+          tier: effectiveTier,
+          upgrade: 'https://cullit.io/pricing',
+        });
+        return;
+      }
+      if (changelogStore.size >= MAX_PROJECTS) {
+        json(res, 409, { error: 'System project limit reached' });
+        return;
+      }
     }
 
     const releases = changelogStore.get(project) || [];

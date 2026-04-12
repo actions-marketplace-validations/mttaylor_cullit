@@ -20,14 +20,15 @@ GitHub OAuth users and API keys.
 | `tier` | TEXT | `free`, `pro`, `team`, `enterprise` (legacy `basic` maps to `free`) |
 | `org_id` | TEXT | FK → `orgs.id` (nullable) |
 | `role` | TEXT | `member` or `admin` |
-| `api_key` | TEXT UNIQUE | CULLIT_API_KEY value |
+| `api_key` | TEXT UNIQUE | CULLIT_API_KEY value (deprecated — see `api_key_hash`) |
+| `api_key_hash` | TEXT | SHA-256 hash of API key (used for lookups after key rotation) |
 | `stripe_customer_id` | TEXT | Stripe customer link |
 | `stripe_subscription_id` | TEXT | Stripe subscription link |
 | `github_username` | TEXT | GitHub username (for app linking) |
 | `created_at` | TIMESTAMPTZ | Account creation |
 | `last_login_at` | TIMESTAMPTZ | Last login timestamp |
 
-Indexes: `idx_users_api_key (api_key)`, `idx_users_stripe_customer (stripe_customer_id)`
+Indexes: `idx_users_api_key (api_key)`, `idx_users_api_key_hash (api_key_hash)`, `idx_users_stripe_customer (stripe_customer_id)`
 
 ---
 
@@ -284,3 +285,42 @@ GitHub App installation tracking.
 | `created_at` | TIMESTAMPTZ | Installation timestamp |
 
 Index: `idx_gh_install_user (user_id)`
+
+---
+
+### `team_api_keys`
+
+Per-seat API keys for team plans.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | TEXT PK | Key ID |
+| `org_id` | TEXT | FK → `orgs.id` (CASCADE) |
+| `api_key` | TEXT UNIQUE | Plaintext key (nulled after hash backfill) |
+| `api_key_hash` | TEXT | SHA-256 hash for lookups |
+| `label` | TEXT | Human-readable label (e.g., "Seat 1") |
+| `assigned_to_email` | TEXT | Assigned team member email (nullable) |
+| `assigned_to_name` | TEXT | Assigned team member name (nullable) |
+| `assigned_at` | TIMESTAMPTZ | When assigned (nullable) |
+| `revoked_at` | TIMESTAMPTZ | When revoked (nullable — active if NULL) |
+| `created_at` | TIMESTAMPTZ | Creation timestamp |
+
+Index: `idx_team_keys_org (org_id) WHERE revoked_at IS NULL`
+
+---
+
+### `audit_events`
+
+Audit trail for billing and admin actions.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | TEXT PK | Event ID |
+| `user_id` | TEXT | Acting user (nullable for system events) |
+| `action` | TEXT | Event type (e.g., `team_key_provisioning_failed`) |
+| `target` | TEXT | Target resource ID |
+| `metadata` | JSONB | Additional context |
+| `ip` | TEXT | Client IP address |
+| `created_at` | TIMESTAMPTZ | Event timestamp |
+
+Index: `idx_audit_events_user (user_id, created_at DESC)`

@@ -20,7 +20,7 @@ import {
   dbAcceptOrgInvite, dbUpdateOrgMemberRole, dbUpdateOrgSettings,
 } from '../db.js';
 import { sendOrgInvite } from '../email.js';
-import { getTierLimits } from '@cullit/core';
+import { getTeamLimits, TEAM_MIN_SEATS } from '@cullit/core';
 
 // --- Org CRUD ---
 
@@ -287,7 +287,7 @@ export async function handleGetOrgUsage(req: IncomingMessage, res: ServerRespons
   const monthlyCount = await getMonthlyGenerationCount(user.orgId);
   const members = await getOrgMembers(user.orgId);
   const org = await getOrg(user.orgId);
-  const limits = getTierLimits(org?.tier || 'team');
+  const limits = getTeamLimits(org?.maxSeats ?? TEAM_MIN_SEATS);
 
   json(res, 200, {
     usage: {

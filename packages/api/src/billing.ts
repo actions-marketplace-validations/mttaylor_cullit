@@ -39,8 +39,7 @@ import {
   dbRevokeAllOrgTeamApiKeys, dbRevokeExcessTeamApiKeys,
   hashApiKey, dbRecordAuditEvent,
 } from './db.js';
-import { getEffectiveTier, getUser, generateApiKey } from './auth.js';
-import { createOrg } from './auth.js';
+import { getEffectiveTier, getUser, generateApiKey, createOrg, updateOrgMaxSeats } from './auth.js';
 import { isRecord } from './utils.js';
 import { log } from './logger.js';
 import { sendPaymentFailed, sendSubscriptionConfirmed } from './email.js';
@@ -337,7 +336,7 @@ export async function handleCheckout(
   }
 
   // Idempotency key prevents duplicate checkout sessions on network retry
-  const idempotencyKey = `checkout_${userId}_${plan}_${seatCount}_${Math.floor(Date.now() / 60_000)}`;
+  const idempotencyKey = `checkout_${userId}_${plan}_${seatCount}`;
   const params: Record<string, string> = {
     'mode': 'subscription',
     'line_items[0][price]': priceId,
@@ -551,22 +550,26 @@ async function handleCheckoutComplete(sessionPayload: unknown): Promise<void> {
     }
 
     if (!provisioned) {
-      log.error({ userId, plan, seats }, 'Failed to provision team API keys after 3 attempts — recording for recovery');
-      // Record audit event so the failure is durable and queryable for recovery
+      log.error({ userId, plan, seats, subscriptionId }, 'Failed to provision team API keys after 3 attempts — issuing refund');
+      // Record durable audit event so ops can query and replay provisioning
       await dbRecordAuditEvent({
         userId, action: 'team_key_provisioning_failed',
         target: subscriptionId,
         metadata: { plan, seats, attempts: 3 },
       });
-      // Schedule one final async retry after 30s — last chance before manual intervention
-      setTimeout(async () => {
-        try {
-          await provisionTeamKeys(userId, plan, seats);
-          log.info({ userId, plan, seats }, 'Deferred team key provisioning succeeded');
-        } catch (err) {
-          log.error({ err: (err as Error).message, userId, plan, seats }, 'Deferred team key provisioning also failed — manual intervention required');
-        }
-      }, 30_000);
+
+      // Auto-refund: cancel the subscription so the customer isn't charged for unusable keys
+      try {
+        await stripeRequest(`/subscriptions/${subscriptionId}`, 'DELETE', {});
+        log.info({ userId, subscriptionId }, 'Auto-canceled subscription after key provisioning failure');
+        await dbRecordAuditEvent({
+          userId, action: 'team_key_provisioning_auto_cancel',
+          target: subscriptionId,
+          metadata: { plan, seats, reason: 'provisioning_failure' },
+        });
+      } catch (cancelErr) {
+        log.error({ err: (cancelErr as Error).message, userId, subscriptionId }, 'Failed to auto-cancel subscription after provisioning failure — MANUAL INTERVENTION REQUIRED');
+      }
     }
   }
 
@@ -599,15 +602,19 @@ async function provisionTeamKeys(userId: string, plan: string, seats: number): P
     const org = await createOrg(orgName, user, seats);
     orgId = org.id;
     log.info({ userId, orgId, plan, seats }, 'Auto-created org for team plan');
+  } else {
+    // Keep org.max_seats in sync with the Stripe subscription quantity
+    await updateOrgMaxSeats(orgId, seats);
   }
 
   // Generate keys up to the seat count (delta from existing active keys)
-  const existingCount = await dbGetActiveTeamApiKeyCount(orgId);
-  const toGenerate = Math.max(0, seats - existingCount);
-
-  if (toGenerate > 0 && sql) {
-    // Atomic: generate all keys in a single transaction
+  // Count and insert inside the same transaction to prevent TOCTOU race
+  if (sql) {
     await sql.begin(async (tx: any) => {
+      const countRows = await tx`SELECT COUNT(*)::text AS count FROM team_api_keys WHERE org_id = ${orgId} AND revoked_at IS NULL`;
+      const existingCount = parseInt(countRows[0].count, 10);
+      const toGenerate = Math.max(0, seats - existingCount);
+
       for (let i = 0; i < toGenerate; i++) {
         const id = randomBytes(12).toString('hex');
         const apiKey = generateApiKey();
@@ -618,17 +625,20 @@ async function provisionTeamKeys(userId: string, plan: string, seats: number): P
           VALUES (${id}, ${orgId}, ${null}, ${keyHash}, ${label})
         `;
       }
+
+      log.info({ userId, orgId, plan, seats, generated: toGenerate, existing: existingCount }, 'Team API keys provisioned');
     });
   } else {
+    const existingCount = await dbGetActiveTeamApiKeyCount(orgId);
+    const toGenerate = Math.max(0, seats - existingCount);
     for (let i = 0; i < toGenerate; i++) {
       const id = randomBytes(12).toString('hex');
       const apiKey = generateApiKey();
       const label = `Seat ${existingCount + i + 1}`;
       await dbCreateTeamApiKey({ id, orgId, apiKey, label });
     }
+    log.info({ userId, orgId, plan, seats, generated: toGenerate, existing: existingCount }, 'Team API keys provisioned');
   }
-
-  log.info({ userId, orgId, plan, seats, generated: toGenerate, existing: existingCount }, 'Team API keys provisioned');
 }
 
 async function handleSubscriptionUpdate(subscriptionPayload: unknown): Promise<void> {
@@ -666,10 +676,23 @@ async function handleSubscriptionUpdate(subscriptionPayload: unknown): Promise<v
       log.error({ err: (err as Error).message, userId: user.id, plan, seats }, 'Failed to provision/adjust team API keys on subscription update');
     }
   } else if (user.org_id) {
-    // Downgraded from team to non-team plan — revoke all keys
-    const revoked = await dbRevokeAllOrgTeamApiKeys(user.org_id);
-    if (revoked > 0) {
-      log.info({ userId: user.id, orgId: user.org_id, revoked }, 'Revoked all team API keys after downgrade to non-team plan');
+    // Downgraded from team to non-team plan.
+    // If cancel_at_period_end is set, the subscription is still active until period end —
+    // defer revocation to the customer.subscription.deleted event so CI/CD keys keep working.
+    if (subscription.cancel_at_period_end) {
+      log.info({ userId: user.id, orgId: user.org_id }, 'Team downgrade with cancel_at_period_end — deferring key revocation to subscription.deleted');
+    } else {
+      // Immediate plan change: revoke keys but log prominently so ops can intervene
+      log.warn({ userId: user.id, orgId: user.org_id }, 'Immediate team→non-team downgrade — revoking all team API keys. CI/CD integrations using these keys will stop working.');
+      const revoked = await dbRevokeAllOrgTeamApiKeys(user.org_id);
+      if (revoked > 0) {
+        log.info({ userId: user.id, orgId: user.org_id, revoked }, 'Revoked all team API keys after immediate downgrade to non-team plan');
+        await dbRecordAuditEvent({
+          userId: user.id, action: 'team_keys_revoked_immediate_downgrade',
+          target: user.org_id,
+          metadata: { revoked, previousPlan: 'team' },
+        });
+      }
     }
   }
 

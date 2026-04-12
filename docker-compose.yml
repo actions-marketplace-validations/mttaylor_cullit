@@ -17,6 +17,11 @@ services:
     environment:
       - PORT=3000
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
@@ -31,6 +36,11 @@ services:
     volumes:
       - .:/repo:ro
     working_dir: /repo
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
     profiles:
       - cli
 
@@ -46,6 +56,11 @@ services:
     environment:
       - CULLIT_APP_PORT=3001
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
       interval: 30s
