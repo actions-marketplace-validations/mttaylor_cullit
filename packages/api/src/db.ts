@@ -61,7 +61,7 @@ export async function migrate(): Promise<void> {
       tier          TEXT NOT NULL DEFAULT 'free',
       org_id        TEXT,
       role          TEXT NOT NULL DEFAULT 'member',
-      api_key       TEXT UNIQUE NOT NULL,
+      api_key       TEXT UNIQUE,
       api_key_hash  TEXT,
       stripe_customer_id TEXT,
       stripe_subscription_id TEXT,
@@ -78,6 +78,9 @@ export async function migrate(): Promise<void> {
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS tokens_revoked_before TIMESTAMPTZ`;
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS github_username TEXT`;
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_provider TEXT`;
+
+  // Drop NOT NULL on api_key so we can null out plaintext keys after hashing
+  await sql`ALTER TABLE users ALTER COLUMN api_key DROP NOT NULL`.catch(() => {});
 
   // Backfill api_key_hash for existing users that don't have one
   // Backfill api_key_hash for existing users that don't have one
