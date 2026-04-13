@@ -89,7 +89,7 @@ export interface User {
   email: string;
   avatarUrl: string;
   githubUsername: string | null;
-  tier: 'free' | 'pro' | 'team' | 'enterprise';
+  tier: 'free' | 'paid' | 'enterprise';
   orgId: string | null;  // null = no org membership
   role: 'owner' | 'admin' | 'member';
   apiKey: string;        // clt_<random> generated on first login
@@ -104,7 +104,7 @@ export interface Org {
   name: string;
   slug: string;         // URL-safe name
   ownerId: string;      // User.id
-  tier: 'team' | 'enterprise';
+  tier: 'paid' | 'enterprise';
   maxSeats: number;
   requireSeparateApprover: boolean;
   members: OrgMember[];
@@ -349,12 +349,19 @@ export async function getUserByApiKey(apiKey: string): Promise<User | null> {
   return userId ? store.users[userId] || null : null;
 }
 
+/** Map legacy DB tier values (pro, team, basic) to current model */
+function normalizeTier(raw: string): User['tier'] {
+  if (raw === 'enterprise') return 'enterprise';
+  if (raw === 'paid' || raw === 'pro' || raw === 'team') return 'paid';
+  return 'free';
+}
+
 function dbUserToUser(row: DbUser): User {
   return {
     id: row.id, login: row.login, name: row.name, email: row.email,
     avatarUrl: row.avatar_url,
     githubUsername: row.github_username || null,
-    tier: row.tier as User['tier'], orgId: row.org_id, role: row.role as User['role'],
+    tier: normalizeTier(row.tier), orgId: row.org_id, role: row.role as User['role'],
     apiKey: row.api_key,
     preferredProvider: row.preferred_provider || null,
     createdAt: row.created_at.toISOString(),
@@ -367,8 +374,8 @@ export function getEffectiveTier(user: User): User['tier'] {
 }
 
 /**
- * Resolve the user's plan (e.g. 'pro', 'team') from subscription.
- * Team plans use a single 'team' tier with dynamic seat count.
+ * Resolve the user's plan (e.g. 'paid') from subscription.
+ * Paid plans use per-seat pricing with dynamic seat count.
  * Falls back to deriving from org membership for in-memory mode.
  */
 export async function getUserPlan(user: User): Promise<string> {
@@ -376,10 +383,10 @@ export async function getUserPlan(user: User): Promise<string> {
     const sub = await dbGetSubscription(user.id);
     if (sub) return sub.plan;
   }
-  // Fallback: any org membership implies the team plan
+  // Fallback: any org membership implies the paid plan
   if (user.orgId) {
     const org = await getOrg(user.orgId);
-    if (org) return 'team';
+    if (org) return 'paid';
   }
   return user.tier;
 }
@@ -475,7 +482,7 @@ export async function getOrgBySlug(slug: string): Promise<Org | null> {
 function dbOrgToOrg(row: DbOrg): Org {
   return {
     id: row.id, name: row.name, slug: row.slug,
-    ownerId: row.owner_id, tier: row.tier as Org['tier'],
+    ownerId: row.owner_id, tier: (row.tier === 'enterprise' ? 'enterprise' : 'paid') as Org['tier'],
     maxSeats: row.max_seats, requireSeparateApprover: row.require_separate_approver,
     members: [], createdAt: row.created_at.toISOString(),
   };
@@ -491,12 +498,12 @@ export async function createOrg(name: string, owner: User, maxSeats = 10): Promi
     let row: ReturnType<typeof dbCreateOrg> extends Promise<infer T> ? T : never;
     for (let attempt = 0; attempt < 3; attempt++) {
       const trySlug = attempt === 0 ? slug : `${slug.slice(0, 40)}-${randomBytes(4).toString('hex')}`;
-      row = await dbCreateOrg({ id, name, slug: trySlug, ownerId: owner.id, tier: 'team', maxSeats });
+      row = await dbCreateOrg({ id, name, slug: trySlug, ownerId: owner.id, tier: 'paid', maxSeats });
       if (row) { break; }
     }
     if (!row!) throw new Error('Failed to create org — slug conflict after retries');
     await dbAddOrgMember(id, owner.id, 'owner');
-    await dbUpdateUserOrg(owner.id, id, 'owner', 'team');
+    await dbUpdateUserOrg(owner.id, id, 'owner', 'paid');
     return dbOrgToOrg(row!);
   }
 
@@ -507,7 +514,7 @@ export async function createOrg(name: string, owner: User, maxSeats = 10): Promi
   }
 
   const org: Org = {
-    id, name, slug, ownerId: owner.id, tier: 'team', maxSeats,
+    id, name, slug, ownerId: owner.id, tier: 'paid', maxSeats,
     requireSeparateApprover: false,
     members: [{ userId: owner.id, role: 'owner', joinedAt: now }],
     createdAt: now,
@@ -516,7 +523,7 @@ export async function createOrg(name: string, owner: User, maxSeats = 10): Promi
   store.orgs[id] = org;
   owner.orgId = id;
   owner.role = 'owner';
-  owner.tier = 'team';
+  owner.tier = 'paid';
   saveAuthStore();
   return org;
 }

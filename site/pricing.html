@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <title>Pricing — Cullit</title>
 <meta name="description" content="Cullit pricing — AI-generated release notes grounded in git, Jira, and Linear. Start free, upgrade for model choice, audience-aware output, and team release workflows.">
 <meta property="og:title" content="Pricing — Cullit">
-<meta property="og:description" content="Cullit pricing — AI release notes from $0/mo. Free, Pro, Team & Enterprise plans.">
+<meta property="og:description" content="Cullit pricing — AI release notes from $0/mo. Free, Paid & Enterprise plans.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://cullit.io/pricing">
 <meta property="og:image" content="https://cullit.io/og-image.png">
@@ -15,7 +15,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@cullit_io">
 <meta name="twitter:title" content="Pricing — Cullit">
-<meta name="twitter:description" content="Cullit pricing — AI release notes from $0/mo. Free, Pro, Team & Enterprise plans.">
+<meta name="twitter:description" content="Cullit pricing — AI release notes from $0/mo. Free, Paid & Enterprise plans.">
 <meta name="twitter:image" content="https://cullit.io/og-image.png">
 <link rel="canonical" href="https://cullit.io/pricing">
 <link rel="icon" href="/favicon.ico" sizes="any">
@@ -140,7 +140,7 @@
 
   .pricing-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 1.25rem;
     margin-bottom: 4rem;
   }
@@ -560,7 +560,7 @@
 <main class="pricing-container">
   <header class="pricing-header">
     <h1>Simple, transparent <span style="color: var(--accent)">pricing</span></h1>
-    <p>Start free. Cullit is simplifying pricing to <strong>Free</strong>, <strong>Paid</strong>, and <strong>Enterprise</strong>. Today, some checkout screens still show legacy single-seat and 5+ seat packages while billing is being consolidated.</p>
+    <p>Simple, transparent pricing. Start free, upgrade when you're ready.</p>
   </header>
 
   <div class="billing-toggle">
@@ -607,73 +607,52 @@
         <li><span class="check">&#10003;</span> 3 projects</li>
         <li><span class="check">&#10003;</span> Template-based generation</li>
         <li><span class="check">&#10003;</span> Stdout &amp; file output</li>
-        <li><span class="check">&#10003;</span> Git commit collector</li>
+        <li><span class="check">&#10003;</span> All AI providers (BYOK)</li>
         <li><span class="check">&#10003;</span> CLI &amp; GitHub Action</li>
-        <li><span class="dash">&mdash;</span> AI providers</li>
-        <li><span class="dash">&mdash;</span> Jira &amp; Linear enrichment</li>
-        <li><span class="dash">&mdash;</span> Audience &amp; tone control</li>
       </ul>
-      <a href="dashboard.html" class="plan-btn plan-btn-outline">Get Started</a>
+      <a href="dashboard.html" class="plan-btn plan-btn-outline">Get Started Free</a>
     </div>
 
-    <!-- PRO -->
-    <div class="pricing-card">
-      <div class="plan-name">Pro</div>
-      <div class="plan-price" id="proPrice">$9 <span class="period">/ mo</span></div>
-      <p class="plan-annual-note" id="proAnnualNote" style="display:none"></p>
-      <p class="plan-desc">1 user. Full AI model choice, audience control, enrichment, and publishing.</p>
+    <!-- PAID -->
+    <div class="pricing-card featured" id="paidCard">
+      <div class="popular-badge">Most Popular</div>
+      <div class="plan-name">Paid</div>
+      <div class="plan-price" id="paidPrice">$8.00 <span class="period">/ seat / mo</span></div>
+      <p class="plan-annual-note" id="paidAnnualNote" style="display:none"></p>
+      <div class="seat-selector">
+        <label for="paidSeats">Seats:</label>
+        <input type="number" id="paidSeats" class="seat-input" min="1" max="100" value="1">
+      </div>
+      <div class="seat-total" id="paidTotal">Total: $8.00 / mo</div>
+      <p class="plan-desc">Everything unlocked. All AI providers, all publishers, enrichment, audience control, analytics, and more.</p>
       <ul class="plan-features">
-        <li><span class="check">&#10003;</span> 500 generations / month</li>
-        <li><span class="check">&#10003;</span> 100 projects</li>
         <li><span class="check">&#10003;</span> All AI providers (BYOK)</li>
+        <li><span class="check">&#10003;</span> All publishers (Slack, Discord, GitHub, Confluence, Notion, Teams)</li>
         <li><span class="check">&#10003;</span> Jira &amp; Linear enrichment</li>
         <li><span class="check">&#10003;</span> Audience &amp; tone control</li>
         <li><span class="check">&#10003;</span> Hosted changelog</li>
-        <li><span class="check">&#10003;</span> Slack, Discord &amp; GitHub Release</li>
-        <li><span class="check">&#10003;</span> Styled HTML themes</li>
-      </ul>
-      <a href="https://cullit.io/dashboard" id="proCta" class="plan-btn plan-btn-primary">Start Pro</a>
-    </div>
-
-    <!-- TEAM -->
-    <div class="pricing-card featured" id="teamCard">
-      <div class="plan-name">Team</div>
-      <div class="plan-price" id="teamPrice">$8 <span class="period">/ seat / mo</span></div>
-      <p class="plan-annual-note" id="teamAnnualNote" style="display:none"></p>
-      <div class="seat-selector">
-        <label for="teamSeats">Seats:</label>
-        <input type="number" id="teamSeats" class="seat-input" min="5" max="100" value="5">
-      </div>
-      <div class="seat-total" id="teamTotal">Total: $40 / mo</div>
-      <p class="plan-desc">Everything in Pro, plus collaboration and governance for teams. Starts at 5 seats and scales to 100.</p>
-      <ul class="plan-features">
-        <li><span class="check">&#10003;</span> All Pro features</li>
         <li><span class="check">&#10003;</span> Drafts &amp; approvals</li>
-        <li><span class="check">&#10003;</span> Team API keys</li>
-        <li><span class="check">&#10003;</span> Confluence, Notion &amp; Teams</li>
         <li><span class="check">&#10003;</span> Branded changelog widget</li>
         <li><span class="check">&#10003;</span> Project templates</li>
-        <li><span class="check">&#10003;</span> Audit logs</li>
-        <li><span class="check">&#10003;</span> Team analytics</li>
-        <li><span class="check">&#10003;</span> Org settings &amp; shared history</li>
+        <li><span class="check">&#10003;</span> Audit logs &amp; analytics</li>
+        <li><span class="check">&#10003;</span> Org settings</li>
       </ul>
-      <a id="teamCta" href="https://cullit.io/dashboard" class="plan-btn plan-btn-primary">Get Team</a>
+      <button id="paidCta" class="plan-btn plan-btn-primary">Start Paid Plan</button>
     </div>
 
     <!-- ENTERPRISE -->
     <div class="pricing-card">
       <div class="plan-name">Enterprise</div>
       <div class="plan-price">Custom</div>
-      <p class="plan-desc">Unlimited usage, SSO, and dedicated support.</p>
+      <p class="plan-desc">Everything in Paid plus SSO, dedicated support, and on-prem deployment.</p>
       <ul class="plan-features">
-        <li><span class="check">&#10003;</span> Unlimited generations</li>
-        <li><span class="check">&#10003;</span> Unlimited projects</li>
-        <li><span class="check">&#10003;</span> Unlimited seats</li>
-        <li><span class="check">&#10003;</span> All Team features</li>
+        <li><span class="check">&#10003;</span> Everything in Paid</li>
         <li><span class="check">&#10003;</span> SSO &amp; SAML</li>
-        <li><span class="check">&#10003;</span> Dedicated support &amp; SLA</li>
+        <li><span class="check">&#10003;</span> Dedicated support</li>
         <li><span class="check">&#10003;</span> Self-hosted / on-prem</li>
+        <li><span class="check">&#10003;</span> Custom SLAs</li>
         <li><span class="check">&#10003;</span> Invoice billing</li>
+        <li><span class="check">&#10003;</span> Unlimited seats &amp; usage</li>
       </ul>
       <a href="mailto:sales@cullit.io?subject=Cullit%20Enterprise" class="plan-btn plan-btn-outline">Contact Sales</a>
     </div>
@@ -683,41 +662,34 @@
   <!-- Comparison table -->
   <section class="compare-section">
     <h2>Compare all plans</h2>
-    <p style="text-align:center;font-size:0.85rem;color:var(--text-dim);margin-top:-0.5rem;margin-bottom:1rem">Commercially, Cullit is moving to Free, Paid, and Enterprise. The comparison below shows the current checkout packages while billing is consolidated.</p>
     <div class="compare-wrap">
       <table class="compare-table">
         <thead>
           <tr>
             <th>Feature</th>
             <th>Free</th>
-            <th>Pro</th>
-            <th>Team</th>
+            <th>Paid</th>
             <th>Enterprise</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td>Price</td><td>$0</td><td>$9/mo</td><td>$8/seat/mo (5-seat min)</td><td>Custom</td></tr>
-          <tr><td>Annual price</td><td class="cmp-dash">&mdash;</td><td>$7.65/mo</td><td>$6.80/seat/mo</td><td class="cmp-dash">&mdash;</td></tr>
-          <tr><td>Seats</td><td>1</td><td>1</td><td>5 &ndash; 100</td><td>Unlimited</td></tr>
-          <tr><td>Generations / month</td><td>3</td><td>500</td><td>100/seat (min 2,000)</td><td>Unlimited</td></tr>
-          <tr><td>Projects</td><td>3</td><td>100</td><td>5/seat (min 250)</td><td>Unlimited</td></tr>
-          <tr><td>AI providers (BYOK)</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>Template engine (no AI)</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>Jira &amp; Linear enrichment</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>Audience &amp; tone control</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>Slack, Discord &amp; GitHub Release</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>Hosted changelog</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>Confluence, Notion &amp; Teams</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>Drafts &amp; approvals</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>Team API keys</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>Branded changelog widget</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>Project templates</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>Audit logs</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>Team analytics</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>Org settings &amp; shared history</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>SSO &amp; SAML</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>Self-hosted / on-prem</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>Dedicated support &amp; SLA</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>Price</td><td>$0</td><td>$8/seat/mo</td><td>Custom</td></tr>
+          <tr><td>Annual price</td><td class="cmp-dash">&mdash;</td><td>$6.80/seat/mo</td><td>Custom</td></tr>
+          <tr><td>Seats</td><td>1</td><td>1&ndash;100</td><td>Unlimited</td></tr>
+          <tr><td>Generations / month</td><td>3</td><td>500 (+ 100/seat)</td><td>Unlimited</td></tr>
+          <tr><td>Projects</td><td>3</td><td>100 (+ 5/seat)</td><td>Unlimited</td></tr>
+          <tr><td>AI providers (BYOK)</td><td class="cmp-check">&#10003;</td><td class="cmp-check">All</td><td class="cmp-check">All</td></tr>
+          <tr><td>Publishers</td><td>stdout, file</td><td>All (Slack, Discord, GitHub, Confluence, Notion, Teams)</td><td>All</td></tr>
+          <tr><td>Enrichment</td><td class="cmp-dash">&mdash;</td><td>Jira, Linear</td><td>All</td></tr>
+          <tr><td>Audience &amp; tone</td><td>developer / professional only</td><td class="cmp-check">Full control</td><td class="cmp-check">Full control</td></tr>
+          <tr><td>Drafts &amp; approvals</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>Hosted changelog</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>Branded widget</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>Project templates</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>Audit logs</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>Team analytics</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>SSO &amp; SAML</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td></tr>
+          <tr><td>Support</td><td>Community</td><td>Email</td><td>Dedicated</td></tr>
         </tbody>
       </table>
     </div>
@@ -770,12 +742,12 @@
 
     <div class="faq-item">
       <p class="faq-q">How do seats work on the paid plan?</p>
-      <p class="faq-a">Cullit is moving toward one simpler paid model with seat-based billing. In the live product today, single-seat access and 5+ seat org setups are still checked out separately. Collaboration features like drafts &amp; approvals, team API keys, Confluence/Notion/Teams publishing, and shared history unlock on the 5+ seat org setup.</p>
+      <p class="faq-a">The Paid plan uses simple seat-based billing at $8/seat/month ($6.80/seat on annual). Start with 1 seat and add more anytime from the <a href="dashboard.html">billing dashboard</a>. All features are unlocked regardless of seat count.</p>
     </div>
 
     <div class="faq-item">
-      <p class="faq-q">How does paid pricing scale today?</p>
-      <p class="faq-a">Current org billing is $8/seat/month ($6.80/seat on annual billing) with a 5-seat minimum, so the starter org package is $40/month before annual savings. Limits scale with your team: 100 generations per seat (min 2,000) and 5 projects per seat (min 250). Add seats anytime from the <a href="dashboard.html">billing dashboard</a>.</p>
+      <p class="faq-q">How does paid pricing scale?</p>
+      <p class="faq-a">Paid billing is $8/seat/month ($6.80/seat on annual). No minimum seats required. Limits scale with your team: 500 base generations plus 100 per seat, and 100 base projects plus 5 per seat. Add or remove seats anytime from the <a href="dashboard.html">billing dashboard</a>.</p>
     </div>
   </section>
 </main>

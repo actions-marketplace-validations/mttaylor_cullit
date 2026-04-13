@@ -489,7 +489,7 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
     const key = user.orgId || user.id;
     const effectiveTier = getEffectiveTier(user);
     let limits = getTierLimits(effectiveTier);
-    if (effectiveTier === 'team' && user.orgId) {
+    if (effectiveTier === 'paid' && user.orgId) {
       const org = await getOrg(user.orgId);
       if (org) limits = getTeamLimits(org.maxSeats);
     }
@@ -521,7 +521,7 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
     const hasCustomTone = config.ai.tone && config.ai.tone !== 'professional';
     if ((hasCustomAudience || hasCustomTone) && effectiveTier === 'free') {
       json(res, 403, {
-        error: 'Audience and tone control requires a Pro plan or above',
+        error: 'Audience and tone control requires a Paid plan',
         code: ErrorCode.BILLING_UPGRADE_REQUIRED,
         tier: effectiveTier,
         upgrade: 'https://cullit.io/pricing',
@@ -607,7 +607,7 @@ async function handleGetAnalytics(req: IncomingMessage, res: ServerResponse): Pr
   const tier = getEffectiveTier(user);
   // Basic analytics require pro+ tier
   if (tier === 'free') {
-    json(res, 403, { error: 'Usage analytics require a Pro plan or above', upgrade: 'https://cullit.io/pricing' }); return;
+    json(res, 403, { error: 'Usage analytics require a Paid plan', upgrade: 'https://cullit.io/pricing' }); return;
   }
 
   const url = new URL(req.url || '/', `http://localhost:${PORT}`);
@@ -641,7 +641,7 @@ async function handleGetProjectSettings(req: IncomingMessage, res: ServerRespons
 
   const tier = getEffectiveTier(user);
   if (!isTeamTier(tier)) {
-    json(res, 403, { error: 'Saved project settings require a Team plan', upgrade: 'https://cullit.io/pricing' }); return;
+    json(res, 403, { error: 'Saved project settings require a Paid plan', upgrade: 'https://cullit.io/pricing' }); return;
   }
 
   const settings = await dbListProjectSettings(user.id, user.orgId);
@@ -671,7 +671,7 @@ async function handlePutProjectSettings(req: IncomingMessage, res: ServerRespons
 
   const tier = getEffectiveTier(user);
   if (!isTeamTier(tier)) {
-    json(res, 403, { error: 'Saved project settings require a Team plan', upgrade: 'https://cullit.io/pricing' }); return;
+    json(res, 403, { error: 'Saved project settings require a Paid plan', upgrade: 'https://cullit.io/pricing' }); return;
   }
 
   if (!/^[a-zA-Z0-9_-]{1,64}$/.test(project)) {
@@ -715,7 +715,7 @@ async function handlePutProjectSettings(req: IncomingMessage, res: ServerRespons
   if (widgetConfig.branding === false) {
     const plan = await getUserPlan(user);
     if (!isPlanFeatureAllowed('branded_widget', plan, tier)) {
-      json(res, 403, { error: 'Branded widget (removing Cullit branding) requires a Team plan', upgrade: 'https://cullit.io/pricing' });
+      json(res, 403, { error: 'Branded widget (removing Cullit branding) requires a Paid plan', upgrade: 'https://cullit.io/pricing' });
       return;
     }
   }
@@ -751,7 +751,7 @@ async function handleGetAuditLog(req: IncomingMessage, res: ServerResponse): Pro
   const tier = getEffectiveTier(user);
   const plan = await getUserPlan(user);
   if (!isPlanFeatureAllowed('audit_logs', plan, tier)) {
-    json(res, 403, { error: 'Audit logs require a Team plan', upgrade: 'https://cullit.io/pricing' }); return;
+    json(res, 403, { error: 'Audit logs require a Paid plan', upgrade: 'https://cullit.io/pricing' }); return;
   }
 
   const url = new URL(req.url || '/', `http://localhost:${PORT}`);
@@ -773,7 +773,7 @@ async function handleListTemplates(req: IncomingMessage, res: ServerResponse): P
   const tier = getEffectiveTier(user);
   const plan = await getUserPlan(user);
   if (!isPlanFeatureAllowed('project_templates', plan, tier)) {
-    json(res, 403, { error: 'Project templates require a Team plan', upgrade: 'https://cullit.io/pricing' }); return;
+    json(res, 403, { error: 'Project templates require a Paid plan', upgrade: 'https://cullit.io/pricing' }); return;
   }
   if (!user.orgId) { json(res, 400, { error: 'Project templates require an organization' }); return; }
 
@@ -788,7 +788,7 @@ async function handleCreateTemplate(req: IncomingMessage, res: ServerResponse): 
   const tier = getEffectiveTier(user);
   const plan = await getUserPlan(user);
   if (!isPlanFeatureAllowed('project_templates', plan, tier)) {
-    json(res, 403, { error: 'Project templates require a Team plan', upgrade: 'https://cullit.io/pricing' }); return;
+    json(res, 403, { error: 'Project templates require a Paid plan', upgrade: 'https://cullit.io/pricing' }); return;
   }
   if (!user.orgId) { json(res, 400, { error: 'Project templates require an organization' }); return; }
 
@@ -814,7 +814,7 @@ async function handleDeleteTemplate(req: IncomingMessage, res: ServerResponse, t
   const tier = getEffectiveTier(user);
   const plan = await getUserPlan(user);
   if (!isPlanFeatureAllowed('project_templates', plan, tier)) {
-    json(res, 403, { error: 'Project templates require a Team plan', upgrade: 'https://cullit.io/pricing' }); return;
+    json(res, 403, { error: 'Project templates require a Paid plan', upgrade: 'https://cullit.io/pricing' }); return;
   }
   if (!user.orgId) { json(res, 400, { error: 'Project templates require an organization' }); return; }
 

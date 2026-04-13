@@ -22,11 +22,16 @@ export const TONES = ['professional', 'casual', 'terse', 'edgy', 'hype', 'snarky
 export const SOURCE_TYPES = ['local', 'jira', 'linear', 'gitlab', 'bitbucket', 'multi-repo'] as const;
 
 // Tier names — single source of truth for subscription tiers
-export const TIERS = ['free', 'pro', 'team', 'enterprise'] as const;
-export const PAID_TIERS = ['pro', 'team', 'enterprise'] as const;
-export const TEAM_TIERS = ['team', 'enterprise'] as const;
+export const TIERS = ['free', 'paid', 'enterprise'] as const;
+export const PAID_TIERS = ['paid', 'enterprise'] as const;
+// Legacy aliases — kept so existing imports don't break during migration
+export const TEAM_TIERS = PAID_TIERS;
 
-// Seat-based team pricing (single tier, dynamic seat count)
-export const TEAM_SEAT_PRICE = 8;        // $8/month per seat
-export const TEAM_MIN_SEATS = 5;         // minimum 5 seats
-export const TEAM_ANNUAL_DISCOUNT = 0.15; // 15% annual discount
+// Seat-based pricing ($8/seat/month, 1+ seats)
+export const PAID_SEAT_PRICE = 8;          // $8/month per seat
+export const PAID_MIN_SEATS = 1;           // no minimum — single-seat is fine
+export const PAID_ANNUAL_DISCOUNT = 0.15;  // 15% annual discount
+// Legacy aliases
+export const TEAM_SEAT_PRICE = PAID_SEAT_PRICE;
+export const TEAM_MIN_SEATS = PAID_MIN_SEATS;
+export const TEAM_ANNUAL_DISCOUNT = PAID_ANNUAL_DISCOUNT;

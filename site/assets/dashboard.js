@@ -373,9 +373,9 @@
 
   var TAB_MIN_TIERS = {
     generate: 'free', history: 'free', settings: 'free', billing: 'free',
-    drafts: 'team', analytics: 'pro', team: 'team', changelog: 'pro',
+    drafts: 'paid', analytics: 'paid', team: 'paid', changelog: 'paid',
   };
-  var TIER_RANK = { free: 0, pro: 1, team: 2, enterprise: 3 };
+  var TIER_RANK = { free: 0, paid: 1, pro: 1, team: 1, enterprise: 2 };
 
   function applyTabGating() {
     var tier = getEffectiveTierClient();
@@ -401,7 +401,7 @@
   function applyAudienceToneGating() {
     var tier = getEffectiveTierClient();
     var rank = TIER_RANK[tier] || 0;
-    var proRank = TIER_RANK['pro'] || 1;
+    var proRank = TIER_RANK['paid'] || 1;
     var isFree = rank < proRank;
 
     var audienceBadge = document.getElementById('audienceProBadge');
@@ -428,11 +428,11 @@
       [audienceSelect, toneSelect].forEach(function (select) {
         if (!select) return;
         select.addEventListener('focus', function handler() {
-          if (getEffectiveTierClient() === 'free' || (TIER_RANK[getEffectiveTierClient()] || 0) < (TIER_RANK['pro'] || 1)) {
+          if (getEffectiveTierClient() === 'free' || (TIER_RANK[getEffectiveTierClient()] || 0) < (TIER_RANK['paid'] || 1)) {
             showUpgradeModal(
               'Audience & Tone Control',
-              'Custom audience and tone settings require a Pro plan or above. Upgrade to tailor output for customers, executives, or any audience.',
-              'Upgrade to Pro', 'pricing.html'
+              'Custom audience and tone settings require a Paid plan. Upgrade to tailor output for customers, executives, or any audience.',
+              'Upgrade Now', 'pricing.html'
             );
           }
         }, { once: true });
@@ -1534,7 +1534,7 @@
       }
 
       if (!keys.length) {
-        list.innerHTML = '<div style="color:var(--text-dim)">No team API keys yet. Keys are provisioned when you subscribe to a Team plan.</div>';
+        list.innerHTML = '<div style="color:var(--text-dim)">No team API keys yet. Keys are provisioned when you subscribe to a Paid plan.</div>';
         return;
       }
       list.innerHTML = '';

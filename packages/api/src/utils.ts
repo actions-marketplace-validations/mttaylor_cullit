@@ -8,7 +8,7 @@
 import { randomBytes, timingSafeEqual } from 'crypto';
 import type { IncomingMessage, ServerResponse } from 'http';
 import createSanitizer from 'sanitize-html';
-import { TEAM_TIERS } from '@cullit/core';
+import { PAID_TIERS } from '@cullit/core';
 
 // --- Types ---
 
@@ -135,9 +135,12 @@ export function toStringArray(value: unknown, limit: number): string[] | undefin
   return value.slice(0, limit).filter((v): v is string => typeof v === 'string');
 }
 
-export function isTeamTier(tier: string): boolean {
-  return (TEAM_TIERS as readonly string[]).includes(tier);
+export function isPaidTier(tier: string): boolean {
+  return (PAID_TIERS as readonly string[]).includes(tier);
 }
+
+/** @deprecated Use isPaidTier instead */
+export const isTeamTier = isPaidTier;
 
 export function timingSafeCompare(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
