@@ -35,7 +35,7 @@ describe('Billing webhook — event routing & idempotency', () => {
     const event = {
       id: 'evt_checkout_001',
       type: 'checkout.session.completed',
-      data: { object: { client_reference_id: 'user_test', customer: 'cus_test', subscription: 'sub_test', metadata: { plan: 'pro' } } },
+      data: { object: { client_reference_id: 'user_test', customer: 'cus_test', subscription: 'sub_test', metadata: { plan: 'paid' } } },
     };
     const payload = JSON.stringify(event);
     const sig = buildSignature(payload, TEST_SECRET);

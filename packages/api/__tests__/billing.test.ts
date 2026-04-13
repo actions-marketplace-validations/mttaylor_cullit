@@ -23,7 +23,7 @@ describe('Billing Module', () => {
         captured = { status, body };
       };
       const mockRes = {} as any;
-      await handleCheckout('user-123', 'pro', false, mockJson, mockRes);
+      await handleCheckout('user-123', 'paid', false, mockJson, mockRes);
       expect(captured).not.toBeNull();
       expect(captured!.status).toBe(503);
     });
@@ -83,12 +83,16 @@ describe('Billing — plan mapping functions', () => {
   });
 
   describe('planToTier', () => {
-    it('maps "pro" to "pro"', () => {
-      expect(planToTier('pro')).toBe('pro');
+    it('maps "pro" to "paid" (legacy)', () => {
+      expect(planToTier('pro')).toBe('paid');
     });
 
-    it('maps "team" to "team"', () => {
-      expect(planToTier('team')).toBe('team');
+    it('maps "team" to "paid" (legacy)', () => {
+      expect(planToTier('team')).toBe('paid');
+    });
+
+    it('maps "paid" to "paid"', () => {
+      expect(planToTier('paid')).toBe('paid');
     });
 
     it('maps "basic" to "free" (legacy)', () => {
@@ -101,20 +105,23 @@ describe('Billing — plan mapping functions', () => {
   });
 
   describe('planToSeats', () => {
-    it('returns default 5 for "team" plan without quantity', () => {
-      expect(planToSeats('team')).toBe(5);
+    it('returns default 1 for "paid" plan without quantity', () => {
+      expect(planToSeats('paid')).toBe(1);
     });
 
-    it('returns subscription quantity for "team" plan', () => {
-      expect(planToSeats('team', 10)).toBe(10);
+    it('returns subscription quantity for "paid" plan', () => {
+      expect(planToSeats('paid', 10)).toBe(10);
     });
 
-    it('returns subscription quantity for "team" plan with 25 seats', () => {
-      expect(planToSeats('team', 25)).toBe(25);
+    it('returns subscription quantity for "paid" plan with 25 seats', () => {
+      expect(planToSeats('paid', 25)).toBe(25);
     });
 
-    it('returns 0 for non-team plans', () => {
-      expect(planToSeats('pro')).toBe(0);
+    it('returns 1 for "pro" plan (legacy single-seat)', () => {
+      expect(planToSeats('pro')).toBe(1);
+    });
+
+    it('returns 0 for free plan', () => {
       expect(planToSeats('free')).toBe(0);
     });
   });

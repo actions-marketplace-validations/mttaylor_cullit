@@ -74,11 +74,11 @@ function mockRes(): ServerResponse {
 }
 
 // Test users
-const teamOwner = { id: 'u1', login: 'owner', orgId: 'org1', role: 'owner', tier: 'team' };
-const teamAdmin = { id: 'u2', login: 'admin', orgId: 'org1', role: 'admin', tier: 'team' };
-const teamMember = { id: 'u3', login: 'member', orgId: 'org1', role: 'member', tier: 'team' };
+const paidOwner = { id: 'u1', login: 'owner', orgId: 'org1', role: 'owner', tier: 'paid' };
+const paidAdmin = { id: 'u2', login: 'admin', orgId: 'org1', role: 'admin', tier: 'paid' };
+const paidMember = { id: 'u3', login: 'member', orgId: 'org1', role: 'member', tier: 'paid' };
 const freeUser = { id: 'u4', login: 'free', orgId: null, role: 'member', tier: 'free' };
-const otherOrgUser = { id: 'u5', login: 'other', orgId: 'org2', role: 'owner', tier: 'team' };
+const otherOrgUser = { id: 'u5', login: 'other', orgId: 'org2', role: 'owner', tier: 'paid' };
 
 // Sample draft
 const sampleDraft = {
@@ -160,8 +160,8 @@ describe('Draft Routes — Tier gating', () => {
     expect(captured.status).toBe(403);
   });
 
-  it('handleCreateDraft allows team-tier user', async () => {
-    mockResolveUser.mockResolvedValue(teamMember);
+  it('handleCreateDraft allows paid-tier user', async () => {
+    mockResolveUser.mockResolvedValue(paidMember);
     mockDbCreateDraft.mockResolvedValue({ id: 'new1', project: 'test' });
     await handleCreateDraft(mockReq(JSON.stringify({ project: 'test', formattedMd: '# Test' })), mockRes());
     expect(captured.status).toBe(201);
@@ -172,25 +172,25 @@ describe('Draft Routes — Tier gating', () => {
 
 describe('handleCreateDraft', () => {
   it('returns 400 for invalid JSON', async () => {
-    mockResolveUser.mockResolvedValue(teamMember);
+    mockResolveUser.mockResolvedValue(paidMember);
     await handleCreateDraft(mockReq('not json'), mockRes());
     expect(captured.status).toBe(400);
   });
 
   it('returns 400 when project is missing', async () => {
-    mockResolveUser.mockResolvedValue(teamMember);
+    mockResolveUser.mockResolvedValue(paidMember);
     await handleCreateDraft(mockReq(JSON.stringify({ formattedMd: '# Test' })), mockRes());
     expect(captured.status).toBe(400);
   });
 
   it('returns 400 for invalid project name (special chars)', async () => {
-    mockResolveUser.mockResolvedValue(teamMember);
+    mockResolveUser.mockResolvedValue(paidMember);
     await handleCreateDraft(mockReq(JSON.stringify({ project: 'bad project!' })), mockRes());
     expect(captured.status).toBe(400);
   });
 
   it('creates draft successfully', async () => {
-    mockResolveUser.mockResolvedValue(teamMember);
+    mockResolveUser.mockResolvedValue(paidMember);
     const created = { id: 'new1', project: 'myapp', version: '1.0.0' };
     mockDbCreateDraft.mockResolvedValue(created);
 
@@ -208,7 +208,7 @@ describe('handleCreateDraft', () => {
 
 describe('handleListDrafts', () => {
   it('returns paginated results', async () => {
-    mockResolveUser.mockResolvedValue(teamMember);
+    mockResolveUser.mockResolvedValue(paidMember);
     mockDbListDrafts.mockResolvedValue({ drafts: [sampleDraft], total: 1 });
 
     await handleListDrafts(mockReq('{}', '/?limit=10&offset=0'), mockRes());
@@ -218,13 +218,13 @@ describe('handleListDrafts', () => {
   });
 
   it('returns 400 for invalid status filter', async () => {
-    mockResolveUser.mockResolvedValue(teamMember);
+    mockResolveUser.mockResolvedValue(paidMember);
     await handleListDrafts(mockReq('{}', '/?status=bogus'), mockRes());
     expect(captured.status).toBe(400);
   });
 
   it('accepts valid status filter', async () => {
-    mockResolveUser.mockResolvedValue(teamMember);
+    mockResolveUser.mockResolvedValue(paidMember);
     mockDbListDrafts.mockResolvedValue({ drafts: [], total: 0 });
 
     await handleListDrafts(mockReq('{}', '/?status=submitted'), mockRes());
@@ -237,7 +237,7 @@ describe('handleListDrafts', () => {
 
 describe('handleGetDraft', () => {
   it('returns 404 when draft does not exist', async () => {
-    mockResolveUser.mockResolvedValue(teamMember);
+    mockResolveUser.mockResolvedValue(paidMember);
     mockDbGetDraft.mockResolvedValue(null);
     await handleGetDraft(mockReq(), mockRes(), 'nonexistent');
     expect(captured.status).toBe(404);
@@ -251,7 +251,7 @@ describe('handleGetDraft', () => {
   });
 
   it('returns draft with revisions for authorized user', async () => {
-    mockResolveUser.mockResolvedValue(teamMember);
+    mockResolveUser.mockResolvedValue(paidMember);
     mockDbGetDraft.mockResolvedValue(sampleDraft);
     mockDbGetRevisions.mockResolvedValue([]);
     await handleGetDraft(mockReq(), mockRes(), 'draft1');
@@ -274,16 +274,16 @@ describe('handleGetDraft', () => {
 
 describe('handleUpdateDraft', () => {
   it('returns 404 when draft does not exist', async () => {
-    mockResolveUser.mockResolvedValue(teamOwner);
+    mockResolveUser.mockResolvedValue(paidOwner);
     mockDbGetDraft.mockResolvedValue(null);
     await handleUpdateDraft(mockReq('{"version":"2.0.0"}'), mockRes(), 'nonexistent');
     expect(captured.status).toBe(404);
   });
 
   it('returns 403 for non-admin member of same org', async () => {
-    // teamMember (role: member) trying to update draft they don't own
+    // paidMember (role: member) trying to update draft they don't own
     const otherDraft = { ...sampleDraft, user_id: 'u1' }; // owned by u1, not u3
-    mockResolveUser.mockResolvedValue(teamMember);
+    mockResolveUser.mockResolvedValue(paidMember);
     mockDbGetDraft.mockResolvedValue(otherDraft);
     await handleUpdateDraft(mockReq('{"version":"2.0.0"}'), mockRes(), 'draft1');
     expect(captured.status).toBe(403);
@@ -291,14 +291,14 @@ describe('handleUpdateDraft', () => {
 
   it('returns 409 when draft is published', async () => {
     const published = { ...sampleDraft, status: 'published', user_id: 'u1' };
-    mockResolveUser.mockResolvedValue(teamOwner);
+    mockResolveUser.mockResolvedValue(paidOwner);
     mockDbGetDraft.mockResolvedValue(published);
     await handleUpdateDraft(mockReq('{"version":"2.0.0"}'), mockRes(), 'draft1');
     expect(captured.status).toBe(409);
   });
 
   it('creates revision and updates draft on success', async () => {
-    mockResolveUser.mockResolvedValue(teamOwner);
+    mockResolveUser.mockResolvedValue(paidOwner);
     mockDbGetDraft.mockResolvedValue({ ...sampleDraft, user_id: 'u1' });
     mockDbGetRevisionCount.mockResolvedValue(0);
     mockDbCreateRevision.mockResolvedValue({});
@@ -312,7 +312,7 @@ describe('handleUpdateDraft', () => {
   });
 
   it('returns 400 for invalid JSON', async () => {
-    mockResolveUser.mockResolvedValue(teamOwner);
+    mockResolveUser.mockResolvedValue(paidOwner);
     mockDbGetDraft.mockResolvedValue({ ...sampleDraft, user_id: 'u1' });
     await handleUpdateDraft(mockReq('not json'), mockRes(), 'draft1');
     expect(captured.status).toBe(400);
@@ -323,7 +323,7 @@ describe('handleUpdateDraft', () => {
 
 describe('handleDraftSubmit', () => {
   it('returns 404 when draft does not exist', async () => {
-    mockResolveUser.mockResolvedValue(teamMember);
+    mockResolveUser.mockResolvedValue(paidMember);
     mockDbGetDraft.mockResolvedValue(null);
     await handleDraftSubmit(mockReq(), mockRes(), 'nonexistent');
     expect(captured.status).toBe(404);
@@ -338,14 +338,14 @@ describe('handleDraftSubmit', () => {
 
   it('returns 409 when draft is not in draft status', async () => {
     const submitted = { ...sampleDraft, status: 'submitted' };
-    mockResolveUser.mockResolvedValue(teamMember);
+    mockResolveUser.mockResolvedValue(paidMember);
     mockDbGetDraft.mockResolvedValue(submitted);
     await handleDraftSubmit(mockReq(), mockRes(), 'draft1');
     expect(captured.status).toBe(409);
   });
 
   it('transitions draft to submitted', async () => {
-    mockResolveUser.mockResolvedValue(teamMember);
+    mockResolveUser.mockResolvedValue(paidMember);
     mockDbGetDraft.mockResolvedValue(sampleDraft);
     const submitted = { ...sampleDraft, status: 'submitted' };
     mockDbUpdateDraftStatus.mockResolvedValue(submitted);
@@ -359,7 +359,7 @@ describe('handleDraftSubmit', () => {
 
 describe('handleDeleteDraft', () => {
   it('returns 404 when draft does not exist', async () => {
-    mockResolveUser.mockResolvedValue(teamOwner);
+    mockResolveUser.mockResolvedValue(paidOwner);
     mockDbGetDraft.mockResolvedValue(null);
     await handleDeleteDraft(mockReq(), mockRes(), 'nonexistent');
     expect(captured.status).toBe(404);
@@ -367,7 +367,7 @@ describe('handleDeleteDraft', () => {
 
   it('returns 403 for non-admin non-owner', async () => {
     const otherDraft = { ...sampleDraft, user_id: 'u1' };
-    mockResolveUser.mockResolvedValue(teamMember);
+    mockResolveUser.mockResolvedValue(paidMember);
     mockDbGetDraft.mockResolvedValue(otherDraft);
     await handleDeleteDraft(mockReq(), mockRes(), 'draft1');
     expect(captured.status).toBe(403);
@@ -375,14 +375,14 @@ describe('handleDeleteDraft', () => {
 
   it('returns 409 when draft is published', async () => {
     const published = { ...sampleDraft, status: 'published', user_id: 'u1' };
-    mockResolveUser.mockResolvedValue(teamOwner);
+    mockResolveUser.mockResolvedValue(paidOwner);
     mockDbGetDraft.mockResolvedValue(published);
     await handleDeleteDraft(mockReq(), mockRes(), 'draft1');
     expect(captured.status).toBe(409);
   });
 
   it('deletes draft successfully', async () => {
-    mockResolveUser.mockResolvedValue(teamOwner);
+    mockResolveUser.mockResolvedValue(paidOwner);
     mockDbGetDraft.mockResolvedValue({ ...sampleDraft, user_id: 'u1' });
     mockDbDeleteDraft.mockResolvedValue(true);
     await handleDeleteDraft(mockReq(), mockRes(), 'draft1');
@@ -391,7 +391,7 @@ describe('handleDeleteDraft', () => {
   });
 
   it('returns 404 when dbDeleteDraft returns false', async () => {
-    mockResolveUser.mockResolvedValue(teamOwner);
+    mockResolveUser.mockResolvedValue(paidOwner);
     mockDbGetDraft.mockResolvedValue({ ...sampleDraft, user_id: 'u1' });
     mockDbDeleteDraft.mockResolvedValue(false);
     await handleDeleteDraft(mockReq(), mockRes(), 'draft1');
@@ -403,20 +403,20 @@ describe('handleDeleteDraft', () => {
 
 describe('handleDraftApprove', () => {
   it('returns 403 for regular members (non-admin)', async () => {
-    mockResolveUser.mockResolvedValue(teamMember);
+    mockResolveUser.mockResolvedValue(paidMember);
     await handleDraftApprove(mockReq(), mockRes(), 'draft1');
     expect(captured.status).toBe(403);
   });
 
   it('returns 404 when draft does not exist', async () => {
-    mockResolveUser.mockResolvedValue(teamOwner);
+    mockResolveUser.mockResolvedValue(paidOwner);
     mockDbGetDraft.mockResolvedValue(null);
     await handleDraftApprove(mockReq(), mockRes(), 'nonexistent');
     expect(captured.status).toBe(404);
   });
 
   it('returns 403 when draft belongs to different org', async () => {
-    mockResolveUser.mockResolvedValue(teamOwner);
+    mockResolveUser.mockResolvedValue(paidOwner);
     const otherOrgDraft = { ...sampleDraft, org_id: 'org2' };
     mockDbGetDraft.mockResolvedValue(otherOrgDraft);
     await handleDraftApprove(mockReq(), mockRes(), 'draft1');
@@ -424,7 +424,7 @@ describe('handleDraftApprove', () => {
   });
 
   it('returns 409 when draft is not in submitted status', async () => {
-    mockResolveUser.mockResolvedValue(teamOwner);
+    mockResolveUser.mockResolvedValue(paidOwner);
     mockDbGetDraft.mockResolvedValue(sampleDraft); // status = 'draft'
     await handleDraftApprove(mockReq(), mockRes(), 'draft1');
     expect(captured.status).toBe(409);
@@ -432,7 +432,7 @@ describe('handleDraftApprove', () => {
 
   it('approves submitted draft', async () => {
     const submitted = { ...sampleDraft, status: 'submitted' };
-    mockResolveUser.mockResolvedValue(teamOwner);
+    mockResolveUser.mockResolvedValue(paidOwner);
     mockDbGetDraft.mockResolvedValue(submitted);
     const approved = { ...submitted, status: 'approved' };
     mockDbUpdateDraftStatus.mockResolvedValue(approved);
@@ -444,7 +444,7 @@ describe('handleDraftApprove', () => {
 
   it('allows admin to approve', async () => {
     const submitted = { ...sampleDraft, status: 'submitted' };
-    mockResolveUser.mockResolvedValue(teamAdmin);
+    mockResolveUser.mockResolvedValue(paidAdmin);
     mockDbGetDraft.mockResolvedValue(submitted);
     mockDbUpdateDraftStatus.mockResolvedValue({ ...submitted, status: 'approved' });
 
@@ -457,20 +457,20 @@ describe('handleDraftApprove', () => {
 
 describe('handleDraftPublish', () => {
   it('returns 403 for regular members', async () => {
-    mockResolveUser.mockResolvedValue(teamMember);
+    mockResolveUser.mockResolvedValue(paidMember);
     await handleDraftPublish(mockReq(), mockRes(), 'draft1');
     expect(captured.status).toBe(403);
   });
 
   it('returns 404 when draft does not exist', async () => {
-    mockResolveUser.mockResolvedValue(teamOwner);
+    mockResolveUser.mockResolvedValue(paidOwner);
     mockDbGetDraft.mockResolvedValue(null);
     await handleDraftPublish(mockReq(), mockRes(), 'nonexistent');
     expect(captured.status).toBe(404);
   });
 
   it('returns 403 when draft belongs to different org', async () => {
-    mockResolveUser.mockResolvedValue(teamOwner);
+    mockResolveUser.mockResolvedValue(paidOwner);
     const otherOrgDraft = { ...sampleDraft, org_id: 'org2', status: 'approved' };
     mockDbGetDraft.mockResolvedValue(otherOrgDraft);
     await handleDraftPublish(mockReq(), mockRes(), 'draft1');
@@ -479,7 +479,7 @@ describe('handleDraftPublish', () => {
 
   it('returns 409 when draft is not approved', async () => {
     const submitted = { ...sampleDraft, status: 'submitted' };
-    mockResolveUser.mockResolvedValue(teamOwner);
+    mockResolveUser.mockResolvedValue(paidOwner);
     mockDbGetDraft.mockResolvedValue(submitted);
     await handleDraftPublish(mockReq(), mockRes(), 'draft1');
     expect(captured.status).toBe(409);
@@ -487,7 +487,7 @@ describe('handleDraftPublish', () => {
 
   it('publishes approved draft and writes to changelog', async () => {
     const approved = { ...sampleDraft, status: 'approved' };
-    mockResolveUser.mockResolvedValue(teamOwner);
+    mockResolveUser.mockResolvedValue(paidOwner);
     mockDbGetDraft.mockResolvedValue(approved);
     const published = { ...approved, status: 'published' };
     mockDbPublishDraftWithRelease.mockResolvedValue(published);
@@ -501,7 +501,7 @@ describe('handleDraftPublish', () => {
 
   it('skips dbPublishDraftWithRelease when draft has no version', async () => {
     const approved = { ...sampleDraft, status: 'approved', version: '' };
-    mockResolveUser.mockResolvedValue(teamOwner);
+    mockResolveUser.mockResolvedValue(paidOwner);
     mockDbGetDraft.mockResolvedValue(approved);
     mockDbUpdateDraftStatus.mockResolvedValue({ ...approved, status: 'published' });
 

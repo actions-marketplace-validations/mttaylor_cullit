@@ -150,13 +150,13 @@ describe('handleLicenseValidate', () => {
         },
         'pro-user': {
           id: 'pro-user', login: 'pro@test.com', name: 'Pro', email: 'pro@test.com',
-          avatarUrl: '', tier: 'pro', orgId: null, role: 'member', apiKey: 'clt_prokey',
+          avatarUrl: '', tier: 'paid', orgId: null, role: 'member', apiKey: 'clt_prokey',
           githubUsername: null, preferredProvider: null,
           createdAt: now, lastLoginAt: now,
         },
         'team-user': {
           id: 'team-user', login: 'team@test.com', name: 'Team', email: 'team@test.com',
-          avatarUrl: '', tier: 'team', orgId: null, role: 'member', apiKey: 'clt_teamkey',
+          avatarUrl: '', tier: 'paid', orgId: null, role: 'member', apiKey: 'clt_teamkey',
           githubUsername: null, preferredProvider: null,
           createdAt: now, lastLoginAt: now,
         },
@@ -214,20 +214,20 @@ describe('handleLicenseValidate', () => {
     expect(c.body).toEqual({ valid: true, tier: 'free' });
   });
 
-  it('returns valid:true with pro tier for a pro user', async () => {
+  it('returns valid:true with paid tier for a pro user', async () => {
     const { req, res, jsonFn, getCaptured } = mockReqRes('Bearer clt_prokey');
     await handleLicenseValidate(req, res, jsonFn);
     const c = getCaptured()!;
     expect(c.status).toBe(200);
-    expect(c.body).toEqual({ valid: true, tier: 'pro' });
+    expect(c.body).toEqual({ valid: true, tier: 'paid' });
   });
 
-  it('returns valid:true with team tier for a team user', async () => {
+  it('returns valid:true with paid tier for a team user', async () => {
     const { req, res, jsonFn, getCaptured } = mockReqRes('Bearer clt_teamkey');
     await handleLicenseValidate(req, res, jsonFn);
     const c = getCaptured()!;
     expect(c.status).toBe(200);
-    expect(c.body).toEqual({ valid: true, tier: 'team' });
+    expect(c.body).toEqual({ valid: true, tier: 'paid' });
   });
 
 

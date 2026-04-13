@@ -36,10 +36,10 @@ describe('Gate — resolveLicense', () => {
     expect(license.valid).toBe(true);
   });
 
-  it('returns pro tier for valid key format', () => {
+  it('returns paid tier for valid key format', () => {
     process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
     const license = resolveLicense();
-    expect(license.tier).toBe('pro');
+    expect(license.tier).toBe('paid');
     expect(license.valid).toBe(true);
   });
 
@@ -54,16 +54,15 @@ describe('Gate — resolveLicense', () => {
   it('trims whitespace from key', () => {
     process.env.CULLIT_API_KEY = '  clt_' + 'b'.repeat(32) + '  ';
     const license = resolveLicense();
-    expect(license.tier).toBe('pro');
+    expect(license.tier).toBe('paid');
     expect(license.valid).toBe(true);
   });
 });
 
 describe('Gate — access checks', () => {
   const freeLicense = { tier: 'free' as const, valid: true };
-  const proLicense = { tier: 'pro' as const, valid: true };
-  const teamLicense = { tier: 'team' as const, valid: true };
-  const invalidPro = { tier: 'pro' as const, valid: false };
+  const paidLicense = { tier: 'paid' as const, valid: true };
+  const invalidPaid = { tier: 'paid' as const, valid: false };
 
   it('allows "none" provider on free tier', () => {
     expect(isProviderAllowed('none', freeLicense)).toBe(true);
@@ -74,18 +73,14 @@ describe('Gate — access checks', () => {
     expect(isProviderAllowed('openai', freeLicense)).toBe(true);
   });
 
-  it('allows any provider on pro', () => {
-    expect(isProviderAllowed('anthropic', proLicense)).toBe(true);
-    expect(isProviderAllowed('openai', proLicense)).toBe(true);
-    expect(isProviderAllowed('gemini', proLicense)).toBe(true);
+  it('allows any provider on paid', () => {
+    expect(isProviderAllowed('anthropic', paidLicense)).toBe(true);
+    expect(isProviderAllowed('openai', paidLicense)).toBe(true);
+    expect(isProviderAllowed('gemini', paidLicense)).toBe(true);
   });
 
-  it('allows any provider on team', () => {
-    expect(isProviderAllowed('anthropic', teamLicense)).toBe(true);
-  });
-
-  it('blocks pro features when key is invalid', () => {
-    expect(isProviderAllowed('anthropic', invalidPro)).toBe(false);
+  it('blocks paid features when key is invalid', () => {
+    expect(isProviderAllowed('anthropic', invalidPaid)).toBe(false);
   });
 
   it('allows stdout/file publishers on free tier', () => {
@@ -99,53 +94,29 @@ describe('Gate — access checks', () => {
     expect(isPublisherAllowed('teams', freeLicense)).toBe(false);
   });
 
-  it('allows slack/discord/github-release on pro', () => {
-    expect(isPublisherAllowed('slack', proLicense)).toBe(true);
-    expect(isPublisherAllowed('discord', proLicense)).toBe(true);
-    expect(isPublisherAllowed('github-release', proLicense)).toBe(true);
-  });
-
-  it('blocks confluence/notion/teams on pro tier (team-only)', () => {
-    expect(isPublisherAllowed('confluence', proLicense)).toBe(false);
-    expect(isPublisherAllowed('notion', proLicense)).toBe(false);
-    expect(isPublisherAllowed('teams', proLicense)).toBe(false);
-  });
-
-  it('allows confluence/notion/teams on team tier', () => {
-    expect(isPublisherAllowed('confluence', teamLicense)).toBe(true);
-    expect(isPublisherAllowed('notion', teamLicense)).toBe(true);
-    expect(isPublisherAllowed('teams', teamLicense)).toBe(true);
-  });
-
-  it('allows all publishers on team tier', () => {
-    expect(isPublisherAllowed('slack', teamLicense)).toBe(true);
-    expect(isPublisherAllowed('discord', teamLicense)).toBe(true);
-    expect(isPublisherAllowed('confluence', teamLicense)).toBe(true);
-    expect(isPublisherAllowed('notion', teamLicense)).toBe(true);
+  it('allows all publishers on paid tier', () => {
+    expect(isPublisherAllowed('slack', paidLicense)).toBe(true);
+    expect(isPublisherAllowed('discord', paidLicense)).toBe(true);
+    expect(isPublisherAllowed('github-release', paidLicense)).toBe(true);
+    expect(isPublisherAllowed('confluence', paidLicense)).toBe(true);
+    expect(isPublisherAllowed('notion', paidLicense)).toBe(true);
+    expect(isPublisherAllowed('teams', paidLicense)).toBe(true);
   });
 
   it('blocks enrichment on free tier', () => {
     expect(isEnrichmentAllowed(freeLicense)).toBe(false);
   });
 
-  it('allows enrichment on pro', () => {
-    expect(isEnrichmentAllowed(proLicense)).toBe(true);
-  });
-
-  it('allows enrichment on team', () => {
-    expect(isEnrichmentAllowed(teamLicense)).toBe(true);
+  it('allows enrichment on paid', () => {
+    expect(isEnrichmentAllowed(paidLicense)).toBe(true);
   });
 
   it('blocks audience/tone on free tier', () => {
     expect(isAudienceToneAllowed(freeLicense)).toBe(false);
   });
 
-  it('allows audience/tone on pro tier', () => {
-    expect(isAudienceToneAllowed(proLicense)).toBe(true);
-  });
-
-  it('allows audience/tone on team tier', () => {
-    expect(isAudienceToneAllowed(teamLicense)).toBe(true);
+  it('allows audience/tone on paid tier', () => {
+    expect(isAudienceToneAllowed(paidLicense)).toBe(true);
   });
 
   it('generates readable upgrade message', () => {
@@ -155,14 +126,14 @@ describe('Gate — access checks', () => {
     expect(msg).toContain('cullit.io/pricing');
   });
 
-  it('generates tier-specific upgrade message for Pro', () => {
-    const msg = upgradeMessage('Jira enrichment', 'pro');
-    expect(msg).toContain('Pro plan or above');
+  it('generates tier-specific upgrade message for paid', () => {
+    const msg = upgradeMessage('Jira enrichment', 'paid');
+    expect(msg).toContain('Paid Cullit plan');
   });
 
-  it('generates tier-specific upgrade message for Team', () => {
-    const msg = upgradeMessage('drafts', 'team');
-    expect(msg).toContain('Team plan or above');
+  it('generates tier-specific upgrade message for enterprise', () => {
+    const msg = upgradeMessage('SSO', 'enterprise');
+    expect(msg).toContain('Enterprise plan');
   });
 });
 
@@ -173,16 +144,10 @@ describe('Gate — getTierLimits', () => {
     expect(limits.maxProjects).toBe(3);
   });
 
-  it('returns pro tier limits', () => {
-    const limits = getTierLimits('pro');
+  it('returns paid tier limits', () => {
+    const limits = getTierLimits('paid');
     expect(limits.generationsPerMonth).toBe(500);
     expect(limits.maxProjects).toBe(100);
-  });
-
-  it('returns team tier base limits', () => {
-    const limits = getTierLimits('team');
-    expect(limits.generationsPerMonth).toBe(2000);
-    expect(limits.maxProjects).toBe(250);
   });
 
   it('returns enterprise tier limits', () => {
@@ -199,28 +164,28 @@ describe('Gate — getTierLimits', () => {
 });
 
 describe('Gate — getTeamLimits', () => {
-  it('returns base team limits for 5 seats (minimum)', () => {
+  it('returns base paid limits for 5 seats', () => {
     const limits = getTeamLimits(5);
-    expect(limits.generationsPerMonth).toBe(2000);
-    expect(limits.maxProjects).toBe(250);
+    expect(limits.generationsPerMonth).toBe(500); // max(500, 5*100) = 500
+    expect(limits.maxProjects).toBe(100); // max(100, 5*5) = 100
   });
 
   it('scales limits for 10 seats', () => {
     const limits = getTeamLimits(10);
-    expect(limits.generationsPerMonth).toBe(2000); // max(2000, 10*100) = 2000
-    expect(limits.maxProjects).toBe(250); // max(250, 10*5) = 250
+    expect(limits.generationsPerMonth).toBe(1000); // max(500, 10*100) = 1000
+    expect(limits.maxProjects).toBe(100); // max(100, 10*5) = 100
   });
 
   it('scales limits for 25 seats', () => {
     const limits = getTeamLimits(25);
-    expect(limits.generationsPerMonth).toBe(2500); // max(2000, 25*100) = 2500
-    expect(limits.maxProjects).toBe(250); // max(250, 25*5) = 250
+    expect(limits.generationsPerMonth).toBe(2500); // max(500, 25*100) = 2500
+    expect(limits.maxProjects).toBe(125); // max(100, 25*5) = 125
   });
 
   it('scales limits for 50 seats', () => {
     const limits = getTeamLimits(50);
-    expect(limits.generationsPerMonth).toBe(5000); // max(2000, 50*100) = 5000
-    expect(limits.maxProjects).toBe(250); // max(250, 50*5) = 250
+    expect(limits.generationsPerMonth).toBe(5000); // max(500, 50*100) = 5000
+    expect(limits.maxProjects).toBe(250); // max(100, 50*5) = 250
   });
 });
 
@@ -229,48 +194,44 @@ describe('Gate — isFeatureAllowed', () => {
     expect(isFeatureAllowed('drafts', 'free')).toBe(false);
   });
 
-  it('blocks drafts on pro tier', () => {
-    expect(isFeatureAllowed('drafts', 'pro')).toBe(false);
-  });
-
-  it('allows drafts on team tier', () => {
-    expect(isFeatureAllowed('drafts', 'team')).toBe(true);
+  it('allows drafts on paid tier', () => {
+    expect(isFeatureAllowed('drafts', 'paid')).toBe(true);
   });
 
   it('allows drafts on enterprise tier', () => {
     expect(isFeatureAllowed('drafts', 'enterprise')).toBe(true);
   });
 
-  it('allows audit_logs on team tier', () => {
-    expect(isFeatureAllowed('audit_logs', 'team')).toBe(true);
+  it('allows audit_logs on paid tier', () => {
+    expect(isFeatureAllowed('audit_logs', 'paid')).toBe(true);
   });
 
   it('allows audit_logs on enterprise tier', () => {
     expect(isFeatureAllowed('audit_logs', 'enterprise')).toBe(true);
   });
 
-  it('blocks sso on team tier (enterprise-only)', () => {
-    expect(isFeatureAllowed('sso', 'team')).toBe(false);
+  it('blocks sso on paid tier (enterprise-only)', () => {
+    expect(isFeatureAllowed('sso', 'paid')).toBe(false);
   });
 
   it('allows sso on enterprise tier', () => {
     expect(isFeatureAllowed('sso', 'enterprise')).toBe(true);
   });
 
-  it('allows approvals on team tier', () => {
-    expect(isFeatureAllowed('approvals', 'team')).toBe(true);
+  it('allows approvals on paid tier', () => {
+    expect(isFeatureAllowed('approvals', 'paid')).toBe(true);
   });
 
-  it('allows project_templates on team tier', () => {
-    expect(isFeatureAllowed('project_templates', 'team')).toBe(true);
+  it('allows project_templates on paid tier', () => {
+    expect(isFeatureAllowed('project_templates', 'paid')).toBe(true);
   });
 
   it('allows project_templates on enterprise tier', () => {
     expect(isFeatureAllowed('project_templates', 'enterprise')).toBe(true);
   });
 
-  it('allows team_analytics on team tier', () => {
-    expect(isFeatureAllowed('team_analytics', 'team')).toBe(true);
+  it('allows team_analytics on paid tier', () => {
+    expect(isFeatureAllowed('team_analytics', 'paid')).toBe(true);
   });
 
   it('allows team_analytics on enterprise tier', () => {
@@ -289,15 +250,8 @@ describe('Gate — getFeatureGating', () => {
     expect(gating.team_analytics).toBe(false);
   });
 
-  it('returns hosted changelog enabled for pro tier', () => {
-    const gating = getFeatureGating('pro');
-    expect(gating.hosted_changelog).toBe(true);
-    expect(gating.drafts).toBe(false);
-    expect(gating.team_analytics).toBe(false);
-  });
-
-  it('returns team features enabled for team tier', () => {
-    const gating = getFeatureGating('team');
+  it('returns all features enabled for paid tier (except sso)', () => {
+    const gating = getFeatureGating('paid');
     expect(gating.drafts).toBe(true);
     expect(gating.approvals).toBe(true);
     expect(gating.shared_history).toBe(true);
@@ -322,24 +276,20 @@ describe('Gate — getFeatureGating', () => {
 });
 
 describe('Gate — isPlanFeatureAllowed', () => {
-  it('allows branded_widget for team plan', () => {
-    expect(isPlanFeatureAllowed('branded_widget', 'team', 'team')).toBe(true);
+  it('allows branded_widget for paid plan', () => {
+    expect(isPlanFeatureAllowed('branded_widget', 'paid', 'paid')).toBe(true);
   });
 
   it('allows branded_widget for enterprise', () => {
     expect(isPlanFeatureAllowed('branded_widget', 'enterprise', 'enterprise')).toBe(true);
   });
 
-  it('blocks branded_widget for pro (single user)', () => {
-    expect(isPlanFeatureAllowed('branded_widget', 'pro', 'pro')).toBe(false);
-  });
-
   it('blocks branded_widget for free', () => {
     expect(isPlanFeatureAllowed('branded_widget', 'free', 'free')).toBe(false);
   });
 
-  it('allows team_analytics for team plan', () => {
-    expect(isPlanFeatureAllowed('team_analytics', 'team', 'team')).toBe(true);
+  it('allows team_analytics for paid plan', () => {
+    expect(isPlanFeatureAllowed('team_analytics', 'paid', 'paid')).toBe(true);
   });
 
   it('allows team_analytics for enterprise', () => {
@@ -353,14 +303,13 @@ describe('Gate — isPlanFeatureAllowed', () => {
   });
 
   it('falls back to tier check for non-plan-gated features', () => {
-    expect(isPlanFeatureAllowed('drafts', 'team', 'team')).toBe(true);
-    expect(isPlanFeatureAllowed('drafts', 'pro', 'pro')).toBe(false);
+    expect(isPlanFeatureAllowed('drafts', 'paid', 'paid')).toBe(true);
   });
 });
 
 describe('Gate — getFeatureGating with plan', () => {
-  it('returns plan-aware gating for team', () => {
-    const gating = getFeatureGating('team', 'team');
+  it('returns plan-aware gating for paid', () => {
+    const gating = getFeatureGating('paid', 'paid');
     expect(gating.branded_widget).toBe(true);
     expect(gating.project_templates).toBe(true);
     expect(gating.audit_logs).toBe(true);
@@ -368,8 +317,8 @@ describe('Gate — getFeatureGating with plan', () => {
     expect(gating.drafts).toBe(true);
   });
 
-  it('without plan param still shows all team features', () => {
-    const gating = getFeatureGating('team');
+  it('without plan param still shows all paid features', () => {
+    const gating = getFeatureGating('paid');
     expect(gating.branded_widget).toBe(true);
     expect(gating.drafts).toBe(true);
     expect(gating.team_analytics).toBe(true);
@@ -411,11 +360,11 @@ describe('Gate — validateLicense', () => {
     expect(result.message).toContain('Invalid');
   });
 
-  it('returns pro when no validation URL is configured', async () => {
+  it('returns paid when no validation URL is configured', async () => {
     process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
     delete process.env.CULLIT_LICENSE_URL;
     const result = await validateLicense();
-    expect(result.tier).toBe('pro');
+    expect(result.tier).toBe('paid');
     expect(result.valid).toBe(true);
   });
 
@@ -423,7 +372,7 @@ describe('Gate — validateLicense', () => {
     process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
     process.env.CULLIT_LICENSE_URL = 'https://192.168.1.1/validate';
     const result = await validateLicense();
-    expect(result.tier).toBe('pro');
+    expect(result.tier).toBe('paid');
     expect(result.message).toContain('internal');
   });
 
@@ -431,7 +380,7 @@ describe('Gate — validateLicense', () => {
     process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
     process.env.CULLIT_LICENSE_URL = 'https://[::1]/validate';
     const result = await validateLicense();
-    expect(result.tier).toBe('pro');
+    expect(result.tier).toBe('paid');
     expect(result.message).toContain('internal');
   });
 
@@ -439,7 +388,7 @@ describe('Gate — validateLicense', () => {
     process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
     process.env.CULLIT_LICENSE_URL = 'https://[::ffff:127.0.0.1]/validate';
     const result = await validateLicense();
-    expect(result.tier).toBe('pro');
+    expect(result.tier).toBe('paid');
     expect(result.message).toContain('internal');
   });
 
@@ -447,7 +396,7 @@ describe('Gate — validateLicense', () => {
     process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
     process.env.CULLIT_LICENSE_URL = 'http://example.com/validate';
     const result = await validateLicense();
-    expect(result.tier).toBe('pro');
+    expect(result.tier).toBe('paid');
     expect(result.message).toContain('https');
   });
 

@@ -9,7 +9,7 @@ import {
 } from '@cullit/core';
 import { getEffectiveTier } from '../src/auth.js';
 
-type Tier = 'free' | 'pro' | 'team' | 'enterprise';
+type Tier = 'free' | 'paid' | 'enterprise';
 type LicenseInfo = { tier: Tier; valid: boolean };
 
 interface MockUser {
@@ -60,19 +60,9 @@ describe('Tier workflow matrix', () => {
       expectSso: false,
     },
     {
-      name: 'pro plan',
-      userTier: 'pro',
-      expectedEffectiveTier: 'pro',
-      expectAiProvider: true,
-      expectSlackPublisher: true,
-      expectTeamPublisher: false,
-      expectDrafts: false,
-      expectSso: false,
-    },
-    {
-      name: 'team plan',
-      userTier: 'team',
-      expectedEffectiveTier: 'team',
+      name: 'paid plan',
+      userTier: 'paid',
+      expectedEffectiveTier: 'paid',
       expectAiProvider: true,
       expectSlackPublisher: true,
       expectTeamPublisher: true,
@@ -103,10 +93,10 @@ describe('Tier workflow matrix', () => {
       expect(isProviderAllowed('anthropic', license)).toBe(scenario.expectAiProvider);
       expect(isProviderAllowed('none', license)).toBe(true);
       expect(isEnrichmentAllowed(license)).toBe(
-        scenario.userTier === 'pro' || scenario.userTier === 'team' || scenario.userTier === 'enterprise'
+        scenario.userTier === 'paid' || scenario.userTier === 'enterprise'
       );
       expect(isAudienceToneAllowed(license)).toBe(
-        scenario.userTier === 'pro' || scenario.userTier === 'team' || scenario.userTier === 'enterprise'
+        scenario.userTier === 'paid' || scenario.userTier === 'enterprise'
       );
 
       expect(isPublisherAllowed('stdout', license)).toBe(true);
@@ -120,11 +110,8 @@ describe('Tier workflow matrix', () => {
       if (effectiveTier === 'free') {
         expect(limits.generationsPerMonth).toBe(3);
       }
-      if (effectiveTier === 'pro') {
+      if (effectiveTier === 'paid') {
         expect(limits.generationsPerMonth).toBe(500);
-      }
-      if (effectiveTier === 'team') {
-        expect(limits.generationsPerMonth).toBe(2000);
       }
       if (effectiveTier === 'enterprise') {
         expect(limits.generationsPerMonth).toBe(Infinity);

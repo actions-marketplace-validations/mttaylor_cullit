@@ -78,9 +78,9 @@ function mockRes(): ServerResponse {
   return res;
 }
 
-const owner = { id: 'u1', login: 'owner', name: 'Owner', orgId: 'org1', role: 'owner', tier: 'team' };
-const admin = { id: 'u2', login: 'admin', name: 'Admin', orgId: 'org1', role: 'admin', tier: 'team' };
-const member = { id: 'u3', login: 'member', name: 'Member', orgId: 'org1', role: 'member', tier: 'team' };
+const owner = { id: 'u1', login: 'owner', name: 'Owner', orgId: 'org1', role: 'owner', tier: 'paid' };
+const admin = { id: 'u2', login: 'admin', name: 'Admin', orgId: 'org1', role: 'admin', tier: 'paid' };
+const member = { id: 'u3', login: 'member', name: 'Member', orgId: 'org1', role: 'member', tier: 'paid' };
 const outsider = { id: 'u4', login: 'outsider', orgId: undefined, role: undefined, tier: 'free' };
 
 const sampleKeys = [
