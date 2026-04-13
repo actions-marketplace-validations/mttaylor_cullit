@@ -130,7 +130,7 @@
 
     var params = new URLSearchParams(location.search);
     var pendingPlan = params.get('checkout');
-    if (pendingPlan && ['paid', 'pro', 'team'].indexOf(pendingPlan) !== -1) {
+    if (pendingPlan && ['pro', 'team'].indexOf(pendingPlan) !== -1) {
       history.replaceState(null, '', 'dashboard.html');
       upgradePlan(pendingPlan);
     }
@@ -338,9 +338,9 @@
 
   var TAB_MIN_TIERS = {
     generate: 'free', history: 'free', settings: 'free', billing: 'free',
-    drafts: 'paid', analytics: 'paid', team: 'paid', changelog: 'paid',
+    drafts: 'pro', analytics: 'pro', team: 'pro', changelog: 'pro',
   };
-  var TIER_RANK = { free: 0, paid: 1, pro: 1, team: 1, enterprise: 2 };
+  var TIER_RANK = { free: 0, pro: 1, team: 1, enterprise: 2 };
 
   function applyTabGating() {
     var tier = getEffectiveTierClient();
@@ -366,7 +366,7 @@
   function applyAudienceToneGating() {
     var tier = getEffectiveTierClient();
     var rank = TIER_RANK[tier] || 0;
-    var proRank = TIER_RANK['paid'] || 1;
+    var proRank = TIER_RANK['pro'] || 1;
     var isFree = rank < proRank;
 
     var audienceBadge = document.getElementById('audienceProBadge');
@@ -393,10 +393,10 @@
       [audienceSelect, toneSelect].forEach(function (select) {
         if (!select) return;
         select.addEventListener('focus', function handler() {
-          if (getEffectiveTierClient() === 'free' || (TIER_RANK[getEffectiveTierClient()] || 0) < (TIER_RANK['paid'] || 1)) {
+          if (getEffectiveTierClient() === 'free' || (TIER_RANK[getEffectiveTierClient()] || 0) < (TIER_RANK['pro'] || 1)) {
             showUpgradeModal(
               'Audience & Tone Control',
-              'Custom audience and tone settings require a Paid plan. Upgrade to tailor output for customers, executives, or any audience.',
+              'Custom audience and tone settings require a Pro plan. Upgrade to tailor output for customers, executives, or any audience.',
               'Upgrade Now', 'pricing.html'
             );
           }
@@ -681,14 +681,14 @@
 
   // --- Billing ---
 
-  var TIER_LIMITS = { free: 3, paid: 500, pro: 500, team: 2000, enterprise: Infinity };
+  var TIER_LIMITS = { free: 3, pro: 500, team: 2000, enterprise: Infinity };
 
-  function updatePaidTotal() {
-    var input = document.getElementById('dashPaidSeats');
-    var display = document.getElementById('dashPaidTotal');
+  function updateProTotal() {
+    var input = document.getElementById('dashProSeats');
+    var display = document.getElementById('dashProTotal');
     if (input && display) {
       var seats = Math.max(1, parseInt(input.value) || 1);
-      display.textContent = '$' + (seats * 8) + '/mo';
+      display.textContent = '$' + (seats * 9) + '/mo';
     }
     var manageSection = document.getElementById('manageSeatsSection');
     if (manageSection && manageSection.style.display !== 'none' && input) {
@@ -702,18 +702,18 @@
   }
 
   function adjustSeats(delta) {
-    var input = document.getElementById('dashPaidSeats');
+    var input = document.getElementById('dashProSeats');
     if (!input) return;
     var current = parseInt(input.value) || 1;
     var newVal = Math.max(1, Math.min(100, current + delta));
     input.value = newVal;
-    updatePaidTotal();
+    updateProTotal();
     document.getElementById('seatDecrBtn').disabled = newVal <= 1;
     document.getElementById('seatIncrBtn').disabled = newVal >= 100;
   }
 
-  async function updatePaidSeats() {
-    var input = document.getElementById('dashPaidSeats');
+  async function updateProSeats() {
+    var input = document.getElementById('dashProSeats');
     var newSeats = Math.max(1, Math.min(100, parseInt(input ? input.value : '1', 10)));
     if (newSeats === manageSeatCount) { showToast('Seat count unchanged'); return; }
 
@@ -762,7 +762,7 @@
 
   async function loadDrafts() {
     var userTier = getEffectiveTierClient();
-    var isPaid = (TIER_RANK[userTier] || 0) >= (TIER_RANK['paid'] || 1);
+    var isPaid = (TIER_RANK[userTier] || 0) >= (TIER_RANK['pro'] || 1);
     document.getElementById('draftTeamGate').style.display = isPaid ? 'none' : 'block';
     document.getElementById('draftList').parentElement.parentElement.style.display = isPaid ? 'block' : 'none';
     if (document.getElementById('draftDetailPanel')) document.getElementById('draftDetailPanel').style.display = 'none';
@@ -969,7 +969,7 @@
 
   async function loadSettingsTab() {
     var userTier = getEffectiveTierClient();
-    var isPaid = (TIER_RANK[userTier] || 0) >= (TIER_RANK['paid'] || 1);
+    var isPaid = (TIER_RANK[userTier] || 0) >= (TIER_RANK['pro'] || 1);
     document.getElementById('settingsTeamGate').style.display = isPaid ? 'none' : 'block';
     document.getElementById('projectSettingsForm').parentElement.parentElement.style.display = isPaid ? 'block' : 'none';
     loadGithubInstallations();
@@ -1283,11 +1283,11 @@
     document.getElementById('billingPlanName').textContent = planName;
 
     document.querySelectorAll('.billing-plan-option').forEach(function (el) { el.classList.remove('current'); });
-    var cardPlanMap = { planFree: 'free', planPaid: 'paid', planEnterprise: 'enterprise' };
+    var cardPlanMap = { planFree: 'free', planPro: 'pro', planEnterprise: 'enterprise' };
     var planEl = document.getElementById('plan' + planName);
     if (planEl) planEl.classList.add('current');
 
-    var tierRank = { free: 0, paid: 1, pro: 1, team: 1, enterprise: 2 };
+    var tierRank = { free: 0, pro: 1, team: 1, enterprise: 2 };
     var currentRank = tierRank[tier] || 0;
     document.querySelectorAll('.billing-plan-option').forEach(function (el) {
       var btn = el.querySelector('.plan-upgrade-btn');
@@ -1316,7 +1316,7 @@
 
     var manageSection = document.getElementById('manageSeatsSection');
     if (manageSection) {
-      if (tier === 'paid' || tier === 'pro' || tier === 'team') {
+      if (tier === 'pro' || tier === 'team') {
         manageSection.style.display = '';
         var updateBtn = document.getElementById('updateSeatsBtn');
         var proNote = document.getElementById('prorationNote');
@@ -1327,7 +1327,7 @@
       }
     }
 
-    ['Free', 'Paid', 'Pro', 'Team', 'Enterprise'].forEach(function (t) {
+    ['Free', 'Pro', 'Team', 'Enterprise'].forEach(function (t) {
       var el = document.getElementById('support' + t);
       if (el) el.style.display = (t.toLowerCase() === tier) ? '' : 'none';
     });
@@ -1372,12 +1372,12 @@
     }
 
     var teamKeysPanel = document.getElementById('teamKeysPanel');
-    if (tier === 'paid' || tier === 'pro' || tier === 'team' || tier === 'enterprise') {
+    if (tier === 'pro' || tier === 'team' || tier === 'enterprise') {
       teamKeysPanel.style.display = '';
       await loadTeamKeys();
-      if (tier === 'paid' || tier === 'pro' || tier === 'team') {
-        var seatInput = document.getElementById('dashPaidSeats');
-        if (seatInput) { seatInput.value = manageSeatCount; updatePaidTotal(); }
+      if (tier === 'pro' || tier === 'team') {
+        var seatInput = document.getElementById('dashProSeats');
+        if (seatInput) { seatInput.value = manageSeatCount; updateProTotal(); }
       }
     } else {
       teamKeysPanel.style.display = 'none';
@@ -1425,8 +1425,8 @@
   async function upgradePlan(plan) {
     try {
       var body = { plan: plan };
-      if (plan === 'paid' || plan === 'team') {
-        var seatInput = document.getElementById('dashPaidSeats');
+      if (plan === 'pro' || plan === 'team') {
+        var seatInput = document.getElementById('dashProSeats');
         body.seats = parseInt(seatInput ? seatInput.value : '1', 10);
       }
       var res = await apiFetch('/v1/billing/checkout', {
@@ -1499,7 +1499,7 @@
       }
 
       if (!keys.length) {
-        list.innerHTML = '<div style="color:var(--text-dim)">No team API keys yet. Keys are provisioned when you subscribe to a Paid plan.</div>';
+        list.innerHTML = '<div style="color:var(--text-dim)">No team API keys yet. Keys are provisioned when you subscribe to a Pro plan.</div>';
         return;
       }
       list.innerHTML = '';
@@ -1692,10 +1692,10 @@
           case 'refresh-github': loadGithubInstallations(); break;
           case 'refresh-changelog': loadChangelog(); break;
           case 'copy-widget': copyWidgetSnippet(); break;
-          case 'upgrade-paid': upgradePlan('paid'); break;
+          case 'upgrade-pro': upgradePlan('pro'); break;
           case 'seat-decr': adjustSeats(-1); break;
           case 'seat-incr': adjustSeats(1); break;
-          case 'update-seats': updatePaidSeats(); break;
+          case 'update-seats': updateProSeats(); break;
           case 'analytics-tab': switchDashTab('analytics'); break;
         }
         return;
@@ -1720,7 +1720,7 @@
 
     document.addEventListener('input', function (e) {
       var target = e.target;
-      if (target.id === 'dashPaidSeats') updatePaidTotal();
+      if (target.id === 'dashProSeats') updateProTotal();
       if (target.id === 'widgetHeaderText') updateWidgetSnippet();
       if (target.id === 'widgetTriggerEmoji') updateWidgetSnippet();
     });

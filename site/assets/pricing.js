@@ -3,48 +3,48 @@ document.addEventListener('DOMContentLoaded', () => {
   site?.initMobileNav();
   site?.trackEvent('pricing_viewed', 'pricing');
 
-  const paidPlan = { monthlySeat: 8, annualSeat: 6.8 };
+  const proPlan = { monthlySeat: 9, annualSeat: 8.1 };
 
   const billingToggle = document.getElementById('billingToggle');
   const monthlyLabel = document.getElementById('lblMonthly');
   const annualLabel = document.getElementById('lblAnnual');
-  const paidPrice = document.getElementById('paidPrice');
-  const paidTotal = document.getElementById('paidTotal');
-  const paidNote = document.getElementById('paidAnnualNote');
-  const paidSeatInput = document.getElementById('paidSeats');
-  const paidCta = document.getElementById('paidCta');
+  const proPrice = document.getElementById('proPrice');
+  const proTotal = document.getElementById('proTotal');
+  const proNote = document.getElementById('proAnnualNote');
+  const proSeatInput = document.getElementById('proSeats');
+  const proCta = document.getElementById('proCta');
 
   let annual = false;
 
   function readSeats() {
-    let seats = parseInt(paidSeatInput?.value || '1', 10);
+    let seats = parseInt(proSeatInput?.value || '1', 10);
     if (Number.isNaN(seats) || seats < 1) seats = 1;
     if (seats > 100) seats = 100;
-    if (paidSeatInput) paidSeatInput.value = String(seats);
+    if (proSeatInput) proSeatInput.value = String(seats);
     return seats;
   }
 
-  function updatePaidCard() {
+  function updateProCard() {
     const seats = readSeats();
-    const perSeat = annual ? paidPlan.annualSeat : paidPlan.monthlySeat;
+    const perSeat = annual ? proPlan.annualSeat : proPlan.monthlySeat;
     const total = (perSeat * seats).toFixed(2);
 
-    if (paidPrice) {
-      paidPrice.innerHTML = '$' + perSeat.toFixed(2) + ' <span class="period">/ seat / mo</span>';
+    if (proPrice) {
+      proPrice.innerHTML = '$' + perSeat.toFixed(2) + ' <span class="period">/ seat / mo</span>';
     }
 
-    if (paidTotal) {
-      paidTotal.textContent = seats > 1
+    if (proTotal) {
+      proTotal.textContent = seats > 1
         ? 'Total: $' + total + ' / mo for ' + seats + ' seats'
         : '';
     }
 
-    if (paidNote) {
+    if (proNote) {
       if (annual) {
-        paidNote.textContent = 'Billed as $' + (perSeat * seats * 12).toFixed(2) + '/yr';
-        paidNote.style.display = '';
+        proNote.textContent = 'Billed as $' + (perSeat * seats * 12).toFixed(2) + '/yr';
+        proNote.style.display = '';
       } else {
-        paidNote.style.display = 'none';
+        proNote.style.display = 'none';
       }
     }
   }
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     monthlyLabel?.classList.toggle('active', !annual);
     annualLabel?.classList.toggle('active', annual);
 
-    updatePaidCard();
+    updateProCard();
     site?.trackEvent('billing_toggle', 'pricing', { annual });
   }
 
@@ -64,9 +64,9 @@ document.addEventListener('DOMContentLoaded', () => {
     event.preventDefault();
 
     const seats = readSeats();
-    const body = { plan: 'paid', annual, seats };
+    const body = { plan: 'pro', annual, seats };
 
-    site?.trackEvent('checkout_started', 'pricing', { plan: 'paid', annual, seats });
+    site?.trackEvent('checkout_started', 'pricing', { plan: 'pro', annual, seats });
 
     try {
       const response = await fetch(site.getApiUrl() + '/v1/billing/checkout', {
@@ -77,22 +77,22 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (response.status === 401) {
-        site?.trackEvent('checkout_failed', 'pricing', { plan: 'paid', annual, reason: 'unauthenticated' });
-        window.location.href = site.getApiUrl() + '/auth/login?returnTo=' + encodeURIComponent('/dashboard.html?checkout=paid' + (annual ? '&annual=1' : ''));
+        site?.trackEvent('checkout_failed', 'pricing', { plan: 'pro', annual, reason: 'unauthenticated' });
+        window.location.href = site.getApiUrl() + '/auth/login?returnTo=' + encodeURIComponent('/dashboard.html?checkout=pro' + (annual ? '&annual=1' : ''));
         return;
       }
 
       const data = await response.json();
       if (data.url) {
-        site?.trackEvent('checkout_redirected', 'pricing', { plan: 'paid', annual, seats });
+        site?.trackEvent('checkout_redirected', 'pricing', { plan: 'pro', annual, seats });
         window.location.href = data.url;
         return;
       }
 
-      site?.trackEvent('checkout_failed', 'pricing', { plan: 'paid', annual, reason: data.error || 'unknown' });
+      site?.trackEvent('checkout_failed', 'pricing', { plan: 'pro', annual, reason: data.error || 'unknown' });
       alert(data.error || 'Could not start checkout. Please try again.');
     } catch {
-      site?.trackEvent('checkout_failed', 'pricing', { plan: 'paid', annual, reason: 'network_error' });
+      site?.trackEvent('checkout_failed', 'pricing', { plan: 'pro', annual, reason: 'network_error' });
       alert('Could not reach billing service at ' + site.getApiUrl() + '. Check your API URL/server and try again.');
     }
   }
@@ -107,9 +107,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  paidSeatInput?.addEventListener('input', updatePaidCard);
-  paidSeatInput?.addEventListener('change', updatePaidCard);
-  paidCta?.addEventListener('click', (event) => startCheckout(event));
+  proSeatInput?.addEventListener('input', updateProCard);
+  proSeatInput?.addEventListener('change', updateProCard);
+  proCta?.addEventListener('click', (event) => startCheckout(event));
 
   setBilling(false);
 });
