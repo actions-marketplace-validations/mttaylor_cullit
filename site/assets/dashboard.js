@@ -727,7 +727,7 @@
       var res = await apiFetch('/v1/billing/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: 'team', seats: newSeats }),
+        body: JSON.stringify({ plan: 'pro', seats: newSeats }),
       });
       var data = await res.json();
       if (data.updated) {
@@ -1336,11 +1336,13 @@
     var actionsEl = document.getElementById('billingActions');
     actionsEl.innerHTML = '';
 
+    var hasSub = false;
     try {
       var res = await apiFetch('/v1/billing/subscription');
       if (res.ok) {
         var sub = await res.json();
         if (sub && sub.subscription) {
+          hasSub = true;
           // Use subscription seat count as the source of truth
           if (sub.subscription.seats) {
             manageSeatCount = sub.subscription.seats;
@@ -1366,32 +1368,36 @@
             var end = new Date(sub.subscription.currentPeriodEnd);
             statusEl.textContent += ' \u2014 renews ' + end.toLocaleDateString();
           }
-          var portalBtn = document.createElement('button');
-          portalBtn.className = 'btn-small';
-          portalBtn.textContent = 'Manage Billing';
-          portalBtn.addEventListener('click', openBillingPortal);
-          actionsEl.appendChild(portalBtn);
-
-          if (!sub.subscription.cancelAtPeriodEnd) {
-            var cancelBtn = document.createElement('button');
-            cancelBtn.className = 'btn-small';
-            cancelBtn.style.background = 'transparent';
-            cancelBtn.style.border = '1px solid var(--terminal-red)';
-            cancelBtn.style.color = 'var(--terminal-red)';
-            cancelBtn.textContent = 'Cancel Subscription';
-            cancelBtn.addEventListener('click', function () {
-              if (confirm('Cancel your subscription? You\u2019ll keep access until the end of your current billing period.')) {
-                openBillingPortal();
-              }
-            });
-            actionsEl.appendChild(cancelBtn);
-          }
         } else {
           statusEl.textContent = tier === 'free' ? 'No active subscription' : '';
         }
       }
     } catch (e) {
       statusEl.textContent = '';
+    }
+
+    // Always show billing management buttons for paid tiers
+    if (tier === 'pro' || tier === 'team' || tier === 'enterprise') {
+      var portalBtn = document.createElement('button');
+      portalBtn.className = 'btn-small';
+      portalBtn.textContent = 'Manage Billing';
+      portalBtn.addEventListener('click', openBillingPortal);
+      actionsEl.appendChild(portalBtn);
+
+      if (!hasSub || (sub && sub.subscription && !sub.subscription.cancelAtPeriodEnd)) {
+        var cancelBtn = document.createElement('button');
+        cancelBtn.className = 'btn-small';
+        cancelBtn.style.background = 'transparent';
+        cancelBtn.style.border = '1px solid var(--terminal-red)';
+        cancelBtn.style.color = 'var(--terminal-red)';
+        cancelBtn.textContent = 'Cancel Subscription';
+        cancelBtn.addEventListener('click', function () {
+          if (confirm('Cancel your subscription? You\u2019ll keep access until the end of your current billing period.')) {
+            openBillingPortal();
+          }
+        });
+        actionsEl.appendChild(cancelBtn);
+      }
     }
 
     var teamKeysPanel = document.getElementById('teamKeysPanel');
@@ -1520,7 +1526,6 @@
 
       var seatEl = document.getElementById('teamKeySeatCount');
       var activeCount = keys.filter(function (k) { return !k.revokedAt; }).length;
-      manageSeatCount = Math.max(activeCount, 1);
       seatEl.textContent = activeCount + ' of ' + manageSeatCount + ' seats active';
 
       var seatUtilEl = document.getElementById('seatUtilMsg');
