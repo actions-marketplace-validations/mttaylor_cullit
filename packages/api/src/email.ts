@@ -170,9 +170,18 @@ const PLAN_DETAILS: Record<string, { label: string; features: string[] }> = {
   },
 };
 
-export async function sendSubscriptionConfirmed(email: string, name: string, plan: string): Promise<boolean> {
+export async function sendSubscriptionConfirmed(email: string, name: string, plan: string, apiKey?: string): Promise<boolean> {
   const details = PLAN_DETAILS[plan] || PLAN_DETAILS.pro;
   const displayName = plan.startsWith('team') ? 'Team' : plan.charAt(0).toUpperCase() + plan.slice(1);
+  const apiKeySection = apiKey ? `
+      <div style="background: #1a1a2e; border: 1px solid #2d2d44; border-radius: 8px; padding: 16px; margin: 16px 0;">
+        <p style="color: #5eead4; font-weight: 600; margin: 0 0 8px 0;">Your API Key</p>
+        <code style="color: #f0f0f0; font-family: monospace; font-size: 14px; word-break: break-all;">${escapeHtml(apiKey)}</code>
+        <p style="color: #6b7280; font-size: 12px; margin: 8px 0 0 0;">
+          Save this key — it won't be shown again. You can rotate it anytime from the
+          <a href="https://cullit.io/dashboard.html" style="color: #5eead4;">dashboard Settings tab</a>.
+        </p>
+      </div>` : '';
   return send({
     to: email,
     subject: `You're on Cullit ${displayName}!`,
@@ -180,7 +189,7 @@ export async function sendSubscriptionConfirmed(email: string, name: string, pla
       <h2 style="color: #0f1117; margin-bottom: 16px;">Subscription confirmed</h2>
       <p style="color: #374151; line-height: 1.6;">
         Hi ${escapeHtml(name)}, your <strong>${details.label}</strong> subscription is now active.
-      </p>
+      </p>${apiKeySection}
       <p style="color: #374151; line-height: 1.6;">
         You now have access to:
       </p>

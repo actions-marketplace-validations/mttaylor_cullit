@@ -35,7 +35,7 @@ import {
   dbCheckWebhookProcessed, dbMarkWebhookProcessed,
   dbCreateTeamApiKey, dbGetActiveTeamApiKeyCount,
   dbRevokeAllOrgTeamApiKeys, dbRevokeExcessTeamApiKeys,
-  hashApiKey, dbRecordAuditEvent,
+  hashApiKey, dbRecordAuditEvent, dbRotateApiKey,
 } from './db.js';
 import { getEffectiveTier, getUser, generateApiKey, createOrg, updateOrgMaxSeats } from './auth.js';
 import { isRecord } from './utils.js';
@@ -589,11 +589,18 @@ async function handleCheckoutComplete(sessionPayload: unknown): Promise<void> {
     await retryProvisionKeys(userId, plan, seats, subscriptionId);
   }
 
-  // Send subscription confirmation email (no plaintext key — user views key in dashboard)
+  // Generate a fresh API key for the user on checkout so it's available immediately
+  const freshApiKey = generateApiKey();
+  if (sql) {
+    await dbRotateApiKey(userId, freshApiKey);
+    log.info({ userId }, 'Generated fresh API key on checkout');
+  }
+
+  // Send subscription confirmation email with the new API key
   const user = await dbGetUser(userId);
   if (user?.email) {
     try {
-      await sendSubscriptionConfirmed(user.email, user.name || user.login, plan);
+      await sendSubscriptionConfirmed(user.email, user.name || user.login, plan, freshApiKey);
     } catch (err) {
       log.error({ err: (err as Error).message, userId }, 'Failed to send subscription confirmed email — user was charged but did not receive confirmation');
     }
