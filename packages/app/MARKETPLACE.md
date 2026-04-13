@@ -81,12 +81,11 @@ Required environment variables:
 
 | Plan | Price | What you get |
 |------|-------|--------------|
-| **Free** | $0 | AI-generated release notes (BYOK), 3 generations/month, 3 projects |
-| **Pro** | $9/mo | AI-powered notes (BYOK, any provider), Jira/Linear, Slack/Discord/GitHub Release, 500 gen/mo, 100 projects |
-| **Team** | $8/seat/mo | Min 5 seats, multi-repo, Confluence/Notion/Teams, 2000+ gen/mo |
+| **Free** | $0 | Template workflows, small monthly usage allowance, local evaluation |
+| **Paid** | Seat-based | AI-powered notes, enrichment, hosted workflows, and annual billing. Current billing still uses legacy single-seat and org package labels while checkout is being consolidated. |
 | **Enterprise** | Custom | SSO/SAML, SLA, on-prem, unlimited generations &amp; projects — [sales@cullit.io](mailto:sales@cullit.io) |
 
-The GitHub App is **free** with template-based notes. Activate AI-powered generation with a `CULLIT_API_KEY` (Pro or above).
+The GitHub App is **free** with template-based notes. Activate AI-powered generation with a `CULLIT_API_KEY` on a paid seat.
 
 ## Support
 

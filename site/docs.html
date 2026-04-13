@@ -368,43 +368,18 @@
 
 <div class="tip">Best results come from pairing AI generation with Jira or Linear enrichment. Richer context produces cleaner summaries, clearer categories, and fewer low-signal commit dumps.</div>
 
-<h3 id="pricing">Pricing &amp; Tiers</h3>
-<p>The public npm package is the free local CLI surface: local git, template generation with <code>--provider none</code>, and stdout/file output. Licensed Pro and Team capabilities are delivered through Cullit-hosted surfaces and private distributions.</p>
+<h3 id="pricing">Pricing &amp; Access</h3>
+<p>The public npm package is the free local CLI surface: local git, template generation with <code>--provider none</code>, and stdout/file output. Cullit is simplifying commercial access to <strong>Free</strong>, <strong>Paid</strong>, and <strong>Enterprise</strong>.</p>
 
-<div class="table-wrap">
-<table>
-  <thead><tr><th>Feature</th><th>Free</th><th>Pro ($9/mo)</th><th>Team ($8/seat/mo)</th><th>Enterprise</th></tr></thead>
-  <tbody>
-    <tr><td>Template engine (<code>--provider none</code>)</td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
-    <tr><td>AI providers (Anthropic, OpenAI, Gemini, Ollama)</td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
-    <tr><td>Publish to stdout &amp; file</td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
-    <tr><td><code>cullit status</code> &amp; <code>cullit tags</code></td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
-    <tr><td>Generations per month</td><td>3</td><td>500</td><td>Scales with seats</td><td>Unlimited</td></tr>
-    <tr><td>Projects</td><td>3</td><td>100</td><td>Scales with seats</td><td>Unlimited</td></tr>
-    <tr><td>Audience &amp; tone control</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
-    <tr><td>Jira &amp; Linear enrichment</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
-    <tr><td>Slack, Discord &amp; GitHub Release publishing</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
-    <tr><td>Hosted changelog page</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
-    <tr><td>GitHub App (AI mode)</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
-    <tr><td>GitHub Action with AI</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
-    <tr><td>Release drafts &amp; approvals</td><td>&mdash;</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
-    <tr><td>Multi-repo aggregation</td><td>&mdash;</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
-    <tr><td>Confluence, Notion &amp; Teams publishing</td><td>&mdash;</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
-    <tr><td>Team API keys / seats</td><td>&mdash;</td><td>1</td><td>5+ (custom)</td><td>Unlimited</td></tr>
-    <tr><td>Branded changelog widget</td><td>&mdash;</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
-    <tr><td>Project templates</td><td>&mdash;</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
-    <tr><td>Audit logs</td><td>&mdash;</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
-    <tr><td>Team usage analytics</td><td>&mdash;</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td></tr>
-    <tr><td>Annual billing (15% off)</td><td>&mdash;</td><td>&#x2705;</td><td>&#x2705;</td><td>&mdash;</td></tr>
-    <tr><td>SSO &amp; SAML</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&#x2705;</td></tr>
-    <tr><td>Self-hosted / on-prem</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&#x2705;</td></tr>
-    <tr><td>Dedicated support &amp; SLA</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&#x2705;</td></tr>
-    <tr><td>Price</td><td>Free</td><td>$9/mo</td><td>$8/seat/mo (min 5)</td><td>Custom</td></tr>
-  </tbody>
-</table>
-</div>
+<ul>
+  <li><strong>Free</strong> &mdash; local CLI, template workflows, and a small monthly usage allowance to evaluate Cullit on a real project.</li>
+  <li><strong>Paid</strong> &mdash; seat-based access with monthly or annual billing. This is the main commercial path for AI providers, enrichment, hosted changelogs, and production workflows.</li>
+  <li><strong>Enterprise</strong> &mdash; custom pricing for SSO/SAML, procurement, support, and larger deployment requirements.</li>
+</ul>
 
-<p>To activate Pro or Team, set your API key:</p>
+<div class="tip">Billing is still being consolidated. Some checkout, dashboard, and Stripe configuration surfaces still use legacy <strong>Pro</strong> and <strong>Team</strong> labels. In the live product today, the single-seat starter package and the 5+ seat org package are still configured separately.</div>
+
+<p>To activate paid access, set your API key:</p>
 <pre><code><span class="cmt"># In your shell or .env file</span>
 <span class="key">CULLIT_API_KEY</span>=<span class="val">clt_your_key_here</span></code></pre>
 
@@ -1178,10 +1153,10 @@ formats, and several performance improvements.</span>
   <li><code>DELETE /v1/org/members</code> &mdash; remove a member (owner/admin only)</li>
   <li><code>GET /v1/org/usage</code> &mdash; org usage and seat snapshot</li>
 </ul>
-<p>Team plans start at 5 seats ($8/seat/mo) with all team features included: branded changelog widget, project templates, audit logs, team analytics, and all collaboration tools. Limits scale with your team size. All plans offer annual billing at 15% discount.</p>
+<p>Paid org setups currently start at 5 seats ($8/seat/mo) and include branded changelog widgets, project templates, audit logs, team analytics, and collaboration tools. Limits scale with seat count. Annual billing is available at a 15% discount.</p>
 
 <h3 id="team-api-keys">Team API Key Management</h3>
-<p>When you subscribe to a Team plan, API keys are automatically provisioned for each seat. Org owners and admins can manage these keys from the Billing tab in the dashboard:</p>
+<p>When you subscribe to a paid org setup, API keys are automatically provisioned for each seat. Org owners and admins can manage these keys from the Billing tab in the dashboard:</p>
 <ul>
   <li><strong>Label</strong> &mdash; name each key (e.g. "Frontend Dev", "CI Pipeline")</li>
   <li><strong>Assign</strong> &mdash; associate a team member&rsquo;s email and name with each key</li>
@@ -1200,7 +1175,7 @@ formats, and several performance improvements.</span>
 <p>Team members use their assigned key with <code>CULLIT_API_KEY=clt_their_key</code>. Usage from team keys is tracked under the org owner&rsquo;s account for billing purposes.</p>
 
 <h3 id="team-drafts">Release Draft Workflow</h3>
-<p>Team plans unlock collaborative release drafting and approvals:</p>
+<p>Paid org setups unlock collaborative release drafting and approvals:</p>
 <ul>
   <li><code>POST /v1/drafts</code> &mdash; create a draft from generated output</li>
   <li><code>GET /v1/drafts</code> &mdash; list drafts with status filter and pagination</li>
@@ -1218,7 +1193,7 @@ formats, and several performance improvements.</span>
   <li><code>PUT /v1/projects/:project/settings</code> &mdash; upsert defaults (source, provider, audience, tone, categories)</li>
 </ul>
 
-<div class="tip">The Team Dashboard workflow is available on <strong>Team</strong> ($8/seat/mo, min 5 seats) plans. Individual users can access history and analytics on the <strong>Pro</strong> tier ($9/month). Free-tier users get template-based generation with no time limit.</div>
+<div class="tip">The collaboration-heavy dashboard workflow is available on paid org setups with 5+ seats today. Some single-seat billing surfaces still use the legacy <strong>Pro</strong> label while billing is being consolidated. Free-tier users get template-based generation with no time limit.</div>
 
 <div class="section-divider"></div>
 

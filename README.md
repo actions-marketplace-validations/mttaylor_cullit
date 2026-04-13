@@ -28,7 +28,7 @@ npm install -D cullit
 ## Distribution Model
 
 - Public npm package `cullit`: local git, template generation with `--provider none`, stdout/file output
-- Private registry package `@cullit/licensed`: paid tiers (Pro, Team 5/10/25, Enterprise) with AI providers, Jira/Linear enrichment, premium publishers, dashboard, API, GitHub App, and private deployment flows
+- Private registry package `@cullit/licensed`: paid seat-based and enterprise access for AI providers, Jira/Linear enrichment, premium publishers, dashboard, API, GitHub App, and private deployment flows. During the current billing transition, some internal surfaces still refer to legacy `Pro` and `Team` package names.
 - npm is the delivery channel for the CLI runtime, not the paid entitlement layer
 
 ## Quick Start
@@ -270,7 +270,7 @@ docker compose up api
 | 🔑 **Licensed AI** | Paid AI and premium integrations are available through licensed hosted/private Cullit surfaces. |
 | ⚡ **Flexible Sources** | Git, Jira, Linear, GitLab, or Bitbucket as primary data source |
 | 🔍 **Enrichment** | Cross-reference Jira & Linear tickets from commits |
-| 📤 **Multi-Publish** | Slack, Discord, GitHub Release, GitLab Release, Hosted Changelog, Embed Widget, file, stdout (Pro); Teams, Confluence, Notion (Team+) |
+| 📤 **Multi-Publish** | Slack, Discord, GitHub Release, GitLab Release, Hosted Changelog, Embed Widget, file, stdout (paid); Teams, Confluence, Notion on paid org setups |
 | 🎯 **Audience Modes** | Developer, end-user, or executive summaries |
 | 📋 **Smart Categories** | Features, fixes, breaking changes, improvements, chores |
 | 🔇 **Structured Logging** | `--verbose` and `--quiet` flags for CI-friendly output |
@@ -283,7 +283,7 @@ docker compose up api
 | Package | Description |
 |---------|-------------|
 | [`cullit`](https://www.npmjs.com/package/cullit) | Public CLI installer — local/template workflow with `--provider none` |
-| `@cullit/licensed` | Private registry package for paid tiers (Pro, Team, Enterprise) |
+| `@cullit/licensed` | Private registry package for paid seat-based and enterprise access |
 | [`@cullit/core`](https://www.npmjs.com/package/@cullit/core) | Core engine — pipeline, generators, publishers |
 | [`@cullit/config`](https://www.npmjs.com/package/@cullit/config) | Config loader — YAML parsing with env var resolution |
 | `@cullit/api` | REST API server (private) — OpenAPI 3.1, rate limiting, pipeline cache |
@@ -391,10 +391,10 @@ jira:
 | `CULLIT_BASE_URL` | Public base URL for OAuth callbacks |
 | `STRIPE_SECRET_KEY` | Stripe billing API key |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature verification |
-| `STRIPE_PRO_PRICE_ID` | Stripe price id for Pro plan |
-| `STRIPE_PRO_ANNUAL_PRICE_ID` | Stripe price id for Pro annual plan (15% off) |
-| `STRIPE_TEAM_PRICE_ID` | Per-seat price id for Team plan ($8/seat/mo, min 5 seats) |
-| `STRIPE_TEAM_ANNUAL_PRICE_ID` | Per-seat price id for Team annual ($81.60/seat/yr — 15% off) |
+| `STRIPE_PRO_PRICE_ID` | Stripe price id for the current single-seat paid package |
+| `STRIPE_PRO_ANNUAL_PRICE_ID` | Stripe price id for the current single-seat annual package (15% off) |
+| `STRIPE_TEAM_PRICE_ID` | Stripe price id for the current 5+ seat org package ($8/seat/mo) |
+| `STRIPE_TEAM_ANNUAL_PRICE_ID` | Stripe price id for the current 5+ seat org annual package ($81.60/seat/yr — 15% off) |
 | `RESEND_API_KEY` | Transactional email delivery |
 
 ## API Endpoints
