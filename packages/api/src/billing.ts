@@ -60,20 +60,26 @@ const DASHBOARD_URL = process.env['CULLIT_DASHBOARD_URL'] || BASE_URL;
 // In-memory Set kept as a fast-path cache to avoid DB round-trip on hot duplicates.
 
 const MAX_PROCESSED_EVENTS = 1000;
-const processedWebhookEvents = new Set<string>();
-const processedOrder: string[] = [];
+const WEBHOOK_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const processedWebhookEvents = new Map<string, number>(); // eventId → timestamp
 
 function markInMemory(eventId: string): void {
-  processedWebhookEvents.add(eventId);
-  processedOrder.push(eventId);
-  while (processedOrder.length > MAX_PROCESSED_EVENTS) {
-    const oldest = processedOrder.shift()!;
-    processedWebhookEvents.delete(oldest);
+  processedWebhookEvents.set(eventId, Date.now());
+  if (processedWebhookEvents.size > MAX_PROCESSED_EVENTS) {
+    const first = processedWebhookEvents.keys().next().value;
+    if (first) processedWebhookEvents.delete(first);
   }
 }
 
 async function isWebhookProcessed(eventId: string): Promise<boolean> {
-  if (processedWebhookEvents.has(eventId)) return true;
+  const ts = processedWebhookEvents.get(eventId);
+  if (ts !== undefined) {
+    if (Date.now() - ts > WEBHOOK_CACHE_TTL) {
+      processedWebhookEvents.delete(eventId); // expired — fall through to DB
+    } else {
+      return true;
+    }
+  }
   return dbCheckWebhookProcessed(eventId);
 }
 
@@ -514,6 +520,39 @@ export async function handleStripeWebhook(
   }
 }
 
+async function retryProvisionKeys(userId: string, plan: string, seats: number, subscriptionId: string): Promise<boolean> {
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await provisionTeamKeys(userId, plan, seats);
+      return true;
+    } catch (err) {
+      log.warn({ err: (err as Error).message, userId, plan, seats, attempt }, `Team key provisioning attempt ${attempt} failed`);
+      if (attempt < 3) await new Promise(r => setTimeout(r, 1000 * attempt));
+    }
+  }
+
+  log.error({ userId, plan, seats, subscriptionId }, 'Failed to provision team API keys after 3 attempts — issuing refund');
+  await dbRecordAuditEvent({
+    userId, action: 'team_key_provisioning_failed',
+    target: subscriptionId,
+    metadata: { plan, seats, attempts: 3 },
+  });
+
+  try {
+    await stripeRequest(`/subscriptions/${subscriptionId}`, 'DELETE', {});
+    log.info({ userId, subscriptionId }, 'Auto-canceled subscription after key provisioning failure');
+    await dbRecordAuditEvent({
+      userId, action: 'team_key_provisioning_auto_cancel',
+      target: subscriptionId,
+      metadata: { plan, seats, reason: 'provisioning_failure' },
+    });
+  } catch (cancelErr) {
+    log.error({ err: (cancelErr as Error).message, userId, subscriptionId }, 'Failed to auto-cancel subscription — MANUAL INTERVENTION REQUIRED');
+  }
+
+  return false;
+}
+
 async function handleCheckoutComplete(sessionPayload: unknown): Promise<void> {
   const session = toStripeCheckoutSession(sessionPayload);
   if (!session) return;
@@ -549,45 +588,7 @@ async function handleCheckoutComplete(sessionPayload: unknown): Promise<void> {
 
   // Provision team API keys if this is a team plan
   if (seats > 0) {
-    // Retry up to 3 times — user was already charged, keys MUST be provisioned
-    let attempt = 0;
-    let provisioned = false;
-    while (attempt < 3) {
-      try {
-        await provisionTeamKeys(userId, plan, seats);
-        provisioned = true;
-        break;
-      } catch (err) {
-        attempt++;
-        if (attempt < 3) {
-          log.warn({ err: (err as Error).message, userId, plan, seats, attempt }, `Team key provisioning attempt ${attempt} failed, retrying...`);
-          await new Promise(r => setTimeout(r, 1000 * attempt));
-        }
-      }
-    }
-
-    if (!provisioned) {
-      log.error({ userId, plan, seats, subscriptionId }, 'Failed to provision team API keys after 3 attempts — issuing refund');
-      // Record durable audit event so ops can query and replay provisioning
-      await dbRecordAuditEvent({
-        userId, action: 'team_key_provisioning_failed',
-        target: subscriptionId,
-        metadata: { plan, seats, attempts: 3 },
-      });
-
-      // Auto-refund: cancel the subscription so the customer isn't charged for unusable keys
-      try {
-        await stripeRequest(`/subscriptions/${subscriptionId}`, 'DELETE', {});
-        log.info({ userId, subscriptionId }, 'Auto-canceled subscription after key provisioning failure');
-        await dbRecordAuditEvent({
-          userId, action: 'team_key_provisioning_auto_cancel',
-          target: subscriptionId,
-          metadata: { plan, seats, reason: 'provisioning_failure' },
-        });
-      } catch (cancelErr) {
-        log.error({ err: (cancelErr as Error).message, userId, subscriptionId }, 'Failed to auto-cancel subscription after provisioning failure — MANUAL INTERVENTION REQUIRED');
-      }
-    }
+    await retryProvisionKeys(userId, plan, seats, subscriptionId);
   }
 
   // Send subscription confirmation email (no plaintext key — user views key in dashboard)

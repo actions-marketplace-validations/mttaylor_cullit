@@ -186,8 +186,9 @@ if (!useDb && process.env['NODE_ENV'] === 'production') {
 }
 
 // --- Token revocation (LRU cache + DB-backed) ---
-const revokedTokensCache = new Map<string, number>(); // hash → last-access timestamp
+const revokedTokensCache = new Map<string, number>(); // hash → timestamp
 const MAX_REVOKED_CACHE = 5000;
+const REVOKED_CACHE_TTL = JWT_EXPIRY * 1000; // match JWT expiry (7 days in ms)
 
 function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
@@ -195,11 +196,16 @@ function hashToken(token: string): string {
 
 async function isTokenRevoked(token: string): Promise<boolean> {
   const h = hashToken(token);
-  if (revokedTokensCache.has(h)) {
-    // LRU: update access time
-    revokedTokensCache.delete(h);
-    revokedTokensCache.set(h, Date.now());
-    return true;
+  const ts = revokedTokensCache.get(h);
+  if (ts !== undefined) {
+    if (Date.now() - ts > REVOKED_CACHE_TTL) {
+      revokedTokensCache.delete(h); // expired — remove from cache, fall through to DB
+    } else {
+      // LRU: move to end of Map insertion order
+      revokedTokensCache.delete(h);
+      revokedTokensCache.set(h, Date.now());
+      return true;
+    }
   }
   return dbIsTokenRevoked(h);
 }
