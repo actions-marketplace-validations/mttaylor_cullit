@@ -328,9 +328,8 @@ export async function handleCheckout(
         return;
       }
     } catch (err) {
-      log.error({ err, userId, plan, subscriptionId: existingSub.stripe_subscription_id }, 'Failed to update existing subscription');
-      jsonFn(res, 502, { error: 'Failed to update subscription. Please try again or contact support.' });
-      return;
+      log.warn({ err, userId, plan, subscriptionId: existingSub.stripe_subscription_id }, 'Failed to update existing subscription — falling back to new checkout session');
+      // Fall through to create a new checkout session below
     }
   }
 
