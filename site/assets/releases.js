@@ -20,7 +20,9 @@
     renderReleases();
   });
 
-  var md2html = window.CullitSite.markdownToHtml;
+  var md2html = (window.CullitSite && window.CullitSite.markdownToHtml)
+    ? window.CullitSite.markdownToHtml
+    : function (s) { return s ? '<p>' + s + '</p>' : ''; };
 
   // --- Render ---
   function renderReleases() {

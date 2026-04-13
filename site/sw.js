@@ -1,7 +1,7 @@
 // Cullit Service Worker
 // - Network-first for HTML navigations (always fresh content)
 // - Cache-first for static assets (images, icons)
-const CACHE_NAME = 'cullit-v3';
+const CACHE_NAME = 'cullit-v4';
 const STATIC_ASSETS = [
   '/favicon.svg',
   '/og-image.png',
@@ -66,9 +66,14 @@ function cacheFirst(event) {
   );
 }
 
+function isStaticAsset(request) {
+  const url = new URL(request.url);
+  return /\.(png|jpg|jpeg|gif|svg|ico|webp|woff2?)$/i.test(url.pathname);
+}
+
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
-  if (isNavigationRequest(event.request)) {
+  if (isNavigationRequest(event.request) || !isStaticAsset(event.request)) {
     networkFirst(event);
   } else {
     cacheFirst(event);
