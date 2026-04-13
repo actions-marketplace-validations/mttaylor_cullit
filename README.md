@@ -28,8 +28,8 @@ npm install -D cullit
 ## Distribution Model
 
 - Public npm package `cullit`: local git, template generation with `--provider none`, stdout/file output
-- Private registry package `@cullit/licensed`: paid seat-based and enterprise access for AI providers, Jira/Linear enrichment, premium publishers, dashboard, API, GitHub App, and private deployment flows
-- npm is the delivery channel for the CLI runtime, not the paid entitlement layer
+- Private registry package `@cullit/licensed`: pro seat-based and enterprise access for AI providers, Jira/Linear enrichment, premium publishers, dashboard, API, GitHub App, and private deployment flows
+- npm is the delivery channel for the CLI runtime, not the pro entitlement layer
 
 ## Quick Start
 
@@ -54,10 +54,10 @@ cullit generate --from v1.0.0 --verbose
 cullit generate --from v1.0.0 --quiet
 ```
 
-## Paid Upgrade In Under 10 Minutes
+## Pro Upgrade In Under 10 Minutes
 
 ```bash
-# 1) Install paid distribution from your private registry
+# 1) Install pro distribution from your private registry
 npm install -g @cullit/licensed
 
 # 2) Set your Cullit license key
@@ -67,7 +67,7 @@ export CULLIT_API_KEY=clt_your_key_here
 cullit generate --from v1.0.0 --to v1.1.0 --provider anthropic
 ```
 
-If you do not have a paid key yet, start at https://cullit.io/pricing.
+If you do not have a pro key yet, start at https://cullit.io/pricing.
 
 ## CLI Command Reference
 
@@ -267,10 +267,10 @@ docker compose up api
 | Feature | Description |
 |---------|-------------|
 | 🧠 **4 AI Providers + Template** | Anthropic Claude, OpenAI, Gemini, Ollama, or none (template) |
-| 🔑 **Licensed AI** | Paid AI and premium integrations are available through licensed hosted/private Cullit surfaces. |
+| 🔑 **Licensed AI** | Pro AI and premium integrations are available through licensed hosted/private Cullit surfaces. |
 | ⚡ **Flexible Sources** | Git, Jira, Linear, GitLab, or Bitbucket as primary data source |
 | 🔍 **Enrichment** | Cross-reference Jira & Linear tickets from commits |
-| 📤 **Multi-Publish** | Slack, Discord, GitHub Release, GitLab Release, Hosted Changelog, Embed Widget, file, stdout (paid); Teams, Confluence, Notion on paid org setups |
+| 📤 **Multi-Publish** | Slack, Discord, GitHub Release, GitLab Release, Hosted Changelog, Embed Widget, file, stdout (Pro); Teams, Confluence, Notion on Pro org setups |
 | 🎯 **Audience Modes** | Developer, end-user, or executive summaries |
 | 📋 **Smart Categories** | Features, fixes, breaking changes, improvements, chores |
 | 🔇 **Structured Logging** | `--verbose` and `--quiet` flags for CI-friendly output |
@@ -283,7 +283,7 @@ docker compose up api
 | Package | Description |
 |---------|-------------|
 | [`cullit`](https://www.npmjs.com/package/cullit) | Public CLI installer — local/template workflow with `--provider none` |
-| `@cullit/licensed` | Private registry package for paid seat-based and enterprise access |
+| `@cullit/licensed` | Private registry package for pro seat-based and enterprise access |
 | [`@cullit/core`](https://www.npmjs.com/package/@cullit/core) | Core engine — pipeline, generators, publishers |
 | [`@cullit/config`](https://www.npmjs.com/package/@cullit/config) | Config loader — YAML parsing with env var resolution |
 | `@cullit/api` | REST API server (private) — OpenAPI 3.1, rate limiting, pipeline cache |
@@ -391,8 +391,8 @@ jira:
 | `CULLIT_BASE_URL` | Public base URL for OAuth callbacks |
 | `STRIPE_SECRET_KEY` | Stripe billing API key |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature verification |
-| `STRIPE_PAID_PRICE_ID` | Stripe price ID for the paid plan ($8/seat/month) |
-| `STRIPE_PAID_ANNUAL_PRICE_ID` | Stripe price ID for the paid annual plan ($81.60/seat/year — 15% off) |
+| `STRIPE_PRO_PRICE_ID` | Stripe price ID for the Pro plan ($9/seat/month) |
+| `STRIPE_PRO_ANNUAL_PRICE_ID` | Stripe price ID for the Pro annual plan ($97.20/seat/year — 10% off) |
 | `RESEND_API_KEY` | Transactional email delivery |
 
 ## API Endpoints
@@ -407,8 +407,8 @@ jira:
 | `POST` | `/auth/logout` | End dashboard session |
 | `GET` | `/v1/history` | Paginated generation history |
 | `GET` | `/v1/analytics/usage` | Usage analytics and provider breakdown |
-| `POST` | `/v1/drafts` | Create draft (Paid) |
-| `GET` | `/v1/drafts` | List drafts (Paid) |
+| `POST` | `/v1/drafts` | Create draft (Pro) |
+| `GET` | `/v1/drafts` | List drafts (Pro) |
 | `GET` | `/v1/drafts/:id` | Draft details with revisions |
 | `PATCH` | `/v1/drafts/:id` | Update draft |
 | `DELETE` | `/v1/drafts/:id` | Delete draft |

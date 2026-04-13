@@ -9,7 +9,7 @@ This package provides the pipeline orchestration, git collector, template genera
 - **Pipeline orchestration** — Collector → Enricher → Generator → Publisher
 - **Git collector** — Extract commits between any two refs
 - **Template generator** — Categorized, structured release notes without AI
-- **License gating** — Tier-based feature access (Free / Paid / Enterprise)
+- **License gating** — Tier-based feature access (Free / Pro / Enterprise)
 - **Output formatting** — Markdown, HTML themes, JSON
 - **Constants** — Tier definitions, version, pricing, limits
 

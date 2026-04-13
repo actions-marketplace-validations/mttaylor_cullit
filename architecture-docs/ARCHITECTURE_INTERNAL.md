@@ -7,7 +7,7 @@ This document is the source of truth for Cullit's technical architecture, distri
 ## Scope
 
 - Monorepo package topology
-- Free vs paid distribution boundaries
+- Free vs pro distribution boundaries
 - Runtime plugin registration and gating
 - API and dashboard request flows
 - Quality gates and release checks
@@ -20,7 +20,7 @@ flowchart TD
   Core["@cullit/core"]
   Cli["cullit public npm CLI"]
   Pro["@cullit/pro private plugin package"]
-  Lic["@cullit/licensed private paid distribution"]
+  Lic["@cullit/licensed private pro distribution"]
   Api["@cullit/api private API server"]
   App["@cullit/app private GitHub App"]
 
@@ -40,7 +40,7 @@ flowchart TD
 ```mermaid
 flowchart LR
   PublicUser["Free user"]
-  PaidUser["Paid / Enterprise user"]
+  PaidUser["Pro / Enterprise user"]
   NpmPublic["npm public registry"]
   NpmPrivate["private npm registry"]
   PublicPkg["cullit"]
@@ -54,7 +54,7 @@ flowchart LR
 ### Boundaries
 
 - `cullit` is the public package for local/template workflows.
-- `@cullit/licensed` is the private distribution package for paid tiers.
+- `@cullit/licensed` is the private distribution package for pro tiers.
 - `@cullit/pro` remains internal/private plugin implementation and is not a public customer install target.
 
 ## Runtime Plugin Registration
@@ -103,8 +103,8 @@ flowchart TD
 ### Tier Expectations
 
 - Free: local source + template provider + stdout/file publishers. 3 AI gens/month (BYOK).
-- Paid ($8/seat/mo): All features — AI providers, enrichment, publishers, dashboard, orgs, drafts, team keys. 500+ gens/month, 100+ projects. Scales with seat count. Annual billing at $6.80/seat/mo.
-- Enterprise: All Paid capabilities plus SSO/SAML, dedicated support, on-prem, unlimited gens/projects.
+- Pro ($9/seat/mo): All features — AI providers, enrichment, publishers, dashboard, orgs, drafts, team keys. 500+ gens/month, 100+ projects. Scales with seat count. Annual billing at $8.10/seat/mo.
+- Enterprise: All Pro capabilities plus SSO/SAML, dedicated support, on-prem, unlimited gens/projects.
 
 ## API and Dashboard Flow
 
@@ -147,7 +147,7 @@ flowchart LR
 
 - `@cullit/licensed` should be published only to private registries.
 - Customer onboarding should include `.npmrc` private registry auth setup.
-- Public docs must never instruct paid users to install `@cullit/pro` directly.
+- Public docs must never instruct pro users to install `@cullit/pro` directly.
 
 ## Documentation Maintenance Policy
 
@@ -156,7 +156,7 @@ When architecture, distribution, or runtime flows change, update this file in th
 Required updates when relevant:
 
 - package topology or dependency direction changes
-- free/paid boundaries or install paths change
+- free/pro boundaries or install paths change
 - authentication or gating logic changes
 - API route behavior affecting dashboard/runtime flows changes
 - build/test pipeline changes

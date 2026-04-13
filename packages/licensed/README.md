@@ -1,12 +1,12 @@
 # @cullit/licensed
 
-Private registry package for Cullit paid tiers (Paid and Enterprise).
+Private registry package for Cullit paid tiers (Pro and Enterprise).
 
-This package preloads paid collectors/generators/publishers and then runs the CLI.
+This package preloads pro collectors/generators/publishers and then runs the CLI.
 
 ## What's Included
 
-| Feature | Free | Paid | Enterprise |
+| Feature | Free | Pro | Enterprise |
 |---------|------|------|------------|
 | AI providers (Anthropic, OpenAI, Gemini, Ollama) | ✗ | ✓ | ✓ |
 | Jira & Linear enrichment | ✗ | ✓ | ✓ |
@@ -28,7 +28,7 @@ This package preloads paid collectors/generators/publishers and then runs the CL
 | Plan | Gens/month | Projects |
 |------|-----------|----------|
 | Free | 3 | 3 |
-| Paid | 500+ (scales with seats) | 100+ |
+| Pro | 500+ (scales with seats) | 100+ |
 | Enterprise | Unlimited | Unlimited |
 
 ## Install

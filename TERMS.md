@@ -30,9 +30,9 @@ Cullit supports AI provider keys you supply (Anthropic, OpenAI, Google Gemini, O
 
 ## 5. Billing and Subscriptions
 
-Paid tiers (Paid and Enterprise) include recurring billing through Stripe.
+Paid tiers (Pro and Enterprise) include recurring billing through Stripe.
 
-- You authorize recurring charges for selected paid plans
+- You authorize recurring charges for selected Pro plans
 - Subscription changes, cancellations, and renewals are managed via Stripe/customer portal flows
 - Plan limits, seat limits, and feature access may vary by tier
 - All fees are non-refundable except as required by applicable law
@@ -40,7 +40,7 @@ Paid tiers (Paid and Enterprise) include recurring billing through Stripe.
 ## 5.1 Cancellation
 
 - You may cancel at any time from the billing portal
-- Access to paid features continues through the current billing period
+- Access to Pro features continues through the current billing period
 - Partial billing periods are not prorated or refunded
 
 ## 6. Acceptable Use

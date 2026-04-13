@@ -47,7 +47,7 @@ We take security seriously. If you discover a vulnerability, please report it re
 - **Dashboard users:** Authentication uses GitHub OAuth 2.0 (via WorkOS). Sessions are stored as HttpOnly JWT cookies
 - **GitHub App:** The Cullit GitHub App receives webhook events (release published, tag push, installation) and uses short-lived installation tokens to read repository data and publish releases. Webhook payloads are verified using HMAC-SHA256 signature validation
 - **Billing:** Subscription management uses Stripe. Full payment card data is handled by Stripe, not stored by Cullit
-- **Paid tier users:** Anonymous usage metering (generation count, project name) is sent to the Cullit metering service when `CULLIT_API_KEY` and `CULLIT_METER_URL` are configured. No commit data, code, or personally identifiable information is included. Metering is non-blocking and best-effort.
+- **Pro tier users:** Anonymous usage metering (generation count, project name) is sent to the Cullit metering service when `CULLIT_API_KEY` and `CULLIT_METER_URL` are configured. No commit data, code, or personally identifiable information is included. Metering is non-blocking and best-effort.
 - **Free users / self-hosted:** No telemetry or data collection is performed by default. If `CULLIT_LICENSE_URL` is set, the CLI will contact that endpoint to validate your license key. No code or commit data is sent — only the license key itself. If `CULLIT_LICENSE_URL` is not set, validation is performed locally by format check only.
 - Self-hosted options (Ollama) keep all data on your infrastructure
 

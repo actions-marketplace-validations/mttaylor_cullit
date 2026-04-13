@@ -1,4 +1,4 @@
-> **⚠️ ARCHIVED:** This document predates the Free/Paid/Enterprise tier consolidation (v2.6.0). The chosen approach was Option B (private npm package). See [PRICING.md](../PRICING.md) for the current model.
+> **⚠️ ARCHIVED:** This document predates the Free/Pro/Enterprise tier consolidation (v2.6.0). The chosen approach was Option B (private npm package). See [PRICING.md](../PRICING.md) for the current model.
 
 # Stricter Paid Model — Concrete Options
 

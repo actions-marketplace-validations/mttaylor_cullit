@@ -9,7 +9,7 @@ The `cullit` package on npm is intentionally limited to the free local surface:
 - stdout and file publishing
 - config, status, and tag helpers
 
-Installing from npm does not grant paid access by itself. Licensed AI providers, Jira/Linear enrichment, premium publishers, dashboard workflows, and other paid surfaces are delivered through Cullit-hosted or private licensed distributions.
+Installing from npm does not grant Pro access by itself. Licensed AI providers, Jira/Linear enrichment, premium publishers, dashboard workflows, and other Pro surfaces are delivered through Cullit-hosted or private licensed distributions.
 
 ## Install
 
@@ -46,9 +46,9 @@ cullit generate --from v1.8.0 --provider none --template customer-facing
 ## Licensing
 
 - Public npm package: free local/template workflow only
-- Paid tiers (Paid and Enterprise): delivered through the private package `@cullit/licensed`
+- Paid tiers (Pro and Enterprise): delivered through the private package `@cullit/licensed`
 - `CULLIT_API_KEY`: used by licensed hosted/private Cullit surfaces
-- Need paid access? See https://cullit.io/pricing
+- Need Pro access? See https://cullit.io/pricing
 
 ## Commands
 
@@ -106,7 +106,7 @@ cullit --version
 - `--dry-run` print to stdout without publishing
 - `--template <name>` use a named template profile from `.cullit.yml`
 
-> **Note:** Sources other than `local`, and providers other than `none`, require a paid tier via `@cullit/licensed`.
+> **Note:** Sources other than `local`, and providers other than `none`, require a Pro tier via `@cullit/licensed`.
 - `--audience <type>` tune output for `developer|end-user|executive`
 - `--tone <style>` tone controls for generated output
 - `--format <fmt>` output format
