@@ -65,6 +65,10 @@ import {
   handleRevokeTeamKey, handleRotateTeamKey,
 } from './routes/team-keys.js';
 
+// --- Magic-number constants ---
+const USAGE_ALERT_HIGH = 0.9;
+const USAGE_ALERT_MEDIUM = 0.8;
+
 // Load pro plugins if installed
 try { await import('@cullit/pro'); } catch { log.info('Pro plugins not installed — running in open-core mode'); }
 
@@ -560,7 +564,7 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
     const newCount = monthlyCount + 1;
     const pct = newCount / limits.generationsPerMonth;
     const prevPct = monthlyCount / limits.generationsPerMonth;
-    if ((pct >= 0.9 && prevPct < 0.9) || (pct >= 0.8 && prevPct < 0.8)) {
+    if ((pct >= USAGE_ALERT_HIGH && prevPct < USAGE_ALERT_HIGH) || (pct >= USAGE_ALERT_MEDIUM && prevPct < USAGE_ALERT_MEDIUM)) {
       sendUsageAlert(user.email, user.name || 'there', newCount, limits.generationsPerMonth)
         .catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to send usage alert'); });
     }
@@ -884,6 +888,178 @@ async function handleAppInstallation(req: IncomingMessage, res: ServerResponse):
   json(res, 200, { linked: true, userId: user.id });
 }
 
+// --- Wrapper handlers for inline billing / GitHub routes ---
+
+async function handleCheckoutRoute(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  const body = await readJsonBody(req, res) as { plan?: string; annual?: boolean; seats?: number } | null;
+  if (!body) return;
+  const validPlans = ['pro', 'team'] as const;
+  const plan = validPlans.includes(body.plan as typeof validPlans[number])
+    ? (body.plan as typeof validPlans[number])
+    : 'pro' as const;
+  const annual = body.annual === true;
+  const seats = typeof body.seats === 'number' ? body.seats : undefined;
+  await handleCheckout(user.id, plan, annual, json, res, seats);
+}
+
+async function handleBillingPortalRoute(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  await handleBillingPortal(user.id, json, res);
+}
+
+async function handleGetSubscriptionRoute(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  await handleGetSubscription(user.id, json, res);
+}
+
+async function handleStripeWebhookRoute(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const raw = await readBody(req);
+  await handleStripeWebhook(req, raw, json, res);
+}
+
+async function handleGitHubInstallationsRoute(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  if (!sql) { json(res, 200, { installations: [] }); return; }
+  const rows = await sql`SELECT installation_id, github_login, repos, created_at FROM github_installations WHERE user_id = ${user.id}`;
+  json(res, 200, { installations: rows });
+}
+
+async function handleGitHubDisconnectRoute(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  const body = await readJsonBody(req, res) as { installationId?: number } | null;
+  if (!body?.installationId) { json(res, 400, { error: 'installationId is required' }); return; }
+  if (!sql) { json(res, 503, { error: 'Database not configured' }); return; }
+  await sql`DELETE FROM github_installations WHERE installation_id = ${body.installationId} AND user_id = ${user.id}`;
+  json(res, 200, { disconnected: true });
+}
+
+// Changelog wrapper handlers (preserve inline slug validation)
+
+async function handleChangelogLatestRoute(req: IncomingMessage, res: ServerResponse, project: string): Promise<void> {
+  if (!/^[a-zA-Z0-9_-]{1,64}$/.test(project)) {
+    json(res, 400, { error: 'Invalid project slug' });
+    return;
+  }
+  await handleChangelogLatest(req, res, project);
+}
+
+async function handleChangelogDeleteRoute(req: IncomingMessage, res: ServerResponse, project: string, version: string): Promise<void> {
+  if (!/^[a-zA-Z0-9_-]{1,64}$/.test(project)) {
+    json(res, 400, { error: 'Invalid project slug' });
+    return;
+  }
+  await handleChangelogDelete(req, res, project, decodeURIComponent(version));
+}
+
+// --- Route table ---
+
+type Route = {
+  method: string;
+  path: string | RegExp;
+  handler: (req: IncomingMessage, res: ServerResponse, ...params: string[]) => Promise<void> | void;
+  rateLimit?: boolean;
+};
+
+const routes: Route[] = [
+  // Auth
+  { method: 'GET',    path: '/auth/login',            handler: (req, res) => handleAuthRedirect(req, res) },
+  { method: 'GET',    path: '/auth/callback',          handler: handleAuthCallback },
+  { method: 'GET',    path: '/auth/me',                handler: (req, res) => handleAuthMe(req, res, json) },
+  { method: 'PATCH',  path: '/auth/me',                handler: (req, res) => handleUpdateMe(req, res, json) },
+  { method: 'POST',   path: '/auth/logout',            handler: (req, res) => handleAuthLogout(req, res, json) },
+  { method: 'POST',   path: '/auth/rotate-key',        handler: (req, res) => handleRotateApiKey(req, res, json) },
+  { method: 'DELETE', path: '/auth/me',                handler: (req, res) => handleDeleteAccount(req, res, json) },
+
+  // License & App
+  { method: 'POST',   path: '/v1/license/validate',    handler: (req, res) => handleLicenseValidate(req, res, json) },
+  { method: 'POST',   path: '/v1/app/installation',    handler: handleAppInstallation },
+
+  // System (no rate limit)
+  { method: 'GET',    path: '/health',                 handler: handleHealth,   rateLimit: false },
+  { method: 'HEAD',   path: '/health',                 handler: handleHealth,   rateLimit: false },
+  { method: 'GET',    path: '/healthz',                handler: handleHealth,   rateLimit: false },
+  { method: 'HEAD',   path: '/healthz',                handler: handleHealth,   rateLimit: false },
+  { method: 'GET',    path: '/openapi.json',           handler: handleOpenAPI,  rateLimit: false },
+  { method: 'GET',    path: '/v1/docs',                handler: (req, res) => handleDocs(req, res) },
+  { method: 'GET',    path: '/docs',                   handler: (req, res) => handleDocs(req, res) },
+  { method: 'GET',    path: '/metrics',                handler: handleMetrics,  rateLimit: false },
+  { method: 'POST',   path: '/v1/events',              handler: handleTrackEvent },
+
+  // Generate
+  { method: 'POST',   path: '/generate',               handler: handleGenerate },
+  { method: 'POST',   path: '/v1/generate',            handler: handleGenerate },
+
+  // Changelog
+  { method: 'POST',   path: '/v1/changelog',           handler: handleChangelogPublish },
+  { method: 'GET',    path: /^\/v1\/changelog\/([a-zA-Z0-9_-]{1,64})\/latest$/, handler: (req, res, project) => handleChangelogLatestRoute(req, res, project) },
+  { method: 'GET',    path: '/v1/changelog/projects',  handler: handleChangelogListProjects },
+  { method: 'DELETE', path: /^\/v1\/changelog\/([a-zA-Z0-9_-]{1,64})\/(.+)$/, handler: (req, res, project, version) => handleChangelogDeleteRoute(req, res, project, version) },
+
+  // Billing
+  { method: 'POST',   path: '/v1/billing/checkout',     handler: handleCheckoutRoute },
+  { method: 'POST',   path: '/v1/billing/portal',       handler: handleBillingPortalRoute },
+  { method: 'GET',    path: '/v1/billing/subscription',  handler: handleGetSubscriptionRoute },
+  { method: 'POST',   path: '/v1/billing/webhook',      handler: handleStripeWebhookRoute, rateLimit: false },
+
+  // GitHub App user-facing routes
+  { method: 'GET',    path: '/v1/github/installations', handler: handleGitHubInstallationsRoute },
+  { method: 'POST',   path: '/v1/github/disconnect',    handler: handleGitHubDisconnectRoute },
+
+  // Team / Org
+  { method: 'GET',    path: '/v1/org',                  handler: handleGetOrg },
+  { method: 'POST',   path: '/v1/org',                  handler: handleCreateOrg },
+  { method: 'PATCH',  path: '/v1/org/settings',         handler: handleUpdateOrgSettings },
+  { method: 'POST',   path: '/v1/org/invite',           handler: handleOrgInvite },
+  { method: 'DELETE', path: '/v1/org/members',          handler: handleOrgRemoveMember },
+
+  // Draft workflow
+  { method: 'POST',   path: '/v1/drafts',               handler: handleCreateDraft },
+  { method: 'GET',    path: '/v1/drafts',               handler: handleListDrafts },
+  { method: 'GET',    path: /^\/v1\/drafts\/([^/]+)$/,  handler: (req, res, id) => handleGetDraft(req, res, id) },
+  { method: 'PATCH',  path: /^\/v1\/drafts\/([^/]+)$/,  handler: (req, res, id) => handleUpdateDraft(req, res, id) },
+  { method: 'DELETE', path: /^\/v1\/drafts\/([^/]+)$/,  handler: (req, res, id) => handleDeleteDraft(req, res, id) },
+  { method: 'POST',   path: /^\/v1\/drafts\/([^/]+)\/submit$/,  handler: (req, res, id) => handleDraftSubmit(req, res, id) },
+  { method: 'POST',   path: /^\/v1\/drafts\/([^/]+)\/approve$/, handler: (req, res, id) => handleDraftApprove(req, res, id) },
+  { method: 'POST',   path: /^\/v1\/drafts\/([^/]+)\/publish$/, handler: (req, res, id) => handleDraftPublish(req, res, id) },
+
+  // Project settings
+  { method: 'GET',    path: '/v1/projects/settings',    handler: handleGetProjectSettings },
+  { method: 'PUT',    path: /^\/v1\/projects\/([^/]+)\/settings$/, handler: (req, res, project) => handlePutProjectSettings(req, res, project) },
+
+  // Org invites
+  { method: 'POST',   path: '/v1/org/invites',          handler: handleCreateOrgInvite },
+  { method: 'GET',    path: '/v1/org/invites',          handler: handleListOrgInvites },
+  { method: 'DELETE', path: /^\/v1\/org\/invites\/([^/]+)$/,        handler: (req, res, id) => handleDeleteOrgInvite(req, res, id) },
+  { method: 'POST',   path: /^\/v1\/org\/invites\/([^/]+)\/accept$/, handler: (req, res, token) => handleAcceptOrgInvite(req, res, token) },
+  { method: 'PATCH',  path: /^\/v1\/org\/members\/([^/]+)$/,        handler: (req, res, id) => handleUpdateOrgMemberRole(req, res, id) },
+  { method: 'GET',    path: '/v1/org/usage',            handler: handleGetOrgUsage },
+
+  // Team API keys
+  { method: 'GET',    path: '/v1/org/keys',             handler: handleListTeamKeys },
+  { method: 'PATCH',  path: /^\/v1\/org\/keys\/([^/]+)$/,          handler: (req, res, id) => handleUpdateTeamKey(req, res, id) },
+  { method: 'POST',   path: /^\/v1\/org\/keys\/([^/]+)\/send$/,    handler: (req, res, id) => handleSendTeamKey(req, res, id) },
+  { method: 'POST',   path: /^\/v1\/org\/keys\/([^/]+)\/revoke$/,  handler: (req, res, id) => handleRevokeTeamKey(req, res, id) },
+  { method: 'POST',   path: /^\/v1\/org\/keys\/([^/]+)\/rotate$/,  handler: (req, res, id) => handleRotateTeamKey(req, res, id) },
+
+  // History & Analytics
+  { method: 'GET',    path: '/v1/history',              handler: handleGetHistory },
+  { method: 'GET',    path: '/v1/analytics/usage',      handler: handleGetAnalytics },
+
+  // Audit Log
+  { method: 'GET',    path: '/v1/audit',                handler: handleGetAuditLog },
+
+  // Project Templates
+  { method: 'GET',    path: '/v1/templates',            handler: handleListTemplates },
+  { method: 'POST',   path: '/v1/templates',            handler: handleCreateTemplate },
+  { method: 'DELETE', path: /^\/v1\/templates\/([^/]+)$/, handler: (req, res, id) => handleDeleteTemplate(req, res, id) },
+];
+
 // --- Router ---
 
 const server = createServer(async (req, res: CorsResponse) => {
@@ -913,210 +1089,25 @@ const server = createServer(async (req, res: CorsResponse) => {
   const path = url.pathname;
 
   try {
-    // --- Rate limit all non-system routes ---
-    if (path !== '/health' && path !== '/healthz' && path !== '/openapi.json' && path !== '/metrics' && path !== '/v1/billing/webhook') {
-      if (!(await checkRateLimit(req, res))) return;
-    }
+    for (const route of routes) {
+      if (req.method !== route.method) continue;
 
-    // --- Auth routes ---
-    if (path === '/auth/login' && req.method === 'GET') {
-      handleAuthRedirect(req, res);
-    } else if (path === '/auth/callback' && req.method === 'GET') {
-      await handleAuthCallback(req, res);
-    } else if (path === '/auth/me' && req.method === 'GET') {
-      await handleAuthMe(req, res, json);
-    } else if (path === '/auth/me' && req.method === 'PATCH') {
-      await handleUpdateMe(req, res, json);
-    } else if (path === '/auth/logout' && req.method === 'POST') {
-      handleAuthLogout(req, res, json);
-    } else if (path === '/auth/rotate-key' && req.method === 'POST') {
-      await handleRotateApiKey(req, res, json);
-    } else if (path === '/auth/me' && req.method === 'DELETE') {
-      await handleDeleteAccount(req, res, json);
-
-    // --- License validation ---
-    } else if (path === '/v1/license/validate' && req.method === 'POST') {
-      await handleLicenseValidate(req, res, json);
-
-    // --- GitHub App internal routes ---
-    } else if (path === '/v1/app/installation' && req.method === 'POST') {
-      await handleAppInstallation(req, res);
-
-    // --- Public / system routes ---
-    } else if ((path === '/health' || path === '/healthz') && (req.method === 'GET' || req.method === 'HEAD')) {
-      await handleHealth(req, res);
-    } else if (path === '/openapi.json' && req.method === 'GET') {
-      await handleOpenAPI(req, res);
-    } else if ((path === '/v1/docs' || path === '/docs') && req.method === 'GET') {
-      handleDocs(req, res);
-    } else if (path === '/metrics' && req.method === 'GET') {
-      handleMetrics(req, res);
-    } else if (path === '/v1/events' && req.method === 'POST') {
-      await handleTrackEvent(req, res);
-
-    // --- Authenticated routes ---
-    } else if ((path === '/generate' || path === '/v1/generate') && req.method === 'POST') {
-      await handleGenerate(req, res);
-    } else if (path === '/v1/changelog' && req.method === 'POST') {
-      await handleChangelogPublish(req, res);
-    } else if (req.method === 'GET' && path.match(/^\/v1\/changelog\/[^/]+\/latest$/)) {
-      const project = path.split('/')[3];
-      if (!/^[a-zA-Z0-9_-]{1,64}$/.test(project)) {
-        json(res, 400, { error: 'Invalid project slug' });
+      if (typeof route.path === 'string') {
+        if (path !== route.path) continue;
+        if (route.rateLimit !== false && !(await checkRateLimit(req, res))) return;
+        await route.handler(req, res as any);
         return;
       }
-      await handleChangelogLatest(req, res, project);
-    } else if (path === '/v1/changelog/projects' && req.method === 'GET') {
-      await handleChangelogListProjects(req, res);
-    } else if (req.method === 'DELETE' && path.match(/^\/v1\/changelog\/[^/]+\/[^/]+$/)) {
-      const parts = path.split('/');
-      const project = parts[3];
-      const version = decodeURIComponent(parts[4]);
-      if (!/^[a-zA-Z0-9_-]{1,64}$/.test(project)) {
-        json(res, 400, { error: 'Invalid project slug' });
-        return;
-      }
-      await handleChangelogDelete(req, res, project, version);
 
-    // --- Billing routes ---
-    } else if (path === '/v1/billing/checkout' && req.method === 'POST') {
-      const user = await resolveUser(req);
-      if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-      const body = await readJsonBody(req, res) as { plan?: string; annual?: boolean; seats?: number } | null;
-      if (!body) return;
-      const validPlans = ['pro', 'team'] as const;
-      const plan = validPlans.includes(body.plan as typeof validPlans[number])
-        ? (body.plan as typeof validPlans[number])
-        : 'pro' as const;
-      const annual = body.annual === true;
-      const seats = typeof body.seats === 'number' ? body.seats : undefined;
-      await handleCheckout(user.id, plan, annual, json, res, seats);
-    } else if (path === '/v1/billing/portal' && req.method === 'POST') {
-      const user = await resolveUser(req);
-      if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-      await handleBillingPortal(user.id, json, res);
-    } else if (path === '/v1/billing/subscription' && req.method === 'GET') {
-      const user = await resolveUser(req);
-      if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-      await handleGetSubscription(user.id, json, res);
-    } else if (path === '/v1/billing/webhook' && req.method === 'POST') {
-      const raw = await readBody(req);
-      await handleStripeWebhook(req, raw, json, res);
-
-    // --- GitHub App user-facing routes ---
-    } else if (path === '/v1/github/installations' && req.method === 'GET') {
-      const user = await resolveUser(req);
-      if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-      if (!sql) { json(res, 200, { installations: [] }); return; }
-      const rows = await sql`SELECT installation_id, github_login, repos, created_at FROM github_installations WHERE user_id = ${user.id}`;
-      json(res, 200, { installations: rows });
-    } else if (path === '/v1/github/disconnect' && req.method === 'POST') {
-      const user = await resolveUser(req);
-      if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-      const body = await readJsonBody(req, res) as { installationId?: number } | null;
-      if (!body?.installationId) { json(res, 400, { error: 'installationId is required' }); return; }
-      if (!sql) { json(res, 503, { error: 'Database not configured' }); return; }
-      await sql`DELETE FROM github_installations WHERE installation_id = ${body.installationId} AND user_id = ${user.id}`;
-      json(res, 200, { disconnected: true });
-
-    // --- Team / Org routes ---
-    } else if (path === '/v1/org' && req.method === 'GET') {
-      await handleGetOrg(req, res);
-    } else if (path === '/v1/org' && req.method === 'POST') {
-      await handleCreateOrg(req, res);
-    } else if (path === '/v1/org/settings' && req.method === 'PATCH') {
-      await handleUpdateOrgSettings(req, res);
-    } else if (path === '/v1/org/invite' && req.method === 'POST') {
-      await handleOrgInvite(req, res);
-    } else if (path === '/v1/org/members' && req.method === 'DELETE') {
-      await handleOrgRemoveMember(req, res);
-
-    // --- Draft workflow routes ---
-    } else if (path === '/v1/drafts' && req.method === 'POST') {
-      await handleCreateDraft(req, res);
-    } else if (path === '/v1/drafts' && req.method === 'GET') {
-      await handleListDrafts(req, res);
-    } else if (req.method === 'GET' && path.match(/^\/v1\/drafts\/[^/]+$/) && !path.includes('/submit') && !path.includes('/approve') && !path.includes('/publish')) {
-      const draftId = path.split('/')[3];
-      await handleGetDraft(req, res, draftId);
-    } else if (req.method === 'PATCH' && path.match(/^\/v1\/drafts\/[^/]+$/)) {
-      const draftId = path.split('/')[3];
-      await handleUpdateDraft(req, res, draftId);
-    } else if (req.method === 'DELETE' && path.match(/^\/v1\/drafts\/[^/]+$/)) {
-      const draftId = path.split('/')[3];
-      await handleDeleteDraft(req, res, draftId);
-    } else if (req.method === 'POST' && path.match(/^\/v1\/drafts\/[^/]+\/submit$/)) {
-      const draftId = path.split('/')[3];
-      await handleDraftSubmit(req, res, draftId);
-    } else if (req.method === 'POST' && path.match(/^\/v1\/drafts\/[^/]+\/approve$/)) {
-      const draftId = path.split('/')[3];
-      await handleDraftApprove(req, res, draftId);
-    } else if (req.method === 'POST' && path.match(/^\/v1\/drafts\/[^/]+\/publish$/)) {
-      const draftId = path.split('/')[3];
-      await handleDraftPublish(req, res, draftId);
-
-    // --- Project settings routes ---
-    } else if (path === '/v1/projects/settings' && req.method === 'GET') {
-      await handleGetProjectSettings(req, res);
-    } else if (req.method === 'PUT' && path.match(/^\/v1\/projects\/[^/]+\/settings$/)) {
-      const project = path.split('/')[3];
-      await handlePutProjectSettings(req, res, project);
-
-    // --- Org invite routes ---
-    } else if (path === '/v1/org/invites' && req.method === 'POST') {
-      await handleCreateOrgInvite(req, res);
-    } else if (path === '/v1/org/invites' && req.method === 'GET') {
-      await handleListOrgInvites(req, res);
-    } else if (req.method === 'DELETE' && path.match(/^\/v1\/org\/invites\/[^/]+$/)) {
-      const inviteId = path.split('/')[4];
-      await handleDeleteOrgInvite(req, res, inviteId);
-    } else if (req.method === 'POST' && path.match(/^\/v1\/org\/invites\/[^/]+\/accept$/)) {
-      const token = path.split('/')[4];
-      await handleAcceptOrgInvite(req, res, token);
-    } else if (req.method === 'PATCH' && path.match(/^\/v1\/org\/members\/[^/]+$/)) {
-      const memberId = path.split('/')[4];
-      await handleUpdateOrgMemberRole(req, res, memberId);
-    } else if (path === '/v1/org/usage' && req.method === 'GET') {
-      await handleGetOrgUsage(req, res);
-
-    // --- Team API key routes ---
-    } else if (path === '/v1/org/keys' && req.method === 'GET') {
-      await handleListTeamKeys(req, res);
-    } else if (req.method === 'PATCH' && path.match(/^\/v1\/org\/keys\/[^/]+$/)) {
-      const keyId = path.split('/')[4];
-      await handleUpdateTeamKey(req, res, keyId);
-    } else if (req.method === 'POST' && path.match(/^\/v1\/org\/keys\/[^/]+\/send$/)) {
-      const keyId = path.split('/')[4];
-      await handleSendTeamKey(req, res, keyId);
-    } else if (req.method === 'POST' && path.match(/^\/v1\/org\/keys\/[^/]+\/revoke$/)) {
-      const keyId = path.split('/')[4];
-      await handleRevokeTeamKey(req, res, keyId);
-    } else if (req.method === 'POST' && path.match(/^\/v1\/org\/keys\/[^/]+\/rotate$/)) {
-      const keyId = path.split('/')[4];
-      await handleRotateTeamKey(req, res, keyId);
-
-    // --- History & Analytics ---
-    } else if (path === '/v1/history' && req.method === 'GET') {
-      await handleGetHistory(req, res);
-    } else if (path === '/v1/analytics/usage' && req.method === 'GET') {
-      await handleGetAnalytics(req, res);
-
-    // --- Audit Log ---
-    } else if (path === '/v1/audit' && req.method === 'GET') {
-      await handleGetAuditLog(req, res);
-
-    // --- Project Templates ---
-    } else if (path === '/v1/templates' && req.method === 'GET') {
-      await handleListTemplates(req, res);
-    } else if (path === '/v1/templates' && req.method === 'POST') {
-      await handleCreateTemplate(req, res);
-    } else if (req.method === 'DELETE' && path.match(/^\/v1\/templates\/[^/]+$/)) {
-      const templateId = path.split('/')[3];
-      await handleDeleteTemplate(req, res, templateId);
-
-    } else {
-      json(res, 404, { error: 'Not found', code: ErrorCode.RESOURCE_NOT_FOUND, docs: '/openapi.json' });
+      const match = path.match(route.path);
+      if (!match) continue;
+      if (route.rateLimit !== false && !(await checkRateLimit(req, res))) return;
+      const params = match.slice(1);
+      await route.handler(req, res as any, ...params);
+      return;
     }
+
+    json(res, 404, { error: 'Not found', code: ErrorCode.RESOURCE_NOT_FOUND, docs: '/openapi.json' });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
     log.error({ err, requestId: res._requestId, path: req.url, method: req.method }, 'Unhandled error');
