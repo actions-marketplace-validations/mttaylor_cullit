@@ -1434,6 +1434,12 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
+      if (!res.ok) {
+        var errText = await res.text();
+        try { var errData = JSON.parse(errText); showToast(errData.error || errData.detail || 'Checkout failed (' + res.status + ')'); }
+        catch (pe) { showToast('Checkout failed: ' + res.status + ' ' + errText.slice(0, 120)); }
+        return;
+      }
       var data = await res.json();
       if (data.updated) {
         showToast('Plan updated to ' + capitalize(plan) + '!');
@@ -1450,7 +1456,8 @@
         showToast(data.error || 'Unable to start checkout');
       }
     } catch (e) {
-      showToast('Could not reach billing service. Check connection or contact sales@cullit.io');
+      console.error('Checkout error:', e);
+      showToast('Network error: ' + (e.message || 'Could not reach billing service'));
     }
   }
 
