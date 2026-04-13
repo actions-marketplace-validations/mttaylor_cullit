@@ -1,6 +1,6 @@
 // Shared constants across Cullit packages
 
-export const VERSION = '2.8.3';
+export const VERSION = '2.8.4';
 
 export const DEFAULT_CATEGORIES = ['features', 'fixes', 'breaking', 'improvements', 'chores'];
 
