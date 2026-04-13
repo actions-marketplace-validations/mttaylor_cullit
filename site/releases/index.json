@@ -1,5 +1,14 @@
 [
   {
+    "version": "v2.8.4",
+    "date": "2026-04-13",
+    "commits": 5,
+    "filesChanged": 15,
+    "providers": [
+      "template"
+    ]
+  },
+  {
     "version": "v2.8.3",
     "date": "2026-04-13",
     "commits": 5,
