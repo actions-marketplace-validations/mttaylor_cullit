@@ -2,7 +2,7 @@
  * Cullit License Gating
  *
  * Free tier (no key):  3 AI gens/month, all providers (BYOK), publish to stdout/file only
- * Paid tier (with key): all features, per-seat limits (100 gens/seat, 5 projects/seat)
+ * Pro tier (with key):  all features, per-seat limits (100 gens/seat, 5 projects/seat)
  * Enterprise tier:     unlimited everything
  *
  * validateLicense() performs async remote validation with caching.
@@ -10,9 +10,9 @@
  */
 
 import { fetchWithTimeout } from './fetch';
-import { PAID_MIN_SEATS } from './constants';
+import { PRO_MIN_SEATS } from './constants';
 
-export type LicenseTier = 'free' | 'paid' | 'enterprise';
+export type LicenseTier = 'free' | 'pro' | 'enterprise';
 
 export interface LicenseStatus {
   tier: LicenseTier;
@@ -64,7 +64,7 @@ export function resolveLicense(): LicenseStatus {
     return { tier: 'free', valid: false, message: 'Invalid CULLIT_API_KEY format. Expected: clt_<key>' };
   }
 
-  return { tier: 'paid', valid: true };
+  return { tier: 'pro', valid: true };
 }
 
 /**
@@ -93,20 +93,20 @@ export async function validateLicense(): Promise<LicenseStatus> {
 
   // No validation URL configured — fall back to format-only
   if (!validationUrl) {
-    return { tier: 'paid', valid: true };
+    return { tier: 'pro', valid: true };
   }
 
   // SSRF protection: only allow https (or http for localhost dev), block internal IPs
   try {
     const parsed = new URL(validationUrl);
     if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && parsed.hostname === 'localhost')) {
-      return { tier: 'paid', valid: true, message: 'CULLIT_LICENSE_URL must use https.' };
+      return { tier: 'pro', valid: true, message: 'CULLIT_LICENSE_URL must use https.' };
     }
     if (isInternalHost(parsed.hostname)) {
-      return { tier: 'paid', valid: true, message: 'CULLIT_LICENSE_URL must not point to internal addresses.' };
+      return { tier: 'pro', valid: true, message: 'CULLIT_LICENSE_URL must not point to internal addresses.' };
     }
   } catch {
-    return { tier: 'paid', valid: true, message: 'CULLIT_LICENSE_URL is not a valid URL.' };
+    return { tier: 'pro', valid: true, message: 'CULLIT_LICENSE_URL is not a valid URL.' };
   }
 
   // Remote validation
@@ -122,7 +122,7 @@ export async function validateLicense(): Promise<LicenseStatus> {
       // Map legacy tier names to new model
       const rawTier = data.tier;
       const tier: LicenseTier = rawTier === 'enterprise' ? 'enterprise'
-        : (rawTier === 'paid' || rawTier === 'pro' || rawTier === 'team') ? 'paid'
+        : (rawTier === 'pro' || rawTier === 'paid' || rawTier === 'team') ? 'pro'
         : 'free';
       const status: LicenseStatus = {
         tier,
@@ -147,7 +147,7 @@ export async function validateLicense(): Promise<LicenseStatus> {
       return cachedValidation.status;
     }
     // No cached result — fall back to free tier; connect to the internet to activate your license
-    return { tier: 'free', valid: true, message: 'License validation unavailable offline. Run while connected to activate your Paid license.' };
+    return { tier: 'free', valid: true, message: 'License validation unavailable offline. Run while connected to activate your Pro license.' };
   }
 }
 
@@ -162,11 +162,11 @@ export function isProviderAllowed(provider: string, license: LicenseStatus): boo
 
 /**
  * Check whether the current license allows the requested publisher.
- * Confluence, Notion, and Teams require Paid tier or above.
+ * Confluence, Notion, and Teams require Pro tier or above.
  */
 export function isPublisherAllowed(publisherType: string, license: LicenseStatus): boolean {
   if (TEAM_ONLY_PUBLISHERS.has(publisherType)) {
-    return (license.tier === 'paid' || license.tier === 'enterprise') && license.valid;
+    return (license.tier === 'pro' || license.tier === 'enterprise') && license.valid;
   }
   if (license.tier !== 'free' && license.valid) return true;
   return FREE_PUBLISHERS.has(publisherType);
@@ -174,28 +174,28 @@ export function isPublisherAllowed(publisherType: string, license: LicenseStatus
 
 /**
  * Check whether the current license allows enrichment (Jira/Linear).
- * Requires Paid tier or above.
+ * Requires Pro tier or above.
  */
 export function isEnrichmentAllowed(license: LicenseStatus): boolean {
-  return (license.tier === 'paid' || license.tier === 'enterprise') && license.valid;
+  return (license.tier === 'pro' || license.tier === 'enterprise') && license.valid;
 }
 
 /**
  * Check whether the current license allows audience & tone control.
- * Requires Paid tier or above.
+ * Requires Pro tier or above.
  */
 export function isAudienceToneAllowed(license: LicenseStatus): boolean {
-  return (license.tier === 'paid' || license.tier === 'enterprise') && license.valid;
+  return (license.tier === 'pro' || license.tier === 'enterprise') && license.valid;
 }
 
 /**
  * Build a human-readable upgrade message for a gated feature.
  * @param feature - The feature name to include in the message.
- * @param minTier - Optional minimum tier required (e.g. 'pro', 'team').
+ * @param minTier - Optional minimum tier required (e.g. 'pro').
  */
 export function upgradeMessage(feature: string, minTier?: string): string {
   const tierLabel = minTier === 'enterprise' ? 'an Enterprise plan'
-    : 'a Paid Cullit plan';
+    : 'a Pro Cullit plan';
   return `🔒 ${feature} requires ${tierLabel}.\n` +
          `   Upgrade at https://cullit.io/pricing\n` +
          `   Then set CULLIT_API_KEY in your environment.`;
@@ -210,9 +210,9 @@ export interface UsageLimits {
 
 const TIER_LIMITS: Record<string, UsageLimits> = {
   free: { generationsPerMonth: 3, maxProjects: 3 },
-  paid: { generationsPerMonth: 500, maxProjects: 100 },
-  // Legacy aliases so old DB values still resolve
   pro: { generationsPerMonth: 500, maxProjects: 100 },
+  // Legacy aliases so old DB values still resolve
+  paid: { generationsPerMonth: 500, maxProjects: 100 },
   team: { generationsPerMonth: 500, maxProjects: 100 },
   enterprise: { generationsPerMonth: Infinity, maxProjects: Infinity },
 };
@@ -225,12 +225,12 @@ export function getTierLimits(tier: string): UsageLimits {
 }
 
 /**
- * Get usage limits scaled by seat count for paid plans.
+ * Get usage limits scaled by seat count for pro plans.
  * Seats scale limits: 100 gens/seat, 5 projects/seat (with tier base as minimum).
  */
 export function getTeamLimits(seats: number): UsageLimits {
-  const base = TIER_LIMITS.paid;
-  if (seats <= PAID_MIN_SEATS) return base;
+  const base = TIER_LIMITS.pro;
+  if (seats <= PRO_MIN_SEATS) return base;
   return {
     generationsPerMonth: Math.max(base.generationsPerMonth, seats * 100),
     maxProjects: Math.max(base.maxProjects, seats * 5),
@@ -253,22 +253,22 @@ export type TeamFeature =
   | 'sso';
 
 const FEATURE_TIERS: Record<TeamFeature, Set<string>> = {
-  drafts:             new Set(['paid', 'enterprise']),
-  approvals:          new Set(['paid', 'enterprise']),
-  shared_history:     new Set(['paid', 'enterprise']),
-  project_templates:  new Set(['paid', 'enterprise']),
-  hosted_changelog:   new Set(['paid', 'enterprise']),
-  branded_widget:     new Set(['paid', 'enterprise']),
-  team_publishers:    new Set(['paid', 'enterprise']),
-  org_settings:       new Set(['paid', 'enterprise']),
-  audit_logs:         new Set(['paid', 'enterprise']),
-  team_analytics:     new Set(['paid', 'enterprise']),
+  drafts:             new Set(['pro', 'enterprise']),
+  approvals:          new Set(['pro', 'enterprise']),
+  shared_history:     new Set(['pro', 'enterprise']),
+  project_templates:  new Set(['pro', 'enterprise']),
+  hosted_changelog:   new Set(['pro', 'enterprise']),
+  branded_widget:     new Set(['pro', 'enterprise']),
+  team_publishers:    new Set(['pro', 'enterprise']),
+  org_settings:       new Set(['pro', 'enterprise']),
+  audit_logs:         new Set(['pro', 'enterprise']),
+  team_analytics:     new Set(['pro', 'enterprise']),
   sso:                new Set(['enterprise']),
 };
 
 /**
  * Check whether a license tier grants access to a feature.
- * Paid gets everything except SSO. Enterprise gets everything.
+ * Pro gets everything except SSO. Enterprise gets everything.
  */
 export function isFeatureAllowed(feature: TeamFeature, tier: string, valid: boolean = true): boolean {
   if (!valid) return false;
@@ -278,7 +278,7 @@ export function isFeatureAllowed(feature: TeamFeature, tier: string, valid: bool
 
 /**
  * Check whether a plan/tier grants access to a feature.
- * Enterprise gets everything. Paid gets everything except SSO.
+ * Enterprise gets everything. Pro gets everything except SSO.
  */
 export function isPlanFeatureAllowed(feature: TeamFeature, plan: string, tier: string, valid: boolean = true): boolean {
   if (!valid) return false;

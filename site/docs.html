@@ -369,11 +369,11 @@
 <div class="tip">Best results come from pairing AI generation with Jira or Linear enrichment. Richer context produces cleaner summaries, clearer categories, and fewer low-signal commit dumps.</div>
 
 <h3 id="pricing">Pricing &amp; Access</h3>
-<p>The public npm package is the free local CLI surface: local git, template generation with <code>--provider none</code>, and stdout/file output. Cullit is simplifying commercial access to <strong>Free</strong>, <strong>Paid</strong>, and <strong>Enterprise</strong>.</p>
+<p>The public npm package is the free local CLI surface: local git, template generation with <code>--provider none</code>, and stdout/file output. Cullit is simplifying commercial access to <strong>Free</strong>, <strong>Pro</strong>, and <strong>Enterprise</strong>.</p>
 
 <ul>
   <li><strong>Free</strong> &mdash; local CLI, template workflows, and a small monthly usage allowance to evaluate Cullit on a real project.</li>
-  <li><strong>Paid</strong> &mdash; seat-based access with monthly or annual billing. This is the main commercial path for AI providers, enrichment, hosted changelogs, and production workflows.</li>
+  <li><strong>Pro</strong> &mdash; seat-based access with monthly or annual billing. This is the main commercial path for AI providers, enrichment, hosted changelogs, and production workflows.</li>
   <li><strong>Enterprise</strong> &mdash; custom pricing for SSO/SAML, procurement, support, and larger deployment requirements.</li>
 </ul>
 
@@ -780,7 +780,7 @@
 <pre><code><span class="key">publish</span>:
   - <span class="key">type</span>: <span class="str">github-release</span></code></pre>
 
-<h3 id="pub-gitlab-release">GitLab Release <span style="font-size:0.7em; color:var(--accent); border:1px solid var(--accent); padding:0.1rem 0.4rem; border-radius:4px; margin-left:0.5rem;">Paid</span></h3>
+<h3 id="pub-gitlab-release">GitLab Release <span style="font-size:0.7em; color:var(--accent); border:1px solid var(--accent); padding:0.1rem 0.4rem; border-radius:4px; margin-left:0.5rem;">Pro</span></h3>
 <p>Create or update a GitLab Release via the GitLab API. Supports self-hosted GitLab instances. Requires <code>GITLAB_TOKEN</code> with <code>api</code> scope:</p>
 <pre><code><span class="key">publish</span>:
   - <span class="key">type</span>: <span class="str">gitlab-release</span></code></pre>
@@ -802,7 +802,7 @@
 <pre><code><span class="key">publish</span>:
   - <span class="key">type</span>: <span class="str">notion</span></code></pre>
 
-<h3 id="pub-changelog">Hosted Changelog <span style="font-size:0.7em; color:var(--accent); border:1px solid var(--accent); padding:0.1rem 0.4rem; border-radius:4px; margin-left:0.5rem;">Paid</span></h3>
+<h3 id="pub-changelog">Hosted Changelog <span style="font-size:0.7em; color:var(--accent); border:1px solid var(--accent); padding:0.1rem 0.4rem; border-radius:4px; margin-left:0.5rem;">Pro</span></h3>
 <p>Push release notes to Cullit&apos;s hosted changelog &mdash; a public, embeddable page that your users can visit or you can embed in your app with the widget.</p>
 <pre><code><span class="key">publish</span>:
   - <span class="key">type</span>: <span class="str">changelog</span></code></pre>
@@ -838,7 +838,7 @@ console.log(result.duration);      <span class="cmt">// pipeline duration in ms<
   <thead><tr><th>Package</th><th>Purpose</th></tr></thead>
   <tbody>
     <tr><td><code>cullit</code></td><td>Public CLI package &mdash; local/template workflow via <code>npx cullit generate --provider none</code></td></tr>
-    <tr><td><code>@cullit/licensed</code></td><td>Private registry package for paid tiers (Paid, Enterprise)</td></tr>
+    <tr><td><code>@cullit/licensed</code></td><td>Private registry package for paid tiers (Pro, Enterprise)</td></tr>
     <tr><td><code>@cullit/core</code></td><td>Core engine: pipeline, collectors, generators, publishers</td></tr>
     <tr><td><code>@cullit/config</code></td><td>Config loader: YAML parsing, env var resolution, type exports</td></tr>
   </tbody>
@@ -951,9 +951,9 @@ console.log(advisory.breakdown);       <span class="cmt">// { features: 4, fixes
 
 <p><strong>Subscription &amp; Downgrade Behavior:</strong></p>
 <ul style="margin:0.5rem 0 1rem 1.5rem;">
-  <li><strong>Upgrade:</strong> New tier limits apply immediately. Paid org plans auto-provision API keys matching the seat count.</li>
+  <li><strong>Upgrade:</strong> New tier limits apply immediately. Pro org plans auto-provision API keys matching the seat count.</li>
   <li><strong>Reducing seats:</strong> Reducing seats revokes excess team API keys. Remaining keys stay active.</li>
-  <li><strong>Downgrade (paid &rarr; free):</strong> All team API keys are revoked. The org remains but keys are deactivated.</li>
+  <li><strong>Downgrade (pro &rarr; free):</strong> All team API keys are revoked. The org remains but keys are deactivated.</li>
   <li><strong>Cancellation:</strong> Tier reverts to free. All team API keys are revoked.</li>
   <li><strong>Database required:</strong> Billing, orgs, and team features require <code>DATABASE_URL</code>. Without it, the server runs in file-backed mode (suitable for local dev only).</li>
 </ul>
@@ -1153,10 +1153,10 @@ formats, and several performance improvements.</span>
   <li><code>DELETE /v1/org/members</code> &mdash; remove a member (owner/admin only)</li>
   <li><code>GET /v1/org/usage</code> &mdash; org usage and seat snapshot</li>
 </ul>
-<p>Paid org setups currently start at 5 seats ($8/seat/mo) and include branded changelog widgets, project templates, audit logs, team analytics, and collaboration tools. Limits scale with seat count. Annual billing is available at a 15% discount.</p>
+<p>Pro org setups start at 1 seat ($9/seat/mo) and include branded changelog widgets, project templates, audit logs, team analytics, and collaboration tools. Limits scale with seat count. Annual billing is available at a 10% discount.</p>
 
 <h3 id="team-api-keys">Team API Key Management</h3>
-<p>When you subscribe to a paid org setup, API keys are automatically provisioned for each seat. Org owners and admins can manage these keys from the Billing tab in the dashboard:</p>
+<p>When you subscribe to a Pro org setup, API keys are automatically provisioned for each seat. Org owners and admins can manage these keys from the Billing tab in the dashboard:</p>
 <ul>
   <li><strong>Label</strong> &mdash; name each key (e.g. "Frontend Dev", "CI Pipeline")</li>
   <li><strong>Assign</strong> &mdash; associate a team member&rsquo;s email and name with each key</li>
@@ -1175,7 +1175,7 @@ formats, and several performance improvements.</span>
 <p>Team members use their assigned key with <code>CULLIT_API_KEY=clt_their_key</code>. Usage from team keys is tracked under the org owner&rsquo;s account for billing purposes.</p>
 
 <h3 id="team-drafts">Release Draft Workflow</h3>
-<p>Paid org setups unlock collaborative release drafting and approvals:</p>
+<p>Pro org setups unlock collaborative release drafting and approvals:</p>
 <ul>
   <li><code>POST /v1/drafts</code> &mdash; create a draft from generated output</li>
   <li><code>GET /v1/drafts</code> &mdash; list drafts with status filter and pagination</li>

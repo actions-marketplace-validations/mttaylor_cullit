@@ -159,9 +159,9 @@ const PLAN_DETAILS: Record<string, { label: string; features: string[] }> = {
     ],
   },
   team: {
-    label: 'Team ($8/seat/mo)',
+    label: 'Team ($9/seat/mo)',
     features: [
-      'Dynamic seats (5 minimum)',
+      'Dynamic seats (1+ seats)',
       'All Pro features',
       'Team management dashboard',
       'GitLab & Bitbucket',

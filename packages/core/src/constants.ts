@@ -1,6 +1,6 @@
 // Shared constants across Cullit packages
 
-export const VERSION = '2.7.0';
+export const VERSION = '2.8.0';
 
 export const DEFAULT_CATEGORIES = ['features', 'fixes', 'breaking', 'improvements', 'chores'];
 
@@ -22,10 +22,15 @@ export const TONES = ['professional', 'casual', 'terse', 'edgy', 'hype', 'snarky
 export const SOURCE_TYPES = ['local', 'jira', 'linear', 'gitlab', 'bitbucket', 'multi-repo'] as const;
 
 // Tier names — single source of truth for subscription tiers
-export const TIERS = ['free', 'paid', 'enterprise'] as const;
-export const PAID_TIERS = ['paid', 'enterprise'] as const;
+export const TIERS = ['free', 'pro', 'enterprise'] as const;
+export const PAID_TIERS = ['pro', 'enterprise'] as const;
 
-// Seat-based pricing ($8/seat/month, 1+ seats)
-export const PAID_SEAT_PRICE = 8;          // $8/month per seat
-export const PAID_MIN_SEATS = 1;           // no minimum — single-seat is fine
-export const PAID_ANNUAL_DISCOUNT = 0.15;  // 15% annual discount
+// Seat-based pricing ($9/seat/month, 1+ seats)
+export const PRO_SEAT_PRICE = 9;            // $9/month per seat
+export const PRO_MIN_SEATS = 1;             // no minimum — single-seat is fine
+export const PRO_ANNUAL_DISCOUNT = 0.10;    // 10% annual discount
+
+// Legacy aliases (remove once all consumers are migrated)
+export const PAID_SEAT_PRICE = PRO_SEAT_PRICE;
+export const PAID_MIN_SEATS = PRO_MIN_SEATS;
+export const PAID_ANNUAL_DISCOUNT = PRO_ANNUAL_DISCOUNT;
