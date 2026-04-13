@@ -51,6 +51,20 @@ describe('loadConfig', () => {
     }
   });
 
+  it('accepts direct file paths ending in .yaml', () => {
+    const dir = join(tmpdir(), 'cullit-config-test4-' + Date.now());
+    mkdirSync(dir, { recursive: true });
+    const configPath = join(dir, 'custom.yaml');
+    writeFileSync(configPath, 'ai:\n  provider: gemini\n', 'utf-8');
+
+    try {
+      const config = loadConfig(configPath);
+      expect(config.ai.provider).toBe('gemini');
+    } finally {
+      unlinkSync(configPath);
+    }
+  });
+
   it('parses valid YAML config correctly', () => {
     const dir = join(tmpdir(), 'cullit-config-test3-' + Date.now());
     mkdirSync(dir, { recursive: true });

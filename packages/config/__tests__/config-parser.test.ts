@@ -293,6 +293,364 @@ repos:
   });
 });
 
+describe('parseSimpleYaml edge cases', () => {
+  it('parses double-quoted string values', () => {
+    withConfigFile(`
+ai:
+  provider: "openai"
+  model: "gpt-4o"
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.ai.provider).toBe('openai');
+      expect(config.ai.model).toBe('gpt-4o');
+    });
+  });
+
+  it('parses single-quoted string values', () => {
+    withConfigFile(`
+ai:
+  provider: 'anthropic'
+  model: 'claude-3'
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.ai.provider).toBe('anthropic');
+      expect(config.ai.model).toBe('claude-3');
+    });
+  });
+
+  it('parses boolean true and false values', () => {
+    withConfigFile(`
+template:
+  includeContributors: true
+  includeMetadata: false
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.template?.includeContributors).toBe(true);
+      expect(config.template?.includeMetadata).toBe(false);
+    });
+  });
+
+  it('parses null values', () => {
+    withConfigFile(`
+ai:
+  provider: anthropic
+  model: null
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.ai.model).toBeNull();
+    });
+  });
+
+  it('strips inline comments from values', () => {
+    withConfigFile(`
+ai:
+  provider: openai # use openai
+  audience: developer # target devs
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.ai.provider).toBe('openai');
+      expect(config.ai.audience).toBe('developer');
+    });
+  });
+
+  it('handles empty config file', () => {
+    withConfigFile('', (dir) => {
+      const config = loadConfig(dir);
+      expect(config.ai.provider).toBe('anthropic');
+      expect(config.source.type).toBe('local');
+    });
+  });
+
+  it('handles config file with only comments', () => {
+    withConfigFile(`# This is a comment-only config
+# No actual settings here
+# Just comments
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.ai.provider).toBe('anthropic');
+      expect(config.source.type).toBe('local');
+    });
+  });
+
+  it('handles very long string values', () => {
+    const longValue = 'a'.repeat(10000);
+    withConfigFile(`
+ai:
+  provider: ${longValue}
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.ai.provider).toBe(longValue);
+    });
+  });
+
+  it('handles unicode content in values', () => {
+    withConfigFile(`
+ai:
+  provider: anthropic
+  audience: 开发者
+  tone: プロフェッショナル
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.ai.audience).toBe('开发者');
+      expect(config.ai.tone).toBe('プロフェッショナル');
+    });
+  });
+
+  it('handles values containing colons (e.g. URLs)', () => {
+    withConfigFile(`
+jira:
+  domain: https://mycompany.atlassian.net:8080
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.jira?.domain).toBe('https://mycompany.atlassian.net:8080');
+    });
+  });
+
+  it('handles empty lines between sections', () => {
+    withConfigFile(`
+ai:
+  provider: openai
+
+source:
+  type: local
+
+publish:
+  - type: stdout
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.ai.provider).toBe('openai');
+      expect(config.source.type).toBe('local');
+      expect(config.publish).toHaveLength(1);
+    });
+  });
+
+  it('parses list-style (- item) array values', () => {
+    withConfigFile(`
+ai:
+  provider: anthropic
+  categories:
+    - features
+    - fixes
+    - breaking
+    - improvements
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.ai.categories).toEqual(['features', 'fixes', 'breaking', 'improvements']);
+    });
+  });
+
+  it('parses top-level key with inline value', () => {
+    withConfigFile(`
+ai:
+  provider: anthropic
+source:
+  type: local
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.ai.provider).toBe('anthropic');
+      expect(config.source.type).toBe('local');
+    });
+  });
+
+  it('nested key without value creates empty object', () => {
+    withConfigFile(`
+ai:
+  provider: anthropic
+template:
+  default: customer-facing
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.template?.default).toBe('customer-facing');
+    });
+  });
+});
+
+describe('env var resolution - extended', () => {
+  it('resolves ${VAR} brace syntax', () => {
+    const key = `CULLIT_BRACE_${Date.now()}`;
+    process.env[key] = 'brace-value';
+
+    withConfigFile(`
+jira:
+  apiToken: \${${key}}
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.jira?.apiToken).toBe('brace-value');
+    });
+
+    delete process.env[key];
+  });
+
+  it('resolves GITHUB_ prefixed env vars', () => {
+    const key = `GITHUB_TOKEN_TEST_${Date.now()}`;
+    process.env[key] = 'gh-token-value';
+
+    withConfigFile(`
+source:
+  type: github
+  owner: $${key}
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.source.owner).toBe('gh-token-value');
+    });
+
+    delete process.env[key];
+  });
+
+  it('resolves JIRA_ prefixed env vars', () => {
+    const key = `JIRA_API_TOKEN_TEST_${Date.now()}`;
+    process.env[key] = 'jira-token';
+
+    withConfigFile(`
+jira:
+  apiToken: $${key}
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.jira?.apiToken).toBe('jira-token');
+    });
+
+    delete process.env[key];
+  });
+
+  it('resolves LINEAR_ prefixed env vars', () => {
+    const key = `LINEAR_API_KEY_TEST_${Date.now()}`;
+    process.env[key] = 'linear-key';
+
+    withConfigFile(`
+linear:
+  apiKey: $${key}
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.linear?.apiKey).toBe('linear-key');
+    });
+
+    delete process.env[key];
+  });
+
+  it('resolves OPENAI_ and ANTHROPIC_ prefixed env vars', () => {
+    const openaiKey = `OPENAI_KEY_TEST_${Date.now()}`;
+    const anthropicKey = `ANTHROPIC_KEY_TEST_${Date.now()}`;
+    process.env[openaiKey] = 'openai-key';
+    process.env[anthropicKey] = 'anthropic-key';
+
+    withConfigFile(`
+ai:
+  provider: openai
+  apiKey: $${openaiKey}
+  model: $${anthropicKey}
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.ai.apiKey).toBe('openai-key');
+      expect(config.ai.model).toBe('anthropic-key');
+    });
+
+    delete process.env[openaiKey];
+    delete process.env[anthropicKey];
+  });
+
+  it('resolves GITLAB_ and BITBUCKET_ prefixed env vars', () => {
+    const gitlabKey = `GITLAB_TOKEN_TEST_${Date.now()}`;
+    const bbKey = `BITBUCKET_TOKEN_TEST_${Date.now()}`;
+    process.env[gitlabKey] = 'gl-token';
+    process.env[bbKey] = 'bb-token';
+
+    withConfigFile(`
+gitlab:
+  domain: $${gitlabKey}
+  projectId: "42"
+bitbucket:
+  workspace: $${bbKey}
+  repoSlug: my-repo
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.gitlab?.domain).toBe('gl-token');
+      expect(config.bitbucket?.workspace).toBe('bb-token');
+    });
+
+    delete process.env[gitlabKey];
+    delete process.env[bbKey];
+  });
+
+  it('resolves SLACK_, CONFLUENCE_, and NOTION_ prefixed env vars', () => {
+    const slackKey = `SLACK_WEBHOOK_${Date.now()}`;
+    const confKey = `CONFLUENCE_TOKEN_${Date.now()}`;
+    const notionKey = `NOTION_TOKEN_${Date.now()}`;
+    process.env[slackKey] = 'slack-url';
+    process.env[confKey] = 'conf-token';
+    process.env[notionKey] = 'notion-token';
+
+    withConfigFile(`
+publish:
+  - type: slack
+    webhookUrl: $${slackKey}
+confluence:
+  domain: $${confKey}
+  spaceKey: ENG
+notion:
+  databaseId: $${notionKey}
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.publish[0].webhookUrl).toBe('slack-url');
+      expect(config.confluence?.domain).toBe('conf-token');
+      expect(config.notion?.databaseId).toBe('notion-token');
+    });
+
+    delete process.env[slackKey];
+    delete process.env[confKey];
+    delete process.env[notionKey];
+  });
+
+  it('does not resolve non-whitelisted env vars', () => {
+    process.env['HOME_LEAK_TEST'] = 'should-not-resolve';
+    process.env['DATABASE_URL_TEST'] = 'should-not-resolve';
+    process.env['AWS_SECRET_TEST'] = 'should-not-resolve';
+
+    withConfigFile(`
+ai:
+  provider: $HOME_LEAK_TEST
+  model: $DATABASE_URL_TEST
+  audience: $AWS_SECRET_TEST
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.ai.provider).toBe('$HOME_LEAK_TEST');
+      expect(config.ai.model).toBe('$DATABASE_URL_TEST');
+      expect(config.ai.audience).toBe('$AWS_SECRET_TEST');
+    });
+
+    delete process.env['HOME_LEAK_TEST'];
+    delete process.env['DATABASE_URL_TEST'];
+    delete process.env['AWS_SECRET_TEST'];
+  });
+
+  it('keeps original $REF for unset safe-prefix env vars', () => {
+    const key = 'CULLIT_MISSING_VAR_XXXX_9999';
+    delete process.env[key]; // ensure unset
+
+    withConfigFile(`
+ai:
+  model: $${key}
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.ai.model).toBe(`$${key}`);
+    });
+  });
+
+  it('resolves env vars in array items', () => {
+    const key = `CULLIT_ARR_${Date.now()}`;
+    process.env[key] = 'resolved-arr-val';
+
+    withConfigFile(`
+publish:
+  - type: $${key}
+`, (dir) => {
+      const config = loadConfig(dir);
+      expect(config.publish[0].type).toBe('resolved-arr-val');
+    });
+
+    delete process.env[key];
+  });
+});
+
 describe('config security', () => {
   it('resolves env vars with safe prefixes (CULLIT_, GITHUB_, JIRA_, etc.)', () => {
     const key = `CULLIT_SAFE_${Date.now()}`;
@@ -345,6 +703,16 @@ ai:
   it('rejects __proto__ as a config key (prototype pollution)', () => {
     expect(() => {
       withConfigFile(`__proto__:
+  polluted: true
+`, (dir) => {
+        loadConfig(dir);
+      });
+    }).toThrow(/reserved key/);
+  });
+
+  it('rejects prototype as a config key', () => {
+    expect(() => {
+      withConfigFile(`prototype:
   polluted: true
 `, (dir) => {
         loadConfig(dir);
