@@ -2,21 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const site = window.CullitSite;
   site?.initMobileNav();
 
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        entry.target.style.opacity = '1';
-        entry.target.style.transform = 'translateY(0)';
-      }
-    });
-  }, { threshold: 0.1 });
-
-  document.querySelectorAll('.feature-card, .step, .integration-chip').forEach((element) => {
-    element.style.opacity = '0';
-    element.style.transform = 'translateY(20px)';
-    element.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-    observer.observe(element);
-  });
+  site?.initScrollReveal('.feature-card, .step, .integration-chip');
 
   const ctaFree = document.getElementById('ctaFree');
   const ctaPricing = document.getElementById('ctaPricing');

@@ -12,35 +12,23 @@
     return text ? text.charAt(0).toUpperCase() + text.slice(1) : '';
   }
 
-  // --- API helpers (use CullitSite.getApiUrl() if available, else fallback) ---
+  // --- API helpers (delegate to CullitSite) ---
 
-  function isPrivateIpv4(hostname) {
-    return /^10\./.test(hostname)
-      || /^192\.168\./.test(hostname)
-      || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname);
-  }
-
-  function isLocalContext() {
-    return location.hostname === 'localhost' || location.hostname === '127.0.0.1' || isPrivateIpv4(location.hostname);
-  }
+  var isLocalContext = window.CullitSite.isLocalContext;
 
   function defaultApiUrl() {
-    if (isLocalContext()) return 'http://localhost:3000';
-    return 'https://api.cullit.io';
+    return window.CullitSite.getApiUrl();
   }
 
-  function apiUrl() {
+  var apiUrl = function () {
     var input = document.getElementById('apiUrl').value.trim();
     if (input) {
       var normalized = input.replace(/\/+$/, '');
       try { localStorage.setItem('cullit_api_url', normalized); } catch (e) {}
       return normalized;
     }
-    var saved = localStorage.getItem('cullit_api_url');
-    if (isLocalContext() && saved && /api\.cullit\.io/i.test(saved)) return 'http://localhost:3000';
-    if (saved) return saved.replace(/\/+$/, '');
-    return defaultApiUrl();
-  }
+    return CullitSite.getApiUrl();
+  };
 
   function apiFetch(path, opts) {
     opts = opts || {};
@@ -342,32 +330,9 @@
     });
   }
 
-  function simpleMarkdown(md) {
-    var html = escapeHtml(md);
-    html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-    html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
-    html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
-    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-    html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
-    html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
-    html = html.replace(/\n\n/g, '</p><p>');
-    html = '<p>' + html + '</p>';
-    html = html.replace(/<p>\s*<(h[123]|ul)/g, '<$1');
-    html = html.replace(/<\/(h[123]|ul)>\s*<\/p>/g, '</$1>');
-    return html;
-  }
-
-  function escapeHtml(text) {
-    var div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
-  function escapeAttr(text) {
-    return escapeHtml(text).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
-  }
+  var escapeHtml = window.CullitSite.escapeHtml;
+  var escapeAttr = function(text) { return escapeHtml(text).replace(/'/g, '&#39;').replace(/"/g, '&quot;'); };
+  var simpleMarkdown = window.CullitSite.markdownToHtml;
 
   // --- Dashboard Tabs ---
 
@@ -1690,19 +1655,7 @@
       checkAuth();
     });
 
-    // Hamburger nav toggle
-    var hamburger = document.getElementById('hamburger');
-    var navLinks = document.getElementById('navLinks');
-    hamburger.addEventListener('click', function () {
-      hamburger.classList.toggle('open');
-      navLinks.classList.toggle('open');
-    });
-    navLinks.querySelectorAll('a').forEach(function (link) {
-      link.addEventListener('click', function () {
-        hamburger.classList.remove('open');
-        navLinks.classList.remove('open');
-      });
-    });
+    CullitSite.initMobileNav();
 
     // --- Event delegation for all static dashboard handlers ---
     document.addEventListener('click', function (e) {

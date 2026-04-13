@@ -8,9 +8,7 @@
   var releasesData = [];
 
   // --- Hamburger ---
-  document.getElementById('hamburger').addEventListener('click', function () {
-    document.getElementById('navLinks').classList.toggle('open');
-  });
+  if (window.CullitSite) window.CullitSite.initMobileNav();
 
   // --- Provider switching ---
   providerBar.addEventListener('click', function (e) {
@@ -22,24 +20,7 @@
     renderReleases();
   });
 
-  // --- Simple markdown → HTML ---
-  function md2html(md) {
-    if (!md) return '<p style="color:var(--text-dim)"><em>Not yet generated for this provider.</em></p>';
-    return md
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/`([^`]+)`/g, '<code>$1</code>')
-      .replace(/^\* (.+)$/gm, '<li>$1</li>')
-      .replace(/^- (.+)$/gm, '<li>$1</li>')
-      .replace(/(<li>.*<\/li>\n?)+/g, function (m) { return '<ul>' + m + '</ul>'; })
-      .replace(/^---$/gm, '<hr>')
-      .replace(/\n{2,}/g, '</p><p>')
-      .replace(/^(?!<[hulo]|<hr)(.*\S.*)$/gm, '<p>$1</p>')
-      .replace(/<p><\/p>/g, '');
-  }
+  var md2html = window.CullitSite.markdownToHtml;
 
   // --- Render ---
   function renderReleases() {

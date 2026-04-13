@@ -139,13 +139,59 @@
     }
   }
 
+  function escapeHtml(text) {
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function markdownToHtml(md) {
+    if (!md) return '<p style="color:var(--text-dim)"><em>No content available.</em></p>';
+    var html = escapeHtml(md);
+    html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+    html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+    html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+    html = html.replace(/^\* (.+)$/gm, '<li>$1</li>');
+    html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+    html = html.replace(/(<li>.*<\/li>\n?)+/g, function (m) { return '<ul>' + m + '</ul>'; });
+    html = html.replace(/^---$/gm, '<hr>');
+    html = html.replace(/\n{2,}/g, '</p><p>');
+    html = html.replace(/^(?!<[hulo]|<hr)(.*\S.*)$/gm, '<p>$1</p>');
+    html = html.replace(/<p><\/p>/g, '');
+    return html;
+  }
+
+  function initScrollReveal(selector) {
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll(selector).forEach(function (el) {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(20px)';
+      el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+      observer.observe(el);
+    });
+  }
+
   window.CullitSite = {
+    escapeHtml,
     getApiUrl,
     initClipboardCopies,
     initCookieConsent,
     initLegalNavToggle,
     initMobileNav,
+    initScrollReveal,
     isLocalContext,
+    markdownToHtml,
     registerServiceWorker,
     trackEvent,
   };

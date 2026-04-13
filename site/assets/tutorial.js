@@ -30,35 +30,10 @@
   }
 
   // Smooth reveal on scroll
-  var observer = new IntersectionObserver(function (entries) {
-    entries.forEach(function (entry) {
-      if (entry.isIntersecting) {
-        entry.target.style.opacity = '1';
-        entry.target.style.transform = 'translateY(0)';
-      }
-    });
-  }, { threshold: 0.1 });
-
-  document.querySelectorAll('.tutorial-step, .flow-node, .callout').forEach(function (el) {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(20px)';
-    el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-    observer.observe(el);
-  });
+  if (window.CullitSite) window.CullitSite.initScrollReveal('.tutorial-step, .flow-node, .callout');
 
   // Hamburger nav toggle
-  var hamburger = document.getElementById('hamburger');
-  var navLinks = document.getElementById('navLinks');
-  hamburger.addEventListener('click', function () {
-    hamburger.classList.toggle('open');
-    navLinks.classList.toggle('open');
-  });
-  navLinks.querySelectorAll('a').forEach(function (a) {
-    a.addEventListener('click', function () {
-      hamburger.classList.remove('open');
-      navLinks.classList.remove('open');
-    });
-  });
+  if (window.CullitSite) window.CullitSite.initMobileNav();
 
   // Event delegation: copy buttons [data-copy-code]
   document.addEventListener('click', function (e) {

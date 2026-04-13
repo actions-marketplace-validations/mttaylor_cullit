@@ -29,11 +29,7 @@
   }
 
   // --- Render ---
-  function escapeHtml(text) {
-    var div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
+  var escapeHtml = window.CullitSite.escapeHtml;
 
   function badgeClass(category) {
     var cat = (category || 'chores').toLowerCase();
@@ -124,9 +120,5 @@
   loadReleases();
 
   // --- Hamburger ---
-  var hamburger = document.getElementById('hamburger');
-  var navLinks = document.getElementById('navLinks');
-  if (hamburger && navLinks) {
-    hamburger.addEventListener('click', function () { navLinks.classList.toggle('open'); });
-  }
+  if (window.CullitSite) window.CullitSite.initMobileNav();
 })();
