@@ -48,7 +48,7 @@ Cullit is a pnpm monorepo with a staged pipeline architecture:
 
 **Pipeline stages:**
 1. **Collect** — Gather commits between two refs (tags, SHAs, branches)
-2. **Enrich** — Cross-reference commits with Jira/Linear tickets (optional, Pro)
+2. **Enrich** — Cross-reference commits with Jira/Linear tickets (paid feature)
 3. **Generate** — Produce structured release notes via AI or the built-in template engine
 4. **Publish** — Output to stdout, file, Slack, Discord, GitHub Release, etc.
 

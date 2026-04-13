@@ -40,7 +40,7 @@ flowchart TD
 ```mermaid
 flowchart LR
   PublicUser["Free user"]
-  PaidUser["Paid user: Pro Team Enterprise"]
+  PaidUser["Paid / Enterprise user"]
   NpmPublic["npm public registry"]
   NpmPrivate["private npm registry"]
   PublicPkg["cullit"]
@@ -103,11 +103,8 @@ flowchart TD
 ### Tier Expectations
 
 - Free: local source + template provider + stdout/file publishers. 3 AI gens/month (BYOK).
-- Pro: AI providers + premium enrichment + premium publishers + GitHub App. 500 gens/month, 100 projects.
-- Team ($8/seat/mo, min 5 seats): Pro capabilities plus team features (drafts, team publishers, org management, team API keys). Base: 2,000 gens/month, 250 projects. Scales with seat count.
-- Enterprise: All Team 25 capabilities plus SSO/SAML, self-hosted/on-prem, unlimited gens/projects.
-
-All paid plans offer annual billing at 15% discount.
+- Paid ($8/seat/mo): All features — AI providers, enrichment, publishers, dashboard, orgs, drafts, team keys. 500+ gens/month, 100+ projects. Scales with seat count. Annual billing at $6.80/seat/mo.
+- Enterprise: All Paid capabilities plus SSO/SAML, dedicated support, on-prem, unlimited gens/projects.
 
 ## API and Dashboard Flow
 

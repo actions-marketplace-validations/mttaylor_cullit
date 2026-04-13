@@ -1134,7 +1134,7 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Audience <span class="pro-badge" id="audienceProBadge" style="display:none;font-size:0.65rem;background:var(--accent);color:#000;padding:0.1rem 0.35rem;border-radius:3px;margin-left:0.3rem">Pro+</span></label>
+            <label>Audience <span class="pro-badge" id="audienceProBadge" style="display:none;font-size:0.65rem;background:var(--accent);color:#000;padding:0.1rem 0.35rem;border-radius:3px;margin-left:0.3rem">Paid</span></label>
             <select id="audience">
               <option value="developer">Developer</option>
               <option value="end-user">End User</option>
@@ -1142,7 +1142,7 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Tone <span class="pro-badge" id="toneProBadge" style="display:none;font-size:0.65rem;background:var(--accent);color:#000;padding:0.1rem 0.35rem;border-radius:3px;margin-left:0.3rem">Pro+</span></label>
+            <label>Tone <span class="pro-badge" id="toneProBadge" style="display:none;font-size:0.65rem;background:var(--accent);color:#000;padding:0.1rem 0.35rem;border-radius:3px;margin-left:0.3rem">Paid</span></label>
             <select id="tone">
               <option value="professional">Professional</option>
               <option value="casual">Casual</option>
@@ -1537,34 +1537,22 @@
             <li>AI generation (BYOK)</li>
           </ul>
         </div>
-        <div class="billing-plan-option" id="planPro">
-          <div class="plan-tier">Pro</div>
-          <div class="plan-price">$9<span>/mo</span></div>
-          <ul class="plan-features">
-            <li>500 generations / month</li>
-            <li>100 projects</li>
-            <li>AI-powered notes</li>
-            <li>Jira &amp; Linear enrichment</li>
-            <li>Audience &amp; tone control</li>
-          </ul>
-          <button class="btn-small plan-upgrade-btn" data-action="upgrade-pro">Upgrade</button>
-          <span style="display:block;font-size:0.7rem;color:var(--accent);margin-top:0.4rem;opacity:0.85">Save 15% with annual billing</span>
-        </div>
-        <div class="billing-plan-option" id="planTeam">
-          <div class="plan-tier">Team</div>
+        <div class="billing-plan-option" id="planPaid">
+          <div class="plan-tier">Paid</div>
           <div class="plan-price">$8<span>/seat/mo</span></div>
           <ul class="plan-features">
-            <li>Min 5 seats</li>
-            <li>2,000 generations / month</li>
-            <li>250 projects</li>
-            <li>All team features + analytics</li>
+            <li>500+ generations / month</li>
+            <li>100+ projects</li>
+            <li>AI-powered notes</li>
+            <li>Jira &amp; Linear enrichment</li>
+            <li>Drafts, orgs &amp; team keys</li>
           </ul>
           <div style="margin-top:0.6rem;text-align:center">
             <label style="font-size:0.75rem;color:var(--text-dim)">Seats</label>
-            <input type="number" id="dashTeamSeats" min="5" max="100" value="5" style="width:4rem;margin:0 0.4rem;background:var(--card-bg);color:var(--text);border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:0.2rem 0.4rem;font-size:0.75rem;text-align:center">
-            <span id="dashTeamTotal" style="font-size:0.8rem;font-weight:600;color:var(--accent)">$40/mo</span>
+            <input type="number" id="dashPaidSeats" min="1" max="100" value="1" style="width:4rem;margin:0 0.4rem;background:var(--card-bg);color:var(--text);border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:0.2rem 0.4rem;font-size:0.75rem;text-align:center">
+            <span id="dashPaidTotal" style="font-size:0.8rem;font-weight:600;color:var(--accent)">$8/mo</span>
           </div>
-          <button class="btn-small plan-upgrade-btn" style="margin-top:0.5rem" data-action="upgrade-team">Upgrade</button>
+          <button class="btn-small plan-upgrade-btn" style="margin-top:0.5rem" data-action="upgrade-paid">Upgrade</button>
           <div id="manageSeatsSection" style="display:none;margin-top:0.5rem;text-align:center">
             <div style="display:flex;align-items:center;justify-content:center;gap:0.3rem;margin-bottom:0.4rem">
               <button class="btn-small" id="seatDecrBtn" data-action="seat-decr" style="width:2rem;height:2rem;padding:0;font-size:1rem;line-height:1">−</button>
@@ -1573,6 +1561,7 @@
             <button class="btn-small" id="updateSeatsBtn" data-action="update-seats" style="display:none;margin-top:0.3rem;width:100%;background:var(--teal);color:#fff">Update Seats</button>
             <p id="prorationNote" style="display:none;font-size:0.7rem;color:var(--text-dim);margin-top:0.3rem;line-height:1.4">Changes are prorated — you'll be charged or credited for the remainder of your billing cycle.</p>
           </div>
+          <span style="display:block;font-size:0.7rem;color:var(--accent);margin-top:0.4rem;opacity:0.85">Save 15% with annual billing</span>
         </div>
         <div class="billing-plan-option" id="planEnterprise">
           <div class="plan-tier">Enterprise</div>
@@ -1618,19 +1607,9 @@
               <strong>Community Support</strong> &mdash; Browse the <a href="https://cullit.io/docs.html" style="color:var(--teal)">documentation</a> or email <a href="mailto:support@cullit.io" style="color:var(--teal)">support@cullit.io</a>.
             </p>
           </div>
-          <div id="supportBasic" style="display:none">
+          <div id="supportPaid" style="display:none">
             <p style="font-size:0.85rem;color:var(--text-dim);line-height:1.6">
-              <strong>Email Support</strong> &mdash; Reach us at <a href="mailto:support@cullit.io" style="color:var(--teal)">support@cullit.io</a>. Response within 3 business days.
-            </p>
-          </div>
-          <div id="supportPro" style="display:none">
-            <p style="font-size:0.85rem;color:var(--text-dim);line-height:1.6">
-              <strong>Email Support</strong> &mdash; Reach us at <a href="mailto:support@cullit.io" style="color:var(--teal)">support@cullit.io</a>. Response within 2 business days.
-            </p>
-          </div>
-          <div id="supportTeam" style="display:none">
-            <p style="font-size:0.85rem;color:var(--text-dim);line-height:1.6">
-              <strong>Priority Support</strong> &mdash; Your team's issues are triaged first. Reach us at <a href="mailto:priority@cullit.io" style="color:var(--teal)">priority@cullit.io</a>. Response within 1 business day.
+              <strong>Priority Support</strong> &mdash; Reach us at <a href="mailto:support@cullit.io" style="color:var(--teal)">support@cullit.io</a>. Response within 1 business day.
             </p>
           </div>
           <div id="supportEnterprise" style="display:none">

@@ -2,7 +2,7 @@
   "name": "@cullit/licensed",
   "version": "2.7.0",
   "type": "module",
-  "description": "Private registry distribution for Cullit paid tiers (Pro, Team, Enterprise).",
+  "description": "Private registry distribution for Cullit paid tiers (Paid and Enterprise).",
   "license": "UNLICENSED",
   "author": "Cullit <matt@cullit.io>",
   "repository": {

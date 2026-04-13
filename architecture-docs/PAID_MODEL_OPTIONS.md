@@ -1,3 +1,5 @@
+> **⚠️ ARCHIVED:** This document predates the Free/Paid/Enterprise tier consolidation (v2.6.0). The chosen approach was Option B (private npm package). See [PRICING.md](../PRICING.md) for the current model.
+
 # Stricter Paid Model — Concrete Options
 
 This document outlines three concrete approaches for making the Cullit distribution model harder to accidentally misuse, and the trade-offs of each.

@@ -1,38 +1,34 @@
 # @cullit/licensed
 
-Private registry package for paid Cullit tiers (Pro, Team, Enterprise).
+Private registry package for Cullit paid tiers (Paid and Enterprise).
 
 This package preloads paid collectors/generators/publishers and then runs the CLI.
 
 ## What's Included
 
-| Feature | Pro | Team | Enterprise |
-|---------|-----|------|------------|
-| AI providers (Anthropic, OpenAI, Gemini, Ollama) | ✓ | ✓ | ✓ |
-| Jira & Linear enrichment | ✓ | ✓ | ✓ |
-| Slack, Discord, Teams, Confluence, Notion publishers | ✓ | ✓ | ✓ |
-| GitHub Release & GitLab Release publishers | ✓ | ✓ | ✓ |
-| Hosted changelog & embeddable widget | ✓ | ✓ | ✓ |
-| GitLab & Bitbucket collectors | ✓ | ✓ | ✓ |
-| Dashboard & generation history | ✓ | ✓ | ✓ |
-| GitHub App (auto-generate on release) | ✓ | ✓ | ✓ |
-| Drafts & approvals | | ✓ | ✓ |
-| Organization management & team API keys | | ✓ | ✓ |
-| Branded widget (Team 25) | | ✓* | ✓ |
-| Project templates (Team 25) | | ✓* | ✓ |
-| Audit logs (Team 25) | | ✓* | ✓ |
-| SSO / SAML | | | ✓ |
-
-\* Team 25 plan only
+| Feature | Free | Paid | Enterprise |
+|---------|------|------|------------|
+| AI providers (Anthropic, OpenAI, Gemini, Ollama) | ✗ | ✓ | ✓ |
+| Jira & Linear enrichment | ✗ | ✓ | ✓ |
+| Slack, Discord, Teams, Confluence, Notion publishers | ✗ | ✓ | ✓ |
+| GitHub Release & GitLab Release publishers | ✗ | ✓ | ✓ |
+| Hosted changelog & embeddable widget | ✗ | ✓ | ✓ |
+| GitLab & Bitbucket collectors | ✗ | ✓ | ✓ |
+| Dashboard & generation history | ✗ | ✓ | ✓ |
+| GitHub App (auto-generate on release) | ✗ | ✓ | ✓ |
+| Drafts & approvals | ✗ | ✓ | ✓ |
+| Organization management & team API keys | ✗ | ✓ | ✓ |
+| Branded widget | ✗ | ✓ | ✓ |
+| Project templates | ✗ | ✓ | ✓ |
+| Audit logs | ✗ | ✓ | ✓ |
+| SSO / SAML | ✗ | ✗ | ✓ |
 
 ## Generation Limits
 
 | Plan | Gens/month | Projects |
 |------|-----------|----------|
-| Pro | 500 | 100 |
-| Team 5 | 2,000 | 250 |
-| Team 10 | 4,000 | 350 |
-| Team 25 | 5,000 | 500 |
+| Free | 3 | 3 |
+| Paid | 500+ (scales with seats) | 100+ |
 | Enterprise | Unlimited | Unlimited |
 
 ## Install
