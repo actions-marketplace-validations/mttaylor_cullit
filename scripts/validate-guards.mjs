@@ -24,17 +24,17 @@ const terms = readText('TERMS.md');
 const appDockerfile = readText('packages/app/Dockerfile');
 
 // Pricing page checks are regex-based to avoid failures on harmless whitespace/layout shifts.
-if (!hasPattern(pricing, /<div\s+class="plan-name">\s*Pro\s*<\/div>/i)) {
-  fail('pricing page is missing Pro plan heading');
+if (!hasPattern(pricing, /<div\s+class="plan-name">\s*Free\s*<\/div>/i)) {
+  fail('pricing page is missing Free plan heading');
 }
-if (!hasPattern(pricing, /\$9\s*<span\s+class="period">\s*\/\s*mo\s*<\/span>/i)) {
-  fail('pricing page is missing Pro price formatting');
+if (!hasPattern(pricing, /<div\s+class="plan-name">\s*Paid\s*<\/div>/i)) {
+  fail('pricing page is missing Paid plan heading');
 }
-if (!hasPattern(pricing, /<div\s+class="plan-name">\s*Team\s*<\/div>/i)) {
-  fail('pricing page is missing Team plan heading');
+if (!hasPattern(pricing, /\$8\.00\s*<span\s+class="period">/i)) {
+  fail('pricing page is missing Paid price formatting');
 }
-if (!hasPattern(pricing, /\$44\.99\s*<span\s+class="period">\s*\/\s*mo\s*<\/span>/i)) {
-  fail('pricing page is missing Team price formatting');
+if (!hasPattern(pricing, /<div\s+class="plan-name">\s*Enterprise\s*<\/div>/i)) {
+  fail('pricing page is missing Enterprise plan heading');
 }
 
 
