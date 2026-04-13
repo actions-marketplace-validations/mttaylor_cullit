@@ -1,7 +1,7 @@
 /**
  * Draft workflow route handlers.
  *
- * Paid-tier feature: create, review, approve, and publish release note drafts.
+ * Pro-tier feature: create, review, approve, and publish release note drafts.
  */
 
 import type { IncomingMessage, ServerResponse } from 'http';
@@ -36,7 +36,7 @@ export async function handleCreateDraft(req: IncomingMessage, res: ServerRespons
 
   const tier = getEffectiveTier(user);
   if (!isPaidTier(tier)) {
-    json(res, 403, { error: 'Release drafts require a Paid plan', upgrade: 'https://cullit.io/pricing' }); return;
+    json(res, 403, { error: 'Release drafts require a Pro plan', upgrade: 'https://cullit.io/pricing' }); return;
   }
 
   const raw = await readBody(req);
@@ -79,10 +79,10 @@ export async function handleListDrafts(req: IncomingMessage, res: ServerResponse
 
   const tier = getEffectiveTier(user);
   if (!isPaidTier(tier)) {
-    json(res, 403, { error: 'Release drafts require a Paid plan', upgrade: 'https://cullit.io/pricing' }); return;
+    json(res, 403, { error: 'Release drafts require a Pro plan', upgrade: 'https://cullit.io/pricing' }); return;
   }
 
-  const url = new URL(req.url || '/', `http://localhost:${PORT}`);
+  const url = new URL(req.url|| '/', `http://localhost:${PORT}`);
   const rawLimit = parseInt(url.searchParams.get('limit') || '20', 10);
   const limit = Math.max(1, Math.min(isNaN(rawLimit) ? 20 : rawLimit, 100));
   const rawOffset = parseInt(url.searchParams.get('offset') || '0', 10);

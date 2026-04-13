@@ -49,7 +49,7 @@ export async function handleCreateOrg(req: IncomingMessage, res: ServerResponse)
 
   const tier = getEffectiveTier(user);
   if (!isPaidTier(tier)) {
-    json(res, 403, { error: 'Paid plan required to create an organization' }); return;
+    json(res, 403, { error: 'Pro plan required to create an organization' }); return;
   }
 
   const body = await readJsonBody(req, res);

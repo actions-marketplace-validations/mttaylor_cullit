@@ -39,7 +39,7 @@ describe('Gate — resolveLicense', () => {
   it('returns paid tier for valid key format', () => {
     process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
     const license = resolveLicense();
-    expect(license.tier).toBe('paid');
+    expect(license.tier).toBe('pro');
     expect(license.valid).toBe(true);
   });
 
@@ -54,15 +54,15 @@ describe('Gate — resolveLicense', () => {
   it('trims whitespace from key', () => {
     process.env.CULLIT_API_KEY = '  clt_' + 'b'.repeat(32) + '  ';
     const license = resolveLicense();
-    expect(license.tier).toBe('paid');
+    expect(license.tier).toBe('pro');
     expect(license.valid).toBe(true);
   });
 });
 
 describe('Gate — access checks', () => {
   const freeLicense = { tier: 'free' as const, valid: true };
-  const paidLicense = { tier: 'paid' as const, valid: true };
-  const invalidPaid = { tier: 'paid' as const, valid: false };
+  const paidLicense = { tier: 'pro' as const, valid: true };
+  const invalidPaid = { tier: 'pro' as const, valid: false };
 
   it('allows "none" provider on free tier', () => {
     expect(isProviderAllowed('none', freeLicense)).toBe(true);
@@ -127,8 +127,8 @@ describe('Gate — access checks', () => {
   });
 
   it('generates tier-specific upgrade message for paid', () => {
-    const msg = upgradeMessage('Jira enrichment', 'paid');
-    expect(msg).toContain('Paid Cullit plan');
+    const msg = upgradeMessage('Jira enrichment', 'pro');
+    expect(msg).toContain('Pro Cullit plan');
   });
 
   it('generates tier-specific upgrade message for enterprise', () => {
@@ -145,7 +145,7 @@ describe('Gate — getTierLimits', () => {
   });
 
   it('returns paid tier limits', () => {
-    const limits = getTierLimits('paid');
+    const limits = getTierLimits('pro');
     expect(limits.generationsPerMonth).toBe(500);
     expect(limits.maxProjects).toBe(100);
   });
@@ -195,7 +195,7 @@ describe('Gate — isFeatureAllowed', () => {
   });
 
   it('allows drafts on paid tier', () => {
-    expect(isFeatureAllowed('drafts', 'paid')).toBe(true);
+    expect(isFeatureAllowed('drafts', 'pro')).toBe(true);
   });
 
   it('allows drafts on enterprise tier', () => {
@@ -203,7 +203,7 @@ describe('Gate — isFeatureAllowed', () => {
   });
 
   it('allows audit_logs on paid tier', () => {
-    expect(isFeatureAllowed('audit_logs', 'paid')).toBe(true);
+    expect(isFeatureAllowed('audit_logs', 'pro')).toBe(true);
   });
 
   it('allows audit_logs on enterprise tier', () => {
@@ -211,7 +211,7 @@ describe('Gate — isFeatureAllowed', () => {
   });
 
   it('blocks sso on paid tier (enterprise-only)', () => {
-    expect(isFeatureAllowed('sso', 'paid')).toBe(false);
+    expect(isFeatureAllowed('sso', 'pro')).toBe(false);
   });
 
   it('allows sso on enterprise tier', () => {
@@ -219,11 +219,11 @@ describe('Gate — isFeatureAllowed', () => {
   });
 
   it('allows approvals on paid tier', () => {
-    expect(isFeatureAllowed('approvals', 'paid')).toBe(true);
+    expect(isFeatureAllowed('approvals', 'pro')).toBe(true);
   });
 
   it('allows project_templates on paid tier', () => {
-    expect(isFeatureAllowed('project_templates', 'paid')).toBe(true);
+    expect(isFeatureAllowed('project_templates', 'pro')).toBe(true);
   });
 
   it('allows project_templates on enterprise tier', () => {
@@ -231,7 +231,7 @@ describe('Gate — isFeatureAllowed', () => {
   });
 
   it('allows team_analytics on paid tier', () => {
-    expect(isFeatureAllowed('team_analytics', 'paid')).toBe(true);
+    expect(isFeatureAllowed('team_analytics', 'pro')).toBe(true);
   });
 
   it('allows team_analytics on enterprise tier', () => {
@@ -251,7 +251,7 @@ describe('Gate — getFeatureGating', () => {
   });
 
   it('returns all features enabled for paid tier (except sso)', () => {
-    const gating = getFeatureGating('paid');
+    const gating = getFeatureGating('pro');
     expect(gating.drafts).toBe(true);
     expect(gating.approvals).toBe(true);
     expect(gating.shared_history).toBe(true);
@@ -277,7 +277,7 @@ describe('Gate — getFeatureGating', () => {
 
 describe('Gate — isPlanFeatureAllowed', () => {
   it('allows branded_widget for paid plan', () => {
-    expect(isPlanFeatureAllowed('branded_widget', 'paid', 'paid')).toBe(true);
+    expect(isPlanFeatureAllowed('branded_widget', 'pro', 'pro')).toBe(true);
   });
 
   it('allows branded_widget for enterprise', () => {
@@ -289,7 +289,7 @@ describe('Gate — isPlanFeatureAllowed', () => {
   });
 
   it('allows team_analytics for paid plan', () => {
-    expect(isPlanFeatureAllowed('team_analytics', 'paid', 'paid')).toBe(true);
+    expect(isPlanFeatureAllowed('team_analytics', 'pro', 'pro')).toBe(true);
   });
 
   it('allows team_analytics for enterprise', () => {
@@ -303,13 +303,13 @@ describe('Gate — isPlanFeatureAllowed', () => {
   });
 
   it('falls back to tier check for non-plan-gated features', () => {
-    expect(isPlanFeatureAllowed('drafts', 'paid', 'paid')).toBe(true);
+    expect(isPlanFeatureAllowed('drafts', 'pro', 'pro')).toBe(true);
   });
 });
 
 describe('Gate — getFeatureGating with plan', () => {
   it('returns plan-aware gating for paid', () => {
-    const gating = getFeatureGating('paid', 'paid');
+    const gating = getFeatureGating('pro', 'pro');
     expect(gating.branded_widget).toBe(true);
     expect(gating.project_templates).toBe(true);
     expect(gating.audit_logs).toBe(true);
@@ -318,7 +318,7 @@ describe('Gate — getFeatureGating with plan', () => {
   });
 
   it('without plan param still shows all paid features', () => {
-    const gating = getFeatureGating('paid');
+    const gating = getFeatureGating('pro');
     expect(gating.branded_widget).toBe(true);
     expect(gating.drafts).toBe(true);
     expect(gating.team_analytics).toBe(true);
@@ -364,7 +364,7 @@ describe('Gate — validateLicense', () => {
     process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
     delete process.env.CULLIT_LICENSE_URL;
     const result = await validateLicense();
-    expect(result.tier).toBe('paid');
+    expect(result.tier).toBe('pro');
     expect(result.valid).toBe(true);
   });
 
@@ -372,7 +372,7 @@ describe('Gate — validateLicense', () => {
     process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
     process.env.CULLIT_LICENSE_URL = 'https://192.168.1.1/validate';
     const result = await validateLicense();
-    expect(result.tier).toBe('paid');
+    expect(result.tier).toBe('pro');
     expect(result.message).toContain('internal');
   });
 
@@ -380,7 +380,7 @@ describe('Gate — validateLicense', () => {
     process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
     process.env.CULLIT_LICENSE_URL = 'https://[::1]/validate';
     const result = await validateLicense();
-    expect(result.tier).toBe('paid');
+    expect(result.tier).toBe('pro');
     expect(result.message).toContain('internal');
   });
 
@@ -388,7 +388,7 @@ describe('Gate — validateLicense', () => {
     process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
     process.env.CULLIT_LICENSE_URL = 'https://[::ffff:127.0.0.1]/validate';
     const result = await validateLicense();
-    expect(result.tier).toBe('paid');
+    expect(result.tier).toBe('pro');
     expect(result.message).toContain('internal');
   });
 
@@ -396,7 +396,7 @@ describe('Gate — validateLicense', () => {
     process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
     process.env.CULLIT_LICENSE_URL = 'http://example.com/validate';
     const result = await validateLicense();
-    expect(result.tier).toBe('paid');
+    expect(result.tier).toBe('pro');
     expect(result.message).toContain('https');
   });
 

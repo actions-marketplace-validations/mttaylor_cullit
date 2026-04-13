@@ -89,7 +89,7 @@ export interface User {
   email: string;
   avatarUrl: string;
   githubUsername: string | null;
-  tier: 'free' | 'paid' | 'enterprise';
+  tier: 'free' | 'pro' | 'enterprise';
   orgId: string | null;  // null = no org membership
   role: 'owner' | 'admin' | 'member';
   apiKey: string;        // clt_<random> generated on first login
@@ -104,7 +104,7 @@ export interface Org {
   name: string;
   slug: string;         // URL-safe name
   ownerId: string;      // User.id
-  tier: 'paid' | 'enterprise';
+  tier: 'pro' | 'enterprise';
   maxSeats: number;
   requireSeparateApprover: boolean;
   members: OrgMember[];
@@ -358,7 +358,7 @@ export async function getUserByApiKey(apiKey: string): Promise<User | null> {
 /** Map legacy DB tier values (pro, team, basic) to current model */
 function normalizeTier(raw: string): User['tier'] {
   if (raw === 'enterprise') return 'enterprise';
-  if (raw === 'paid' || raw === 'pro' || raw === 'team') return 'paid';
+  if (raw === 'paid' || raw === 'pro' || raw === 'team') return 'pro';
   return 'free';
 }
 
@@ -380,8 +380,8 @@ export function getEffectiveTier(user: User): User['tier'] {
 }
 
 /**
- * Resolve the user's plan (e.g. 'paid') from subscription.
- * Paid plans use per-seat pricing with dynamic seat count.
+ * Resolve the user's plan (e.g. 'pro') from subscription.
+ * Pro plans use per-seat pricing with dynamic seat count.
  * Falls back to deriving from org membership for in-memory mode.
  */
 export async function getUserPlan(user: User): Promise<string> {
@@ -389,10 +389,10 @@ export async function getUserPlan(user: User): Promise<string> {
     const sub = await dbGetSubscription(user.id);
     if (sub) return sub.plan;
   }
-  // Fallback: any org membership implies the paid plan
+  // Fallback: any org membership implies the pro plan
   if (user.orgId) {
     const org = await getOrg(user.orgId);
-    if (org) return 'paid';
+    if (org) return 'pro';
   }
   return user.tier;
 }
@@ -488,7 +488,7 @@ export async function getOrgBySlug(slug: string): Promise<Org | null> {
 function dbOrgToOrg(row: DbOrg): Org {
   return {
     id: row.id, name: row.name, slug: row.slug,
-    ownerId: row.owner_id, tier: (row.tier === 'enterprise' ? 'enterprise' : 'paid') as Org['tier'],
+    ownerId: row.owner_id, tier: (row.tier === 'enterprise' ? 'enterprise' : 'pro') as Org['tier'],
     maxSeats: row.max_seats, requireSeparateApprover: row.require_separate_approver,
     members: [], createdAt: row.created_at.toISOString(),
   };
@@ -504,12 +504,12 @@ export async function createOrg(name: string, owner: User, maxSeats = 10): Promi
     let row: ReturnType<typeof dbCreateOrg> extends Promise<infer T> ? T : never;
     for (let attempt = 0; attempt < 3; attempt++) {
       const trySlug = attempt === 0 ? slug : `${slug.slice(0, 40)}-${randomBytes(4).toString('hex')}`;
-      row = await dbCreateOrg({ id, name, slug: trySlug, ownerId: owner.id, tier: 'paid', maxSeats });
+      row = await dbCreateOrg({ id, name, slug: trySlug, ownerId: owner.id, tier: 'pro', maxSeats });
       if (row) { break; }
     }
     if (!row!) throw new Error('Failed to create org — slug conflict after retries');
     await dbAddOrgMember(id, owner.id, 'owner');
-    await dbUpdateUserOrg(owner.id, id, 'owner', 'paid');
+    await dbUpdateUserOrg(owner.id, id, 'owner', 'pro');
     return dbOrgToOrg(row!);
   }
 
@@ -520,7 +520,7 @@ export async function createOrg(name: string, owner: User, maxSeats = 10): Promi
   }
 
   const org: Org = {
-    id, name, slug, ownerId: owner.id, tier: 'paid', maxSeats,
+    id, name, slug, ownerId: owner.id, tier: 'pro', maxSeats,
     requireSeparateApprover: false,
     members: [{ userId: owner.id, role: 'owner', joinedAt: now }],
     createdAt: now,
@@ -529,7 +529,7 @@ export async function createOrg(name: string, owner: User, maxSeats = 10): Promi
   store.orgs[id] = org;
   owner.orgId = id;
   owner.role = 'owner';
-  owner.tier = 'paid';
+  owner.tier = 'pro';
   saveAuthStore();
   return org;
 }

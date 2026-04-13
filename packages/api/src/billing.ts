@@ -2,7 +2,7 @@
  * Cullit Stripe Billing
  *
  * Handles:
- *   - Checkout session creation (single Paid plan with per-seat pricing)
+ *   - Checkout session creation (single Pro plan with per-seat pricing)
  *   - Webhook processing (subscription lifecycle)
  *   - Customer portal sessions
  *   - Tier sync (Stripe status → user tier in DB)
@@ -10,15 +10,15 @@
  *
  * Simplified pricing model:
  *   Free       → $0 (3 gens/month)
- *   Paid       → $8/seat/mo, 1+ seats (all features, per-seat limits)
+ *   Pro        → $9/seat/mo, 1+ seats (all features, per-seat limits)
  *   Enterprise → custom
  *
  * Environment Variables:
  *   STRIPE_SECRET_KEY              — Stripe API secret key (sk_test_... or sk_live_...)
  *   STRIPE_WEBHOOK_SECRET          — Webhook endpoint signing secret (whsec_...)
- *   STRIPE_PAID_PRICE_ID           — Price ID for Paid plan ($8/seat/mo)
- *   STRIPE_PAID_ANNUAL_PRICE_ID    — Price ID for Paid annual plan ($81.60/seat/yr)
- *   (Legacy fallbacks: STRIPE_PRO_PRICE_ID, STRIPE_TEAM_PRICE_ID, etc.)
+ *   STRIPE_PRO_PRICE_ID            — Price ID for Pro plan ($9/seat/mo)
+ *   STRIPE_PRO_ANNUAL_PRICE_ID     — Price ID for Pro annual plan ($97.20/seat/yr)
+ *   (Legacy fallbacks: STRIPE_PAID_PRICE_ID, STRIPE_TEAM_PRICE_ID, etc.)
  *   CULLIT_BASE_URL                — Public base URL for success/cancel redirects
  *
  * NOTE: We use Stripe's REST API directly instead of the SDK
@@ -46,11 +46,11 @@ import { PAID_MIN_SEATS } from '@cullit/core';
 const STRIPE_SECRET_KEY = process.env['STRIPE_SECRET_KEY'] || '';
 const STRIPE_WEBHOOK_SECRET = process.env['STRIPE_WEBHOOK_SECRET'] || '';
 // Price IDs — new names with legacy fallbacks
-const STRIPE_PAID_PRICE_ID = process.env['STRIPE_PAID_PRICE_ID'] || process.env['STRIPE_TEAM_PRICE_ID'] || process.env['STRIPE_PRO_PRICE_ID'] || '';
-const STRIPE_PAID_ANNUAL_PRICE_ID = process.env['STRIPE_PAID_ANNUAL_PRICE_ID'] || process.env['STRIPE_TEAM_ANNUAL_PRICE_ID'] || process.env['STRIPE_PRO_ANNUAL_PRICE_ID'] || '';
+const STRIPE_PRO_PRICE_ID = process.env['STRIPE_PRO_PRICE_ID'] || process.env['STRIPE_PAID_PRICE_ID'] || process.env['STRIPE_TEAM_PRICE_ID'] || '';
+const STRIPE_PRO_ANNUAL_PRICE_ID = process.env['STRIPE_PRO_ANNUAL_PRICE_ID'] || process.env['STRIPE_PAID_ANNUAL_PRICE_ID'] || process.env['STRIPE_TEAM_ANNUAL_PRICE_ID'] || '';
 
 if (STRIPE_SECRET_KEY) {
-  if (!STRIPE_PAID_PRICE_ID) log.warn('STRIPE_PAID_PRICE_ID not set — Paid checkout will fail');
+  if (!STRIPE_PRO_PRICE_ID) log.warn('STRIPE_PRO_PRICE_ID not set — Pro checkout will fail');
 }
 const BASE_URL = process.env['CULLIT_BASE_URL'] || 'http://localhost:3000';
 const DASHBOARD_URL = process.env['CULLIT_DASHBOARD_URL'] || BASE_URL;
@@ -230,19 +230,17 @@ export function verifyWebhookSignature(payload: string, sigHeader: string): bool
 // --- Plan mapping (exported for testing) ---
 
 export function priceToPlan(priceId: string): string {
-  if (priceId === STRIPE_PAID_PRICE_ID || priceId === STRIPE_PAID_ANNUAL_PRICE_ID) return 'paid';
+  if (priceId === STRIPE_PRO_PRICE_ID || priceId === STRIPE_PRO_ANNUAL_PRICE_ID) return 'pro';
   return 'free';
 }
 
 export function planToTier(plan: string): string {
-  if (plan === 'paid' || plan === 'pro' || plan === 'team') return 'paid';
+  if (plan === 'paid' || plan === 'pro' || plan === 'team') return 'pro';
   return 'free';
 }
 
 export function planToSeats(plan: string, subscriptionQuantity?: number): number {
-  if (plan === 'paid' || plan === 'team') return subscriptionQuantity || PAID_MIN_SEATS;
-  // Legacy: pro was single-seat
-  if (plan === 'pro') return subscriptionQuantity || 1;
+  if (plan === 'paid' || plan === 'pro' || plan === 'team') return subscriptionQuantity || PAID_MIN_SEATS;
   return 0;
 }
 
@@ -272,7 +270,7 @@ function buildSubscriptionRecord(
 
 export async function handleCheckout(
   userId: string,
-  plan: 'paid' | 'pro' | 'team',
+  plan: 'pro' | 'paid' | 'team',
   annual: boolean,
   jsonFn: (res: ServerResponse, status: number, body: unknown) => void,
   res: ServerResponse,
@@ -292,10 +290,10 @@ export async function handleCheckout(
   // Seat count: 1+ seats, max 100
   const seatCount = Math.max(PAID_MIN_SEATS, Math.min(seats || PAID_MIN_SEATS, 100));
 
-  // Resolve price ID — single paid plan
-  const priceId = (annual && STRIPE_PAID_ANNUAL_PRICE_ID) ? STRIPE_PAID_ANNUAL_PRICE_ID : STRIPE_PAID_PRICE_ID;
+  // Resolve price ID — single pro plan
+  const priceId = (annual && STRIPE_PRO_ANNUAL_PRICE_ID) ? STRIPE_PRO_ANNUAL_PRICE_ID : STRIPE_PRO_PRICE_ID;
   if (!priceId) {
-    jsonFn(res, 503, { error: 'Price not configured for paid plan' });
+    jsonFn(res, 503, { error: 'Price not configured for pro plan' });
     return;
   }
 

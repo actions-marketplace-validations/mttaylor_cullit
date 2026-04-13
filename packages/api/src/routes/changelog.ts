@@ -134,7 +134,7 @@ export async function handleChangelogPublish(req: IncomingMessage, res: ServerRe
   // Per-user project limit based on tier
   const effectiveTier = getEffectiveTier(user);
   let tierLimits = getTierLimits(effectiveTier);
-  if (effectiveTier === 'team' && user.orgId) {
+  if (effectiveTier === 'pro' && user.orgId) {
     const org = await getOrg(user.orgId);
     if (org) tierLimits = getTeamLimits(org.maxSeats);
   }

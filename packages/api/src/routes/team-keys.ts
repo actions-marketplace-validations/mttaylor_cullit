@@ -23,7 +23,7 @@ import { randomBytes } from 'crypto';
 export async function handleListTeamKeys(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const user = await requireAuth(resolveUser, req, res as CorsResponse);
   if (!user) return;
-  if (!user.orgId) { json(res as CorsResponse, 403, { error: 'No organization. Subscribe to a Paid plan first.' }); return; }
+  if (!user.orgId) { json(res as CorsResponse, 403, { error: 'No organization. Subscribe to a Pro plan first.' }); return; }
 
   const keys = await dbGetTeamApiKeys(user.orgId);
 
