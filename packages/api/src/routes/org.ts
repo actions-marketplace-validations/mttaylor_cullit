@@ -6,7 +6,7 @@
 
 import type { IncomingMessage, ServerResponse } from 'http';
 import { randomBytes } from 'crypto';
-import { json, readBody, readJsonBody, isTeamTier, requireAuth, requireOrgAdmin, type CorsResponse } from '../utils.js';
+import { json, readBody, readJsonBody, isPaidTier, requireAuth, requireOrgAdmin, type CorsResponse } from '../utils.js';
 import { log } from '../logger.js';
 import {
   resolveUser, getUser, getOrg, createOrg, addOrgMember, removeOrgMember, getOrgMembers,
@@ -20,7 +20,7 @@ import {
   dbAcceptOrgInvite, dbUpdateOrgMemberRole, dbUpdateOrgSettings,
 } from '../db.js';
 import { sendOrgInvite } from '../email.js';
-import { getTeamLimits, TEAM_MIN_SEATS } from '@cullit/core';
+import { getTeamLimits, PAID_MIN_SEATS } from '@cullit/core';
 
 // --- Org CRUD ---
 
@@ -48,7 +48,7 @@ export async function handleCreateOrg(req: IncomingMessage, res: ServerResponse)
   if (user.orgId) { json(res, 409, { error: 'Already a member of an organization' }); return; }
 
   const tier = getEffectiveTier(user);
-  if (!isTeamTier(tier)) {
+  if (!isPaidTier(tier)) {
     json(res, 403, { error: 'Paid plan required to create an organization' }); return;
   }
 
@@ -272,7 +272,7 @@ export async function handleGetOrgUsage(req: IncomingMessage, res: ServerRespons
   const monthlyCount = await getMonthlyGenerationCount(user.orgId);
   const members = await getOrgMembers(user.orgId);
   const org = await getOrg(user.orgId);
-  const limits = getTeamLimits(org?.maxSeats ?? TEAM_MIN_SEATS);
+  const limits = getTeamLimits(org?.maxSeats ?? PAID_MIN_SEATS);
 
   json(res, 200, {
     usage: {

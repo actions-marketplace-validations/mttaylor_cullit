@@ -41,7 +41,7 @@ import { getEffectiveTier, getUser, generateApiKey, createOrg, updateOrgMaxSeats
 import { isRecord } from './utils.js';
 import { log } from './logger.js';
 import { sendPaymentFailed, sendSubscriptionConfirmed } from './email.js';
-import { TEAM_MIN_SEATS, PAID_MIN_SEATS } from '@cullit/core';
+import { PAID_MIN_SEATS } from '@cullit/core';
 
 const STRIPE_SECRET_KEY = process.env['STRIPE_SECRET_KEY'] || '';
 const STRIPE_WEBHOOK_SECRET = process.env['STRIPE_WEBHOOK_SECRET'] || '';
@@ -578,7 +578,7 @@ async function handleCheckoutComplete(sessionPayload: unknown): Promise<void> {
   const sub = await stripeRequest<StripeSubscription>(`/subscriptions/${subscriptionId}`, 'GET');
 
   const seats = plan === 'team'
-    ? Math.max(TEAM_MIN_SEATS, parseInt(session.metadata?.seats || String(TEAM_MIN_SEATS), 10))
+    ? Math.max(PAID_MIN_SEATS, parseInt(session.metadata?.seats || String(PAID_MIN_SEATS), 10))
     : 0;
 
   await dbUpsertSubscription(buildSubscriptionRecord(subscriptionId, userId, customerId, plan, sub));
@@ -668,7 +668,7 @@ async function handleSubscriptionUpdate(subscriptionPayload: unknown): Promise<v
   if (!user) return;
 
   const priceId = subscription.items?.data?.[0]?.price?.id || '';
-  const quantity = subscription.items?.data?.[0]?.quantity || TEAM_MIN_SEATS;
+  const quantity = subscription.items?.data?.[0]?.quantity || PAID_MIN_SEATS;
   const plan = priceToPlan(priceId);
   const tier = planToTier(plan);
 

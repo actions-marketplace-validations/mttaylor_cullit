@@ -24,14 +24,8 @@ export const SOURCE_TYPES = ['local', 'jira', 'linear', 'gitlab', 'bitbucket', '
 // Tier names — single source of truth for subscription tiers
 export const TIERS = ['free', 'paid', 'enterprise'] as const;
 export const PAID_TIERS = ['paid', 'enterprise'] as const;
-// Legacy aliases — kept so existing imports don't break during migration
-export const TEAM_TIERS = PAID_TIERS;
 
 // Seat-based pricing ($8/seat/month, 1+ seats)
 export const PAID_SEAT_PRICE = 8;          // $8/month per seat
 export const PAID_MIN_SEATS = 1;           // no minimum — single-seat is fine
 export const PAID_ANNUAL_DISCOUNT = 0.15;  // 15% annual discount
-// Legacy aliases
-export const TEAM_SEAT_PRICE = PAID_SEAT_PRICE;
-export const TEAM_MIN_SEATS = PAID_MIN_SEATS;
-export const TEAM_ANNUAL_DISCOUNT = PAID_ANNUAL_DISCOUNT;

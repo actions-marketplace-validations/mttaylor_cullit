@@ -139,9 +139,6 @@ export function isPaidTier(tier: string): boolean {
   return (PAID_TIERS as readonly string[]).includes(tier);
 }
 
-/** @deprecated Use isPaidTier instead */
-export const isTeamTier = isPaidTier;
-
 export function timingSafeCompare(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   return timingSafeEqual(Buffer.from(a), Buffer.from(b));

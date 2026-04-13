@@ -44,7 +44,7 @@ import { log } from './logger.js';
 import { metrics, handleMetrics } from './metrics.js';
 import { sendUsageAlert } from './email.js';
 import {
-  json, readBody, readJsonBody, parseJsonObject, isRecord, isTeamTier, ErrorCode,
+  json, readBody, readJsonBody, parseJsonObject, isRecord, isPaidTier, ErrorCode,
   PORT, SECURITY_HEADERS, generateRequestId, timingSafeCompare,
   type CorsResponse, type JsonObject,
 } from './utils.js';
@@ -644,7 +644,7 @@ async function handleGetProjectSettings(req: IncomingMessage, res: ServerRespons
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
 
   const tier = getEffectiveTier(user);
-  if (!isTeamTier(tier)) {
+  if (!isPaidTier(tier)) {
     json(res, 403, { error: 'Saved project settings require a Paid plan', upgrade: 'https://cullit.io/pricing' }); return;
   }
 
@@ -674,7 +674,7 @@ async function handlePutProjectSettings(req: IncomingMessage, res: ServerRespons
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
 
   const tier = getEffectiveTier(user);
-  if (!isTeamTier(tier)) {
+  if (!isPaidTier(tier)) {
     json(res, 403, { error: 'Saved project settings require a Paid plan', upgrade: 'https://cullit.io/pricing' }); return;
   }
 

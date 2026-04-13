@@ -6,7 +6,7 @@
 
 import type { IncomingMessage, ServerResponse } from 'http';
 import { randomBytes } from 'crypto';
-import { json, readBody, parseJsonObject, isTeamTier, PORT } from '../utils.js';
+import { json, readBody, parseJsonObject, isPaidTier, PORT } from '../utils.js';
 import { log } from '../logger.js';
 import { resolveUser, getEffectiveTier, getOrg } from '../auth.js';
 import {
@@ -35,7 +35,7 @@ export async function handleCreateDraft(req: IncomingMessage, res: ServerRespons
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
 
   const tier = getEffectiveTier(user);
-  if (!isTeamTier(tier)) {
+  if (!isPaidTier(tier)) {
     json(res, 403, { error: 'Release drafts require a Paid plan', upgrade: 'https://cullit.io/pricing' }); return;
   }
 
@@ -78,7 +78,7 @@ export async function handleListDrafts(req: IncomingMessage, res: ServerResponse
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
 
   const tier = getEffectiveTier(user);
-  if (!isTeamTier(tier)) {
+  if (!isPaidTier(tier)) {
     json(res, 403, { error: 'Release drafts require a Paid plan', upgrade: 'https://cullit.io/pricing' }); return;
   }
 
