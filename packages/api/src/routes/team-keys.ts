@@ -12,7 +12,7 @@ import {
   dbUpdateTeamApiKeyLabel, dbRevokeTeamApiKey, dbRotateTeamApiKey,
   dbGetActiveTeamApiKeyCount, dbRecordAuditEvent,
 } from '../db.js';
-import { json, readJsonBody } from '../utils.js';
+import { json, readJsonBody, requireAuth, requireOrgAdmin, type CorsResponse } from '../utils.js';
 import { sendTeamApiKey } from '../email.js';
 import { log } from '../logger.js';
 import { randomBytes } from 'crypto';
@@ -21,9 +21,9 @@ import { randomBytes } from 'crypto';
  * GET /v1/org/keys — List all team API keys for the caller's org
  */
 export async function handleListTeamKeys(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-  if (!user.orgId) { json(res, 403, { error: 'No organization. Subscribe to a Paid plan first.' }); return; }
+  const user = await requireAuth(resolveUser, req, res as CorsResponse);
+  if (!user) return;
+  if (!user.orgId) { json(res as CorsResponse, 403, { error: 'No organization. Subscribe to a Paid plan first.' }); return; }
 
   const keys = await dbGetTeamApiKeys(user.orgId);
 
@@ -47,11 +47,8 @@ export async function handleListTeamKeys(req: IncomingMessage, res: ServerRespon
  * PATCH /v1/org/keys/:id — Update a team key's label or assignment
  */
 export async function handleUpdateTeamKey(req: IncomingMessage, res: ServerResponse, keyId: string): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-  if (!user.orgId || (user.role !== 'owner' && user.role !== 'admin')) {
-    json(res, 403, { error: 'Must be org owner or admin to manage team keys' }); return;
-  }
+  const user = await requireOrgAdmin(resolveUser, req, res as CorsResponse, 'manage team keys');
+  if (!user) return;
 
   const body = await readJsonBody(req, res);
   if (!body) return;
@@ -77,11 +74,8 @@ export async function handleUpdateTeamKey(req: IncomingMessage, res: ServerRespo
  * POST /v1/org/keys/:id/send — Email a team key to its assigned recipient
  */
 export async function handleSendTeamKey(req: IncomingMessage, res: ServerResponse, keyId: string): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-  if (!user.orgId || (user.role !== 'owner' && user.role !== 'admin')) {
-    json(res, 403, { error: 'Must be org owner or admin to send keys' }); return;
-  }
+  const user = await requireOrgAdmin(resolveUser, req, res as CorsResponse, 'send keys');
+  if (!user) return;
 
   const keys = await dbGetTeamApiKeys(user.orgId);
   const key = keys.find(k => k.id === keyId);
@@ -106,11 +100,8 @@ export async function handleSendTeamKey(req: IncomingMessage, res: ServerRespons
  * POST /v1/org/keys/:id/revoke — Revoke a team key
  */
 export async function handleRevokeTeamKey(req: IncomingMessage, res: ServerResponse, keyId: string): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-  if (!user.orgId || (user.role !== 'owner' && user.role !== 'admin')) {
-    json(res, 403, { error: 'Must be org owner or admin to revoke keys' }); return;
-  }
+  const user = await requireOrgAdmin(resolveUser, req, res as CorsResponse, 'revoke keys');
+  if (!user) return;
 
   const revoked = await dbRevokeTeamApiKey(keyId, user.orgId);
   if (!revoked) { json(res, 404, { error: 'Key not found or already revoked' }); return; }
@@ -124,11 +115,8 @@ export async function handleRevokeTeamKey(req: IncomingMessage, res: ServerRespo
  * POST /v1/org/keys/:id/rotate — Rotate a team key (generate a new value)
  */
 export async function handleRotateTeamKey(req: IncomingMessage, res: ServerResponse, keyId: string): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-  if (!user.orgId || (user.role !== 'owner' && user.role !== 'admin')) {
-    json(res, 403, { error: 'Must be org owner or admin to rotate keys' }); return;
-  }
+  const user = await requireOrgAdmin(resolveUser, req, res as CorsResponse, 'rotate keys');
+  if (!user) return;
 
   const newApiKey = generateApiKey();
   const updated = await dbRotateTeamApiKey(keyId, user.orgId, newApiKey);

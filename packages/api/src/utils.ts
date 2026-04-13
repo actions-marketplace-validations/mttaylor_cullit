@@ -147,6 +147,37 @@ export function timingSafeCompare(a: string, b: string): boolean {
   return timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
 
+// --- Auth middleware helpers ---
+
+type AuthUser = { id: string; orgId: string | null; role: string };
+
+/** Check authentication. Returns user or sends 401 and returns null. */
+export async function requireAuth<T extends AuthUser>(
+  resolveUserFn: (req: IncomingMessage) => Promise<T | null>,
+  req: IncomingMessage, res: CorsResponse,
+): Promise<T | null> {
+  const user = await resolveUserFn(req);
+  if (!user) {
+    json(res, 401, { error: 'Not authenticated', code: ErrorCode.AUTH_NOT_AUTHENTICATED });
+    return null;
+  }
+  return user;
+}
+
+/** Check auth + org admin/owner role. Returns user (with orgId narrowed to string) or sends error and returns null. */
+export async function requireOrgAdmin<T extends AuthUser>(
+  resolveUserFn: (req: IncomingMessage) => Promise<T | null>,
+  req: IncomingMessage, res: CorsResponse, action = 'perform this action',
+): Promise<(T & { orgId: string }) | null> {
+  const user = await requireAuth(resolveUserFn, req, res);
+  if (!user) return null;
+  if (!user.orgId || (user.role !== 'owner' && user.role !== 'admin')) {
+    json(res, 403, { error: `Must be org owner or admin to ${action}` });
+    return null;
+  }
+  return user as T & { orgId: string };
+}
+
 /** Strip dangerous HTML tags and attributes to prevent stored XSS. */
 export function sanitizeHtml(html: string): string {
   return createSanitizer(html, {

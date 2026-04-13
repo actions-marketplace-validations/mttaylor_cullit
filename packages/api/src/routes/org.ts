@@ -6,7 +6,7 @@
 
 import type { IncomingMessage, ServerResponse } from 'http';
 import { randomBytes } from 'crypto';
-import { json, readBody, readJsonBody, isTeamTier } from '../utils.js';
+import { json, readBody, readJsonBody, isTeamTier, requireAuth, requireOrgAdmin, type CorsResponse } from '../utils.js';
 import { log } from '../logger.js';
 import {
   resolveUser, getUser, getOrg, createOrg, addOrgMember, removeOrgMember, getOrgMembers,
@@ -25,8 +25,8 @@ import { getTeamLimits, TEAM_MIN_SEATS } from '@cullit/core';
 // --- Org CRUD ---
 
 export async function handleGetOrg(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  const user = await requireAuth(resolveUser, req, res as CorsResponse);
+  if (!user) return;
   if (!user.orgId) { json(res, 200, { org: null }); return; }
 
   const org = await getOrg(user.orgId);
@@ -43,8 +43,8 @@ export async function handleGetOrg(req: IncomingMessage, res: ServerResponse): P
 }
 
 export async function handleCreateOrg(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  const user = await requireAuth(resolveUser, req, res as CorsResponse);
+  if (!user) return;
   if (user.orgId) { json(res, 409, { error: 'Already a member of an organization' }); return; }
 
   const tier = getEffectiveTier(user);
@@ -65,10 +65,10 @@ export async function handleCreateOrg(req: IncomingMessage, res: ServerResponse)
 }
 
 export async function handleUpdateOrgSettings(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  const user = await requireAuth(resolveUser, req, res as CorsResponse);
+  if (!user) return;
   if (!user.orgId || user.role !== 'owner') {
-    json(res, 403, { error: 'Only org owners can update settings' }); return;
+    json(res as CorsResponse, 403, { error: 'Only org owners can update settings' }); return;
   }
 
   const body = await readJsonBody(req, res);
@@ -87,11 +87,8 @@ export async function handleUpdateOrgSettings(req: IncomingMessage, res: ServerR
 }
 
 export async function handleOrgInvite(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-  if (!user.orgId || (user.role !== 'owner' && user.role !== 'admin')) {
-    json(res, 403, { error: 'Must be org owner or admin to invite members' }); return;
-  }
+  const user = await requireOrgAdmin(resolveUser, req, res as CorsResponse, 'invite members');
+  if (!user) return;
 
   const body = await readJsonBody(req, res);
   if (!body) return;
@@ -121,11 +118,8 @@ export async function handleOrgInvite(req: IncomingMessage, res: ServerResponse)
 }
 
 export async function handleOrgRemoveMember(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-  if (!user.orgId || (user.role !== 'owner' && user.role !== 'admin')) {
-    json(res, 403, { error: 'Must be org owner or admin to remove members' }); return;
-  }
+  const user = await requireOrgAdmin(resolveUser, req, res as CorsResponse, 'remove members');
+  if (!user) return;
 
   const body = await readJsonBody(req, res);
   if (!body) return;
@@ -146,11 +140,8 @@ export async function handleOrgRemoveMember(req: IncomingMessage, res: ServerRes
 // --- Org invites ---
 
 export async function handleCreateOrgInvite(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-  if (!user.orgId || (user.role !== 'owner' && user.role !== 'admin')) {
-    json(res, 403, { error: 'Must be org owner or admin to create invites' }); return;
-  }
+  const user = await requireOrgAdmin(resolveUser, req, res as CorsResponse, 'create invites');
+  if (!user) return;
 
   const body = await readJsonBody(req, res);
   if (!body) return;
@@ -196,11 +187,8 @@ export async function handleCreateOrgInvite(req: IncomingMessage, res: ServerRes
 }
 
 export async function handleListOrgInvites(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-  if (!user.orgId || (user.role !== 'owner' && user.role !== 'admin')) {
-    json(res, 403, { error: 'Must be org owner or admin to list invites' }); return;
-  }
+  const user = await requireOrgAdmin(resolveUser, req, res as CorsResponse, 'list invites');
+  if (!user) return;
 
   const invites = await dbListOrgInvites(user.orgId);
   json(res, 200, {
@@ -211,8 +199,8 @@ export async function handleListOrgInvites(req: IncomingMessage, res: ServerResp
 }
 
 export async function handleAcceptOrgInvite(req: IncomingMessage, res: ServerResponse, token: string): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  const user = await requireAuth(resolveUser, req, res as CorsResponse);
+  if (!user) return;
   if (user.orgId) { json(res, 409, { error: 'Already a member of an organization' }); return; }
 
   const invite = await dbGetOrgInviteByToken(token);
@@ -234,11 +222,8 @@ export async function handleAcceptOrgInvite(req: IncomingMessage, res: ServerRes
 }
 
 export async function handleDeleteOrgInvite(req: IncomingMessage, res: ServerResponse, inviteId: string): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-  if (!user.orgId || (user.role !== 'owner' && user.role !== 'admin')) {
-    json(res, 403, { error: 'Must be org owner or admin to revoke invites' }); return;
-  }
+  const user = await requireOrgAdmin(resolveUser, req, res as CorsResponse, 'revoke invites');
+  if (!user) return;
 
   const ok = await dbDeleteOrgInvite(inviteId, user.orgId);
   if (!ok) { json(res, 404, { error: 'Invite not found' }); return; }
@@ -249,10 +234,10 @@ export async function handleDeleteOrgInvite(req: IncomingMessage, res: ServerRes
 // --- Member role ---
 
 export async function handleUpdateOrgMemberRole(req: IncomingMessage, res: ServerResponse, memberId: string): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  const user = await requireAuth(resolveUser, req, res as CorsResponse);
+  if (!user) return;
   if (!user.orgId || user.role !== 'owner') {
-    json(res, 403, { error: 'Only the org owner can change member roles' }); return;
+    json(res as CorsResponse, 403, { error: 'Only the org owner can change member roles' }); return;
   }
 
   const body = await readJsonBody(req, res);
@@ -279,8 +264,8 @@ export async function handleUpdateOrgMemberRole(req: IncomingMessage, res: Serve
 // --- Org usage ---
 
 export async function handleGetOrgUsage(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  const user = await requireAuth(resolveUser, req, res as CorsResponse);
+  if (!user) return;
   if (!user.orgId) { json(res, 200, { usage: null }); return; }
 
   const stats = await getUsageStats(user.orgId, 30);
