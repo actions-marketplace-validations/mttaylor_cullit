@@ -422,12 +422,24 @@ export async function handleGetSubscription(
     return;
   }
 
+  // Fetch quantity (seats) from Stripe if possible
+  let seats = 1;
+  if (sub.stripe_subscription_id && STRIPE_SECRET_KEY) {
+    try {
+      const stripeSub = await stripeRequest<StripeSubscription>(`/subscriptions/${sub.stripe_subscription_id}`, 'GET');
+      seats = stripeSub.items?.data?.[0]?.quantity ?? 1;
+    } catch {
+      // Non-critical — default to 1
+    }
+  }
+
   jsonFn(res, 200, {
     subscription: {
       plan: sub.plan,
       status: sub.status,
       currentPeriodEnd: sub.current_period_end,
       cancelAtPeriodEnd: sub.cancel_at_period_end,
+      seats,
     },
     plan: sub.plan,
     tier: user.tier || sub.plan,

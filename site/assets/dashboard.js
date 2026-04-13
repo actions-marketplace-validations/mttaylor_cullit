@@ -1341,6 +1341,10 @@
       if (res.ok) {
         var sub = await res.json();
         if (sub && sub.subscription) {
+          // Use subscription seat count as the source of truth
+          if (sub.subscription.seats) {
+            manageSeatCount = sub.subscription.seats;
+          }
           if (sub.subscription.status === 'past_due') {
             statusEl.textContent = 'Payment Failed';
             statusEl.style.color = 'var(--terminal-red)';
@@ -1354,6 +1358,10 @@
           } else {
             statusEl.textContent = sub.subscription.status === 'active' ? 'Active' : sub.subscription.status;
           }
+          if (sub.subscription.cancelAtPeriodEnd) {
+            statusEl.textContent += ' (cancels at period end)';
+            statusEl.style.color = 'var(--terminal-yellow, #fbbf24)';
+          }
           if (sub.subscription.currentPeriodEnd) {
             var end = new Date(sub.subscription.currentPeriodEnd);
             statusEl.textContent += ' \u2014 renews ' + end.toLocaleDateString();
@@ -1363,6 +1371,21 @@
           portalBtn.textContent = 'Manage Billing';
           portalBtn.addEventListener('click', openBillingPortal);
           actionsEl.appendChild(portalBtn);
+
+          if (!sub.subscription.cancelAtPeriodEnd) {
+            var cancelBtn = document.createElement('button');
+            cancelBtn.className = 'btn-small';
+            cancelBtn.style.background = 'transparent';
+            cancelBtn.style.border = '1px solid var(--terminal-red)';
+            cancelBtn.style.color = 'var(--terminal-red)';
+            cancelBtn.textContent = 'Cancel Subscription';
+            cancelBtn.addEventListener('click', function () {
+              if (confirm('Cancel your subscription? You\u2019ll keep access until the end of your current billing period.')) {
+                openBillingPortal();
+              }
+            });
+            actionsEl.appendChild(cancelBtn);
+          }
         } else {
           statusEl.textContent = tier === 'free' ? 'No active subscription' : '';
         }
@@ -1372,15 +1395,17 @@
     }
 
     var teamKeysPanel = document.getElementById('teamKeysPanel');
-    if (tier === 'pro' || tier === 'team' || tier === 'enterprise') {
+    var hasOrg = currentUser && currentUser.orgId;
+    if (hasOrg && (tier === 'pro' || tier === 'team' || tier === 'enterprise')) {
       teamKeysPanel.style.display = '';
       await loadTeamKeys();
-      if (tier === 'pro' || tier === 'team') {
-        var seatInput = document.getElementById('dashProSeats');
-        if (seatInput) { seatInput.value = manageSeatCount; updateProTotal(); }
-      }
     } else {
       teamKeysPanel.style.display = 'none';
+    }
+
+    if (tier === 'pro' || tier === 'team') {
+      var seatInput = document.getElementById('dashProSeats');
+      if (seatInput) { seatInput.value = manageSeatCount; updateProTotal(); }
     }
 
     var analyticsPanel = document.getElementById('analyticsQuickLink');
