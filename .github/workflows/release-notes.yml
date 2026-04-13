@@ -1,13 +1,19 @@
 # =====================================================
-#  Generate AI-powered release notes on new tags
+#  Generate AI-powered release notes (manual only)
 # =====================================================
+#
+# This workflow is NOT triggered on tag push — publish.yml
+# handles release note generation during the publish pipeline.
+# Use this workflow to manually (re)generate notes for a tag.
 
 name: Release Notes
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. v2.6.0)'
+        required: true
 
 permissions:
   contents: write
@@ -57,7 +63,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           CULLIT_API_KEY: ${{ secrets.CULLIT_API_KEY }}
-        run: node scripts/generate-release-notes.mjs ${{ github.ref_name }}
+        run: node scripts/generate-release-notes.mjs ${{ inputs.version }}
 
       - name: Commit & push release notes
         run: |
@@ -67,6 +73,6 @@ jobs:
           git add site/releases/
           # Only commit if there are changes
           git diff --cached --quiet || {
-            git commit -m "docs: generate release notes for ${{ github.ref_name }} [skip ci]"
+            git commit -m "docs: generate release notes for ${{ inputs.version }} [skip ci]"
             git push origin main
           }
