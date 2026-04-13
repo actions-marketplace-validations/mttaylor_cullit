@@ -20,7 +20,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'http';
 import { createHash, randomBytes } from 'crypto';
 
 import { runPipeline, VERSION, DEFAULT_CATEGORIES, AI_PROVIDERS, OUTPUT_FORMATS, TIERS, getTierLimits, getTeamLimits, createRateLimiter, isPlanFeatureAllowed } from '@cullit/core';
-import type { CullConfig, OutputFormat, AIProvider, Audience, Tone, PublishTarget, TeamFeature } from '@cullit/core';
+import type { CullConfig, OutputFormat, AIProvider, Audience, Tone } from '@cullit/core';
 import { openApiSpec } from './openapi.js';
 import { handleDocs } from './docs.js';
 import {
@@ -37,7 +37,7 @@ import { migrate, closeDb, sql,
   dbGetProjectSettings, dbUpsertProjectSettings, dbListProjectSettings,
   dbGetUserByLogin, dbGetUserByGithubUsername,
   dbRecordAuditEvent, dbGetAuditEvents,
-  dbCreateProjectTemplate, dbListProjectTemplates, dbGetProjectTemplate, dbDeleteProjectTemplate,
+  dbCreateProjectTemplate, dbListProjectTemplates, dbDeleteProjectTemplate,
 } from './db.js';
 import { handleCheckout, handleBillingPortal, handleGetSubscription, handleStripeWebhook, isStripeConfigured } from './billing.js';
 import { log } from './logger.js';
@@ -1109,9 +1109,12 @@ const server = createServer(async (req, res: CorsResponse) => {
 
     json(res, 404, { error: 'Not found', code: ErrorCode.RESOURCE_NOT_FOUND, docs: '/openapi.json' });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Unknown error';
     log.error({ err, requestId: res._requestId, path: req.url, method: req.method }, 'Unhandled error');
-    json(res, 500, { error: 'Internal server error', code: ErrorCode.SERVER_INTERNAL_ERROR, requestId: (res as CorsResponse)._requestId });
+    if (!res.headersSent) {
+      json(res, 500, { error: 'Internal server error', code: ErrorCode.SERVER_INTERNAL_ERROR, requestId: (res as CorsResponse)._requestId });
+    } else {
+      res.end();
+    }
   } finally {
     metrics.httpRequest(req.method || 'UNKNOWN', res.statusCode);
   }

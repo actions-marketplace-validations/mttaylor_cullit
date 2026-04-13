@@ -177,12 +177,13 @@ function toStripeInvoice(value: unknown): StripeInvoice | null {
   };
 }
 
-async function stripeRequest<T>(path: string, method: string, body?: Record<string, string>): Promise<T> {
+async function stripeRequest<T>(path: string, method: string, body?: Record<string, string>, extraHeaders?: Record<string, string>): Promise<T> {
   const res = await fetch(`https://api.stripe.com/v1${path}`, {
     method,
     headers: {
       'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
       'Content-Type': 'application/x-www-form-urlencoded',
+      ...extraHeaders,
     },
     body: body ? new URLSearchParams(body).toString() : undefined,
     signal: AbortSignal.timeout(15_000),
@@ -276,6 +277,8 @@ export async function handleCheckout(
   res: ServerResponse,
   seats?: number,
 ): Promise<void> {
+  log.info({ userId, plan, annual, seats }, 'Checkout request received');
+
   if (!STRIPE_SECRET_KEY) {
     jsonFn(res, 503, { error: 'Billing is not configured' });
     return;
@@ -314,8 +317,7 @@ export async function handleCheckout(
           'proration_behavior': 'create_prorations',
           'metadata[plan]': plan,
           'metadata[seats]': String(seatCount),
-          'Idempotency-Key': idempotencyKey,
-        });
+        }, { 'Idempotency-Key': idempotencyKey });
 
         // Update tier immediately — webhook will also fire as confirmation
         const tier = planToTier(plan);
@@ -344,7 +346,6 @@ export async function handleCheckout(
     'metadata[user_id]': userId,
     'metadata[plan]': plan,
     'metadata[seats]': String(seatCount),
-    'Idempotency-Key': idempotencyKey,
   };
 
   // If user already has a Stripe customer ID, reuse it
@@ -355,7 +356,7 @@ export async function handleCheckout(
   }
 
   try {
-    const session = await stripeRequest<{ url?: string }>('/checkout/sessions', 'POST', params);
+    const session = await stripeRequest<{ url?: string }>('/checkout/sessions', 'POST', params, { 'Idempotency-Key': idempotencyKey });
     if (!session.url) {
       log.error({ plan, userId }, 'Stripe returned checkout session without URL');
       jsonFn(res, 502, { error: 'Checkout session could not be created. Please try again.' });

@@ -24,7 +24,7 @@ import { readFileSync, writeFileSync, existsSync, renameSync } from 'fs';
 import type { IncomingMessage, ServerResponse } from 'http';
 import {
   dbGetUser, dbGetUserByApiKey, dbUpsertUser, dbRotateApiKey,
-  dbUpdateUserOrg, dbGetOrg, dbGetOrgBySlug, dbCreateOrg, dbGetOrgMemberCount,
+  dbUpdateUserOrg, dbGetOrg, dbGetOrgBySlug, dbCreateOrg,
   dbAddOrgMember, dbAddOrgMemberAtomic, dbRemoveOrgMember, dbGetOrgMembers,
   dbRevokeToken, dbIsTokenRevoked, dbDeleteUser, dbGetTokensRevokedBefore,
   dbGetTeamApiKeyByKey, dbUpdatePreferredProvider, dbRevokeAllUserTokens,
@@ -68,9 +68,22 @@ const SESSION_COOKIE_NAME = 'cullit_session';
 const IS_HTTPS = BASE_URL.startsWith('https');
 // Lax is correct: dashboard & API share the same registrable domain (same-site).
 // SameSite=None would require Secure, which doesn't work on localhost HTTP.
+// SameSite=Lax: dashboard (cullit.io) and API (api.cullit.io) share same registrable domain,
+// so all same-site requests (GET, POST via fetch) will include the cookie.
 const COOKIE_SAMESITE = 'Lax';
 const COOKIE_SECURE_FLAG = IS_HTTPS ? '; Secure' : '';
-const COOKIE_ATTRS = `; HttpOnly; SameSite=${COOKIE_SAMESITE}${COOKIE_SECURE_FLAG}; Path=/`;
+const COOKIE_DOMAIN = (() => {
+  try {
+    const host = new URL(BASE_URL).hostname;
+    // Set Domain to registrable domain so cookie is shared across subdomains (api.cullit.io → .cullit.io)
+    if (host !== 'localhost' && !host.startsWith('127.') && !host.startsWith('192.168.')) {
+      const parts = host.split('.');
+      return '; Domain=.' + parts.slice(-2).join('.');
+    }
+  } catch { /* ignore URL parse errors for localhost/IP fallback */ }
+  return '';
+})();
+const COOKIE_ATTRS = `; HttpOnly; SameSite=${COOKIE_SAMESITE}${COOKIE_SECURE_FLAG}${COOKIE_DOMAIN}; Path=/`;
 
 /** Security headers for auth endpoint responses (mirrors index.ts SECURITY_HEADERS). */
 const AUTH_SECURITY_HEADERS: Record<string, string> = {

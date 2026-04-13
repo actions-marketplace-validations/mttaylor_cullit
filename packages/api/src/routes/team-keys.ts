@@ -8,14 +8,13 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { resolveUser, getOrg, generateApiKey } from '../auth.js';
 import {
-  dbGetTeamApiKeys, dbCreateTeamApiKey, dbUpdateTeamApiKeyAssignment,
+  dbGetTeamApiKeys, dbUpdateTeamApiKeyAssignment,
   dbUpdateTeamApiKeyLabel, dbRevokeTeamApiKey, dbRotateTeamApiKey,
-  dbGetActiveTeamApiKeyCount, dbRecordAuditEvent,
+  dbRecordAuditEvent,
 } from '../db.js';
 import { json, readJsonBody, requireAuth, requireOrgAdmin, type CorsResponse } from '../utils.js';
 import { sendTeamApiKey } from '../email.js';
 import { log } from '../logger.js';
-import { randomBytes } from 'crypto';
 
 /**
  * GET /v1/org/keys — List all team API keys for the caller's org
@@ -28,7 +27,6 @@ export async function handleListTeamKeys(req: IncomingMessage, res: ServerRespon
   const keys = await dbGetTeamApiKeys(user.orgId);
 
   // Only show masked key prefixes — full key is shown only at creation/rotation time
-  const isAdmin = user.role === 'owner' || user.role === 'admin';
   json(res, 200, {
     keys: keys.map(k => ({
       id: k.id,

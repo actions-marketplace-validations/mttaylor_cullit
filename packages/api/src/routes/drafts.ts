@@ -11,7 +11,7 @@ import { log } from '../logger.js';
 import { resolveUser, getEffectiveTier, getOrg } from '../auth.js';
 import {
   dbCreateDraft, dbGetDraft, dbListDrafts, dbUpdateDraft, dbUpdateDraftStatus, dbDeleteDraft,
-  dbCreateRevision, dbGetRevisions, dbGetRevisionCount, dbPublishRelease, dbPublishDraftWithRelease,
+  dbCreateRevision, dbGetRevisions, dbGetRevisionCount, dbPublishDraftWithRelease,
 } from '../db.js';
 
 // --- Helpers ---
