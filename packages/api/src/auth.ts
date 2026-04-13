@@ -728,9 +728,10 @@ export async function handleAuthCallback(req: IncomingMessage, res: ServerRespon
     });
     res.end();
   } catch (err) {
-    log.error({ err: (err as Error).message }, 'OAuth callback error');
+    const msg = (err as Error).message || 'Unknown error';
+    log.error({ err: msg, stack: (err as Error).stack }, 'OAuth callback error');
     res.writeHead(500, { 'Content-Type': 'application/json', ...AUTH_SECURITY_HEADERS });
-    res.end(JSON.stringify({ error: 'OAuth flow failed' }));
+    res.end(JSON.stringify({ error: 'OAuth flow failed', detail: msg }));
   }
 }
 
