@@ -90,18 +90,18 @@ async function mockDraftApis(
 }
 
 test.describe('dashboard drafts tab', () => {
-  test('pro user sees drafts tab disabled (team-gated)', async ({ page }) => {
-    await mockDashboardApis(page, { status: 200, body: makeUser('pro') });
+  test('free user sees drafts tab disabled (paid-gated)', async ({ page }) => {
+    await mockDashboardApis(page, { status: 200, body: makeUser('free') });
 
     await page.goto('/dashboard.html');
     await expect(page.locator('#dashApp')).toBeVisible();
 
-    // Drafts tab is disabled for pro tier (requires team+)
+    // Drafts tab is disabled for free tier (requires paid+)
     await expect(page.locator('.dash-tab[data-tab="drafts"]')).toBeDisabled();
   });
 
-  test('team user sees draft list, not team gate', async ({ page }) => {
-    await mockDashboardApis(page, { status: 200, body: makeUser('team') });
+  test('paid user sees draft list, not gate', async ({ page }) => {
+    await mockDashboardApis(page, { status: 200, body: makeUser('paid') });
     await mockDraftApis(page, []);
 
     await page.goto('/dashboard.html');
@@ -114,8 +114,8 @@ test.describe('dashboard drafts tab', () => {
     await expect(page.locator('#draftList')).toContainText('No drafts');
   });
 
-  test('team user can open a draft detail panel', async ({ page }) => {
-    await mockDashboardApis(page, { status: 200, body: makeUser('team') });
+  test('paid user can open a draft detail panel', async ({ page }) => {
+    await mockDashboardApis(page, { status: 200, body: makeUser('paid') });
     await mockDraftApis(page, [DRAFT]);
 
     await page.goto('/dashboard.html');
@@ -133,8 +133,8 @@ test.describe('dashboard drafts tab', () => {
     await expect(page.locator('#draftDetailContent')).toContainText('feat: ship it');
   });
 
-  test('team owner can submit a draft for review', async ({ page }) => {
-    const ownerUser = { ...makeUser('team', 'team', 'owner') };
+  test('paid owner can submit a draft for review', async ({ page }) => {
+    const ownerUser = makeUser('paid', 'paid', 'owner');
     await mockDashboardApis(page, { status: 200, body: ownerUser });
     await mockDraftApis(page, [DRAFT]);
 

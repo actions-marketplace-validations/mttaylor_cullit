@@ -797,11 +797,11 @@
 
   async function loadDrafts() {
     var userTier = getEffectiveTierClient();
-    var isTeam = userTier === 'team' || userTier === 'enterprise';
-    document.getElementById('draftTeamGate').style.display = isTeam ? 'none' : 'block';
-    document.getElementById('draftList').parentElement.parentElement.style.display = isTeam ? 'block' : 'none';
+    var isPaid = (TIER_RANK[userTier] || 0) >= (TIER_RANK['paid'] || 1);
+    document.getElementById('draftTeamGate').style.display = isPaid ? 'none' : 'block';
+    document.getElementById('draftList').parentElement.parentElement.style.display = isPaid ? 'block' : 'none';
     if (document.getElementById('draftDetailPanel')) document.getElementById('draftDetailPanel').style.display = 'none';
-    if (!isTeam) return;
+    if (!isPaid) return;
 
     var list = document.getElementById('draftList');
     var pager = document.getElementById('draftPager');
@@ -1004,11 +1004,11 @@
 
   async function loadSettingsTab() {
     var userTier = getEffectiveTierClient();
-    var isTeam = userTier === 'team' || userTier === 'enterprise';
-    document.getElementById('settingsTeamGate').style.display = isTeam ? 'none' : 'block';
-    document.getElementById('projectSettingsForm').parentElement.parentElement.style.display = isTeam ? 'block' : 'none';
+    var isPaid = (TIER_RANK[userTier] || 0) >= (TIER_RANK['paid'] || 1);
+    document.getElementById('settingsTeamGate').style.display = isPaid ? 'none' : 'block';
+    document.getElementById('projectSettingsForm').parentElement.parentElement.style.display = isPaid ? 'block' : 'none';
     loadGithubInstallations();
-    if (!isTeam) return;
+    if (!isPaid) return;
 
     var select = document.getElementById('settingsProjectSelect');
     if (!select.options.length) {
@@ -1351,7 +1351,7 @@
 
     var manageSection = document.getElementById('manageSeatsSection');
     if (manageSection) {
-      if (tier === 'team') {
+      if (tier === 'paid' || tier === 'team') {
         manageSection.style.display = '';
         var updateBtn = document.getElementById('updateSeatsBtn');
         var proNote = document.getElementById('prorationNote');
@@ -1362,7 +1362,7 @@
       }
     }
 
-    ['Free', 'Pro', 'Team', 'Enterprise'].forEach(function (t) {
+    ['Free', 'Paid', 'Pro', 'Team', 'Enterprise'].forEach(function (t) {
       var el = document.getElementById('support' + t);
       if (el) el.style.display = (t.toLowerCase() === tier) ? '' : 'none';
     });
@@ -1407,10 +1407,10 @@
     }
 
     var teamKeysPanel = document.getElementById('teamKeysPanel');
-    if (tier === 'team' || tier === 'enterprise') {
+    if (tier === 'paid' || tier === 'pro' || tier === 'team' || tier === 'enterprise') {
       teamKeysPanel.style.display = '';
       await loadTeamKeys();
-      if (tier === 'team') {
+      if (tier === 'paid' || tier === 'team') {
         var seatInput = document.getElementById('dashTeamSeats');
         if (seatInput) { seatInput.value = manageSeatCount; updateTeamTotal(); }
       }
@@ -1460,7 +1460,7 @@
   async function upgradePlan(plan) {
     try {
       var body = { plan: plan };
-      if (plan === 'team') {
+      if (plan === 'paid' || plan === 'team') {
         var seatInput = document.getElementById('dashTeamSeats');
         body.seats = parseInt(seatInput ? seatInput.value : '5', 10);
       }

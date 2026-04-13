@@ -5,7 +5,7 @@ const MOCK_OUTPUT = '## v1.1.0\n\n### Features\n\n- feat: add new sync engine\n'
 
 test.describe('dashboard generate flow', () => {
   test('successful generate renders output in #outputBody', async ({ page }) => {
-    await mockDashboardApis(page, { status: 200, body: makeUser('pro') });
+    await mockDashboardApis(page, { status: 200, body: makeUser('paid') });
 
     // Mock the generate endpoint — must be registered AFTER the catch-all so it
     // takes precedence (Playwright evaluates routes LIFO).
@@ -26,7 +26,7 @@ test.describe('dashboard generate flow', () => {
 
     await page.goto('/dashboard.html');
 
-    // Dashboard should show (pro user authenticated)
+    // Dashboard should show (paid user authenticated)
     await expect(page.locator('#dashApp')).toBeVisible();
 
     // Fill the generate form
@@ -44,7 +44,7 @@ test.describe('dashboard generate flow', () => {
   });
 
   test('empty fromRef shows validation toast and keeps button enabled', async ({ page }) => {
-    await mockDashboardApis(page, { status: 200, body: makeUser('pro') });
+    await mockDashboardApis(page, { status: 200, body: makeUser('paid') });
 
     await page.goto('/dashboard.html');
     await expect(page.locator('#dashApp')).toBeVisible();

@@ -1,6 +1,6 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
 
-type Tier = 'free' | 'pro' | 'team' | 'enterprise';
+type Tier = 'free' | 'paid' | 'pro' | 'team' | 'enterprise';
 
 function makeUser(tier: Tier, effectiveTier?: Tier) {
   return {
@@ -94,7 +94,7 @@ test('shows auth wall when /auth/me is unauthenticated', async ({ page }) => {
   await expect(page.locator('#dashApp')).toBeHidden();
 });
 
-test('free tier shows free badge and team gates remain locked', async ({ page }) => {
+test('free tier shows free badge and paid gates remain locked', async ({ page }) => {
   await mockDashboardApis(page, { status: 200, body: makeUser('free') });
 
   await page.goto('/dashboard.html');
@@ -105,26 +105,26 @@ test('free tier shows free badge and team gates remain locked', async ({ page })
   await expect(page.locator('.dash-tab[data-tab="drafts"]')).toBeDisabled();
 });
 
-test('pro tier unlocks pro badge but keeps team-only drafts gated', async ({ page }) => {
+test('paid tier unlocks all features and shows paid badge', async ({ page }) => {
+  await mockDashboardApis(page, { status: 200, body: makeUser('paid') });
+
+  await page.goto('/dashboard.html');
+
+  await expect(page.locator('#navTier')).toHaveText('paid');
+  // Drafts tab is enabled for paid tier
+  await expect(page.locator('.dash-tab[data-tab="drafts"]')).toBeEnabled();
+  await expect(page.locator('#billingPlanName')).toHaveText('Paid');
+});
+
+test('legacy pro tier maps to paid behavior', async ({ page }) => {
   await mockDashboardApis(page, { status: 200, body: makeUser('pro') });
 
   await page.goto('/dashboard.html');
 
   await expect(page.locator('#navTier')).toHaveText('pro');
-  // Drafts tab is disabled for pro tier (tab gating)
-  await expect(page.locator('.dash-tab[data-tab="drafts"]')).toBeDisabled();
+  // Legacy pro maps to paid rank — drafts enabled
+  await expect(page.locator('.dash-tab[data-tab="drafts"]')).toBeEnabled();
   await expect(page.locator('#billingPlanName')).toHaveText('Pro');
-});
-
-test('team tier unlocks draft workflow and team billing plan', async ({ page }) => {
-  await mockDashboardApis(page, { status: 200, body: makeUser('team') });
-
-  await page.goto('/dashboard.html');
-
-  await expect(page.locator('#navTier')).toHaveText('team');
-  await page.getByRole('button', { name: /drafts/i }).click();
-  await expect(page.locator('#draftTeamGate')).toBeHidden();
-  await expect(page.locator('#billingPlanName')).toHaveText('Team');
 });
 
 test('enterprise tier shows enterprise plan and unlocked draft flow', async ({ page }) => {
