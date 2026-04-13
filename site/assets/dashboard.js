@@ -6,7 +6,7 @@
   var currentOutput = '';
   var currentView = 'rendered';
   var currentUser = null;
-  var manageSeatCount = 5;
+  var manageSeatCount = 1;
 
   function capitalize(text) {
     return text ? text.charAt(0).toUpperCase() + text.slice(1) : '';
@@ -1482,13 +1482,20 @@
     list.innerHTML = '<div style="color:var(--text-dim)">Loading team keys\u2026</div>';
     try {
       var res = await apiFetch('/v1/org/keys');
-      if (!res.ok) { list.innerHTML = '<div style="color:var(--terminal-red)">Failed to load team keys</div>'; return; }
+      if (!res.ok) {
+        if (res.status === 403 || res.status === 401) {
+          list.innerHTML = '<div style="color:var(--text-dim)">No team API keys yet. Keys are provisioned when you subscribe to a Pro plan.</div>';
+        } else {
+          list.innerHTML = '<div style="color:var(--terminal-red)">Failed to load team keys</div>';
+        }
+        return;
+      }
       var data = await res.json();
       var keys = data.keys || [];
 
       var seatEl = document.getElementById('teamKeySeatCount');
       var activeCount = keys.filter(function (k) { return !k.revokedAt; }).length;
-      manageSeatCount = Math.max(activeCount, 5);
+      manageSeatCount = Math.max(activeCount, 1);
       seatEl.textContent = activeCount + ' of ' + manageSeatCount + ' seats active';
 
       var seatUtilEl = document.getElementById('seatUtilMsg');
