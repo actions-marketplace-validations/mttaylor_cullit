@@ -30,7 +30,7 @@ inputs:
     required: false
     default: 'professional'
   source:
-    description: 'Source type: local (free), jira (pro), linear (pro), gitlab (pro), bitbucket (pro), or multi-repo (pro). Non-local sources require a CULLIT_API_KEY.'
+    description: 'Source type: local (free), jira (paid), linear (paid), gitlab (paid), bitbucket (paid), or multi-repo (paid). Non-local sources require a CULLIT_API_KEY.'
     required: false
     default: 'local'
   format:
@@ -73,7 +73,7 @@ inputs:
     description: 'Path to .cullit.yml config file'
     required: false
   api-key:
-    description: 'Cullit API key for Pro features. Set as CULLIT_API_KEY env var or pass here.'
+    description: 'Cullit API key for paid features. Set as CULLIT_API_KEY env var or pass here.'
     required: false
 
 outputs:

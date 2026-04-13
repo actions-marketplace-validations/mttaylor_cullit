@@ -1,30 +1,14 @@
 # Pricing
 
-Cullit is standardizing around a simpler commercial model:
+Cullit has three tiers: **Free**, **Paid**, and **Enterprise**.
 
-- **Free** — evaluate Cullit with template workflows and a small monthly AI allowance
-- **Paid** — seat-based access with monthly or annual billing
-- **Enterprise** — custom pricing for SSO, compliance, procurement, and larger deployment needs
+| Plan | Price | Generations | Projects | Features |
+| --- | --- | --- | --- | --- |
+| Free | $0 | 3 / month | 3 | Template only, stdout/file output |
+| Paid | $8 / seat / month | 500+ / month (100/seat scaling) | 100+ (5/seat scaling) | All features: AI providers, enrichment, publishers, dashboard, orgs, drafts, changelogs |
+| Enterprise | Custom | Unlimited | Unlimited | SSO/SAML, dedicated support, on-prem, custom SLA |
 
-## Current Direction
-
-The intended public model is:
-
-| Plan | Price | Notes |
-| --- | --- | --- |
-| Free | $0 | Trial tier for local CLI, template workflows, and limited monthly usage |
-| Paid | $8 per seat / month | Annual billing available; paid access is the main commercial offer |
-| Enterprise | Custom | SSO/SAML, procurement, support, and higher-touch deployment options |
-
-## Transition Note
-
-The billing system is still in transition from older package names.
-
-- Some checkout, dashboard, and Stripe configuration surfaces still refer to legacy **Pro** and **Team** packages
-- The current single-seat starter package is still priced separately
-- The current org package still uses 5+ seat billing for collaboration-focused workflows
-
-Until the billing implementation is fully consolidated, public docs should describe the simpler **Free / Paid / Enterprise** model while being careful not to imply that every internal label has already been renamed.
+Annual billing is available for Paid at **$6.80 / seat / month** ($81.60 / seat / year — 15% off).
 
 ## Messaging Guidance
 
@@ -32,14 +16,14 @@ When describing Cullit publicly:
 
 1. Lead with **Free to try**
 2. Position **Paid** as the default production plan
-3. Describe collaboration, org keys, approvals, and governance as part of paid team usage
+3. Describe collaboration, org keys, approvals, and governance as part of paid usage
 4. Reserve **Enterprise** for SSO, procurement, and support-heavy deals
 
-## Internal Billing Notes
+## Environment Variables
 
-These legacy env vars remain in use until checkout is consolidated:
+The primary Stripe price variables are:
 
-- `STRIPE_PRO_PRICE_ID`
-- `STRIPE_PRO_ANNUAL_PRICE_ID`
-- `STRIPE_TEAM_PRICE_ID`
-- `STRIPE_TEAM_ANNUAL_PRICE_ID`
+- `STRIPE_PAID_PRICE_ID` — Stripe price ID for the paid plan ($8/seat/month)
+- `STRIPE_PAID_ANNUAL_PRICE_ID` — Stripe price ID for the paid annual plan ($81.60/seat/year)
+
+> **Fallback:** The older `STRIPE_PRO_PRICE_ID`, `STRIPE_PRO_ANNUAL_PRICE_ID`, `STRIPE_TEAM_PRICE_ID`, and `STRIPE_TEAM_ANNUAL_PRICE_ID` variables still work as fallbacks if the `STRIPE_PAID_*` variants are not set.

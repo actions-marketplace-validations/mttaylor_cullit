@@ -17,7 +17,7 @@ GitHub OAuth users and API keys.
 | `name` | TEXT | Display name |
 | `email` | TEXT | Email address |
 | `avatar_url` | TEXT | Profile avatar |
-| `tier` | TEXT | `free`, `pro`, `team`, `enterprise` (legacy `basic` maps to `free`) |
+| `tier` | TEXT | `free`, `paid`, `enterprise` (legacy `pro` and `team` are mapped to `paid` at read time) |
 | `org_id` | TEXT | FK → `orgs.id` (nullable) |
 | `role` | TEXT | `member` or `admin` |
 | `api_key` | TEXT UNIQUE | CULLIT_API_KEY value (deprecated — see `api_key_hash`) |
@@ -42,7 +42,7 @@ Organizations / teams.
 | `name` | TEXT | Display name |
 | `slug` | TEXT UNIQUE | URL slug |
 | `owner_id` | TEXT | FK → `users.id` |
-| `tier` | TEXT | `team` or `enterprise` |
+| `tier` | TEXT | `paid` or `enterprise` |
 | `max_seats` | INT | Seat limit (default 10) |
 | `require_separate_approver` | BOOLEAN | Require different user to approve drafts |
 | `created_at` | TIMESTAMPTZ | Creation timestamp |
@@ -136,7 +136,7 @@ Stripe billing state.
 | `user_id` | TEXT | FK → `users.id` |
 | `stripe_subscription_id` | TEXT UNIQUE | Stripe subscription ID |
 | `stripe_customer_id` | TEXT | Stripe customer ID |
-| `plan` | TEXT | `free`, `pro`, `team` (legacy `basic` maps to `free`) |
+| `plan` | TEXT | `free`, `paid` (legacy `pro` and `team` are mapped to `paid`) |
 | `status` | TEXT | `active`, `past_due`, `canceled` |
 | `current_period_start` | TIMESTAMPTZ | Billing period start |
 | `current_period_end` | TIMESTAMPTZ | Billing period end |
@@ -150,7 +150,7 @@ Indexes: `idx_subscriptions_user (user_id)`, `idx_subscriptions_stripe (stripe_s
 
 ### `release_drafts`
 
-Draft release notes (Team+ workflow).
+Draft release notes (paid workflow).
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -200,7 +200,7 @@ Index: `idx_revisions_draft (draft_id, revision_number)`
 
 ### `project_settings`
 
-Saved per-project defaults (Team+).
+Saved per-project defaults (paid).
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -290,7 +290,7 @@ Index: `idx_gh_install_user (user_id)`
 
 ### `team_api_keys`
 
-Per-seat API keys for team plans.
+Per-seat API keys for paid org plans.
 
 | Column | Type | Notes |
 |--------|------|-------|

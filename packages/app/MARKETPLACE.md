@@ -81,8 +81,8 @@ Required environment variables:
 
 | Plan | Price | What you get |
 |------|-------|--------------|
-| **Free** | $0 | Template workflows, small monthly usage allowance, local evaluation |
-| **Paid** | Seat-based | AI-powered notes, enrichment, hosted workflows, and annual billing. Current billing still uses legacy single-seat and org package labels while checkout is being consolidated. |
+| **Free** | $0 | Template workflows, 3 gens/month, local evaluation |
+| **Paid** | $8/seat/month | AI-powered notes, enrichment, hosted workflows, all features. Annual billing available ($6.80/seat/month). |
 | **Enterprise** | Custom | SSO/SAML, SLA, on-prem, unlimited generations &amp; projects — [sales@cullit.io](mailto:sales@cullit.io) |
 
 The GitHub App is **free** with template-based notes. Activate AI-powered generation with a `CULLIT_API_KEY` on a paid seat.

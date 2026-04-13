@@ -28,7 +28,7 @@ npm install -D cullit
 ## Distribution Model
 
 - Public npm package `cullit`: local git, template generation with `--provider none`, stdout/file output
-- Private registry package `@cullit/licensed`: paid seat-based and enterprise access for AI providers, Jira/Linear enrichment, premium publishers, dashboard, API, GitHub App, and private deployment flows. During the current billing transition, some internal surfaces still refer to legacy `Pro` and `Team` package names.
+- Private registry package `@cullit/licensed`: paid seat-based and enterprise access for AI providers, Jira/Linear enrichment, premium publishers, dashboard, API, GitHub App, and private deployment flows
 - npm is the delivery channel for the CLI runtime, not the paid entitlement layer
 
 ## Quick Start
@@ -391,10 +391,8 @@ jira:
 | `CULLIT_BASE_URL` | Public base URL for OAuth callbacks |
 | `STRIPE_SECRET_KEY` | Stripe billing API key |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature verification |
-| `STRIPE_PRO_PRICE_ID` | Stripe price id for the current single-seat paid package |
-| `STRIPE_PRO_ANNUAL_PRICE_ID` | Stripe price id for the current single-seat annual package (15% off) |
-| `STRIPE_TEAM_PRICE_ID` | Stripe price id for the current 5+ seat org package ($8/seat/mo) |
-| `STRIPE_TEAM_ANNUAL_PRICE_ID` | Stripe price id for the current 5+ seat org annual package ($81.60/seat/yr — 15% off) |
+| `STRIPE_PAID_PRICE_ID` | Stripe price ID for the paid plan ($8/seat/month) |
+| `STRIPE_PAID_ANNUAL_PRICE_ID` | Stripe price ID for the paid annual plan ($81.60/seat/year — 15% off) |
 | `RESEND_API_KEY` | Transactional email delivery |
 
 ## API Endpoints
@@ -409,8 +407,8 @@ jira:
 | `POST` | `/auth/logout` | End dashboard session |
 | `GET` | `/v1/history` | Paginated generation history |
 | `GET` | `/v1/analytics/usage` | Usage analytics and provider breakdown |
-| `POST` | `/v1/drafts` | Create draft (Team+) |
-| `GET` | `/v1/drafts` | List drafts (Team+) |
+| `POST` | `/v1/drafts` | Create draft (Paid) |
+| `GET` | `/v1/drafts` | List drafts (Paid) |
 | `GET` | `/v1/drafts/:id` | Draft details with revisions |
 | `PATCH` | `/v1/drafts/:id` | Update draft |
 | `DELETE` | `/v1/drafts/:id` | Delete draft |

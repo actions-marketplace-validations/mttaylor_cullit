@@ -98,10 +98,10 @@ Configure the redirect URI in WorkOS as: `{CULLIT_BASE_URL}/auth/callback`
 |----------|-------------|
 | `STRIPE_SECRET_KEY` | Stripe secret key |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
-| `STRIPE_PRO_PRICE_ID` | Stripe price ID for the current single-seat paid package |
-| `STRIPE_PRO_ANNUAL_PRICE_ID` | Stripe price ID for the current single-seat annual package ($91.80/yr — 15% off) |
-| `STRIPE_TEAM_PRICE_ID` | Stripe price ID for the current 5+ seat org package ($8/seat/mo) |
-| `STRIPE_TEAM_ANNUAL_PRICE_ID` | Stripe price ID for the current 5+ seat org annual package ($81.60/seat/yr — 15% off) |
+| `STRIPE_PAID_PRICE_ID` | Stripe price ID for the paid plan ($8/seat/month) |
+| `STRIPE_PAID_ANNUAL_PRICE_ID` | Stripe price ID for the paid annual plan ($81.60/seat/year — 15% off) |
+
+> **Fallback:** The older `STRIPE_PRO_*` and `STRIPE_TEAM_*` variables still work as fallbacks if `STRIPE_PAID_*` variants are not set.
 
 ### Optional
 

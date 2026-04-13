@@ -377,7 +377,7 @@
   <li><strong>Enterprise</strong> &mdash; custom pricing for SSO/SAML, procurement, support, and larger deployment requirements.</li>
 </ul>
 
-<div class="tip">Billing is still being consolidated. Some checkout, dashboard, and Stripe configuration surfaces still use legacy <strong>Pro</strong> and <strong>Team</strong> labels. In the live product today, the single-seat starter package and the 5+ seat org package are still configured separately.</div>
+<div class="tip">To activate paid access, set your API key in your shell or <code>.env</code> file.</div>
 
 <p>To activate paid access, set your API key:</p>
 <pre><code><span class="cmt"># In your shell or .env file</span>
@@ -431,7 +431,7 @@
   <span class="cmt"># Set LINEAR_API_KEY in your environment</span></code></pre>
 
 <h3 id="ai-providers">AI Providers</h3>
-<p>Cullit supports five providers in licensed Pro and Team surfaces. The public npm CLI uses <code>--provider none</code> unless you are running a hosted/private Cullit distribution with premium providers enabled.</p>
+<p>Cullit supports five providers on the paid tier. The public npm CLI uses <code>--provider none</code> unless you are running a hosted/private Cullit distribution with premium providers enabled.</p>
 
 <div class="table-wrap">
 <table>
@@ -455,7 +455,7 @@
 <table>
   <thead><tr><th>Variable</th><th>Purpose</th></tr></thead>
   <tbody>
-    <tr><td><code>CULLIT_API_KEY</code></td><td>Cullit license key for hosted/private Pro flows and advanced publishing surfaces</td></tr>
+    <tr><td><code>CULLIT_API_KEY</code></td><td>Cullit license key for hosted/private paid flows and advanced publishing surfaces</td></tr>
     <tr><td><code>ANTHROPIC_API_KEY</code></td><td>Anthropic API key</td></tr>
     <tr><td><code>OPENAI_API_KEY</code></td><td>OpenAI API key</td></tr>
     <tr><td><code>GOOGLE_API_KEY</code></td><td>Google Gemini API key</td></tr>
@@ -780,7 +780,7 @@
 <pre><code><span class="key">publish</span>:
   - <span class="key">type</span>: <span class="str">github-release</span></code></pre>
 
-<h3 id="pub-gitlab-release">GitLab Release <span style="font-size:0.7em; color:var(--accent); border:1px solid var(--accent); padding:0.1rem 0.4rem; border-radius:4px; margin-left:0.5rem;">Pro</span></h3>
+<h3 id="pub-gitlab-release">GitLab Release <span style="font-size:0.7em; color:var(--accent); border:1px solid var(--accent); padding:0.1rem 0.4rem; border-radius:4px; margin-left:0.5rem;">Paid</span></h3>
 <p>Create or update a GitLab Release via the GitLab API. Supports self-hosted GitLab instances. Requires <code>GITLAB_TOKEN</code> with <code>api</code> scope:</p>
 <pre><code><span class="key">publish</span>:
   - <span class="key">type</span>: <span class="str">gitlab-release</span></code></pre>
@@ -802,7 +802,7 @@
 <pre><code><span class="key">publish</span>:
   - <span class="key">type</span>: <span class="str">notion</span></code></pre>
 
-<h3 id="pub-changelog">Hosted Changelog <span style="font-size:0.7em; color:var(--accent); border:1px solid var(--accent); padding:0.1rem 0.4rem; border-radius:4px; margin-left:0.5rem;">Pro</span></h3>
+<h3 id="pub-changelog">Hosted Changelog <span style="font-size:0.7em; color:var(--accent); border:1px solid var(--accent); padding:0.1rem 0.4rem; border-radius:4px; margin-left:0.5rem;">Paid</span></h3>
 <p>Push release notes to Cullit&apos;s hosted changelog &mdash; a public, embeddable page that your users can visit or you can embed in your app with the widget.</p>
 <pre><code><span class="key">publish</span>:
   - <span class="key">type</span>: <span class="str">changelog</span></code></pre>
@@ -838,7 +838,7 @@ console.log(result.duration);      <span class="cmt">// pipeline duration in ms<
   <thead><tr><th>Package</th><th>Purpose</th></tr></thead>
   <tbody>
     <tr><td><code>cullit</code></td><td>Public CLI package &mdash; local/template workflow via <code>npx cullit generate --provider none</code></td></tr>
-    <tr><td><code>@cullit/licensed</code></td><td>Private registry package for paid tiers (Pro, Team, Enterprise)</td></tr>
+    <tr><td><code>@cullit/licensed</code></td><td>Private registry package for paid tiers (Paid, Enterprise)</td></tr>
     <tr><td><code>@cullit/core</code></td><td>Core engine: pipeline, collectors, generators, publishers</td></tr>
     <tr><td><code>@cullit/config</code></td><td>Config loader: YAML parsing, env var resolution, type exports</td></tr>
   </tbody>
@@ -951,9 +951,9 @@ console.log(advisory.breakdown);       <span class="cmt">// { features: 4, fixes
 
 <p><strong>Subscription &amp; Downgrade Behavior:</strong></p>
 <ul style="margin:0.5rem 0 1rem 1.5rem;">
-  <li><strong>Upgrade:</strong> New tier limits apply immediately. Team plans auto-provision API keys matching the seat count.</li>
+  <li><strong>Upgrade:</strong> New tier limits apply immediately. Paid org plans auto-provision API keys matching the seat count.</li>
   <li><strong>Reducing seats:</strong> Reducing seats revokes excess team API keys. Remaining keys stay active.</li>
-  <li><strong>Downgrade (team &rarr; non-team):</strong> All team API keys are revoked. The org remains but keys are deactivated.</li>
+  <li><strong>Downgrade (paid &rarr; free):</strong> All team API keys are revoked. The org remains but keys are deactivated.</li>
   <li><strong>Cancellation:</strong> Tier reverts to free. All team API keys are revoked.</li>
   <li><strong>Database required:</strong> Billing, orgs, and team features require <code>DATABASE_URL</code>. Without it, the server runs in file-backed mode (suitable for local dev only).</li>
 </ul>
@@ -1193,7 +1193,7 @@ formats, and several performance improvements.</span>
   <li><code>PUT /v1/projects/:project/settings</code> &mdash; upsert defaults (source, provider, audience, tone, categories)</li>
 </ul>
 
-<div class="tip">The collaboration-heavy dashboard workflow is available on paid org setups with 5+ seats today. Some single-seat billing surfaces still use the legacy <strong>Pro</strong> label while billing is being consolidated. Free-tier users get template-based generation with no time limit.</div>
+<div class="tip">The collaboration-heavy dashboard workflow is available on paid org setups. Free-tier users get template-based generation with no time limit.</div>
 
 <div class="section-divider"></div>
 
