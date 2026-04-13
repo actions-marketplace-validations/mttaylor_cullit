@@ -74,11 +74,11 @@ function mockRes(): ServerResponse {
   return res;
 }
 
-const owner = { id: 'u1', login: 'owner', orgId: 'org1', role: 'owner', tier: 'paid' };
-const admin = { id: 'u2', login: 'admin', orgId: 'org1', role: 'admin', tier: 'paid' };
-const member = { id: 'u3', login: 'member', orgId: 'org1', role: 'member', tier: 'paid' };
+const owner = { id: 'u1', login: 'owner', orgId: 'org1', role: 'owner', tier: 'pro' };
+const admin = { id: 'u2', login: 'admin', orgId: 'org1', role: 'admin', tier: 'pro' };
+const member = { id: 'u3', login: 'member', orgId: 'org1', role: 'member', tier: 'pro' };
 const outsider = { id: 'u4', login: 'outsider', orgId: undefined, role: undefined, tier: 'free' };
-const paidOutsider = { id: 'u5', login: 'paidout', orgId: undefined, role: undefined, tier: 'paid' };
+const paidOutsider = { id: 'u5', login: 'paidout', orgId: undefined, role: undefined, tier: 'pro' };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -235,12 +235,12 @@ describe('Org Routes — Cross-Org Boundaries', () => {
     mockGetEffectiveTier.mockReturnValue('free');
     await handleCreateOrg(mockReq('{"name":"test org"}'), mockRes());
     expect(captured.status).toBe(403);
-    expect(captured.body.error).toContain('Paid plan required');
+    expect(captured.body.error).toContain('Pro plan required');
   });
 
   it('handleCreateOrg returns 409 for user already in an org', async () => {
     mockResolveUser.mockResolvedValue(owner);
-    mockGetEffectiveTier.mockReturnValue('paid');
+    mockGetEffectiveTier.mockReturnValue('pro');
     await handleCreateOrg(mockReq('{"name":"new org"}'), mockRes());
     expect(captured.status).toBe(409);
     expect(captured.body.error).toContain('Already');
@@ -263,14 +263,14 @@ describe('Org Routes — Self-Modification Guards', () => {
 describe('Org Routes — Input Validation', () => {
   it('handleCreateOrg rejects name shorter than 2 chars', async () => {
     mockResolveUser.mockResolvedValue(paidOutsider);
-    mockGetEffectiveTier.mockReturnValue('paid');
+    mockGetEffectiveTier.mockReturnValue('pro');
     await handleCreateOrg(mockReq('{"name":"a"}'), mockRes());
     expect(captured.status).toBe(400);
   });
 
   it('handleCreateOrg rejects name longer than 64 chars', async () => {
     mockResolveUser.mockResolvedValue(paidOutsider);
-    mockGetEffectiveTier.mockReturnValue('paid');
+    mockGetEffectiveTier.mockReturnValue('pro');
     const longName = 'x'.repeat(65);
     await handleCreateOrg(mockReq(JSON.stringify({ name: longName })), mockRes());
     expect(captured.status).toBe(400);
@@ -278,7 +278,7 @@ describe('Org Routes — Input Validation', () => {
 
   it('handleCreateOrg rejects invalid JSON', async () => {
     mockResolveUser.mockResolvedValue(paidOutsider);
-    mockGetEffectiveTier.mockReturnValue('paid');
+    mockGetEffectiveTier.mockReturnValue('pro');
     await handleCreateOrg(mockReq('not json'), mockRes());
     expect(captured.status).toBe(400);
   });

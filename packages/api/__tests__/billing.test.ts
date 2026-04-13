@@ -23,7 +23,7 @@ describe('Billing Module', () => {
         captured = { status, body };
       };
       const mockRes = {} as any;
-      await handleCheckout('user-123', 'paid', false, mockJson, mockRes);
+      await handleCheckout('user-123', 'pro', false, mockJson, mockRes);
       expect(captured).not.toBeNull();
       expect(captured!.status).toBe(503);
     });
@@ -83,16 +83,16 @@ describe('Billing — plan mapping functions', () => {
   });
 
   describe('planToTier', () => {
-    it('maps "pro" to "paid" (legacy)', () => {
-      expect(planToTier('pro')).toBe('paid');
+    it('maps "pro" to "pro"', () => {
+      expect(planToTier('pro')).toBe('pro');
     });
 
-    it('maps "team" to "paid" (legacy)', () => {
-      expect(planToTier('team')).toBe('paid');
+    it('maps "team" to "pro"', () => {
+      expect(planToTier('team')).toBe('pro');
     });
 
-    it('maps "paid" to "paid"', () => {
-      expect(planToTier('paid')).toBe('paid');
+    it('maps "paid" to "pro"', () => {
+      expect(planToTier('paid')).toBe('pro');
     });
 
     it('maps "basic" to "free" (legacy)', () => {

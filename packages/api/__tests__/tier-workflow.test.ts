@@ -9,7 +9,7 @@ import {
 } from '@cullit/core';
 import { getEffectiveTier } from '../src/auth.js';
 
-type Tier = 'free' | 'paid' | 'enterprise';
+type Tier = 'free' | 'pro' | 'enterprise';
 type LicenseInfo = { tier: Tier; valid: boolean };
 
 interface MockUser {
@@ -60,9 +60,9 @@ describe('Tier workflow matrix', () => {
       expectSso: false,
     },
     {
-      name: 'paid plan',
-      userTier: 'paid',
-      expectedEffectiveTier: 'paid',
+      name: 'pro plan',
+      userTier: 'pro',
+      expectedEffectiveTier: 'pro',
       expectAiProvider: true,
       expectSlackPublisher: true,
       expectTeamPublisher: true,
@@ -93,10 +93,10 @@ describe('Tier workflow matrix', () => {
       expect(isProviderAllowed('anthropic', license)).toBe(scenario.expectAiProvider);
       expect(isProviderAllowed('none', license)).toBe(true);
       expect(isEnrichmentAllowed(license)).toBe(
-        scenario.userTier === 'paid' || scenario.userTier === 'enterprise'
+        scenario.userTier === 'pro' || scenario.userTier === 'enterprise'
       );
       expect(isAudienceToneAllowed(license)).toBe(
-        scenario.userTier === 'paid' || scenario.userTier === 'enterprise'
+        scenario.userTier === 'pro' || scenario.userTier === 'enterprise'
       );
 
       expect(isPublisherAllowed('stdout', license)).toBe(true);
@@ -110,7 +110,7 @@ describe('Tier workflow matrix', () => {
       if (effectiveTier === 'free') {
         expect(limits.generationsPerMonth).toBe(3);
       }
-      if (effectiveTier === 'paid') {
+      if (effectiveTier === 'pro') {
         expect(limits.generationsPerMonth).toBe(500);
       }
       if (effectiveTier === 'enterprise') {

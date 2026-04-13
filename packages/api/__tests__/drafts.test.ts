@@ -74,11 +74,11 @@ function mockRes(): ServerResponse {
 }
 
 // Test users
-const paidOwner = { id: 'u1', login: 'owner', orgId: 'org1', role: 'owner', tier: 'paid' };
-const paidAdmin = { id: 'u2', login: 'admin', orgId: 'org1', role: 'admin', tier: 'paid' };
-const paidMember = { id: 'u3', login: 'member', orgId: 'org1', role: 'member', tier: 'paid' };
+const paidOwner = { id: 'u1', login: 'owner', orgId: 'org1', role: 'owner', tier: 'pro' };
+const paidAdmin = { id: 'u2', login: 'admin', orgId: 'org1', role: 'admin', tier: 'pro' };
+const paidMember = { id: 'u3', login: 'member', orgId: 'org1', role: 'member', tier: 'pro' };
 const freeUser = { id: 'u4', login: 'free', orgId: null, role: 'member', tier: 'free' };
-const otherOrgUser = { id: 'u5', login: 'other', orgId: 'org2', role: 'owner', tier: 'paid' };
+const otherOrgUser = { id: 'u5', login: 'other', orgId: 'org2', role: 'owner', tier: 'pro' };
 
 // Sample draft
 const sampleDraft = {
