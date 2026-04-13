@@ -130,7 +130,7 @@
 
     var params = new URLSearchParams(location.search);
     var pendingPlan = params.get('checkout');
-    if (pendingPlan && ['pro', 'team'].indexOf(pendingPlan) !== -1) {
+    if (pendingPlan && ['paid', 'pro', 'team'].indexOf(pendingPlan) !== -1) {
       history.replaceState(null, '', 'dashboard.html');
       upgradePlan(pendingPlan);
     }
@@ -681,18 +681,18 @@
 
   // --- Billing ---
 
-  var TIER_LIMITS = { free: 3, pro: 500, team: 2000, enterprise: Infinity };
+  var TIER_LIMITS = { free: 3, paid: 500, pro: 500, team: 2000, enterprise: Infinity };
 
-  function updateTeamTotal() {
-    var input = document.getElementById('dashTeamSeats');
-    var display = document.getElementById('dashTeamTotal');
+  function updatePaidTotal() {
+    var input = document.getElementById('dashPaidSeats');
+    var display = document.getElementById('dashPaidTotal');
     if (input && display) {
-      var seats = Math.max(5, parseInt(input.value) || 5);
+      var seats = Math.max(1, parseInt(input.value) || 1);
       display.textContent = '$' + (seats * 8) + '/mo';
     }
     var manageSection = document.getElementById('manageSeatsSection');
     if (manageSection && manageSection.style.display !== 'none' && input) {
-      var seatVal = Math.max(5, parseInt(input.value) || 5);
+      var seatVal = Math.max(1, parseInt(input.value) || 1);
       var changed = seatVal !== manageSeatCount;
       var updateBtn = document.getElementById('updateSeatsBtn');
       var proNote = document.getElementById('prorationNote');
@@ -702,19 +702,19 @@
   }
 
   function adjustSeats(delta) {
-    var input = document.getElementById('dashTeamSeats');
+    var input = document.getElementById('dashPaidSeats');
     if (!input) return;
-    var current = parseInt(input.value) || 5;
-    var newVal = Math.max(5, Math.min(100, current + delta));
+    var current = parseInt(input.value) || 1;
+    var newVal = Math.max(1, Math.min(100, current + delta));
     input.value = newVal;
-    updateTeamTotal();
-    document.getElementById('seatDecrBtn').disabled = newVal <= 5;
+    updatePaidTotal();
+    document.getElementById('seatDecrBtn').disabled = newVal <= 1;
     document.getElementById('seatIncrBtn').disabled = newVal >= 100;
   }
 
-  async function updateTeamSeats() {
-    var input = document.getElementById('dashTeamSeats');
-    var newSeats = Math.max(5, Math.min(100, parseInt(input ? input.value : '5', 10)));
+  async function updatePaidSeats() {
+    var input = document.getElementById('dashPaidSeats');
+    var newSeats = Math.max(1, Math.min(100, parseInt(input ? input.value : '1', 10)));
     if (newSeats === manageSeatCount) { showToast('Seat count unchanged'); return; }
 
     var delta = Math.abs(newSeats - manageSeatCount);
@@ -1283,11 +1283,11 @@
     document.getElementById('billingPlanName').textContent = planName;
 
     document.querySelectorAll('.billing-plan-option').forEach(function (el) { el.classList.remove('current'); });
-    var cardPlanMap = { planFree: 'free', planPro: 'pro', planTeam: 'team', planEnterprise: 'enterprise' };
+    var cardPlanMap = { planFree: 'free', planPaid: 'paid', planEnterprise: 'enterprise' };
     var planEl = document.getElementById('plan' + planName);
     if (planEl) planEl.classList.add('current');
 
-    var tierRank = { free: 0, pro: 1, team: 2, enterprise: 3 };
+    var tierRank = { free: 0, paid: 1, pro: 1, team: 1, enterprise: 2 };
     var currentRank = tierRank[tier] || 0;
     document.querySelectorAll('.billing-plan-option').forEach(function (el) {
       var btn = el.querySelector('.plan-upgrade-btn');
@@ -1316,7 +1316,7 @@
 
     var manageSection = document.getElementById('manageSeatsSection');
     if (manageSection) {
-      if (tier === 'paid' || tier === 'team') {
+      if (tier === 'paid' || tier === 'pro' || tier === 'team') {
         manageSection.style.display = '';
         var updateBtn = document.getElementById('updateSeatsBtn');
         var proNote = document.getElementById('prorationNote');
@@ -1375,9 +1375,9 @@
     if (tier === 'paid' || tier === 'pro' || tier === 'team' || tier === 'enterprise') {
       teamKeysPanel.style.display = '';
       await loadTeamKeys();
-      if (tier === 'paid' || tier === 'team') {
-        var seatInput = document.getElementById('dashTeamSeats');
-        if (seatInput) { seatInput.value = manageSeatCount; updateTeamTotal(); }
+      if (tier === 'paid' || tier === 'pro' || tier === 'team') {
+        var seatInput = document.getElementById('dashPaidSeats');
+        if (seatInput) { seatInput.value = manageSeatCount; updatePaidTotal(); }
       }
     } else {
       teamKeysPanel.style.display = 'none';
@@ -1426,8 +1426,8 @@
     try {
       var body = { plan: plan };
       if (plan === 'paid' || plan === 'team') {
-        var seatInput = document.getElementById('dashTeamSeats');
-        body.seats = parseInt(seatInput ? seatInput.value : '5', 10);
+        var seatInput = document.getElementById('dashPaidSeats');
+        body.seats = parseInt(seatInput ? seatInput.value : '1', 10);
       }
       var res = await apiFetch('/v1/billing/checkout', {
         method: 'POST',
@@ -1692,11 +1692,10 @@
           case 'refresh-github': loadGithubInstallations(); break;
           case 'refresh-changelog': loadChangelog(); break;
           case 'copy-widget': copyWidgetSnippet(); break;
-          case 'upgrade-pro': upgradePlan('pro'); break;
-          case 'upgrade-team': upgradePlan('team'); break;
+          case 'upgrade-paid': upgradePlan('paid'); break;
           case 'seat-decr': adjustSeats(-1); break;
           case 'seat-incr': adjustSeats(1); break;
-          case 'update-seats': updateTeamSeats(); break;
+          case 'update-seats': updatePaidSeats(); break;
           case 'analytics-tab': switchDashTab('analytics'); break;
         }
         return;
@@ -1721,7 +1720,7 @@
 
     document.addEventListener('input', function (e) {
       var target = e.target;
-      if (target.id === 'dashTeamSeats') updateTeamTotal();
+      if (target.id === 'dashPaidSeats') updatePaidTotal();
       if (target.id === 'widgetHeaderText') updateWidgetSnippet();
       if (target.id === 'widgetTriggerEmoji') updateWidgetSnippet();
     });
