@@ -66,8 +66,9 @@ describe('API Server', () => {
     const { status, body } = await apiRequest('/health');
     expect(status).toBe(200);
     expect(body.status).toBe('ok');
-    expect(body.version).toBeUndefined();
-    expect(body.uptime).toBeUndefined();
+    expect(body.version).toBeDefined();
+    expect(body.stripe).toBeDefined();
+    expect(body.cors).toBeDefined();
   });
 
   it('GET /openapi.json returns OpenAPI spec', async () => {

@@ -55,19 +55,28 @@ export function json(res: CorsResponse, status: number, body: unknown): void {
 
 // --- Request body reader ---
 
-export async function readBody(req: IncomingMessage): Promise<string> {
+export async function readBody(req: IncomingMessage, timeoutMs = 30_000): Promise<string> {
   const chunks: Buffer[] = [];
   let size = 0;
   const MAX_BODY = 1_048_576; // 1 MB
 
-  for await (const chunk of req) {
-    size += (chunk as Buffer).length;
-    if (size > MAX_BODY) {
-      throw new Error('Request body too large');
+  // Timeout protection: if the body never arrives, reject instead of hanging forever
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), timeoutMs);
+
+  try {
+    for await (const chunk of req) {
+      if (ac.signal.aborted) throw new Error('Request body read timed out');
+      size += (chunk as Buffer).length;
+      if (size > MAX_BODY) {
+        throw new Error('Request body too large');
+      }
+      chunks.push(chunk as Buffer);
     }
-    chunks.push(chunk as Buffer);
+    return Buffer.concat(chunks).toString('utf-8');
+  } finally {
+    clearTimeout(timer);
   }
-  return Buffer.concat(chunks).toString('utf-8');
 }
 
 // --- Utility functions ---

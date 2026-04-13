@@ -273,7 +273,12 @@ async function handleHealth(_req: IncomingMessage, res: ServerResponse): Promise
     try { await sql`SELECT 1`; dbOk = true; } catch { dbOk = false; }
   }
   const status = dbOk ? 'ok' : 'degraded';
-  json(res, dbOk ? 200 : 503, { status });
+  json(res, dbOk ? 200 : 503, {
+    status,
+    version: VERSION,
+    stripe: isStripeConfigured(),
+    cors: { origins: ALLOWED_ORIGINS, count: allowedOriginSet.size },
+  });
 }
 
 async function handleOpenAPI(_req: IncomingMessage, res: ServerResponse): Promise<void> {
