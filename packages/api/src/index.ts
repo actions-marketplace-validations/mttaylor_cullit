@@ -891,10 +891,13 @@ async function handleAppInstallation(req: IncomingMessage, res: ServerResponse):
 // --- Wrapper handlers for inline billing / GitHub routes ---
 
 async function handleCheckoutRoute(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  log.info({ method: req.method, url: req.url, origin: req.headers['origin'] }, 'Checkout route entered');
   const user = await resolveUser(req);
-  if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
+  if (!user) { log.warn('Checkout: user not authenticated'); json(res, 401, { error: 'Not authenticated' }); return; }
+  log.info({ userId: user.id }, 'Checkout: user resolved');
   const body = await readJsonBody(req, res) as { plan?: string; annual?: boolean; seats?: number } | null;
-  if (!body) return;
+  if (!body) { log.warn({ userId: user.id }, 'Checkout: invalid JSON body'); return; }
+  log.info({ userId: user.id, body }, 'Checkout: body parsed');
   const validPlans = ['pro', 'team'] as const;
   const plan = validPlans.includes(body.plan as typeof validPlans[number])
     ? (body.plan as typeof validPlans[number])
@@ -1070,6 +1073,12 @@ const server = createServer(async (req, res: CorsResponse) => {
   // Resolve CORS origin for this request (stored on res to avoid cross-request races)
   res._corsOrigin = getCorsOrigin(req);
 
+  // Set CORS headers early so they're present even if the handler crashes
+  if (res._corsOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', res._corsOrigin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+
   // CORS preflight
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
@@ -1110,10 +1119,14 @@ const server = createServer(async (req, res: CorsResponse) => {
     json(res, 404, { error: 'Not found', code: ErrorCode.RESOURCE_NOT_FOUND, docs: '/openapi.json' });
   } catch (err) {
     log.error({ err, requestId: res._requestId, path: req.url, method: req.method }, 'Unhandled error');
-    if (!res.headersSent) {
-      json(res, 500, { error: 'Internal server error', code: ErrorCode.SERVER_INTERNAL_ERROR, requestId: (res as CorsResponse)._requestId });
-    } else {
-      res.end();
+    try {
+      if (!res.headersSent) {
+        json(res, 500, { error: 'Internal server error', code: ErrorCode.SERVER_INTERNAL_ERROR, requestId: (res as CorsResponse)._requestId });
+      } else if (!res.writableEnded) {
+        res.end();
+      }
+    } catch (writeErr) {
+      log.error({ writeErr, requestId: res._requestId }, 'Failed to send error response');
     }
   } finally {
     metrics.httpRequest(req.method || 'UNKNOWN', res.statusCode);
@@ -1125,7 +1138,15 @@ if (isDirectRun) {
   server.headersTimeout = 30_000;    // 30s to receive headers (slow-loris protection)
   server.requestTimeout = 120_000;   // 2min total request timeout
   server.listen(PORT, '0.0.0.0', () => {
-    log.info({ version: VERSION, port: PORT, database: !!sql, stripe: isStripeConfigured() }, `Cullit API v${VERSION} listening on 0.0.0.0:${PORT}`);
+    log.info({
+      version: VERSION,
+      port: PORT,
+      database: !!sql,
+      stripe: isStripeConfigured(),
+      allowedOrigins: ALLOWED_ORIGINS,
+      corsOriginCount: allowedOriginSet.size,
+      isHttps: IS_HTTPS,
+    }, `Cullit API v${VERSION} listening on 0.0.0.0:${PORT}`);
   });
 }
 
