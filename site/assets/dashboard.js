@@ -1450,7 +1450,7 @@
         showToast(data.error || 'Unable to start checkout');
       }
     } catch (e) {
-      showToast('Billing is not configured yet. Contact sales@cullit.io');
+      showToast('Could not reach billing service. Check connection or contact sales@cullit.io');
     }
   }
 
