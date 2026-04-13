@@ -30,7 +30,7 @@ Cullit supports AI provider keys you supply (Anthropic, OpenAI, Google Gemini, O
 
 ## 5. Billing and Subscriptions
 
-Paid plans (such as Pro, Team, and Enterprise) may include recurring billing through Stripe.
+Paid plans (Paid and Enterprise) include recurring billing through Stripe.
 
 - You authorize recurring charges for selected paid plans
 - Subscription changes, cancellations, and renewals are managed via Stripe/customer portal flows
