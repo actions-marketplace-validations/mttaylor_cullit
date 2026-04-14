@@ -309,7 +309,7 @@ export async function handleCheckout(
       const itemId = sub.items?.data?.[0]?.id;
       if (itemId) {
         // Update the subscription in-place: swap price, update quantity, prorate immediately
-        const idempotencyKey = `sub_update_${userId}_${plan}_${seatCount}_${existingSub.stripe_subscription_id}`;
+        const idempotencyKey = `sub_update_${userId}_${plan}_${seatCount}_${Date.now()}_${existingSub.stripe_subscription_id}`;
         await stripeRequest(`/subscriptions/${existingSub.stripe_subscription_id}`, 'POST', {
           'items[0][id]': itemId,
           'items[0][price]': priceId,
@@ -322,6 +322,13 @@ export async function handleCheckout(
         // Update tier immediately — webhook will also fire as confirmation
         const tier = planToTier(plan);
         await dbUpdateUserTier(userId, tier);
+
+        // Provision team keys immediately so they're available when dashboard reloads
+        try {
+          await provisionTeamKeys(userId, plan, seatCount);
+        } catch (err) {
+          log.warn({ err: (err as Error).message, userId, plan, seatCount }, 'Direct team key provisioning failed — webhook will retry');
+        }
 
         log.info({ userId, plan, seats: seatCount, subscriptionId: existingSub.stripe_subscription_id }, 'Subscription updated (plan change)');
         jsonFn(res, 200, { updated: true, plan, seats: seatCount });
@@ -587,9 +594,8 @@ async function handleCheckoutComplete(sessionPayload: unknown): Promise<void> {
   // Fetch full subscription details from Stripe
   const sub = await stripeRequest<StripeSubscription>(`/subscriptions/${subscriptionId}`, 'GET');
 
-  const seats = plan === 'team'
-    ? Math.max(PAID_MIN_SEATS, parseInt(session.metadata?.seats || String(PAID_MIN_SEATS), 10))
-    : 0;
+  const seatsMeta = parseInt(session.metadata?.seats || '0', 10);
+  const seats = planToSeats(plan, seatsMeta > 0 ? seatsMeta : undefined);
 
   await dbUpsertSubscription(buildSubscriptionRecord(subscriptionId, userId, customerId, plan, sub));
   await recordBillingAudit('billing.checkout_completed', subscriptionId, { customerId, plan, seats }, userId);

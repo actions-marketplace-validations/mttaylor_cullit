@@ -1561,8 +1561,8 @@
             (isRevoked ? '<span class="team-key-badge revoked-badge">Revoked</span>' : (isAssigned ? '<span class="team-key-badge assigned">Assigned</span>' : '<span class="team-key-badge">Unassigned</span>')) +
           '</div>' +
           '<div class="team-key-value">' +
-            '<code class="team-key-code">' + escapeHtml(k.apiKey) + '</code>' +
-            (!isRevoked ? '<button class="team-key-copy-btn" title="Copy key">\uD83D\uDCCB</button>' : '') +
+            '<code class="team-key-code">' + escapeHtml(k.apiKeyPrefix || '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022') + '</code>' +
+            (!isRevoked ? '<button class="team-key-copy-btn" title="Rotate to reveal full key">\uD83D\uDD04</button>' : '') +
           '</div>' +
           (!isRevoked ?
             '<div class="team-key-assign">' +
@@ -1577,7 +1577,7 @@
           '</div>';
 
         var copyBtn = card.querySelector('.team-key-copy-btn');
-        if (copyBtn) copyBtn.addEventListener('click', function () { copyTeamKey(k.apiKey); });
+        if (copyBtn) copyBtn.addEventListener('click', function () { rotateTeamKey(k.id); });
 
         var saveBtn = card.querySelector('.team-key-save');
         if (saveBtn) saveBtn.addEventListener('click', function () { saveTeamKey(card, k.id); });
