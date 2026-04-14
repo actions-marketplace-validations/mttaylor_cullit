@@ -340,6 +340,9 @@ export async function migrate(): Promise<void> {
   `;
 
   await sql`ALTER TABLE team_api_keys ADD COLUMN IF NOT EXISTS api_key_hash TEXT`.catch((err) => { log.debug({ err: (err as Error).message }, 'ALTER TABLE team_api_keys api_key_hash'); });
+  // api_key should be nullable (plaintext is scrubbed after hashing) and not unique (multiple NULLs)
+  await sql`ALTER TABLE team_api_keys ALTER COLUMN api_key DROP NOT NULL`.catch(() => {});
+  await sql`ALTER TABLE team_api_keys DROP CONSTRAINT IF EXISTS team_api_keys_api_key_key`.catch(() => {});
   await sql`CREATE INDEX IF NOT EXISTS idx_team_keys_org ON team_api_keys (org_id) WHERE revoked_at IS NULL`;
   await sql`CREATE INDEX IF NOT EXISTS idx_team_keys_api_key ON team_api_keys (api_key) WHERE revoked_at IS NULL`;
   await sql`CREATE INDEX IF NOT EXISTS idx_team_keys_hash ON team_api_keys (api_key_hash) WHERE revoked_at IS NULL`;
@@ -1350,7 +1353,7 @@ export async function dbCreateTeamApiKey(key: {
   const keyHash = hashApiKey(key.apiKey);
   const rows = await sql<DbTeamApiKey[]>`
     INSERT INTO team_api_keys (id, org_id, api_key, api_key_hash, label)
-    VALUES (${key.id}, ${key.orgId}, ${null}, ${keyHash}, ${key.label})
+    VALUES (${key.id}, ${key.orgId}, ${key.apiKey}, ${keyHash}, ${key.label})
     RETURNING *
   `;
   return rows[0];
@@ -1432,7 +1435,7 @@ export async function dbRevokeExcessTeamApiKeys(orgId: string, maxActive: number
 
 export async function dbRotateTeamApiKey(id: string, orgId: string, newApiKey: string): Promise<DbTeamApiKey | null> {
   const rows = await sql<DbTeamApiKey[]>`
-    UPDATE team_api_keys SET api_key = ${null}, api_key_hash = ${hashApiKey(newApiKey)} WHERE id = ${id} AND org_id = ${orgId} AND revoked_at IS NULL RETURNING *
+    UPDATE team_api_keys SET api_key = ${newApiKey}, api_key_hash = ${hashApiKey(newApiKey)} WHERE id = ${id} AND org_id = ${orgId} AND revoked_at IS NULL RETURNING *
   `;
   return rows[0] || null;
 }

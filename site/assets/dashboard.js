@@ -730,6 +730,10 @@
         body: JSON.stringify({ plan: 'pro', seats: newSeats }),
       });
       var data = await res.json();
+      if (res.status === 401) {
+        showToast('Session expired. Please refresh and log in again.');
+        return;
+      }
       if (data.updated) {
         manageSeatCount = data.seats || newSeats;
         showToast('Seats updated to ' + manageSeatCount + '!');

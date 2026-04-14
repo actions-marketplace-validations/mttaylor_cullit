@@ -663,7 +663,7 @@ async function provisionTeamKeys(userId: string, plan: string, seats: number): P
         const label = `Seat ${existingCount + i + 1}`;
         await tx`
           INSERT INTO team_api_keys (id, org_id, api_key, api_key_hash, label)
-          VALUES (${id}, ${orgId}, ${null}, ${keyHash}, ${label})
+          VALUES (${id}, ${orgId}, ${apiKey}, ${keyHash}, ${label})
         `;
       }
 
