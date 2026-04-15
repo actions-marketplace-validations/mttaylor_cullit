@@ -6,11 +6,12 @@
  */
 
 import type { IncomingMessage, ServerResponse } from 'http';
+import crypto from 'crypto';
 import { resolveUser, getOrg, generateApiKey } from '../auth.js';
 import {
   dbGetTeamApiKeys, dbUpdateTeamApiKeyAssignment,
   dbUpdateTeamApiKeyLabel, dbRevokeTeamApiKey, dbRotateTeamApiKey,
-  dbRecordAuditEvent,
+  dbRecordAuditEvent, dbCreateTeamApiKey, dbGetActiveTeamApiKeyCount,
 } from '../db.js';
 import { json, readJsonBody, requireAuth, requireOrgAdmin, type CorsResponse } from '../utils.js';
 import { sendTeamApiKey } from '../email.js';
@@ -123,4 +124,36 @@ export async function handleRotateTeamKey(req: IncomingMessage, res: ServerRespo
   await dbRecordAuditEvent({ userId: user.id, action: 'team_key.rotate', target: keyId, metadata: { orgId: user.orgId } }).catch(() => {});
   log.info({ actor: user.id, keyId, action: 'team_key.rotate' }, 'Team API key rotated');
   json(res, 200, { apiKey: newApiKey });
+}
+
+/**
+ * POST /v1/org/keys/:id/replace — Replace a revoked key with a new active key for the same seat
+ */
+export async function handleReplaceTeamKey(req: IncomingMessage, res: ServerResponse, keyId: string): Promise<void> {
+  const user = await requireOrgAdmin(resolveUser, req, res as CorsResponse, 'replace keys');
+  if (!user) return;
+
+  const keys = await dbGetTeamApiKeys(user.orgId);
+  const oldKey = keys.find(k => k.id === keyId);
+  if (!oldKey) { json(res, 404, { error: 'Key not found' }); return; }
+  if (!oldKey.revoked_at) { json(res, 400, { error: 'Key is still active — use rotate instead' }); return; }
+
+  // Check seat limit
+  const activeCount = await dbGetActiveTeamApiKeyCount(user.orgId);
+  const org = await getOrg(user.orgId);
+  const seatLimit = org?.maxSeats || 1;
+  if (activeCount >= seatLimit) {
+    json(res, 400, { error: 'All seats are in use. Increase your seat count to add more keys.' });
+    return;
+  }
+
+  const newApiKey = generateApiKey();
+  const newId = crypto.randomUUID();
+  const label = oldKey.label || `Seat ${activeCount + 1}`;
+
+  const created = await dbCreateTeamApiKey({ id: newId, orgId: user.orgId, apiKey: newApiKey, label });
+
+  await dbRecordAuditEvent({ userId: user.id, action: 'team_key.replace', target: newId, metadata: { orgId: user.orgId, replacedKeyId: keyId } }).catch(() => {});
+  log.info({ actor: user.id, oldKeyId: keyId, newKeyId: newId, action: 'team_key.replace' }, 'Team API key replaced');
+  json(res, 200, { apiKey: newApiKey, keyId: created.id });
 }

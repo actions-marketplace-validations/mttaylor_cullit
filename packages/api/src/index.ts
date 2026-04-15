@@ -62,7 +62,7 @@ import {
 } from './routes/org.js';
 import {
   handleListTeamKeys, handleUpdateTeamKey, handleSendTeamKey,
-  handleRevokeTeamKey, handleRotateTeamKey,
+  handleRevokeTeamKey, handleRotateTeamKey, handleReplaceTeamKey,
 } from './routes/team-keys.js';
 
 // --- Magic-number constants ---
@@ -1055,6 +1055,7 @@ const routes: Route[] = [
   { method: 'POST',   path: /^\/v1\/org\/keys\/([^/]+)\/send$/,    handler: (req, res, id) => handleSendTeamKey(req, res, id) },
   { method: 'POST',   path: /^\/v1\/org\/keys\/([^/]+)\/revoke$/,  handler: (req, res, id) => handleRevokeTeamKey(req, res, id) },
   { method: 'POST',   path: /^\/v1\/org\/keys\/([^/]+)\/rotate$/,  handler: (req, res, id) => handleRotateTeamKey(req, res, id) },
+  { method: 'POST',   path: /^\/v1\/org\/keys\/([^/]+)\/replace$/, handler: (req, res, id) => handleReplaceTeamKey(req, res, id) },
 
   // History & Analytics
   { method: 'GET',    path: '/v1/history',              handler: handleGetHistory },

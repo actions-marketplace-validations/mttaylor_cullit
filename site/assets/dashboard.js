@@ -1556,6 +1556,9 @@
 
   // --- Team Key Management ---
 
+  // In-memory store of revealed key values (only available until page refresh)
+  var revealedKeys = {};
+
   async function loadTeamKeys() {
     var list = document.getElementById('teamKeysList');
     list.innerHTML = '<div style="color:var(--text-dim)">Loading team keys\u2026</div>';
@@ -1572,8 +1575,11 @@
       var data = await res.json();
       var keys = data.keys || [];
 
+      var activeKeys = keys.filter(function (k) { return !k.revokedAt; });
+      var revokedKeys = keys.filter(function (k) { return !!k.revokedAt; });
+
       var seatEl = document.getElementById('teamKeySeatCount');
-      var activeCount = keys.filter(function (k) { return !k.revokedAt; }).length;
+      var activeCount = activeKeys.length;
       var seatTotal = manageSeatCount || 1;
       seatEl.textContent = activeCount + ' of ' + seatTotal + ' seats active';
 
@@ -1595,56 +1601,108 @@
         list.innerHTML = '<div style="color:var(--text-dim)">No team API keys yet. Keys are provisioned when you subscribe to a Pro plan.</div>';
         return;
       }
+
       list.innerHTML = '';
-      keys.forEach(function (k) {
-        var card = document.createElement('div');
-        card.className = 'team-key-card' + (k.revokedAt ? ' revoked' : '');
-        card.dataset.keyId = k.id;
 
-        var isRevoked = !!k.revokedAt;
-        var isAssigned = !!k.assignedToEmail;
-
-        card.innerHTML =
-          '<div class="team-key-header">' +
-            '<input class="team-key-label" value="' + escapeAttr(k.label || '') + '" placeholder="Label (e.g. Frontend Dev)" maxlength="64"' + (isRevoked ? ' disabled' : '') + '>' +
-            (isRevoked ? '<span class="team-key-badge revoked-badge">Revoked</span>' : (isAssigned ? '<span class="team-key-badge assigned">Assigned</span>' : '<span class="team-key-badge">Unassigned</span>')) +
-          '</div>' +
-          '<div class="team-key-value">' +
-            '<code class="team-key-code">' + escapeHtml(k.apiKeyPrefix || '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022') + '</code>' +
-            (!isRevoked ? '<button class="team-key-copy-btn" title="Rotate to reveal full key">\uD83D\uDD04</button>' : '') +
-          '</div>' +
-          (!isRevoked ?
-            '<div class="team-key-assign">' +
-              '<input type="email" class="team-key-email" value="' + escapeAttr(k.assignedToEmail || '') + '" placeholder="team-member@company.com">' +
-              '<input type="text" class="team-key-name" value="' + escapeAttr(k.assignedToName || '') + '" placeholder="Name (optional)">' +
-            '</div>' : '') +
-          '<div class="team-key-actions">' +
-            (!isRevoked ? '<button class="btn-small team-key-save" title="Save label and assignment">Save</button>' : '') +
-            (!isRevoked && isAssigned ? '<button class="btn-small team-key-send" title="Email key to assignee">Send Email</button>' : '') +
-            (!isRevoked ? '<button class="btn-small team-key-rotate" title="Generate new key value">Rotate</button>' : '') +
-            (!isRevoked ? '<button class="btn-small team-key-revoke" style="background:var(--terminal-red)" title="Permanently revoke this key">Revoke</button>' : '') +
-          '</div>';
-
-        var copyBtn = card.querySelector('.team-key-copy-btn');
-        if (copyBtn) copyBtn.addEventListener('click', function () { rotateTeamKey(k.id); });
-
-        var saveBtn = card.querySelector('.team-key-save');
-        if (saveBtn) saveBtn.addEventListener('click', function () { saveTeamKey(card, k.id); });
-
-        var sendBtn = card.querySelector('.team-key-send');
-        if (sendBtn) sendBtn.addEventListener('click', function () { sendTeamKeyEmail(k.id); });
-
-        var rotateBtn = card.querySelector('.team-key-rotate');
-        if (rotateBtn) rotateBtn.addEventListener('click', function () { rotateTeamKey(k.id); });
-
-        var revokeBtn = card.querySelector('.team-key-revoke');
-        if (revokeBtn) revokeBtn.addEventListener('click', function () { revokeTeamKey(k.id); });
-
-        list.appendChild(card);
+      // Render active keys
+      activeKeys.forEach(function (k) {
+        list.appendChild(buildKeyCard(k, false));
       });
+
+      // Render revoked keys in a collapsible section
+      if (revokedKeys.length > 0) {
+        var section = document.createElement('div');
+        section.className = 'revoked-keys-section';
+        var toggle = document.createElement('button');
+        toggle.className = 'btn-small revoked-keys-toggle';
+        toggle.textContent = 'Show Revoked Keys (' + revokedKeys.length + ')';
+        toggle.style.cssText = 'margin-top:12px;background:var(--bg-secondary);color:var(--text-dim);border:1px solid var(--border)';
+        var container = document.createElement('div');
+        container.className = 'revoked-keys-container';
+        container.style.display = 'none';
+
+        toggle.addEventListener('click', function () {
+          var showing = container.style.display !== 'none';
+          container.style.display = showing ? 'none' : '';
+          toggle.textContent = (showing ? 'Show' : 'Hide') + ' Revoked Keys (' + revokedKeys.length + ')';
+        });
+
+        revokedKeys.forEach(function (k) {
+          container.appendChild(buildKeyCard(k, true));
+        });
+
+        section.appendChild(toggle);
+        section.appendChild(container);
+        list.appendChild(section);
+      }
     } catch (e) {
       list.innerHTML = '<div style="color:var(--terminal-red)">Error loading team keys</div>';
     }
+  }
+
+  function buildKeyCard(k, isRevoked) {
+    var card = document.createElement('div');
+    card.className = 'team-key-card' + (isRevoked ? ' revoked' : '');
+    card.dataset.keyId = k.id;
+
+    var isAssigned = !!k.assignedToEmail;
+    var hasRevealedKey = !!revealedKeys[k.id];
+
+    var keyDisplay = hasRevealedKey
+      ? '<code class="team-key-code revealed">' + escapeHtml(revealedKeys[k.id]) + '</code>' +
+        '<button class="team-key-copy-btn" title="Copy full key">\uD83D\uDCCB</button>' +
+        '<button class="team-key-hide-btn" title="Hide key">\uD83D\uDC41\uFE0F</button>'
+      : '<code class="team-key-code">' + escapeHtml(k.apiKeyPrefix || '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022') + '</code>' +
+        (!isRevoked ? '<button class="team-key-copy-btn" title="Rotate to reveal full key">\uD83D\uDD04</button>' : '');
+
+    card.innerHTML =
+      '<div class="team-key-header">' +
+        '<input class="team-key-label" value="' + escapeAttr(k.label || '') + '" placeholder="Label (e.g. Frontend Dev)" maxlength="64"' + (isRevoked ? ' disabled' : '') + '>' +
+        (isRevoked ? '<span class="team-key-badge revoked-badge">Revoked</span>' : (isAssigned ? '<span class="team-key-badge assigned">Assigned</span>' : '<span class="team-key-badge">Unassigned</span>')) +
+      '</div>' +
+      '<div class="team-key-value">' + keyDisplay + '</div>' +
+      (!isRevoked ?
+        '<div class="team-key-assign">' +
+          '<input type="email" class="team-key-email" value="' + escapeAttr(k.assignedToEmail || '') + '" placeholder="team-member@company.com">' +
+          '<input type="text" class="team-key-name" value="' + escapeAttr(k.assignedToName || '') + '" placeholder="Name (optional)">' +
+        '</div>' : '') +
+      '<div class="team-key-actions">' +
+        (!isRevoked ? '<button class="btn-small team-key-save" title="Save label and assignment">Save</button>' : '') +
+        (!isRevoked && isAssigned ? '<button class="btn-small team-key-send" title="Email key to assignee">Send Email</button>' : '') +
+        (!isRevoked ? '<button class="btn-small team-key-rotate" title="Generate new key value">Rotate</button>' : '') +
+        (!isRevoked ? '<button class="btn-small team-key-revoke" style="background:var(--terminal-red)" title="Permanently revoke this key">Revoke</button>' : '') +
+        (isRevoked ? '<button class="btn-small team-key-replace" title="Create a new key to fill this seat">Replace Key</button>' : '') +
+      '</div>';
+
+    // Wire up event handlers
+    var copyBtn = card.querySelector('.team-key-copy-btn');
+    if (copyBtn) {
+      if (hasRevealedKey) {
+        copyBtn.addEventListener('click', function () { copyTeamKey(revealedKeys[k.id]); });
+      } else {
+        copyBtn.addEventListener('click', function () { rotateTeamKey(k.id); });
+      }
+    }
+
+    var hideBtn = card.querySelector('.team-key-hide-btn');
+    if (hideBtn) hideBtn.addEventListener('click', function () { delete revealedKeys[k.id]; loadTeamKeys(); });
+
+    var saveBtn = card.querySelector('.team-key-save');
+    if (saveBtn) saveBtn.addEventListener('click', function () { saveTeamKey(card, k.id); });
+
+    var sendBtn = card.querySelector('.team-key-send');
+    if (sendBtn) sendBtn.addEventListener('click', function () { sendTeamKeyEmail(k.id); });
+
+    var rotateBtn = card.querySelector('.team-key-rotate');
+    if (rotateBtn) rotateBtn.addEventListener('click', function () { rotateTeamKey(k.id); });
+
+    var revokeBtn = card.querySelector('.team-key-revoke');
+    if (revokeBtn) revokeBtn.addEventListener('click', function () { revokeTeamKey(k.id); });
+
+    var replaceBtn = card.querySelector('.team-key-replace');
+    if (replaceBtn) replaceBtn.addEventListener('click', function () { replaceTeamKey(k.id); });
+
+    return card;
   }
 
   function copyTeamKey(apiKey) {
@@ -1726,10 +1784,11 @@
       var data = await res.json();
       if (res.ok) {
         if (data.apiKey) {
+          revealedKeys[keyId] = data.apiKey;
           navigator.clipboard.writeText(data.apiKey).then(function () {
             showToast('Key rotated \u2014 new key copied to clipboard');
           }).catch(function () {
-            showToast('Key rotated \u2014 copy the new key from below');
+            showToast('Key rotated \u2014 new key shown below');
           });
         } else {
           showToast('Key rotated');
@@ -1740,6 +1799,31 @@
       }
     } catch (e) {
       showToast('Error rotating key');
+    }
+  }
+
+  async function replaceTeamKey(keyId) {
+    if (!confirm('Create a new key to replace this revoked seat?')) return;
+    try {
+      var res = await apiFetch('/v1/org/keys/' + keyId + '/replace', { method: 'POST' });
+      var data = await res.json();
+      if (res.ok) {
+        if (data.apiKey && data.keyId) {
+          revealedKeys[data.keyId] = data.apiKey;
+          navigator.clipboard.writeText(data.apiKey).then(function () {
+            showToast('New key created \u2014 copied to clipboard');
+          }).catch(function () {
+            showToast('New key created \u2014 shown below');
+          });
+        } else {
+          showToast('Key replaced');
+        }
+        loadTeamKeys();
+      } else {
+        showToast(data.error || 'Failed to replace key');
+      }
+    } catch (e) {
+      showToast('Error replacing key');
     }
   }
 

@@ -52,6 +52,7 @@ import {
   handleSendTeamKey,
   handleRevokeTeamKey,
   handleRotateTeamKey,
+  handleReplaceTeamKey,
 } from '../src/routes/team-keys.js';
 
 // --- Helpers ---
@@ -336,5 +337,72 @@ describe('handleRotateTeamKey', () => {
     mockDbRotateTeamApiKey.mockResolvedValue(null);
     await handleRotateTeamKey(mockReq(), mockRes(), 'k999');
     expect(captured.status).toBe(404);
+  });
+});
+
+// --- handleReplaceTeamKey ---
+
+describe('handleReplaceTeamKey', () => {
+  it('returns 401 if not authenticated', async () => {
+    mockResolveUser.mockResolvedValue(null);
+    await handleReplaceTeamKey(mockReq(), mockRes(), 'k3');
+    expect(captured.status).toBe(401);
+  });
+
+  it('returns 403 if user is member', async () => {
+    mockResolveUser.mockResolvedValue(member);
+    await handleReplaceTeamKey(mockReq(), mockRes(), 'k3');
+    expect(captured.status).toBe(403);
+  });
+
+  it('returns 404 for non-existent key', async () => {
+    mockResolveUser.mockResolvedValue(owner);
+    await handleReplaceTeamKey(mockReq(), mockRes(), 'k999');
+    expect(captured.status).toBe(404);
+  });
+
+  it('returns 400 if key is still active', async () => {
+    mockResolveUser.mockResolvedValue(owner);
+    await handleReplaceTeamKey(mockReq(), mockRes(), 'k1');
+    expect(captured.status).toBe(400);
+    expect(captured.body.error).toContain('active');
+  });
+
+  it('returns 400 if all seats are in use', async () => {
+    mockResolveUser.mockResolvedValue(owner);
+    mockDbGetActiveTeamApiKeyCount.mockResolvedValue(5);
+    mockGetOrg.mockResolvedValue({ id: 'org1', name: 'Test Org', maxSeats: 5 });
+    await handleReplaceTeamKey(mockReq(), mockRes(), 'k3');
+    expect(captured.status).toBe(400);
+    expect(captured.body.error).toContain('seats');
+  });
+
+  it('replaces revoked key with new active key', async () => {
+    mockResolveUser.mockResolvedValue(owner);
+    mockDbGetActiveTeamApiKeyCount.mockResolvedValue(2);
+    mockGetOrg.mockResolvedValue({ id: 'org1', name: 'Test Org', maxSeats: 5 });
+    mockDbCreateTeamApiKey.mockResolvedValue({ id: 'k-new', org_id: 'org1', api_key_hash: 'newhash' });
+    await handleReplaceTeamKey(mockReq(), mockRes(), 'k3');
+    expect(captured.status).toBe(200);
+    expect(captured.body.apiKey).toBe('clt_new_rotated_key');
+    expect(captured.body.keyId).toBe('k-new');
+    expect(mockDbCreateTeamApiKey).toHaveBeenCalledWith(
+      expect.objectContaining({ orgId: 'org1', apiKey: 'clt_new_rotated_key', label: 'Seat 3' }),
+    );
+  });
+
+  it('uses default label when old key has no label', async () => {
+    const keysWithoutLabel = [...sampleKeys];
+    keysWithoutLabel[2] = { ...keysWithoutLabel[2], label: '' };
+    mockDbGetTeamApiKeys.mockResolvedValue(keysWithoutLabel);
+    mockResolveUser.mockResolvedValue(owner);
+    mockDbGetActiveTeamApiKeyCount.mockResolvedValue(2);
+    mockGetOrg.mockResolvedValue({ id: 'org1', name: 'Test Org', maxSeats: 5 });
+    mockDbCreateTeamApiKey.mockResolvedValue({ id: 'k-new', org_id: 'org1' });
+    await handleReplaceTeamKey(mockReq(), mockRes(), 'k3');
+    expect(captured.status).toBe(200);
+    expect(mockDbCreateTeamApiKey).toHaveBeenCalledWith(
+      expect.objectContaining({ label: 'Seat 3' }),
+    );
   });
 });
