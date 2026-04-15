@@ -1,5 +1,15 @@
 [
   {
+    "version": "v2.9.0",
+    "date": "2026-04-15",
+    "commits": 3,
+    "filesChanged": 17,
+    "providers": [
+      "none",
+      "template"
+    ]
+  },
+  {
     "version": "v2.8.6",
     "date": "2026-04-15",
     "commits": 2,
