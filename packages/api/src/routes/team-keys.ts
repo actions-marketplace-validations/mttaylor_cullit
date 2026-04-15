@@ -86,12 +86,12 @@ export async function handleSendTeamKey(req: IncomingMessage, res: ServerRespons
   const senderName = user.name || user.login;
   const recipientName = key.assigned_to_name || key.assigned_to_email.split('@')[0];
 
-  const emailSent = await sendTeamApiKey(
+  const emailResult = await sendTeamApiKey(
     key.assigned_to_email, recipientName, orgName, senderName, key.label,
   );
 
-  log.info({ actor: user.id, keyId, email: key.assigned_to_email }, 'Team API key sent via email');
-  json(res, 200, { sent: emailSent });
+  log.info({ actor: user.id, keyId, email: key.assigned_to_email, sent: emailResult.sent, reason: emailResult.reason }, 'Team API key send attempt');
+  json(res, 200, { sent: emailResult.sent, reason: emailResult.reason });
 }
 
 /**

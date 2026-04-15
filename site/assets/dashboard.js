@@ -1684,7 +1684,17 @@
       var res = await apiFetch('/v1/org/keys/' + keyId + '/send', { method: 'POST' });
       var data = await res.json();
       if (res.ok) {
-        showToast(data.sent ? 'Key emailed successfully' : 'Email sending is not configured');
+        if (data.sent) {
+          showToast('Key emailed successfully');
+        } else {
+          var reasons = {
+            not_configured: 'Email service is not configured on the server (RESEND_API_KEY missing)',
+            throttled: 'Too many emails sent recently — please wait and try again',
+            api_error: 'Email service returned an error — check server logs',
+            network_error: 'Could not reach email service — check server network'
+          };
+          showToast(reasons[data.reason] || 'Email could not be sent');
+        }
       } else {
         showToast(data.error || 'Failed to send');
       }

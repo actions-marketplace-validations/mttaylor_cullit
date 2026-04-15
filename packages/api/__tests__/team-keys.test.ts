@@ -35,7 +35,7 @@ vi.mock('../src/db.js', () => ({
 }));
 
 // Mock email module
-const mockSendTeamApiKey = vi.fn().mockResolvedValue(true);
+const mockSendTeamApiKey = vi.fn().mockResolvedValue({ sent: true });
 
 vi.mock('../src/email.js', () => ({
   sendTeamApiKey: (...args: unknown[]) => mockSendTeamApiKey(...args),

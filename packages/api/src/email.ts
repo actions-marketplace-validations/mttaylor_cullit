@@ -61,14 +61,19 @@ interface EmailOptions {
 }
 
 async function send(options: EmailOptions): Promise<boolean> {
+  const result = await sendWithReason(options);
+  return result.sent;
+}
+
+async function sendWithReason(options: EmailOptions): Promise<{ sent: boolean; reason?: string }> {
   if (!RESEND_API_KEY) {
     log.warn({ subject: options.subject, to: options.to }, 'Email skipped (RESEND_API_KEY not set)');
-    return false;
+    return { sent: false, reason: 'not_configured' };
   }
 
   if (isEmailThrottled(options.to)) {
     log.warn({ to: options.to, subject: options.subject }, 'Email throttled (rate limit exceeded)');
-    return false;
+    return { sent: false, reason: 'throttled' };
   }
 
   try {
@@ -88,14 +93,14 @@ async function send(options: EmailOptions): Promise<boolean> {
 
     if (!res.ok) {
       const err = await res.text();
-      log.error({ status: res.status, err }, 'Email send failed');
-      return false;
+      log.error({ status: res.status, err, to: options.to }, 'Email send failed');
+      return { sent: false, reason: 'api_error' };
     }
     recordEmailSent(options.to);
-    return true;
+    return { sent: true };
   } catch (err) {
-    log.error({ err: (err as Error).message }, 'Email send error');
-    return false;
+    log.error({ err: (err as Error).message, to: options.to }, 'Email send error');
+    return { sent: false, reason: 'network_error' };
   }
 }
 
@@ -250,8 +255,8 @@ export async function sendOrgInvite(email: string, orgName: string, inviterName:
   });
 }
 
-export async function sendTeamApiKey(email: string, recipientName: string, orgName: string, senderName: string, label: string): Promise<boolean> {
-  return send({
+export async function sendTeamApiKey(email: string, recipientName: string, orgName: string, senderName: string, label: string): Promise<{ sent: boolean; reason?: string }> {
+  return sendWithReason({
     to: email,
     subject: `Your Cullit API key for ${orgName}`,
     html: `${BRAND}
