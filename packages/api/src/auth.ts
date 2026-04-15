@@ -850,6 +850,9 @@ export async function handleRotateApiKey(req: IncomingMessage, res: ServerRespon
   if (useDb) {
     await dbRotateApiKey(user.id, newApiKey);
     await dbRevokeAllUserTokens(user.id);
+    // Issue a fresh session cookie so the user stays logged in after token revocation
+    const freshJwt = createJWT(user.id);
+    res.setHeader('Set-Cookie', `${SESSION_COOKIE_NAME}=${freshJwt}${COOKIE_ATTRS}; Max-Age=${JWT_EXPIRY}`);
   } else {
     const existing = store.users[user.id];
     if (existing) {
