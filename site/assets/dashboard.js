@@ -93,12 +93,17 @@
     if (!confirm('Rotate your API key? Your current key will stop working immediately.')) return;
     try {
       var res = await apiFetch('/auth/rotate-key', { method: 'POST' });
+      if (!res.ok) {
+        var err = await res.json().catch(function () { return {}; });
+        showToast(err.error || 'Failed to rotate key (' + res.status + ')');
+        return;
+      }
       var data = await res.json();
       if (data.apiKey) {
         currentUser.apiKey = data.apiKey;
         document.getElementById('apiKeyDisplay').value = data.apiKey;
         showToast('API key rotated successfully');
-      } else { showToast(data.error || 'Failed to rotate key'); }
+      } else { showToast('Failed to rotate key'); }
     } catch (e) { showToast('Could not rotate key'); }
   }
 
@@ -149,6 +154,7 @@
       await new Promise(function (r) { setTimeout(r, 2000); });
       try {
         var res = await apiFetch('/auth/me');
+        if (!res.ok) continue;
         var data = await res.json();
         if (data.tier && data.tier !== 'free') {
           currentUser = data;
@@ -171,6 +177,7 @@
   async function refreshAfterPortal() {
     try {
       var res = await apiFetch('/auth/me');
+      if (!res.ok) return;
       var data = await res.json();
       if (data.tier) {
         currentUser = data;
@@ -738,7 +745,7 @@
         manageSeatCount = data.seats || newSeats;
         showToast('Seats updated to ' + manageSeatCount + '!');
         var meRes = await apiFetch('/auth/me');
-        currentUser = await meRes.json();
+        if (meRes.ok) { currentUser = await meRes.json(); }
         loadBilling();
       } else if (data.url) {
         window.location.href = data.url;
@@ -1008,8 +1015,12 @@
     var container = document.getElementById('githubInstallations');
     try {
       var res = await apiFetch('/v1/github/installations');
+      if (!res.ok) {
+        container.innerHTML = '<div class="empty-state" style="min-height:60px"><p>No GitHub App installations linked to your account.</p></div>';
+        return;
+      }
       var data = await res.json();
-      if (!res.ok || !data.installations || data.installations.length === 0) {
+      if (!data.installations || data.installations.length === 0) {
         container.innerHTML = '<div class="empty-state" style="min-height:60px"><p>No GitHub App installations linked to your account.</p></div>';
         return;
       }
@@ -1479,6 +1490,7 @@
       if (data.updated) {
         showToast('Plan updated to ' + capitalize(plan) + '!');
         var meRes = await apiFetch('/auth/me');
+        if (!meRes.ok) { loadBilling(); return; }
         var me = await meRes.json();
         if (me.tier) {
           currentUser = me;
@@ -1499,11 +1511,16 @@
   async function openBillingPortal() {
     try {
       var res = await apiFetch('/v1/billing/portal', { method: 'POST' });
+      if (!res.ok) {
+        var err = await res.json().catch(function () { return {}; });
+        showToast(err.error || 'Unable to open billing portal (' + res.status + ')');
+        return;
+      }
       var data = await res.json();
       if (data.url) {
         window.location.href = data.url;
       } else {
-        showToast(data.error || 'Unable to open billing portal');
+        showToast('Unable to open billing portal');
       }
     } catch (e) {
       showToast('Billing portal unavailable');
