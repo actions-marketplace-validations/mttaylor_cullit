@@ -146,7 +146,8 @@ export async function handleCreateOrgInvite(req: IncomingMessage, res: ServerRes
   const body = await readJsonBody(req, res);
   if (!body) return;
 
-  if (!body.email || typeof body.email !== 'string' || !(body.email as string).includes('@')) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  if (!body.email || typeof body.email !== 'string' || !emailRegex.test((body.email as string).trim())) {
     json(res, 400, { error: 'Valid email is required' }); return;
   }
 

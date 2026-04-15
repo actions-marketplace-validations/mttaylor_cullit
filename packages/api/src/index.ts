@@ -206,8 +206,9 @@ function stableStringify(value: unknown): string {
   return `{${entries.join(',')}}`;
 }
 
-export function getCacheKey(from: string, to: string, format: OutputFormat, config: CullConfig): string {
+export function getCacheKey(from: string, to: string, format: OutputFormat, config: CullConfig, userId?: string): string {
   const fingerprint = stableStringify({
+    userId: userId || 'anon',
     from,
     to,
     format,
@@ -539,7 +540,7 @@ async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promis
     }
 
     // Check cache
-    const cacheKey = getCacheKey(body.from, to, format, config as CullConfig);
+    const cacheKey = getCacheKey(body.from, to, format, config as CullConfig, user.orgId || user.id);
     const cached = getCachedResult(cacheKey);
     if (cached) { json(res, 200, cached); return; }
 

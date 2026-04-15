@@ -70,4 +70,22 @@ describe('API cache key', () => {
     expect(baseKey).not.toBe(categoryKey);
     expect(baseKey).not.toBe(enrichmentKey);
   });
+
+  it('changes when userId changes (user isolation)', async () => {
+    vi.stubEnv('ALLOWED_ORIGINS', '*');
+    const { getCacheKey } = await import('../src/index');
+
+    const config = {
+      ai: { provider: 'none', audience: 'developer', tone: 'professional', categories: ['features'] },
+      source: { type: 'local', enrichment: [] },
+      publish: [{ type: 'stdout' }],
+    };
+
+    const userAKey = getCacheKey('v1.0.0', 'HEAD', 'markdown', config, 'user-a');
+    const userBKey = getCacheKey('v1.0.0', 'HEAD', 'markdown', config, 'user-b');
+    const anonKey = getCacheKey('v1.0.0', 'HEAD', 'markdown', config);
+
+    expect(userAKey).not.toBe(userBKey);
+    expect(userAKey).not.toBe(anonKey);
+  });
 });

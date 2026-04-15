@@ -46,7 +46,9 @@
         showDashboard();
         return;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('Auth check failed:', e);
+    }
     await showAuthWall();
   }
 
@@ -86,6 +88,8 @@
         btn.textContent = 'Copied!';
         setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
       }
+    }).catch(function () {
+      showToast('Failed to copy — clipboard access denied');
     });
   }
 
@@ -232,12 +236,17 @@
 
   // --- Generate ---
 
+  var isGenerating = false;
+
   async function generate() {
+    if (isGenerating) { showToast('Already generating\u2026'); return; }
+    isGenerating = true;
+
     var btn = document.getElementById('generateBtn');
     var fromRef = document.getElementById('fromRef').value.trim();
     var toRef = document.getElementById('toRef').value.trim() || 'HEAD';
 
-    if (!fromRef) { showToast('Please enter a "From" tag or SHA'); return; }
+    if (!fromRef) { isGenerating = false; showToast('Please enter a "From" tag or SHA'); return; }
 
     var body = {
       from: fromRef,
@@ -268,6 +277,10 @@
       });
 
       var data = await res.json();
+      if (res.status === 401) {
+        showToast('Session expired. Please refresh and log in again.');
+        return;
+      }
       if (res.status === 402) {
         switchDashTab('billing');
         showUpgradeModal(
@@ -299,6 +312,7 @@
       statusText.textContent = 'Error';
       showToast(err.message);
     } finally {
+      isGenerating = false;
       btn.disabled = false;
       btn.classList.remove('loading');
       btn.textContent = '\u26A1 GENERATE';
@@ -334,6 +348,8 @@
         btn.setAttribute('aria-label', 'Copied to clipboard');
         setTimeout(function () { btn.textContent = '\uD83D\uDCCB Copy'; btn.setAttribute('aria-label', 'Copy output to clipboard'); }, 1500);
       }
+    }).catch(function () {
+      showToast('Failed to copy — clipboard access denied');
     });
   }
 
@@ -440,14 +456,15 @@
       var res = await apiFetch('/v1/history?limit=' + HISTORY_LIMIT + '&offset=' + historyOffset);
       if (!res.ok) throw new Error();
       var data = await res.json();
+      var entries = (data && data.entries) ? data.entries : [];
 
-      if (!data.entries.length) {
+      if (!entries.length) {
         list.innerHTML = '<div class="empty-state" style="min-height:100px"><p>No generation history yet</p></div>';
         pager.innerHTML = '';
         return;
       }
 
-      list.innerHTML = data.entries.map(function (h) {
+      list.innerHTML = entries.map(function (h) {
         var date = new Date(h.createdAt);
         var ago = timeAgo(date.getTime());
         return '<div class="history-item" data-from="' + escapeAttr(h.from) + '" data-to="' + escapeAttr(h.to) + '" data-provider="' + escapeAttr(h.provider) + '" data-summary="' + escapeAttr(h.summary) + '">' +
@@ -514,14 +531,15 @@
       var res = await apiFetch('/v1/analytics/usage?days=30');
       if (!res.ok) throw new Error();
       var data = await res.json();
+      var totals = (data && data.totals) || {};
 
-      document.getElementById('statGens').textContent = data.totals.generations.toLocaleString();
-      document.getElementById('statChanges').textContent = data.totals.totalChanges.toLocaleString();
-      document.getElementById('statAvgTime').textContent = data.totals.avgDuration > 0 ? (data.totals.avgDuration / 1000).toFixed(1) + 's' : '-';
-      document.getElementById('statMonthly').textContent = data.monthlyGenerations.toLocaleString();
+      document.getElementById('statGens').textContent = (totals.generations || 0).toLocaleString();
+      document.getElementById('statChanges').textContent = (totals.totalChanges || 0).toLocaleString();
+      document.getElementById('statAvgTime').textContent = (totals.avgDuration || 0) > 0 ? (totals.avgDuration / 1000).toFixed(1) + 's' : '-';
+      document.getElementById('statMonthly').textContent = ((data && data.monthlyGenerations) || 0).toLocaleString();
 
-      renderBarChart(data.daily);
-      renderProviders(data.topProviders);
+      renderBarChart((data && data.daily) || []);
+      renderProviders((data && data.topProviders) || []);
     } catch (e) {
       document.getElementById('statGens').textContent = '-';
       document.getElementById('statChanges').textContent = '-';
@@ -788,14 +806,15 @@
       var res = await apiFetch(url);
       if (!res.ok) throw new Error();
       var data = await res.json();
+      var drafts = (data && data.drafts) ? data.drafts : [];
 
-      if (!data.drafts.length) {
+      if (!drafts.length) {
         list.innerHTML = '<div class="empty-state" style="min-height:100px"><p>No drafts' + (statusFilter ? ' with status &quot;' + escapeHtml(statusFilter) + '&quot;' : '') + '</p></div>';
         pager.innerHTML = '';
         return;
       }
 
-      list.innerHTML = data.drafts.map(function (d) {
+      list.innerHTML = drafts.map(function (d) {
         return '<div style="padding:0.75rem;border:1px solid var(--border);border-radius:6px;margin-bottom:0.5rem;cursor:pointer" data-draft-id="' + escapeAttr(d.id) + '">'
           + '<div style="display:flex;justify-content:space-between;align-items:center">'
           + '<div><strong style="font-size:0.85rem">' + escapeHtml(d.project) + '</strong> <span style="color:var(--text-dim);font-size:0.75rem">' + escapeHtml(d.version || '') + '</span></div>'
@@ -812,7 +831,7 @@
         el.addEventListener('click', function () { loadDraftDetail(el.dataset.draftId); });
       });
 
-      var totalPages = Math.ceil(data.total / DRAFTS_LIMIT);
+      var totalPages = Math.ceil((data.total || drafts.length) / DRAFTS_LIMIT);
       var currentPage = Math.floor(draftsOffset / DRAFTS_LIMIT) + 1;
       pager.innerHTML = (currentPage > 1 ? '<button class="btn-small" data-action="drafts-prev" style="font-size:0.7rem">&larr; Prev</button>' : '')
         + '<span style="font-size:0.75rem;color:var(--text-dim)">' + currentPage + ' / ' + totalPages + '</span>'
@@ -1030,7 +1049,7 @@
         return '<div style="border:1px solid var(--border);border-radius:8px;padding:0.75rem;margin-bottom:0.5rem">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">' +
           '<strong style="font-size:0.85rem;color:var(--text-bright)">' + escapeHtml(inst.github_login) + '</strong>' +
-          '<button class="btn-small" data-action="disconnect-github" data-installation-id="' + inst.installation_id + '" style="font-size:0.65rem;background:transparent;border:1px solid var(--danger,#e74c3c);color:var(--danger,#e74c3c)">Disconnect</button>' +
+          '<button class="btn-small" data-action="disconnect-github" data-installation-id="' + escapeAttr(String(inst.installation_id)) + '" style="font-size:0.65rem;background:transparent;border:1px solid var(--danger,#e74c3c);color:var(--danger,#e74c3c)">Disconnect</button>' +
           '</div>' +
           '<div>' + repoList + '</div>' +
           '</div>';
@@ -1084,18 +1103,24 @@
       var data = await res.json();
       var s = (data.settings || []).find(function (x) { return x.project === project; });
       if (s) {
-        var widgetConfig = typeof s.widget_config_json === 'string'
-          ? JSON.parse(s.widget_config_json)
-          : (s.widget_config_json || {});
+        var widgetConfig;
+        try {
+          widgetConfig = typeof s.widget_config_json === 'string'
+            ? JSON.parse(s.widget_config_json)
+            : (s.widget_config_json || {});
+        } catch (_e) { widgetConfig = {}; }
         var templateConfig = widgetConfig && typeof widgetConfig === 'object' ? (widgetConfig.template || {}) : {};
         document.getElementById('ps-source').value = s.default_source || 'local';
         document.getElementById('ps-provider').value = s.default_provider || 'none';
         document.getElementById('ps-model').value = s.default_model || '';
         document.getElementById('ps-audience').value = s.default_audience || 'developer';
         document.getElementById('ps-tone').value = s.default_tone || 'professional';
-        var categories = Array.isArray(s.categories_json)
-          ? s.categories_json
-          : (typeof s.categories_json === 'string' ? JSON.parse(s.categories_json) : []);
+        var categories;
+        try {
+          categories = Array.isArray(s.categories_json)
+            ? s.categories_json
+            : (typeof s.categories_json === 'string' ? JSON.parse(s.categories_json) : []);
+        } catch (_e) { categories = []; }
         document.getElementById('ps-categories').value = categories.join(', ');
         document.getElementById('ps-format').value = templateConfig.defaultFormat || 'markdown';
         document.getElementById('ps-template-profile').value = templateConfig.profile || '';
@@ -1289,6 +1314,8 @@
     var text = document.getElementById('widgetSnippet').textContent;
     navigator.clipboard.writeText(text).then(function () {
       showToast('Widget snippet copied!');
+    }).catch(function () {
+      showToast('Failed to copy — clipboard access denied');
     });
   }
 
@@ -1352,17 +1379,17 @@
     actionsEl.innerHTML = '';
 
     var hasSub = false;
+    var subData = null;
     try {
       var res = await apiFetch('/v1/billing/subscription');
       if (res.ok) {
-        var sub = await res.json();
-        if (sub && sub.subscription) {
+        subData = await res.json();
+        if (subData && subData.subscription) {
           hasSub = true;
-          // Use subscription seat count as the source of truth
-          if (sub.subscription.seats) {
-            manageSeatCount = sub.subscription.seats;
+          if (subData.subscription.seats) {
+            manageSeatCount = subData.subscription.seats;
           }
-          if (sub.subscription.status === 'past_due') {
+          if (subData.subscription.status === 'past_due') {
             statusEl.textContent = 'Payment Failed';
             statusEl.style.color = 'var(--terminal-red)';
             var warningBtn = document.createElement('button');
@@ -1373,14 +1400,14 @@
             warningBtn.addEventListener('click', openBillingPortal);
             actionsEl.appendChild(warningBtn);
           } else {
-            statusEl.textContent = sub.subscription.status === 'active' ? 'Active' : sub.subscription.status;
+            statusEl.textContent = subData.subscription.status === 'active' ? 'Active' : subData.subscription.status;
           }
-          if (sub.subscription.cancelAtPeriodEnd) {
+          if (subData.subscription.cancelAtPeriodEnd) {
             statusEl.textContent += ' (cancels at period end)';
             statusEl.style.color = 'var(--terminal-yellow, #fbbf24)';
           }
-          if (sub.subscription.currentPeriodEnd) {
-            var end = new Date(sub.subscription.currentPeriodEnd);
+          if (subData.subscription.currentPeriodEnd) {
+            var end = new Date(subData.subscription.currentPeriodEnd);
             statusEl.textContent += ' \u2014 renews ' + end.toLocaleDateString();
           }
         } else {
@@ -1399,7 +1426,7 @@
       portalBtn.addEventListener('click', openBillingPortal);
       actionsEl.appendChild(portalBtn);
 
-      if (!hasSub || (sub && sub.subscription && !sub.subscription.cancelAtPeriodEnd)) {
+      if (!hasSub || (subData && subData.subscription && !subData.subscription.cancelAtPeriodEnd)) {
         var cancelBtn = document.createElement('button');
         cancelBtn.className = 'btn-small';
         cancelBtn.style.background = 'transparent';
@@ -1547,16 +1574,17 @@
 
       var seatEl = document.getElementById('teamKeySeatCount');
       var activeCount = keys.filter(function (k) { return !k.revokedAt; }).length;
-      seatEl.textContent = activeCount + ' of ' + manageSeatCount + ' seats active';
+      var seatTotal = manageSeatCount || 1;
+      seatEl.textContent = activeCount + ' of ' + seatTotal + ' seats active';
 
       var seatUtilEl = document.getElementById('seatUtilMsg');
       if (seatUtilEl) {
-        var unused = manageSeatCount - activeCount;
-        if (unused > Math.ceil(manageSeatCount * 0.5)) {
-          seatUtilEl.textContent = 'You\u2019re using ' + activeCount + ' of ' + manageSeatCount + ' seats. Invite more team members or consider a smaller plan.';
+        var unused = seatTotal - activeCount;
+        if (unused > Math.ceil(seatTotal * 0.5)) {
+          seatUtilEl.textContent = 'You\u2019re using ' + activeCount + ' of ' + seatTotal + ' seats. Invite more team members or consider a smaller plan.';
           seatUtilEl.style.display = '';
-        } else if (activeCount >= manageSeatCount) {
-          seatUtilEl.textContent = 'All ' + manageSeatCount + ' seats are in use. Add more seats above to expand your team.';
+        } else if (activeCount >= seatTotal) {
+          seatUtilEl.textContent = 'All ' + seatTotal + ' seats are in use. Add more seats above to expand your team.';
           seatUtilEl.style.display = '';
         } else {
           seatUtilEl.style.display = 'none';
