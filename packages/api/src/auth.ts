@@ -657,8 +657,8 @@ export function handleAuthRedirect(req: IncomingMessage, res: ServerResponse): v
   // Accept ?returnTo= so callers can resume after login (e.g. pricing checkout)
   const loginUrl = new URL(req.url || '/', `http://localhost`);
   const rawReturnTo = loginUrl.searchParams.get('returnTo') || '';
-  // Only allow relative paths on DASHBOARD_URL to prevent open-redirect
-  const returnTo = rawReturnTo && /^\/[^/\\]/.test(rawReturnTo) ? rawReturnTo : '';
+  // Only allow safe relative paths to prevent open-redirect (block //, /\, protocol-relative)
+  const returnTo = rawReturnTo && /^\/[a-zA-Z0-9_\-.]/.test(rawReturnTo) && !rawReturnTo.includes('//') ? rawReturnTo : '';
 
   const state = randomBytes(16).toString('hex');
   pendingStates.set(state, { ts: Date.now(), returnTo });

@@ -1,6 +1,6 @@
 {
   "name": "@cullit/licensed",
-  "version": "2.9.0",
+  "version": "2.9.1",
   "type": "module",
   "description": "Private registry distribution for Cullit paid tiers (Paid and Enterprise).",
   "license": "UNLICENSED",

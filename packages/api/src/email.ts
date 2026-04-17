@@ -301,3 +301,8 @@ export async function sendUsageAlert(email: string, name: string, used: number, 
 export function isEmailConfigured(): boolean {
   return !!RESEND_API_KEY;
 }
+
+// Exported for testing
+export { isEmailThrottled as _isEmailThrottled, recordEmailSent as _recordEmailSent };
+export const _EMAIL_THROTTLE_MAX = EMAIL_THROTTLE_MAX;
+export function _resetThrottleState(): void { emailSentTimestamps.clear(); }

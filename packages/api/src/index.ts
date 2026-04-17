@@ -99,7 +99,7 @@ if (IS_PROD) {
     throw new Error('DATABASE_URL is required in production. Set a PostgreSQL connection string.');
   }
   if (!ALLOWED_ORIGINS || ALLOWED_ORIGINS === '*') {
-    log.warn('ALLOWED_ORIGINS is empty or wildcard (*) in production. Set to an explicit domain for security.');
+    throw new Error('ALLOWED_ORIGINS must be set to explicit domain(s) in production (e.g. "https://cullit.io,https://www.cullit.io"). Wildcard (*) is not allowed.');
   }
   // IMPORTANT: Rate limiting is in-memory and per-process. In multi-instance
   // deployments (multiple containers/pods), each instance tracks limits independently.

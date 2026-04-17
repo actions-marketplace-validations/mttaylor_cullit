@@ -73,6 +73,20 @@ export class MultiRepoCollector implements Collector {
       throw new CullitError(CoreErrorCode.MULTI_REPO_INVALID_URL, `Invalid repo URL: ${repo.url}`);
     }
 
+    // Block internal/private hostnames to prevent SSRF
+    try {
+      const parsed = new URL(repo.url);
+      const host = parsed.hostname.toLowerCase();
+      if (host === 'localhost' || host === '127.0.0.1' || host === '::1' ||
+          host.endsWith('.local') || host === '0.0.0.0' ||
+          /^10\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host) || /^192\.168\./.test(host)) {
+        throw new CullitError(CoreErrorCode.MULTI_REPO_INVALID_URL, `Private/internal URLs are not allowed: ${repo.url}`);
+      }
+    } catch (e) {
+      if (e instanceof CullitError) throw e;
+      // git@ URLs won't parse as URL — that's fine, they go to external servers
+    }
+
     const tempDir = mkdtempSync(join(tmpdir(), 'cullit-repo-'));
     this.tempDirs.push(tempDir);
 

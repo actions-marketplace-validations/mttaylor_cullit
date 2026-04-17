@@ -41,6 +41,7 @@ export const sql = DATABASE_URL
       idle_timeout: 30,
       connect_timeout: 3,
       types: { bigint: postgres.BigInt },
+      ssl: process.env['NODE_ENV'] === 'production' ? { rejectUnauthorized: false } : undefined,
     })
   : (null as unknown as ReturnType<typeof postgres>);
 
@@ -181,6 +182,7 @@ export async function migrate(): Promise<void> {
   await sql`ALTER TABLE orgs ADD COLUMN IF NOT EXISTS require_separate_approver BOOLEAN NOT NULL DEFAULT FALSE`.catch((err) => { log.debug({ err: (err as Error).message }, 'ALTER TABLE orgs require_separate_approver'); });
 
   await sql`CREATE INDEX IF NOT EXISTS idx_changelog_project ON changelog_releases (project, published_at DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_changelog_releases_user ON changelog_releases (user_id, published_at DESC)`.catch(() => {});
 
   await sql`
     CREATE TABLE IF NOT EXISTS subscriptions (
@@ -297,6 +299,7 @@ export async function migrate(): Promise<void> {
 
   // Auto-prune expired revoked tokens (no longer needed once JWT naturally expires)
   await sql`DELETE FROM revoked_tokens WHERE expires_at < NOW()`.catch((err) => { log.warn({ err: (err as Error).message }, 'Failed to prune expired revoked tokens'); });
+  await sql`CREATE INDEX IF NOT EXISTS idx_revoked_tokens_user ON revoked_tokens (user_id)`.catch(() => {});
 
   // Stripe webhook idempotency table
   await sql`
@@ -346,6 +349,7 @@ export async function migrate(): Promise<void> {
   await sql`CREATE INDEX IF NOT EXISTS idx_team_keys_org ON team_api_keys (org_id) WHERE revoked_at IS NULL`;
   await sql`CREATE INDEX IF NOT EXISTS idx_team_keys_api_key ON team_api_keys (api_key) WHERE revoked_at IS NULL`;
   await sql`CREATE INDEX IF NOT EXISTS idx_team_keys_hash ON team_api_keys (api_key_hash) WHERE revoked_at IS NULL`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_team_keys_org_created ON team_api_keys (org_id, created_at DESC)`.catch(() => {});
 
   // Backfill team api_key_hash for existing keys that don't have one
   await sql`
@@ -366,6 +370,7 @@ export async function migrate(): Promise<void> {
     )
   `;
   await sql`CREATE INDEX IF NOT EXISTS idx_audit_events_user ON audit_events (user_id, created_at DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_audit_events_action ON audit_events (action, created_at DESC)`.catch(() => {});
 
   // Project templates table
   await sql`
@@ -381,6 +386,11 @@ export async function migrate(): Promise<void> {
   `;
   await sql`CREATE INDEX IF NOT EXISTS idx_project_templates_org ON project_templates (org_id)`;
 
+  // Add FK constraints on org_id columns that reference orgs(id)
+  await sql`ALTER TABLE release_drafts ADD CONSTRAINT fk_drafts_org FOREIGN KEY (org_id) REFERENCES orgs(id) ON DELETE CASCADE`.catch(() => {});
+  await sql`ALTER TABLE project_settings ADD CONSTRAINT fk_project_settings_org FOREIGN KEY (org_id) REFERENCES orgs(id) ON DELETE CASCADE`.catch(() => {});
+  await sql`ALTER TABLE project_templates ADD CONSTRAINT fk_templates_org FOREIGN KEY (org_id) REFERENCES orgs(id) ON DELETE CASCADE`.catch(() => {});
+
   log.info('Database migrations complete');
 }
 
@@ -392,7 +402,9 @@ if (sql) {
     try {
       await sql`DELETE FROM revoked_tokens WHERE expires_at < NOW()`;
       await sql`DELETE FROM webhook_events WHERE processed_at < NOW() - INTERVAL '30 days'`;
-      log.info('Periodic DB cleanup: pruned expired tokens and old webhook events');
+      await sql`DELETE FROM audit_events WHERE created_at < NOW() - INTERVAL '90 days'`.catch(() => {});
+      await sql`DELETE FROM usage_daily WHERE date < CURRENT_DATE - INTERVAL '2 years'`.catch(() => {});
+      log.info('Periodic DB cleanup: pruned expired tokens, old webhook events, audit logs, and stale usage records');
     } catch (err) {
       log.warn({ err: (err as Error).message }, 'Periodic DB cleanup failed');
     }

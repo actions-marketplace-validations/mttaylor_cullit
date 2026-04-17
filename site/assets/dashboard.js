@@ -6,7 +6,7 @@
   var currentOutput = '';
   var currentView = 'rendered';
   var currentUser = null;
-  var manageSeatCount = 1;
+  var manageSeatCount = null;
 
   function capitalize(text) {
     return text ? text.charAt(0).toUpperCase() + text.slice(1) : '';
@@ -33,7 +33,13 @@
   function apiFetch(path, opts) {
     opts = opts || {};
     var url = apiUrl() + path;
-    return fetch(url, Object.assign({ credentials: 'include' }, opts));
+    return fetch(url, Object.assign({ credentials: 'include' }, opts)).then(function (res) {
+      if (res.status === 401 && path !== '/auth/me') {
+        showToast('Session expired — please log in again');
+        setTimeout(function () { window.location.href = 'index.html'; }, 1500);
+      }
+      return res;
+    });
   }
 
   // --- Auth ---
@@ -131,11 +137,11 @@
 
     applyTabGating();
     applyAudienceToneGating();
-    checkHealth();
-    loadHistory();
-    loadAnalytics();
-    loadTeam();
-    loadBilling();
+    checkHealth().catch(function () {});
+    loadHistory().catch(function () {});
+    loadAnalytics().catch(function () {});
+    loadTeam().catch(function () {});
+    loadBilling().catch(function () {});
 
     var params = new URLSearchParams(location.search);
     var pendingPlan = params.get('checkout');
@@ -718,7 +724,7 @@
     var manageSection = document.getElementById('manageSeatsSection');
     if (manageSection && manageSection.style.display !== 'none' && input) {
       var seatVal = Math.max(1, parseInt(input.value) || 1);
-      var changed = seatVal !== manageSeatCount;
+      var changed = manageSeatCount != null && seatVal !== manageSeatCount;
       var updateBtn = document.getElementById('updateSeatsBtn');
       var proNote = document.getElementById('prorationNote');
       if (updateBtn) updateBtn.style.display = changed ? '' : 'none';
@@ -739,11 +745,13 @@
 
   async function updateProSeats() {
     var input = document.getElementById('dashProSeats');
-    var newSeats = Math.max(1, Math.min(100, parseInt(input ? input.value : '1', 10)));
-    if (newSeats === manageSeatCount) { showToast('Seat count unchanged'); return; }
+    var rawVal = parseInt(input ? input.value : '1', 10);
+    if (isNaN(rawVal) || rawVal < 1) { showToast('Please enter a valid seat count (1 or more)'); return; }
+    var newSeats = Math.max(1, Math.min(100, rawVal));
+    if (manageSeatCount != null && newSeats === manageSeatCount) { showToast('Seat count unchanged'); return; }
 
-    var delta = Math.abs(newSeats - manageSeatCount);
-    var verb = newSeats > manageSeatCount ? 'Add' : 'Remove';
+    var verb = manageSeatCount != null && newSeats > manageSeatCount ? 'Add' : (manageSeatCount != null && newSeats < manageSeatCount ? 'Remove' : 'Set');
+    var delta = manageSeatCount != null ? Math.abs(newSeats - manageSeatCount) : newSeats;
     if (!confirm(verb + ' ' + delta + ' seat(s)? Your subscription will be updated with prorated billing.')) return;
 
     var btn = document.getElementById('updateSeatsBtn');
@@ -1545,7 +1553,14 @@
       }
       var data = await res.json();
       if (data.url) {
-        window.location.href = data.url;
+        try {
+          var portalHost = new URL(data.url).hostname;
+          if (portalHost.endsWith('.stripe.com') || portalHost === 'billing.stripe.com') {
+            window.location.href = data.url;
+          } else {
+            showToast('Unexpected billing portal URL');
+          }
+        } catch (e) { showToast('Invalid billing portal URL'); }
       } else {
         showToast('Unable to open billing portal');
       }
@@ -1556,8 +1571,19 @@
 
   // --- Team Key Management ---
 
-  // In-memory store of revealed key values (only available until page refresh)
+  // In-memory store of revealed key values (auto-expire after 5 minutes)
   var revealedKeys = {};
+  var revealedKeyTimers = {};
+
+  function storeRevealedKey(keyId, fullKey) {
+    revealedKeys[keyId] = fullKey;
+    if (revealedKeyTimers[keyId]) clearTimeout(revealedKeyTimers[keyId]);
+    revealedKeyTimers[keyId] = setTimeout(function () {
+      delete revealedKeys[keyId];
+      delete revealedKeyTimers[keyId];
+      loadTeamKeys();
+    }, 5 * 60 * 1000);
+  }
 
   async function loadTeamKeys() {
     var list = document.getElementById('teamKeysList');
@@ -1784,7 +1810,7 @@
       var data = await res.json();
       if (res.ok) {
         if (data.apiKey) {
-          revealedKeys[keyId] = data.apiKey;
+          storeRevealedKey(keyId, data.apiKey);
           navigator.clipboard.writeText(data.apiKey).then(function () {
             showToast('Key rotated \u2014 new key copied to clipboard');
           }).catch(function () {
@@ -1809,7 +1835,7 @@
       var data = await res.json();
       if (res.ok) {
         if (data.apiKey && data.keyId) {
-          revealedKeys[data.keyId] = data.apiKey;
+          storeRevealedKey(data.keyId, data.apiKey);
           navigator.clipboard.writeText(data.apiKey).then(function () {
             showToast('New key created \u2014 copied to clipboard');
           }).catch(function () {
