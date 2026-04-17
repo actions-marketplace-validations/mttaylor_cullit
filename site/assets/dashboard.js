@@ -369,7 +369,7 @@
     generate: 'free', history: 'free', settings: 'free', billing: 'free',
     drafts: 'pro', analytics: 'pro', team: 'pro', changelog: 'pro',
   };
-  var TIER_RANK = { free: 0, pro: 1, team: 1, enterprise: 2 };
+  var TIER_RANK = { free: 0, paid: 1, pro: 1, team: 1, enterprise: 2 };
 
   function applyTabGating() {
     var tier = getEffectiveTierClient();

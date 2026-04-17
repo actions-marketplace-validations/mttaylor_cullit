@@ -38,7 +38,7 @@ test.describe('pricing page checkout flow', () => {
 
     // Trigger checkout and wait for the Stripe redirect
     const navigationPromise = page.waitForURL('https://checkout.stripe.test/**');
-    await page.locator('#paidCta').click();
+    await page.locator('#proCta').click();
     await navigationPromise;
 
     expect(page.url()).toContain('checkout.stripe.test');
@@ -67,7 +67,7 @@ test.describe('pricing page checkout flow', () => {
     });
 
     await page.goto('/pricing.html');
-    await page.locator('#paidCta').click();
+    await page.locator('#proCta').click();
 
     // Wait for the auth login navigation to be intercepted
     await page.waitForURL('**/auth/login**');
@@ -95,7 +95,7 @@ test.describe('pricing page checkout flow', () => {
 
     // Capture the alert dialog
     const dialogPromise = page.waitForEvent('dialog');
-    await page.locator('#paidCta').click();
+    await page.locator('#proCta').click();
     const dialog = await dialogPromise;
 
     expect(dialog.message()).toContain('Billing temporarily unavailable');
@@ -115,7 +115,7 @@ test.describe('pricing page checkout flow', () => {
     });
 
     await page.goto('/pricing.html');
-    await page.locator('#paidCta').click();
+    await page.locator('#proCta').click();
 
     // Wait for the async catch branch and the trailing trackEvent fetch to complete
     await page.waitForFunction(() => document.readyState === 'complete');
