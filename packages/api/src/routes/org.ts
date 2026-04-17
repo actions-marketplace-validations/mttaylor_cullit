@@ -147,7 +147,9 @@ export async function handleCreateOrgInvite(req: IncomingMessage, res: ServerRes
   if (!body) return;
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-  if (!body.email || typeof body.email !== 'string' || !emailRegex.test((body.email as string).trim())) {
+  const emailStr = typeof body.email === 'string' ? (body.email as string).trim() : '';
+  // eslint-disable-next-line no-control-regex -- intentional: block email header injection via control chars
+  if (!emailStr || !emailRegex.test(emailStr) || /[\r\n\x00-\x1f]/.test(emailStr)) {
     json(res, 400, { error: 'Valid email is required' }); return;
   }
 

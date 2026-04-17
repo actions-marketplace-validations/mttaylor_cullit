@@ -87,7 +87,9 @@ export class AIGenerator implements Generator {
 
     const commitList = diff.commits
       .map(c => {
-        let line = `- ${c.shortHash}: ${c.message}`;
+        // eslint-disable-next-line no-control-regex -- intentional: strip control chars from commit messages
+        const msg = c.message.replace(/<!--[\s\S]*?-->/g, '').replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, '');
+        let line = `- ${c.shortHash}: ${msg}`;
         if (c.issueKeys?.length) line += ` [${c.issueKeys.join(', ')}]`;
         return line;
       })

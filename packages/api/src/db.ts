@@ -148,6 +148,7 @@ export async function migrate(): Promise<void> {
   `;
 
   await sql`CREATE INDEX IF NOT EXISTS idx_generations_user ON generations (user_id, created_at DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_generations_project ON generations (project)`.catch(() => {});
 
   await sql`
     CREATE TABLE IF NOT EXISTS usage_daily (
@@ -350,6 +351,8 @@ export async function migrate(): Promise<void> {
   await sql`CREATE INDEX IF NOT EXISTS idx_team_keys_api_key ON team_api_keys (api_key) WHERE revoked_at IS NULL`;
   await sql`CREATE INDEX IF NOT EXISTS idx_team_keys_hash ON team_api_keys (api_key_hash) WHERE revoked_at IS NULL`;
   await sql`CREATE INDEX IF NOT EXISTS idx_team_keys_org_created ON team_api_keys (org_id, created_at DESC)`.catch(() => {});
+  await sql`CREATE INDEX IF NOT EXISTS idx_team_keys_org_all ON team_api_keys (org_id)`.catch(() => {});
+  await sql`CREATE INDEX IF NOT EXISTS idx_org_members_user ON org_members (user_id)`.catch(() => {});
 
   // Backfill team api_key_hash for existing keys that don't have one
   await sql`
@@ -744,6 +747,7 @@ export async function dbGetOrgMembers(orgId: string): Promise<DbUser[]> {
     JOIN org_members om ON u.id = om.user_id
     WHERE om.org_id = ${orgId}
     ORDER BY om.joined_at
+    LIMIT 500
   `;
 }
 

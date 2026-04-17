@@ -23,7 +23,8 @@ function hasDraftAccess(user: { id: string; orgId: string | null }, draft: { use
   return !!draft.org_id && !!user.orgId && draft.org_id === user.orgId;
 }
 
-function hasDraftAdminAccess(user: { id: string; orgId: string | null; role: string }, draft: { user_id: string; org_id: string | null }): boolean {
+function hasDraftAdminAccess(user: { id: string; orgId: string | null; role: string; _teamKeyAuth?: boolean }, draft: { user_id: string; org_id: string | null }): boolean {
+  if ((user as any)._teamKeyAuth) return false; // Team keys cannot edit/delete drafts
   if (draft.user_id === user.id) return true;
   return !!draft.org_id && !!user.orgId && draft.org_id === user.orgId && (user.role === 'owner' || user.role === 'admin');
 }

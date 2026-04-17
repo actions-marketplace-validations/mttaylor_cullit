@@ -1,6 +1,6 @@
 {
   "name": "@cullit/pro",
-  "version": "2.9.1",
+  "version": "2.9.2",
   "private": true,
   "type": "module",
   "description": "Cullit Pro — AI generators, Jira/Linear integrations, Slack/Discord/GitHub publishers.",

@@ -128,7 +128,7 @@
     var nav = document.getElementById('navUser');
     nav.style.display = 'flex';
     var avatarEl = document.getElementById('navAvatar');
-    if (currentUser.avatarUrl) {
+    if (currentUser.avatarUrl && /^https?:\/\//i.test(currentUser.avatarUrl)) {
       avatarEl.src = currentUser.avatarUrl;
       avatarEl.hidden = false;
     }
@@ -1554,9 +1554,10 @@
       var data = await res.json();
       if (data.url) {
         try {
-          var portalHost = new URL(data.url).hostname;
-          if (portalHost.endsWith('.stripe.com') || portalHost === 'billing.stripe.com') {
-            window.location.href = data.url;
+          var portalUrl = new URL(data.url);
+          if (portalUrl.protocol === 'https:' &&
+              (portalUrl.hostname.endsWith('.stripe.com') || portalUrl.hostname === 'billing.stripe.com')) {
+            window.location.href = portalUrl.href;
           } else {
             showToast('Unexpected billing portal URL');
           }

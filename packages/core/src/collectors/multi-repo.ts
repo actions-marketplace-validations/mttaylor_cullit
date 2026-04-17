@@ -78,8 +78,11 @@ export class MultiRepoCollector implements Collector {
       const parsed = new URL(repo.url);
       const host = parsed.hostname.toLowerCase();
       if (host === 'localhost' || host === '127.0.0.1' || host === '::1' ||
+          host === '[::1]' || host.startsWith('[::ffff:') ||
           host.endsWith('.local') || host === '0.0.0.0' ||
-          /^10\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host) || /^192\.168\./.test(host)) {
+          /^10\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host) || /^192\.168\./.test(host) ||
+          /^169\.254\./.test(host) || /^100\.(6[4-9]|[7-9]\d|1[0-1]\d|12[0-7])\./.test(host) ||
+          host === '[::]' || host.startsWith('0.') || host === '[::]') {
         throw new CullitError(CoreErrorCode.MULTI_REPO_INVALID_URL, `Private/internal URLs are not allowed: ${repo.url}`);
       }
     } catch (e) {

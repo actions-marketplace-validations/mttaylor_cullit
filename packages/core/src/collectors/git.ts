@@ -10,9 +10,9 @@ function validateRef(ref: string): void {
   if (!ref || ref.length > 256) {
     throw new CullitError(CoreErrorCode.GIT_REF_INVALID, `Invalid git ref: too ${ref ? 'long' : 'short'}`);
   }
-  // Allow alphanumeric, dots, dashes, underscores, slashes, tildes, carets
-  if (!/^[a-zA-Z0-9._\-/~^]+$/.test(ref)) {
-    throw new CullitError(CoreErrorCode.GIT_REF_INVALID, `Invalid git ref "${ref}" — only alphanumeric, dots, dashes, underscores, slashes, tildes, and carets are allowed`);
+  // Allow alphanumeric, dots, dashes, underscores, slashes, tildes (for HEAD~N ancestor syntax)
+  if (!/^[a-zA-Z0-9._\-/~]+$/.test(ref)) {
+    throw new CullitError(CoreErrorCode.GIT_REF_INVALID, `Invalid git ref "${ref}" — only alphanumeric, dots, dashes, underscores, slashes, and tildes are allowed`);
   }
 }
 

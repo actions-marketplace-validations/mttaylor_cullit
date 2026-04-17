@@ -60,6 +60,10 @@ RUN pnpm install --prod --frozen-lockfile \
 RUN addgroup -g 1001 cullit && adduser -u 1001 -G cullit -s /bin/sh -D cullit
 USER cullit
 
+# Health check for server mode (Railway sets PORT env var)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-3000}/health || exit 1
+
 # Default: CLI mode
 ENTRYPOINT ["tini", "--", "node", "packages/cli/dist/index.js"]
 CMD ["--help"]

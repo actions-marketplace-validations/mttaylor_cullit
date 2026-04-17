@@ -1,6 +1,6 @@
 {
   "name": "@cullit/api",
-  "version": "2.9.1",
+  "version": "2.9.2",
   "private": true,
   "type": "module",
   "description": "Cullit REST API server for AI-powered release note generation.",

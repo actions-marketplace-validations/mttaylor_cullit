@@ -431,7 +431,7 @@ function validateGenerateRequest(body: GenerateRequest, res: ServerResponse): Cu
       model: body.model,
       audience: body.audience || 'developer',
       tone: body.tone || 'professional',
-      categories: body.categories || DEFAULT_CATEGORIES,
+      categories: Array.isArray(body.categories) ? body.categories.slice(0, 50) : (body.categories || DEFAULT_CATEGORIES),
     },
     source: {
       type: sourceType,
@@ -998,7 +998,7 @@ const routes: Route[] = [
   { method: 'GET',    path: '/v1/docs',                handler: (req, res) => handleDocs(req, res) },
   { method: 'GET',    path: '/docs',                   handler: (req, res) => handleDocs(req, res) },
   { method: 'GET',    path: '/metrics',                handler: handleMetrics,  rateLimit: false },
-  { method: 'POST',   path: '/v1/events',              handler: handleTrackEvent },
+  { method: 'POST',   path: '/v1/events',              handler: handleTrackEvent, rateLimit: true },
 
   // Generate
   { method: 'POST',   path: '/generate',               handler: handleGenerate },
@@ -1084,6 +1084,7 @@ const server = createServer(async (req, res: CorsResponse) => {
   if (res._corsOrigin) {
     res.setHeader('Access-Control-Allow-Origin', res._corsOrigin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Vary', 'Origin');
   }
 
   // CORS preflight
@@ -1094,6 +1095,7 @@ const server = createServer(async (req, res: CorsResponse) => {
       'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Request-Id',
       'Access-Control-Allow-Credentials': 'true',
       'Access-Control-Max-Age': '86400',
+      'Vary': 'Origin',
       'X-Request-Id': res._requestId || '',
       ...SECURITY_HEADERS,
     });
