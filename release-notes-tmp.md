@@ -1,33 +1,35 @@
-## v2.9.2 — Deep Security Audit Hardening
+# Cullit v2.10.0 — Integration Verify Harness + Architectural Refactor
 
-Comprehensive security fixes from a second 7-agent deep-dive audit across the entire codebase.
+This release introduces a **live integration verification harness** for diagnosing connectivity to AI providers, Linear, Jira, GitHub and Stripe — plus a **major god-file refactor** that splits the monolithic API and GitHub App entry points into focused per-domain modules. **Zero breaking changes.** All 667 tests pass.
 
-### Security Fixes (10)
+## Highlights
 
-- **Team key privilege escalation** — Block team API keys from editing/deleting owner drafts via user ID match
-- **Path traversal in returnTo** — Block `/../` sequences in OAuth redirect
-- **Email header injection** — Reject emails containing control characters in org invite flow
-- **CORS cache poisoning** — Add `Vary: Origin` header to all CORS responses
-- **Stripe portal URL protocol** — Validate `https:` protocol before redirecting to billing portal
-- **Avatar URL validation** — Only allow `http://` or `https://` protocols for avatar URLs
-- **SSRF hardening** — Block IPv6 mapped addresses, link-local, shared address space
-- **Prompt injection mitigation** — Sanitize commit messages before AI prompt embedding
-- **Git ref validation** — Remove caret from allowed ref characters
-- **Rate limiting** — Add rate limiting to `/v1/events` endpoint + cap categories array to 50 items
+### `cullit verify` — Diagnose your integrations
+A new CLI command and `POST /v1/integrations/test` endpoint that probes each configured integration and reports `ok / unreachable / auth-failed / misconfigured` with latency. Includes 13 new e2e tests in `packages/pro/__tests__/live-integrations.test.ts`.
 
-### Database Improvements (4)
+### Architectural refactor — God-files broken up
+- **`packages/api/src/db.ts`**: 1631 -> 11 lines (now a barrel re-export over `db/` modules).
+- **`packages/api/src/index.ts`**: 1198 -> 165 lines. Extracted into:
+  - `routes/index.ts` (declarative route table)
+  - `routes/{generate,system,analytics,audit-templates,billing,github-app,project-settings,integrations}.ts`
+  - `server-config.ts` (CORS, rate limit, prod env assertion)
+- **`packages/app/src/index.ts`**: 646 -> 185 lines. Extracted into:
+  - `config.ts`, `util.ts`, `github-api.ts`, `handlers.ts`, `metrics.ts`
 
-- Add full `org_id` index on `team_api_keys` (non-partial)
-- Add `user_id` index on `org_members` for JOIN performance
-- Add `project` index on `generations` for project-based queries
-- Add `LIMIT 500` to org members query
+Net: **~3,100 lines moved out of god-files** into ~15 focused modules. Existing imports keep working via barrel re-exports.
 
-### Infrastructure
+## Security
+- New `scripts/audit-security.mjs` companion audit pipeline.
+- SSRF guard for Jira domain checks (`isBlockedJiraDomain`).
+- TRUST_PROXY-aware client IP extraction in `server-config.ts`.
 
-- Add `HEALTHCHECK` instruction to Dockerfile
+## Tests
+- **52 test files, 667 tests, all passing.**
+- 13 new live integration tests (skipped when keys absent).
 
-### Stats
+## Upgrade
+```bash
+npm install -g @cullit/cli@2.10.0
+```
 
-- **654 tests passing** across 51 test files
-- **15 findings fixed**, 1 resolved as false positive
-- **0 breaking changes**
+No config changes required.

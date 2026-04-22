@@ -1,5 +1,18 @@
 [
   {
+    "version": "v2.10.0",
+    "date": "2026-04-22",
+    "commits": 3,
+    "filesChanged": 64,
+    "providers": [
+      "anthropic",
+      "openai",
+      "gemini",
+      "ollama",
+      "template"
+    ]
+  },
+  {
     "version": "v2.9.2",
     "date": "2026-04-17",
     "commits": 2,
