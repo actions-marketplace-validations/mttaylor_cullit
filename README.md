@@ -3,12 +3,14 @@
 [![npm version](https://img.shields.io/npm/v/cullit.svg)](https://www.npmjs.com/package/cullit)
 [![CI](https://img.shields.io/badge/CI-passing-brightgreen)](https://cullit.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-ff69b4.svg)](https://github.com/sponsors/mttaylor)
+[![GitHub stars](https://img.shields.io/github/stars/mttaylor/cullit?style=social)](https://github.com/mttaylor/cullit)
 
 **Release notes that scale from a free local CLI to licensed hosted workflows.**
 
 Cullit reads your git history, enriches from Jira & Linear, and can generate categorized release notes for developers, customers, and executives. The public npm package is the free local/template CLI. AI providers, premium integrations, dashboard workflows, and private deployment surfaces are licensed separately.
 
-> Built by [Matt](https://cullit.io).
+> Built by [Matt](https://cullit.io) — a solo developer. If Cullit saves you time, **[⭐ star the repo](https://github.com/mttaylor/cullit)** or **[❤️ sponsor on GitHub](https://github.com/sponsors/mttaylor)** — it really helps keep the project alive.
 
 ---
 
@@ -519,6 +521,18 @@ See [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
 - [PRIVACY.md](PRIVACY.md)
 - [TERMS.md](TERMS.md)
 - [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+
+## Support the project
+
+Cullit is built and maintained by **one developer** in their spare time. If it helps you ship better release notes faster:
+
+- ⭐ **[Star on GitHub](https://github.com/mttaylor/cullit)** — costs nothing, helps massively with discovery
+- ❤️ **[Sponsor on GitHub](https://github.com/sponsors/mttaylor)** — recurring support, even $5/mo keeps the lights on
+- ☕ **[Buy a coffee](https://cullit.io/sponsor)** — one-time tip
+- 🐦 Tell other devs about it — word of mouth is everything for indie tools
+- 🪄 **[Subscribe to the hosted plan](https://cullit.io/pricing)** — the strongest possible support, and you get team features, audit log, and dashboard
+
+Every star, sponsor, and shoutout is genuinely appreciated.
 
 ## License
 

@@ -285,6 +285,13 @@ async function runGenerate(from: string, to: string, opts: Record<string, string
       } catch {
         // Advisory is best-effort — never block generate
       }
+
+      // Sponsor nudge — shown ~10% of the time, never on CI, never with --quiet
+      if (!process.env['CI'] && Math.random() < 0.1) {
+        console.log(`\n  ❤️  Cullit is built by one developer. If it saves you time, consider supporting:`);
+        console.log(`     ⭐ https://github.com/mttaylor/cullit`);
+        console.log(`     💖 https://github.com/sponsors/mttaylor\n`);
+      }
     }
   } catch (err) {
     console.error(`\n✗ Error: ${(err as Error).message}`);
