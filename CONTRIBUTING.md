@@ -1,6 +1,18 @@
 # Contributing to Cullit
 
-Thanks for your interest in contributing! Cullit is open source and PRs are welcome.
+Thanks for your interest in contributing! Cullit's engine, CLI, and AI/integration plugins are MIT-licensed and PRs are welcome. The hosted platform packages (`packages/api`, `packages/app`, `site/`) are source-available — see [LICENSE-COMMERCIAL](LICENSE-COMMERCIAL) — but contributions there are also welcome under the same CLA.
+
+## Contributor License Agreement (CLA)
+
+By submitting a pull request you agree that:
+
+1. **You have the right to contribute the code** — it is your original work, or you have explicit permission from the copyright holder, and it does not infringe any third-party IP.
+2. **You grant Cullit a perpetual, worldwide, non-exclusive, royalty-free license** to use, reproduce, modify, distribute, and sublicense your contribution under any license, including both the MIT license and the Cullit Commercial License.
+3. **Your contribution may be relicensed** by the project maintainers at any time without further notice or compensation.
+
+This CLA is required because Cullit is dual-licensed (open core + commercial) and we need the right to ship contributions under both licenses. If you cannot agree to these terms, please do not submit a PR — open an issue instead so we can discuss alternatives.
+
+The CLA is implicit on every PR. We may add a bot-enforced sign-off step in the future.
 
 ## Development Setup
 

@@ -3,7 +3,7 @@
   "version": "2.10.0",
   "type": "module",
   "description": "Private registry distribution for Cullit paid tiers (Paid and Enterprise).",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "author": "Cullit <matt@cullit.io>",
   "repository": {
     "type": "git",

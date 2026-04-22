@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Cullit REST API server for AI-powered release note generation.",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "SEE LICENSE IN LICENSE-COMMERCIAL",
   "author": "Cullit <matt@cullit.io>",
   "main": "./dist/index.js",
   "engines": {

@@ -1,0 +1,46 @@
+Cullit Commercial License (Source-Available)
+
+Copyright (c) 2026 Cullit (Matt Taylor). All rights reserved.
+
+This Commercial License governs the following components of this repository:
+
+  - packages/api          (hosted API server)
+  - packages/app          (GitHub App webhook server)
+  - site/                 (landing page, dashboard assets, marketing site)
+
+These components are made available as source for transparency, security
+review, and self-hosted evaluation only. They are NOT open source and are
+NOT covered by the MIT license that applies to the rest of this repository.
+
+You MAY:
+  - View, read, and audit the source code.
+  - Run the components locally for evaluation, testing, or contribution to
+    this project.
+  - Submit pull requests, subject to the Contributor License Agreement (see
+    CONTRIBUTING.md).
+
+You MAY NOT, without a separate written commercial agreement with the
+copyright holder:
+  - Run the components in production to provide a service to third parties.
+  - Offer the components, modified or unmodified, as a hosted or managed
+    service that competes with cullit.io.
+  - Remove, modify, or obscure copyright notices, license notices, or
+    branding.
+  - Sublicense, sell, or redistribute the components.
+
+Internal self-hosting by your organization for your own internal use is
+permitted free of charge for organizations with fewer than 25 employees.
+Larger organizations and any commercial / SaaS / managed-service use
+require a paid commercial license. Contact: hello@cullit.io
+
+The MIT-licensed components of this repository (see LICENSE) may be freely
+used, modified, and redistributed under the terms of the MIT license,
+including for commercial purposes, without restriction.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.

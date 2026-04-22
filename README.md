@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/cullit.svg)](https://www.npmjs.com/package/cullit)
 [![CI](https://img.shields.io/badge/CI-passing-brightgreen)](https://cullit.io)
-[![License](https://img.shields.io/badge/License-Proprietary-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 **Release notes that scale from a free local CLI to licensed hosted workflows.**
 
@@ -522,7 +522,24 @@ See [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
 
 ## License
 
-Proprietary — see [LICENSE](LICENSE) and [TERMS.md](TERMS.md)
+Cullit is **open core**:
+
+| Component | Package(s) | License |
+|---|---|---|
+| **Engine** — pipeline, git collector, formatter | `@cullit/core`, `@cullit/config` | [MIT](LICENSE) |
+| **CLI** — `cullit generate`, `cullit verify` | `@cullit/cli` (npm: `cullit`) | [MIT](LICENSE) |
+| **AI providers + integrations** — OpenAI, Anthropic, Gemini, Ollama, Linear, Jira | `@cullit/pro` | [MIT](LICENSE) |
+| **License helper** | `@cullit/licensed` | [MIT](LICENSE) |
+| **GitHub Action** | `action.yml` | [MIT](LICENSE) |
+| **Hosted API server** | `packages/api` | [Source-Available](LICENSE-COMMERCIAL) |
+| **GitHub App webhook server** | `packages/app` | [Source-Available](LICENSE-COMMERCIAL) |
+| **Dashboard + landing page** | `site/` | [Source-Available](LICENSE-COMMERCIAL) |
+
+The MIT-licensed packages give you a fully-featured local CLI with AI changelog generation — bring your own API key and you get the same engine that powers cullit.io.
+
+The hosted platform components (auth, billing, team dashboard, audit log) are source-available for transparency but require a [commercial license](LICENSE-COMMERCIAL) for production / SaaS use. Internal self-hosting is free for organizations with fewer than 25 employees.
+
+See also: [TERMS.md](TERMS.md) • [CONTRIBUTING.md](CONTRIBUTING.md) (CLA required)
 
 ---
 
