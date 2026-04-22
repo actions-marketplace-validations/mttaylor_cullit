@@ -18,6 +18,7 @@ import {
 import {
   dbCreateOrgInvite, dbListOrgInvites, dbDeleteOrgInvite, dbGetOrgInviteByToken,
   dbAcceptOrgInvite, dbUpdateOrgMemberRole, dbUpdateOrgSettings,
+  dbGetOrgCountForOwner,
 } from '../db.js';
 import { sendOrgInvite } from '../email.js';
 import { getTeamLimits, PAID_MIN_SEATS } from '@cullit/core';
@@ -57,6 +58,13 @@ export async function handleCreateOrg(req: IncomingMessage, res: ServerResponse)
 
   if (!body.name || typeof body.name !== 'string' || (body.name as string).length < 2 || (body.name as string).length > 64) {
     json(res, 400, { error: '"name" is required (2-64 characters)' }); return;
+  }
+
+  // Per-user org limit to prevent abuse
+  const MAX_ORGS_PER_USER = 5;
+  const ownedCount = await dbGetOrgCountForOwner(user.id);
+  if (ownedCount >= MAX_ORGS_PER_USER) {
+    json(res, 409, { error: `Organization limit reached (${ownedCount}/${MAX_ORGS_PER_USER}). Delete an existing org to create a new one.` }); return;
   }
 
   const org = await createOrg(body.name, user);
@@ -162,6 +170,17 @@ export async function handleCreateOrgInvite(req: IncomingMessage, res: ServerRes
   const pendingInvites = await dbListOrgInvites(user.orgId);
   if (pendingInvites.length >= 50) {
     json(res, 429, { error: 'Too many pending invites (max 50). Cancel some before creating new ones.' }); return;
+  }
+
+  // Rate-limit invite creation velocity (max 10 per user per 5 min)
+  const INVITE_RATE_WINDOW = 5 * 60 * 1000; // 5 minutes
+  const INVITE_RATE_MAX = 10;
+  const now = Date.now();
+  const recentByUser = pendingInvites.filter(i =>
+    i.created_by === user.id && (now - new Date(i.created_at).getTime()) < INVITE_RATE_WINDOW,
+  );
+  if (recentByUser.length >= INVITE_RATE_MAX) {
+    json(res, 429, { error: 'Too many invites sent recently. Wait a few minutes before sending more.' }); return;
   }
 
   const invite = await dbCreateOrgInvite({

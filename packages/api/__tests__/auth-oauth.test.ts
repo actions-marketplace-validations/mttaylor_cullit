@@ -75,7 +75,7 @@ describe('handleAuthCallback', () => {
     await handleAuthCallback(req, res);
     const { statusCode, body } = getResponse();
     expect(statusCode).toBe(400);
-    expect(body).toContain('Invalid or expired OAuth state');
+    expect(body).toContain('Missing OAuth state');
   });
 
   it('rejects callback with invalid state parameter', async () => {

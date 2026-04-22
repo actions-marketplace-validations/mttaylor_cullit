@@ -9,6 +9,7 @@ import { randomBytes, timingSafeEqual } from 'crypto';
 import type { IncomingMessage, ServerResponse } from 'http';
 import createSanitizer from 'sanitize-html';
 import { PAID_TIERS } from '@cullit/core';
+import { log } from './logger.js';
 
 // --- Types ---
 
@@ -41,7 +42,16 @@ export const SECURITY_HEADERS: Record<string, string> = {
 // --- Response helper ---
 
 export function json(res: CorsResponse, status: number, body: unknown): void {
-  const payload = JSON.stringify(body);
+  let payload: string;
+  try {
+    payload = JSON.stringify(body);
+  } catch (err) {
+    // Circular refs, BigInt, or other non-serializable values would otherwise hang the response.
+    payload = JSON.stringify({ error: 'Internal serialization error', code: 'SERIALIZATION_FAILED' });
+    status = 500;
+    // Best-effort log without importing logger to avoid cycles
+    try { console.error('json() serialization failed:', (err as Error).message); } catch { /* noop */ }
+  }
   res.writeHead(status, {
     'Content-Type': 'application/json',
     'Content-Length': Buffer.byteLength(payload),
@@ -83,6 +93,17 @@ export async function readBody(req: IncomingMessage, timeoutMs = 30_000): Promis
 
 export function isRecord(value: unknown): value is JsonObject {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Centralized error responder for API route handlers. Logs the error with consistent
+ * structured fields and returns a generic 500 to the client (no stack-trace leak).
+ * Use in catch blocks: `catch (err) { handleApiError(err, res, 'context label'); }`
+ */
+export function handleApiError(err: unknown, res: CorsResponse, context: string, status = 500): void {
+  const message = err instanceof Error ? err.message : String(err);
+  log.error({ err: message, context }, `Route handler failed: ${context}`);
+  json(res, status, { error: 'Internal server error' });
 }
 
 /**

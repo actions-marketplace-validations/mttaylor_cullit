@@ -42,6 +42,8 @@ export { createRateLimiter } from './rate-limiter';
 export type { RateLimiter, RateLimitResult, RateLimiterOptions } from './rate-limiter';
 export { CullitError, CoreErrorCode } from './errors';
 export type { CoreErrorCodeValue } from './errors';
+export { verifyIntegrations, formatVerifyResults } from './verify';
+export type { VerifyResult, VerifyStatus, VerifyOptions } from './verify';
 
 import type { CullConfig, EnrichedContext, PipelineResult, OutputFormat, EnrichedTicket, ReleaseNotes, TemplateProfile, TemplateConfig, PublishTarget } from './types';
 import { CullitError, CoreErrorCode } from './errors';

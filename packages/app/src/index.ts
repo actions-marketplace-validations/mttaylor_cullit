@@ -1,510 +1,54 @@
 /**
- * Cullit GitHub App — Webhook Handler
+ * Cullit GitHub App — Webhook Server
  *
- * Handles GitHub App webhooks to auto-generate release notes.
- * Designed to run as a standalone server or behind the existing API.
- *
- * Supported Events:
- *   - installation / installation_repositories: Track installs
- *   - release (published/created): Auto-generate notes for releases
- *   - push (tag refs): Auto-generate notes on tag push
- *
- * Environment Variables:
- *   GITHUB_APP_ID         — GitHub App ID
- *   GITHUB_APP_PRIVATE_KEY — PEM private key (base64 or raw)
- *   GITHUB_WEBHOOK_SECRET  — Webhook signature secret
- *   CULLIT_APP_PORT        — Port (default 3001)
+ * Verifies incoming GitHub App webhook deliveries and dispatches them
+ * to per-event handlers. Logic is split across:
+ *   - config.ts      env vars
+ *   - util.ts        small helpers (decodeKey, base64url)
+ *   - github-api.ts  GitHub REST helpers (token cache, releases, PR comments)
+ *   - handlers.ts    handleRelease / handlePush / handleInstallation
+ *   - metrics.ts     in-memory counters exposed at /metrics
  */
-
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
 import { createHmac, timingSafeEqual } from 'crypto';
-import { execFileSync } from 'child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'fs';
-import { join } from 'path';
-import { tmpdir } from 'os';
-import { runPipeline, VERSION, DEFAULT_CATEGORIES, createRateLimiter } from '@cullit/core';
-import type { CullConfig, PublishTarget } from '@cullit/core';
+import { VERSION, createRateLimiter } from '@cullit/core';
 import { log } from './logger.js';
+import { WEBHOOK_SECRET, PORT, RATE_LIMIT, RATE_WINDOW } from './config.js';
+import { metrics } from './metrics.js';
+import {
+  handleRelease, handlePush, handleInstallation,
+} from './handlers.js';
 
 // Load pro plugins
 try { await import('@cullit/pro'); } catch { /* pro not installed */ }
-
-const APP_ID = process.env['GITHUB_APP_ID'] || '';
-const PRIVATE_KEY = decodeKey(process.env['GITHUB_APP_PRIVATE_KEY'] || '');
-const WEBHOOK_SECRET = process.env['GITHUB_WEBHOOK_SECRET'] || '';
-const PORT = parseInt(process.env['CULLIT_APP_PORT'] || '3001', 10);
-const RATE_LIMIT = parseInt(process.env['CULLIT_APP_RATE_LIMIT'] || '60', 10); // per minute per IP
-const RATE_WINDOW = 60_000;
-
-// AI provider config (requires @cullit/pro)
-const AI_PROVIDER = process.env['CULLIT_AI_PROVIDER'] || 'none';
-const AI_MODEL = process.env['CULLIT_AI_MODEL'] || undefined;
-const AI_API_KEY = process.env['CULLIT_AI_API_KEY'] || undefined;
-
-// Auto-publish config
-const SLACK_WEBHOOK = process.env['CULLIT_APP_SLACK_WEBHOOK'] || '';
-const DISCORD_WEBHOOK = process.env['CULLIT_APP_DISCORD_WEBHOOK'] || '';
-const TEAMS_WEBHOOK = process.env['CULLIT_APP_TEAMS_WEBHOOK'] || '';
-const CHANGELOG_ENABLED = process.env['CULLIT_APP_CHANGELOG_ENABLED'] === 'true';
-const CULLIT_API_URL = process.env['CULLIT_API_URL'] || ''; // e.g. https://api.cullit.io
-const CULLIT_APP_SECRET = process.env['CULLIT_APP_SECRET'] || ''; // shared secret for app→API auth
 
 // --- Rate limiter (per-IP sliding window) ---
 const rateLimiter = createRateLimiter({ limit: RATE_LIMIT, windowMs: RATE_WINDOW });
 
 // --- Webhook delivery dedup (prevent replays) ---
-const DELIVERY_DEDUP_MAX = 10_000;
 const recentDeliveries = new Set<string>();
+const DELIVERY_DEDUP_MAX = 10_000;
 
 async function checkRateLimit(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
   const ip = req.socket.remoteAddress || 'unknown';
   const result = await rateLimiter.check(ip);
-
   if (!result.allowed) {
-    json(res, 429, { error: 'Too many requests. Try again later.' });
+    json(res, 429, { error: 'Rate limit exceeded', retryAfterSeconds: result.retryAfterSeconds });
     return false;
   }
-
   return true;
-}
-
-function decodeKey(key: string): string {
-  // Support base64-encoded PEM keys (common in CI/Docker)
-  if (key.startsWith('LS0t')) {
-    return Buffer.from(key, 'base64').toString('utf-8');
-  }
-  return key.replace(/\\n/g, '\n');
 }
 
 // --- Signature Verification ---
 
-function verifySignature(payload: string, signature: string | undefined): boolean {
-  if (!WEBHOOK_SECRET || !signature) return false;
+export function verifySignature(payload: string, signature: string | undefined): boolean {
+  if (!signature || !signature.startsWith('sha256=')) return false;
   const expected = 'sha256=' + createHmac('sha256', WEBHOOK_SECRET).update(payload).digest('hex');
-  if (expected.length !== signature.length) return false;
+  if (signature.length !== expected.length) return false;
   return timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
 }
 
-// --- GitHub API Helpers ---
-
-interface InstallationToken {
-  token: string;
-  expiresAt: number;
-}
-
-const TOKEN_CACHE_MAX = 1000;
-const tokenCache = new Map<number, InstallationToken>();
-
-async function getInstallationToken(installationId: number): Promise<string> {
-  const cached = tokenCache.get(installationId);
-  if (cached && cached.expiresAt > Date.now() + 60_000) {
-    return cached.token;
-  }
-
-  const jwt = await createJWT();
-  const res = await fetch(`https://api.github.com/app/installations/${installationId}/access_tokens`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${jwt}`,
-      Accept: 'application/vnd.github+json',
-      'User-Agent': `cullit-app/${VERSION}`,
-    },
-  });
-
-  if (!res.ok) throw new Error(`Failed to get installation token: ${res.status}`);
-  const data = await res.json() as { token: string; expires_at: string };
-
-  // Evict expired entries and enforce max size
-  if (tokenCache.size >= TOKEN_CACHE_MAX) {
-    const now = Date.now();
-    for (const [id, entry] of tokenCache) {
-      if (entry.expiresAt <= now) tokenCache.delete(id);
-    }
-    // If still at max, delete oldest entry
-    if (tokenCache.size >= TOKEN_CACHE_MAX) {
-      const firstKey = tokenCache.keys().next().value;
-      if (firstKey !== undefined) tokenCache.delete(firstKey);
-    }
-  }
-
-  tokenCache.set(installationId, {
-    token: data.token,
-    expiresAt: new Date(data.expires_at).getTime(),
-  });
-
-  return data.token;
-}
-
-async function createJWT(): Promise<string> {
-  if (!APP_ID || !PRIVATE_KEY) throw new Error('GITHUB_APP_ID and GITHUB_APP_PRIVATE_KEY required');
-
-  // Minimal JWT implementation (RS256)
-  const header = base64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
-  const now = Math.floor(Date.now() / 1000);
-  const payload = base64url(JSON.stringify({ iss: APP_ID, iat: now - 60, exp: now + 600 }));
-
-  const { createSign } = await import('crypto');
-  const sign = createSign('RSA-SHA256');
-  sign.update(`${header}.${payload}`);
-  const signature = base64url(sign.sign(PRIVATE_KEY));
-
-  return `${header}.${payload}.${signature}`;
-}
-
-function base64url(data: string | Buffer): string {
-  const buf = typeof data === 'string' ? Buffer.from(data) : data;
-  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-// --- GitHub API ---
-
-async function createOrUpdateRelease(
-  token: string, owner: string, repo: string,
-  tag: string, body: string
-): Promise<void> {
-  const headers = {
-    Authorization: `Bearer ${token}`,
-    Accept: 'application/vnd.github+json',
-    'Content-Type': 'application/json',
-    'User-Agent': `cullit-app/${VERSION}`,
-  };
-
-  // Check if release already exists
-  const existing = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/releases/tags/${tag}`,
-    { headers }
-  );
-
-  if (existing.ok) {
-    const release = await existing.json() as { id: number };
-    await fetch(`https://api.github.com/repos/${owner}/${repo}/releases/${release.id}`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify({ body }),
-    });
-    log.info({ tag, owner, repo }, 'Updated release');
-  } else {
-    await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ tag_name: tag, name: tag, body }),
-    });
-    log.info({ tag, owner, repo }, 'Created release');
-  }
-}
-
-async function getPreviousTag(token: string, owner: string, repo: string, currentTag: string): Promise<string | null> {
-  const res = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/tags?per_page=10`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/vnd.github+json',
-        'User-Agent': `cullit-app/${VERSION}`,
-      },
-    }
-  );
-
-  if (!res.ok) return null;
-  const tags = await res.json() as { name: string }[];
-  const idx = tags.findIndex(t => t.name === currentTag);
-  return idx >= 0 && idx + 1 < tags.length ? tags[idx + 1].name : null;
-}
-
-// --- Repo Cloning ---
-
-function cloneRepo(owner: string, repo: string, token: string): string {
-  const tempDir = mkdtempSync(join(tmpdir(), 'cullit-app-'));
-  const cloneUrl = `https://github.com/${owner}/${repo}.git`;
-  // Use GIT_ASKPASS to supply the token instead of embedding it in the URL.
-  // This avoids leaking credentials in process listings (/proc/*/cmdline).
-  const askPassScript = join(tempDir, '.git-askpass');
-  writeFileSync(askPassScript, `#!/bin/sh\necho "${token}"`, { mode: 0o700 });
-  execFileSync('git', ['clone', '--depth=500', '--single-branch', cloneUrl, tempDir], {
-    encoding: 'utf-8',
-    timeout: 120_000,
-    stdio: 'pipe',
-    env: { ...process.env, GIT_ASKPASS: askPassScript, GIT_TERMINAL_PROMPT: '0' },
-  });
-  return tempDir;
-}
-
-// --- Publish Target Builder ---
-
-function buildPublishTargets(): PublishTarget[] {
-  const targets: PublishTarget[] = [];
-  if (SLACK_WEBHOOK) targets.push({ type: 'slack', webhookUrl: SLACK_WEBHOOK });
-  if (DISCORD_WEBHOOK) targets.push({ type: 'discord', webhookUrl: DISCORD_WEBHOOK });
-  if (TEAMS_WEBHOOK) targets.push({ type: 'teams', webhookUrl: TEAMS_WEBHOOK });
-  if (CHANGELOG_ENABLED) targets.push({ type: 'changelog' });
-  return targets;
-}
-
-interface GitHubRepositoryPayload {
-  name: string;
-  owner: { login: string };
-}
-
-interface GitHubInstallationPayload {
-  id: number;
-  account?: { login?: string };
-}
-
-interface GitHubReleasePayload {
-  action?: string;
-  release?: { tag_name?: string };
-  repository?: GitHubRepositoryPayload;
-  installation?: GitHubInstallationPayload;
-}
-
-interface GitHubPushPayload {
-  ref?: string;
-  repository?: GitHubRepositoryPayload;
-  installation?: GitHubInstallationPayload;
-}
-
-interface GitHubInstallationEventPayload {
-  action?: string;
-  installation?: GitHubInstallationPayload;
-  repositories?: Array<{ full_name?: string }>;
-}
-
-// --- Event Handlers ---
-
-async function handleRelease(payload: GitHubReleasePayload): Promise<void> {
-  const { release, repository, installation } = payload;
-  if (!release || !repository || !installation) return;
-
-  const action = payload.action;
-  if (action !== 'published' && action !== 'created') return;
-
-  const tag = release.tag_name;
-  const owner = repository.owner.login;
-  const repo = repository.name;
-  const installationId = installation.id;
-
-  log.info({ action, owner, repo, tag }, 'Processing release event');
-
-  const token = await getInstallationToken(installationId);
-  const prevTag = await getPreviousTag(token, owner, repo, tag);
-
-  if (!prevTag) {
-    log.info({ tag }, 'No previous tag found, skipping');
-    return;
-  }
-
-  // Clone the repo so GitCollector has real git history
-  let repoDir: string | undefined;
-  try {
-    repoDir = cloneRepo(owner, repo, token);
-
-    const config: CullConfig = {
-      ai: { provider: AI_PROVIDER, model: AI_MODEL, apiKey: AI_API_KEY, audience: 'developer', tone: 'professional', categories: DEFAULT_CATEGORIES },
-      source: { type: 'local', repoPath: repoDir },
-      publish: buildPublishTargets(),
-    };
-
-    const result = await runPipeline(prevTag, tag, config, { format: 'markdown' });
-    await createOrUpdateRelease(token, owner, repo, tag, result.formatted);
-
-    // Auto-comment on PRs and linked issues shipped in this release
-    await commentOnShippedPRs(token, owner, repo, prevTag, tag).catch(err => {
-      log.warn({ err: (err as Error).message, tag }, 'PR/issue commenting failed (non-fatal)');
-    });
-  } finally {
-    if (repoDir) try { rmSync(repoDir, { recursive: true, force: true }); } catch { /* best effort */ }
-  }
-}
-
-async function handlePush(payload: GitHubPushPayload): Promise<void> {
-  const { ref, repository, installation } = payload;
-  if (!ref || !repository || !installation) return;
-
-  // Only process tag pushes
-  if (!ref.startsWith('refs/tags/')) return;
-
-  const tag = ref.replace('refs/tags/', '');
-  const owner = repository.owner.login;
-  const repo = repository.name;
-  const installationId = installation.id;
-
-  log.info({ owner, repo, tag }, 'Processing tag push');
-
-  const token = await getInstallationToken(installationId);
-  const prevTag = await getPreviousTag(token, owner, repo, tag);
-
-  if (!prevTag) {
-    log.info({ tag }, 'No previous tag found, skipping');
-    return;
-  }
-
-  let repoDir: string | undefined;
-  try {
-    repoDir = cloneRepo(owner, repo, token);
-
-    const config: CullConfig = {
-      ai: { provider: AI_PROVIDER, model: AI_MODEL, apiKey: AI_API_KEY, audience: 'developer', tone: 'professional', categories: DEFAULT_CATEGORIES },
-      source: { type: 'local', repoPath: repoDir },
-      publish: buildPublishTargets(),
-    };
-
-    const result = await runPipeline(prevTag, tag, config, { format: 'markdown' });
-    await createOrUpdateRelease(token, owner, repo, tag, result.formatted);
-  } finally {
-    if (repoDir) try { rmSync(repoDir, { recursive: true, force: true }); } catch { /* best effort */ }
-  }
-}
-
-function handleInstallation(payload: GitHubInstallationEventPayload): void {
-  const action = payload.action;
-  const account = payload.installation?.account?.login || 'unknown';
-  const repos = payload.repositories?.map(r => r.full_name || '').filter(Boolean) || [];
-
-  log.info({ action, account, repoCount: repos.length }, 'Installation event');
-  metrics.installations++;
-
-  if (action === 'created') {
-    log.info({ repos }, 'Installed repos');
-    // Notify the Cullit API to link this GitHub installation to a user account.
-    // The API will match installation.account.login to a Cullit user by their GitHub login.
-    // If CULLIT_API_URL is not set, auto-linking is skipped (user configures repos manually).
-    if (CULLIT_API_URL && CULLIT_APP_SECRET) {
-      linkInstallation(
-        payload.installation?.id,
-        account,
-        repos,
-      ).catch(err => {
-        log.warn(
-          { err: (err as Error).message, account },
-          'Failed to auto-link installation — user can configure repos manually in the dashboard',
-        );
-      });
-    } else {
-      log.warn(
-        { account, installationId: payload.installation?.id },
-        'CULLIT_API_URL or CULLIT_APP_SECRET not set — skipping auto-link. ' +
-        'User must configure repos manually in the dashboard.',
-      );
-    }
-  }
-}
-
-/**
- * Notify the Cullit API that a GitHub App installation was created.
- * The API matches the GitHub login to a Cullit user and stores the installation mapping.
- */
-async function linkInstallation(
-  installationId: number | undefined,
-  githubLogin: string,
-  repos: string[],
-): Promise<void> {
-  if (!installationId) return;
-
-  const res = await fetch(`${CULLIT_API_URL}/v1/app/installation`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${CULLIT_APP_SECRET}`,
-      'User-Agent': `cullit-app/${VERSION}`,
-    },
-    body: JSON.stringify({ installationId, githubLogin, repos }),
-    signal: AbortSignal.timeout(10_000),
-  });
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new Error(`API responded ${res.status}: ${body.slice(0, 200)}`);
-  }
-
-  log.info({ installationId, githubLogin, repoCount: repos.length }, 'Installation linked via API');
-}
-
-// --- PR / Issue Auto-Commenting ---
-
-/**
- * Find merged PRs between two tags and comment "Shipped in <tag>" on each.
- * Also comments on any linked issues (Fixes #N, Closes #N) found in PR bodies.
- */
-async function commentOnShippedPRs(
-  token: string, owner: string, repo: string,
-  fromTag: string, toTag: string,
-): Promise<void> {
-  const headers = {
-    Authorization: `Bearer ${token}`,
-    Accept: 'application/vnd.github+json',
-    'Content-Type': 'application/json',
-    'User-Agent': `cullit-app/${VERSION}`,
-  };
-
-  // Compare the two tags to find commits
-  const compareRes = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/compare/${encodeURIComponent(fromTag)}...${encodeURIComponent(toTag)}?per_page=100`,
-    { headers },
-  );
-  if (!compareRes.ok) {
-    log.warn({ status: compareRes.status, fromTag, toTag }, 'Compare API failed');
-    return;
-  }
-  const compareData = await compareRes.json() as {
-    commits: Array<{ sha: string }>;
-  };
-
-  // For each commit, find associated merged PRs
-  const commentedPRs = new Set<number>();
-  const commentedIssues = new Set<number>();
-  const comment = `🚀 Shipped in [${toTag}](https://github.com/${owner}/${repo}/releases/tag/${encodeURIComponent(toTag)})`;
-
-  for (const commit of compareData.commits) {
-    const prRes = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/commits/${commit.sha}/pulls`,
-      { headers },
-    );
-    if (!prRes.ok) continue;
-    const prs = await prRes.json() as Array<{ number: number; body: string | null; merged_at: string | null }>;
-
-    for (const pr of prs) {
-      if (!pr.merged_at || commentedPRs.has(pr.number)) continue;
-      commentedPRs.add(pr.number);
-
-      // Comment on the PR
-      await fetch(
-        `https://api.github.com/repos/${owner}/${repo}/issues/${pr.number}/comments`,
-        { method: 'POST', headers, body: JSON.stringify({ body: comment }) },
-      );
-
-      // Find linked issues in PR body
-      if (pr.body) {
-        const issuePattern = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)/gi;
-        let match: RegExpExecArray | null;
-        while ((match = issuePattern.exec(pr.body)) !== null) {
-          const issueNum = parseInt(match[1], 10);
-          if (commentedIssues.has(issueNum)) continue;
-          commentedIssues.add(issueNum);
-
-          await fetch(
-            `https://api.github.com/repos/${owner}/${repo}/issues/${issueNum}/comments`,
-            { method: 'POST', headers, body: JSON.stringify({ body: comment }) },
-          );
-        }
-      }
-    }
-  }
-
-  log.info({ owner, repo, toTag, prs: commentedPRs.size, issues: commentedIssues.size }, 'Commented on shipped PRs/issues');
-}
-
-// --- Metrics ---
-
-const metrics = {
-  webhooksReceived: 0,
-  releasesProcessed: 0,
-  pushesProcessed: 0,
-  installations: 0,
-  errors: 0,
-  startedAt: Date.now(),
-};
-
-// --- HTTP Server ---
+// --- HTTP helpers ---
 
 function json(res: ServerResponse, status: number, body: unknown): void {
   const payload = JSON.stringify(body);
@@ -526,6 +70,8 @@ async function readBody(req: IncomingMessage): Promise<string> {
   return Buffer.concat(chunks).toString('utf-8');
 }
 
+// --- Server ---
+
 const server = createServer(async (req, res) => {
   if (req.method === 'GET' && req.url === '/health') {
     json(res, 200, { status: 'ok', app: 'cullit-github-app', version: VERSION });
@@ -533,10 +79,7 @@ const server = createServer(async (req, res) => {
   }
 
   if (req.method === 'GET' && req.url === '/metrics') {
-    json(res, 200, {
-      ...metrics,
-      uptimeMs: Date.now() - metrics.startedAt,
-    });
+    json(res, 200, { ...metrics, uptimeMs: Date.now() - metrics.startedAt });
     return;
   }
 
@@ -552,7 +95,6 @@ const server = createServer(async (req, res) => {
   try {
     const body = await readBody(req);
 
-    // Verify webhook signature (always required)
     const sig = req.headers['x-hub-signature-256'] as string;
     if (!WEBHOOK_SECRET) {
       log.error('GITHUB_WEBHOOK_SECRET is not set — rejecting all webhooks');
@@ -567,7 +109,7 @@ const server = createServer(async (req, res) => {
     const event = req.headers['x-github-event'] as string;
     const deliveryId = req.headers['x-github-delivery'] as string;
 
-    // Deduplicate webhook deliveries
+    // Dedup deliveries
     if (deliveryId && recentDeliveries.has(deliveryId)) {
       log.debug({ deliveryId, event }, 'Duplicate webhook delivery — skipping');
       json(res, 200, { ok: true, event, duplicate: true });
@@ -575,7 +117,6 @@ const server = createServer(async (req, res) => {
     }
     if (deliveryId) {
       recentDeliveries.add(deliveryId);
-      // Evict old entries to bound memory (keep last DELIVERY_DEDUP_MAX)
       if (recentDeliveries.size > DELIVERY_DEDUP_MAX) {
         const first = recentDeliveries.values().next().value;
         if (first !== undefined) recentDeliveries.delete(first);
@@ -593,23 +134,22 @@ const server = createServer(async (req, res) => {
     // Respond immediately, process async
     json(res, 200, { ok: true, event });
 
-    // Process in background (don't block the response)
     switch (event) {
       case 'release':
-        handleRelease(payload).then(() => { metrics.releasesProcessed++; }).catch(err => {
+        handleRelease(payload as Parameters<typeof handleRelease>[0]).then(() => { metrics.releasesProcessed++; }).catch(err => {
           metrics.errors++;
           log.error({ err: err.message }, 'Release handler error');
         });
         break;
       case 'push':
-        handlePush(payload).then(() => { metrics.pushesProcessed++; }).catch(err => {
+        handlePush(payload as Parameters<typeof handlePush>[0]).then(() => { metrics.pushesProcessed++; }).catch(err => {
           metrics.errors++;
           log.error({ err: err.message }, 'Push handler error');
         });
         break;
       case 'installation':
       case 'installation_repositories':
-        handleInstallation(payload);
+        handleInstallation(payload as Parameters<typeof handleInstallation>[0]);
         break;
       default:
         log.debug({ event }, 'Ignored event');
@@ -633,14 +173,13 @@ if (isDirectRun) {
     log.info({ version: VERSION, port: PORT }, `Cullit GitHub App v${VERSION} listening on http://localhost:${PORT}`);
   });
 
-  // Graceful shutdown — drain in-flight requests before exiting
   const shutdown = () => {
     log.info('Shutting down...');
     server.close(() => process.exit(0));
-    setTimeout(() => process.exit(1), 10_000).unref(); // force after 10s
+    setTimeout(() => process.exit(1), 10_000).unref();
   };
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);
 }
 
-export { server, verifySignature, handleRelease, handlePush, handleInstallation };
+export { server, handleRelease, handlePush, handleInstallation };

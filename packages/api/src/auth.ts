@@ -28,7 +28,8 @@ import {
   dbAddOrgMember, dbAddOrgMemberAtomic, dbRemoveOrgMember, dbGetOrgMembers,
   dbRevokeToken, dbIsTokenRevoked, dbDeleteUser, dbGetTokensRevokedBefore,
   dbGetTeamApiKeyByKey, dbUpdatePreferredProvider, dbRevokeAllUserTokens,
-  dbGetSubscription, dbUpdateOrgMaxSeats,
+  dbGetSubscription, dbUpdateOrgMaxSeats, dbGetOrgsOwnedByUser,
+  dbCreateOAuthState, dbConsumeOAuthState, dbExportUserData,
   hashApiKey,
   sql,
   type DbUser, type DbOrg,
@@ -144,9 +145,16 @@ const MAX_PENDING_STATES = 50_000;
 
 // Prune expired states periodically
 setInterval(() => {
-  const now = Date.now();
-  for (const [state, { ts }] of pendingStates) {
-    if (now - ts > STATE_TTL) pendingStates.delete(state);
+  try {
+    const now = Date.now();
+    for (const [state, { ts }] of pendingStates) {
+      if (now - ts > STATE_TTL) pendingStates.delete(state);
+    }
+    if (pendingStates.size > MAX_PENDING_STATES * 0.9) {
+      log.warn({ size: pendingStates.size, max: MAX_PENDING_STATES }, 'OAuth pending states approaching capacity');
+    }
+  } catch (err) {
+    log.error({ err: (err as Error).message }, 'OAuth state pruning failed');
   }
 }, 120_000).unref();
 
@@ -509,7 +517,8 @@ function dbOrgToOrg(row: DbOrg): Org {
 
 export async function createOrg(name: string, owner: User, maxSeats = 10): Promise<Org> {
   const id = randomBytes(12).toString('hex');
-  let slug = name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').slice(0, 48);
+  let slug = name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48);
+  if (!slug) slug = `org-${randomBytes(4).toString('hex')}`; // Fallback if name is all special chars
   const now = new Date().toISOString();
 
   if (useDb) {
@@ -548,13 +557,14 @@ export async function createOrg(name: string, owner: User, maxSeats = 10): Promi
 }
 
 export async function updateOrgMaxSeats(orgId: string, maxSeats: number): Promise<void> {
+  const clamped = Math.max(1, Math.min(maxSeats, 1000)); // Enforce 1-1000 range
   if (useDb) {
-    await dbUpdateOrgMaxSeats(orgId, maxSeats);
+    await dbUpdateOrgMaxSeats(orgId, clamped);
     return;
   }
   const org = store.orgs[orgId];
   if (org) {
-    org.maxSeats = maxSeats;
+    org.maxSeats = clamped;
     saveAuthStore();
   }
 }
@@ -641,7 +651,7 @@ interface WorkOSUser {
 /**
  * GET /auth/login — Redirect to WorkOS AuthKit hosted login
  */
-export function handleAuthRedirect(req: IncomingMessage, res: ServerResponse): void {
+export async function handleAuthRedirect(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (!WORKOS_CLIENT_ID) {
     res.writeHead(500, { 'Content-Type': 'application/json', ...AUTH_SECURITY_HEADERS });
     res.end(JSON.stringify({ error: 'WorkOS AuthKit not configured (WORKOS_CLIENT_ID missing)' }));
@@ -661,7 +671,18 @@ export function handleAuthRedirect(req: IncomingMessage, res: ServerResponse): v
   const returnTo = rawReturnTo && /^\/[a-zA-Z0-9_\-.]/.test(rawReturnTo) && !rawReturnTo.includes('//') && !rawReturnTo.includes('..') ? rawReturnTo : '';
 
   const state = randomBytes(16).toString('hex');
-  pendingStates.set(state, { ts: Date.now(), returnTo });
+  // Persist state in DB so it survives restarts and works across replicas;
+  // fall back to in-memory map when DB is not configured.
+  if (useDb) {
+    try {
+      await dbCreateOAuthState(state, returnTo);
+    } catch (err) {
+      log.warn({ err: (err as Error).message }, 'Failed to persist OAuth state; using in-memory fallback');
+      pendingStates.set(state, { ts: Date.now(), returnTo });
+    }
+  } else {
+    pendingStates.set(state, { ts: Date.now(), returnTo });
+  }
 
   const params = new URLSearchParams({
     client_id: WORKOS_CLIENT_ID,
@@ -683,14 +704,31 @@ export async function handleAuthCallback(req: IncomingMessage, res: ServerRespon
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
 
-  // Validate CSRF state
-  if (!state || !pendingStates.has(state)) {
+  // Validate CSRF state — try DB first (atomic consume), then in-memory fallback
+  if (!state) {
     res.writeHead(400, { 'Content-Type': 'application/json', ...AUTH_SECURITY_HEADERS });
-    res.end(JSON.stringify({ error: 'Invalid or expired OAuth state' }));
+    res.end(JSON.stringify({ error: 'Missing OAuth state' }));
     return;
   }
-  const pendingData = pendingStates.get(state)!;
-  pendingStates.delete(state);
+  let returnToFromState: string | null = null;
+  if (useDb) {
+    try {
+      returnToFromState = await dbConsumeOAuthState(state);
+    } catch (err) {
+      log.warn({ err: (err as Error).message }, 'OAuth state DB consume failed; trying in-memory');
+    }
+  }
+  if (returnToFromState === null) {
+    // Fall back to in-memory map (covers no-DB mode + DB failure)
+    if (!pendingStates.has(state)) {
+      res.writeHead(400, { 'Content-Type': 'application/json', ...AUTH_SECURITY_HEADERS });
+      res.end(JSON.stringify({ error: 'Invalid or expired OAuth state' }));
+      return;
+    }
+    returnToFromState = pendingStates.get(state)?.returnTo || '';
+    pendingStates.delete(state);
+  }
+  const pendingData: PendingState = { ts: Date.now(), returnTo: returnToFromState };
 
   if (!code) {
     res.writeHead(400, { 'Content-Type': 'application/json', ...AUTH_SECURITY_HEADERS });
@@ -771,7 +809,7 @@ export async function handleAuthMe(req: IncomingMessage, res: ServerResponse, js
     effectiveTier,
     orgId: user.orgId,
     role: user.role,
-    hasApiKey: !!user.apiKey || !!user.apiKeyHash,
+    hasApiKey: !!user.apiKey,
     preferredProvider: user.preferredProvider,
     features: getFeatureGating(effectiveTier),
     createdAt: user.createdAt,
@@ -867,14 +905,47 @@ export async function handleRotateApiKey(req: IncomingMessage, res: ServerRespon
 }
 
 /**
+ * GET /auth/me/export — GDPR: Export all user data as JSON.
+ * Returns profile, generations, owned orgs, memberships, audit events, subscriptions, team keys.
+ */
+export async function handleExportAccount(req: IncomingMessage, res: ServerResponse, jsonFn: (r: ServerResponse, s: number, b: unknown) => void): Promise<void> {
+  const user = await resolveUser(req);
+  if (!user) { jsonFn(res, 401, { error: 'Not authenticated' }); return; }
+  if (!useDb) {
+    // In file-backed mode, only the in-memory profile is exportable
+    jsonFn(res, 200, {
+      exportedAt: new Date().toISOString(),
+      user: { id: user.id, email: user.email, name: user.name, login: user.login, tier: user.tier },
+      note: 'Database not configured — limited export available',
+    });
+    return;
+  }
+  try {
+    const data = await dbExportUserData(user.id);
+    res.setHeader('Content-Disposition', `attachment; filename="cullit-export-${user.id}-${Date.now()}.json"`);
+    jsonFn(res, 200, data);
+  } catch (err) {
+    log.error({ err: (err as Error).message, userId: user.id }, 'Failed to export user data');
+    jsonFn(res, 500, { error: 'Failed to export user data' });
+  }
+}
+
+/**
  * DELETE /auth/me — GDPR: Delete current user's account and all associated data.
  */
 export async function handleDeleteAccount(req: IncomingMessage, res: ServerResponse, jsonFn: (r: ServerResponse, s: number, b: unknown) => void): Promise<void> {
   const user = await resolveUser(req);
   if (!user) { jsonFn(res, 401, { error: 'Not authenticated' }); return; }
 
-  // Org owners must transfer or delete the org before deleting their account
-  if (user.orgId && user.role === 'owner') {
+  // Org owners must transfer or delete ALL owned orgs before deleting their account
+  if (useDb) {
+    const ownedOrgs = await dbGetOrgsOwnedByUser(user.id);
+    if (ownedOrgs.length > 0) {
+      const names = ownedOrgs.map(o => o.name).join(', ');
+      jsonFn(res, 409, { error: `You own ${ownedOrgs.length} org(s): ${names}. Transfer ownership or delete them before deleting your account.` });
+      return;
+    }
+  } else if (user.orgId && user.role === 'owner') {
     jsonFn(res, 409, { error: 'You must transfer org ownership or delete the org before deleting your account.' });
     return;
   }

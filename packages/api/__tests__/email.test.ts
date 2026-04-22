@@ -49,27 +49,27 @@ describe('Email Module', () => {
 describe('Email Throttle', () => {
   beforeEach(() => { _resetThrottleState(); });
 
-  it('allows emails under threshold', () => {
+  it('allows emails under threshold', async () => {
     const recipient = 'user@example.com';
-    expect(_isEmailThrottled(recipient)).toBe(false);
+    expect(await _isEmailThrottled(recipient)).toBe(false);
   });
 
-  it('throttles after max emails', () => {
+  it('throttles after max emails', async () => {
     const recipient = 'flood@example.com';
     for (let i = 0; i < _EMAIL_THROTTLE_MAX; i++) {
-      expect(_isEmailThrottled(recipient)).toBe(false);
-      _recordEmailSent(recipient);
+      expect(await _isEmailThrottled(recipient)).toBe(false);
+      await _recordEmailSent(recipient);
     }
-    expect(_isEmailThrottled(recipient)).toBe(true);
+    expect(await _isEmailThrottled(recipient)).toBe(true);
   });
 
-  it('tracks recipients independently', () => {
-    for (let i = 0; i < _EMAIL_THROTTLE_MAX; i++) _recordEmailSent('a@test.com');
-    expect(_isEmailThrottled('a@test.com')).toBe(true);
-    expect(_isEmailThrottled('b@test.com')).toBe(false);
+  it('tracks recipients independently', async () => {
+    for (let i = 0; i < _EMAIL_THROTTLE_MAX; i++) await _recordEmailSent('a@test.com');
+    expect(await _isEmailThrottled('a@test.com')).toBe(true);
+    expect(await _isEmailThrottled('b@test.com')).toBe(false);
   });
 
-  it('does not throttle unknown recipients', () => {
-    expect(_isEmailThrottled('new@test.com')).toBe(false);
+  it('does not throttle unknown recipients', async () => {
+    expect(await _isEmailThrottled('new@test.com')).toBe(false);
   });
 });

@@ -14,8 +14,11 @@ const EMAIL_FROM = process.env['EMAIL_FROM'] || 'Cullit <noreply@cullit.io>';
 
 import { log } from './logger.js';
 import { escapeHtml } from '@cullit/core';
+import { dbCountRecentEmails, dbRecordEmailSent, sql } from './db.js';
 
 // --- Per-recipient email throttle (max 10 emails per hour) ---
+// Primary: DB-backed (survives restarts, works across replicas).
+// Fallback: in-memory map when DATABASE_URL is not configured.
 const EMAIL_THROTTLE_MAX = 10;
 const EMAIL_THROTTLE_WINDOW = 60 * 60 * 1000; // 1 hour
 const EMAIL_MAP_MAX_KEYS = 10_000; // bound memory: evict stale entries beyond this
@@ -39,7 +42,16 @@ function evictStaleEntries(): void {
   }
 }
 
-function isEmailThrottled(to: string): boolean {
+async function isEmailThrottled(to: string): Promise<boolean> {
+  if (sql) {
+    try {
+      const count = await dbCountRecentEmails(to, EMAIL_THROTTLE_WINDOW);
+      return count >= EMAIL_THROTTLE_MAX;
+    } catch (err) {
+      log.warn({ err: (err as Error).message, to }, 'DB email throttle check failed; falling back to in-memory');
+      // fall through to in-memory check
+    }
+  }
   const now = Date.now();
   const timestamps = emailSentTimestamps.get(to) || [];
   const recent = timestamps.filter(t => now - t < EMAIL_THROTTLE_WINDOW);
@@ -47,7 +59,16 @@ function isEmailThrottled(to: string): boolean {
   return recent.length >= EMAIL_THROTTLE_MAX;
 }
 
-function recordEmailSent(to: string): void {
+async function recordEmailSent(to: string): Promise<void> {
+  if (sql) {
+    try {
+      await dbRecordEmailSent(to);
+      return;
+    } catch (err) {
+      log.warn({ err: (err as Error).message, to }, 'DB email throttle write failed; using in-memory fallback');
+      // fall through
+    }
+  }
   const timestamps = emailSentTimestamps.get(to) || [];
   timestamps.push(Date.now());
   emailSentTimestamps.set(to, timestamps);
@@ -71,7 +92,7 @@ async function sendWithReason(options: EmailOptions): Promise<{ sent: boolean; r
     return { sent: false, reason: 'not_configured' };
   }
 
-  if (isEmailThrottled(options.to)) {
+  if (await isEmailThrottled(options.to)) {
     log.warn({ to: options.to, subject: options.subject }, 'Email throttled (rate limit exceeded)');
     return { sent: false, reason: 'throttled' };
   }
@@ -96,7 +117,7 @@ async function sendWithReason(options: EmailOptions): Promise<{ sent: boolean; r
       log.error({ status: res.status, err, to: options.to }, 'Email send failed');
       return { sent: false, reason: 'api_error' };
     }
-    recordEmailSent(options.to);
+    recordEmailSent(options.to).catch(() => { /* best-effort — throttle records are non-critical */ });
     return { sent: true };
   } catch (err) {
     log.error({ err: (err as Error).message, to: options.to }, 'Email send error');
@@ -293,6 +314,28 @@ export async function sendUsageAlert(email: string, name: string, used: number, 
       </p>
       <p style="color: #374151; line-height: 1.6;">
         <a href="https://cullit.io/pricing.html" style="color: #5eead4;">Upgrade your plan</a> for more generations.
+      </p>
+    ${FOOTER}`,
+  });
+}
+
+export async function sendProvisioningFailed(email: string, name: string, plan: string, seats: number): Promise<boolean> {
+  return send({
+    to: email,
+    subject: 'Cullit — Subscription canceled (team key provisioning failed)',
+    html: `${BRAND}
+      <h2 style="color: #0f1117; margin-bottom: 16px;">We couldn't set up your team keys</h2>
+      <p style="color: #374151; line-height: 1.6;">
+        Hi ${escapeHtml(name)}, your <strong>${escapeHtml(plan)}</strong> subscription (${seats} seats) was canceled
+        because we couldn't provision your team API keys after several attempts.
+      </p>
+      <p style="color: #374151; line-height: 1.6;">
+        Your card has been refunded automatically by Stripe. You can try again from the
+        <a href="https://cullit.io/pricing.html" style="color: #5eead4;">pricing page</a>,
+        or reply to this email if you'd like help diagnosing the issue.
+      </p>
+      <p style="color: #6b7280; font-size: 13px;">
+        We're sorry for the inconvenience.
       </p>
     ${FOOTER}`,
   });

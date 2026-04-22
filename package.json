@@ -1,6 +1,6 @@
 {
   "name": "cullit",
-  "version": "2.9.2",
+  "version": "2.10.0",
   "private": true,
   "description": "Cull the noise from your releases. AI-powered release notes.",
   "author": "Cullit <matt@cullit.io>",
@@ -30,6 +30,7 @@
     "lockfile:sync": "pnpm install --no-frozen-lockfile",
     "launch:ready": "pnpm lockfile:check && pnpm build && pnpm lint && pnpm test && pnpm test:e2e && pnpm validate:guards",
     "validate:guards": "node scripts/validate-guards.mjs",
+    "audit:security": "node scripts/audit-security.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",

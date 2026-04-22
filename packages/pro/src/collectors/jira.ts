@@ -65,10 +65,14 @@ export class JiraCollector implements Collector {
     if (jql.length > 1000) {
       throw new Error('JQL query too long (max 1000 characters).');
     }
-    // Only allow known JQL clauses/operators (whitelist approach)
-    const allowedPattern = /^[\w\s=<>!~(),"'.\-+@*/]+$/;
+    // Only allow known safe JQL characters (letters, digits, spaces, basic operators, quotes, parens)
+    const allowedPattern = /^[\w\s=<>!~(),"'.\-@]+$/;
     if (!allowedPattern.test(jql)) {
       throw new Error('Invalid JQL: contains unsupported characters.');
+    }
+    // Block subquery/function-call patterns like "issueFunction in ..."
+    if (/\b(issueFunction|portfolioChildIssuesOf|linkedIssuesOf|issuesLinkedTo)\b/i.test(jql)) {
+      throw new Error('Invalid JQL: advanced functions are not supported.');
     }
     return jql;
   }

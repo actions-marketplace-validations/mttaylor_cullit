@@ -32,7 +32,7 @@ import {
   sql,
   dbGetUser, dbUpdateUserTier, dbUpdateUserStripe,
   dbUpsertSubscription, dbGetSubscription, dbGetUserByStripeCustomer,
-  dbCheckWebhookProcessed, dbMarkWebhookProcessed,
+  dbMarkWebhookProcessed, dbUnmarkWebhookProcessed,
   dbCreateTeamApiKey, dbGetActiveTeamApiKeyCount,
   dbRevokeAllOrgTeamApiKeys, dbRevokeExcessTeamApiKeys,
   hashApiKey, dbRecordAuditEvent, dbRotateApiKey,
@@ -40,7 +40,7 @@ import {
 import { getEffectiveTier, getUser, generateApiKey, createOrg, updateOrgMaxSeats } from './auth.js';
 import { isRecord } from './utils.js';
 import { log } from './logger.js';
-import { sendPaymentFailed, sendSubscriptionConfirmed } from './email.js';
+import { sendPaymentFailed, sendSubscriptionConfirmed, sendProvisioningFailed } from './email.js';
 import { PAID_MIN_SEATS } from '@cullit/core';
 
 const STRIPE_SECRET_KEY = process.env['STRIPE_SECRET_KEY'] || '';
@@ -72,20 +72,29 @@ function markInMemory(eventId: string): void {
 }
 
 async function isWebhookProcessed(eventId: string): Promise<boolean> {
+  // Retained for tests / external callers — superseded by claimWebhookEvent for the hot path.
   const ts = processedWebhookEvents.get(eventId);
-  if (ts !== undefined) {
-    if (Date.now() - ts > WEBHOOK_CACHE_TTL) {
-      processedWebhookEvents.delete(eventId); // expired — fall through to DB
-    } else {
-      return true;
-    }
+  if (ts === undefined) return false;
+  if (Date.now() - ts > WEBHOOK_CACHE_TTL) {
+    processedWebhookEvents.delete(eventId);
+    return false;
   }
-  return dbCheckWebhookProcessed(eventId);
+  return true;
 }
 
-async function markWebhookProcessed(eventId: string, eventType: string): Promise<void> {
-  markInMemory(eventId);
-  await dbMarkWebhookProcessed(eventId, eventType);
+/**
+ * Atomically claim an event for processing. Returns true if this caller owns the event,
+ * false if it was already claimed (duplicate). Eliminates the check-then-mark race window
+ * for in-flight duplicates from Stripe retries.
+ */
+async function claimWebhookEvent(eventId: string, eventType: string): Promise<boolean> {
+  // Fast in-memory short-circuit (avoids DB round-trip on hot duplicates)
+  const ts = processedWebhookEvents.get(eventId);
+  if (ts !== undefined && Date.now() - ts <= WEBHOOK_CACHE_TTL) return false;
+  // Atomic INSERT ... ON CONFLICT DO NOTHING RETURNING — only one caller wins
+  const claimed = await dbMarkWebhookProcessed(eventId, eventType);
+  if (claimed) markInMemory(eventId);
+  return claimed;
 }
 
 // --- Stripe API helpers ---
@@ -500,8 +509,10 @@ export async function handleStripeWebhook(
     return;
   }
 
-  // Idempotency: skip already-processed events (DB-backed + in-memory cache)
-  if (await isWebhookProcessed(event.id)) {
+  // Atomically claim the event before processing — prevents in-flight duplicate races
+  // from Stripe retries arriving milliseconds apart.
+  const claimed = await claimWebhookEvent(event.id, event.type);
+  if (!claimed) {
     await recordBillingAudit('billing.webhook_duplicate', event.id, { type: event.type });
     jsonFn(res, 200, { received: true, duplicate: true });
     return;
@@ -523,11 +534,11 @@ export async function handleStripeWebhook(
         break;
     }
 
-    // Mark processed AFTER successful handling so Stripe can retry on failure
-    await markWebhookProcessed(event.id, event.type);
-
     jsonFn(res, 200, { received: true });
   } catch (err) {
+    // Release the claim so Stripe's retry can reprocess this event
+    await dbUnmarkWebhookProcessed(event.id).catch(() => { /* best-effort */ });
+    processedWebhookEvents.delete(event.id);
     await recordBillingAudit('billing.webhook_processing_failed', event.id, {
       type: event.type,
       error: (err as Error).message,
@@ -563,6 +574,15 @@ async function retryProvisionKeys(userId: string, plan: string, seats: number, s
       target: subscriptionId,
       metadata: { plan, seats, reason: 'provisioning_failure' },
     });
+    // Notify the user so they aren't left wondering why their dashboard shows "canceled"
+    try {
+      const user = await dbGetUser(userId);
+      if (user?.email) {
+        await sendProvisioningFailed(user.email, user.name || user.login, plan, seats);
+      }
+    } catch (emailErr) {
+      log.error({ err: (emailErr as Error).message, userId }, 'Failed to send provisioning-failed notification email');
+    }
   } catch (cancelErr) {
     log.error({ err: (cancelErr as Error).message, userId, subscriptionId }, 'Failed to auto-cancel subscription — MANUAL INTERVENTION REQUIRED');
   }
@@ -595,6 +615,9 @@ async function handleCheckoutComplete(sessionPayload: unknown): Promise<void> {
   const sub = await stripeRequest<StripeSubscription>(`/subscriptions/${subscriptionId}`, 'GET');
 
   const seatsMeta = parseInt(session.metadata?.seats || '0', 10);
+  if (seatsMeta <= 0) {
+    log.warn({ userId, subscriptionId, metadata: session.metadata }, 'Checkout metadata missing seat count — using plan default');
+  }
   const seats = planToSeats(plan, seatsMeta > 0 ? seatsMeta : undefined);
 
   await dbUpsertSubscription(buildSubscriptionRecord(subscriptionId, userId, customerId, plan, sub));

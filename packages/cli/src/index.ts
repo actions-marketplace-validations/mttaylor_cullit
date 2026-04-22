@@ -12,7 +12,7 @@
  * https://cullit.io
  */
 
-import { runPipeline, VERSION, createLogger, analyzeReleaseReadiness, resolveLicense, reportUsage, AI_PROVIDERS, AUDIENCES, TONES, SOURCE_TYPES, OUTPUT_FORMATS } from '@cullit/core';
+import { runPipeline, VERSION, createLogger, analyzeReleaseReadiness, resolveLicense, reportUsage, verifyIntegrations, formatVerifyResults, AI_PROVIDERS, AUDIENCES, TONES, SOURCE_TYPES, OUTPUT_FORMATS } from '@cullit/core';
 import { loadConfig } from '@cullit/config';
 import { getRecentTags } from '@cullit/core';
 import type { OutputFormat, LogLevel } from '@cullit/core';
@@ -54,6 +54,7 @@ const HELP = `
   COMMANDS
     generate    Generate release notes from git or licensed sources
     status      Release readiness check — should you release?
+    verify      Probe every configured integration (no publish)
     init        Create a .cullit.yml config file
     tags        List recent tags in the current repo
 
@@ -120,6 +121,24 @@ async function main() {
       tags.forEach((t, i) => console.log(`  ${i === 0 ? '→' : ' '} ${t}`));
     }
     process.exit(0);
+  }
+
+  if (command === 'verify') {
+    const opts = parseArgs(args.slice(1));
+    const configPath = opts.config || opts.c || '.cullit.yml';
+    let config;
+    try {
+      config = await loadConfig(configPath);
+    } catch (err) {
+      console.error(`✗ Could not load ${configPath}: ${(err as Error).message}`);
+      process.exit(1);
+    }
+    console.log(`Probing every integration declared in ${configPath}...`);
+    const only = opts.only ? String(opts.only).split(',').map(s => s.trim()) : undefined;
+    const results = await verifyIntegrations(config, { only });
+    console.log(formatVerifyResults(results));
+    const failed = results.filter(r => r.status === 'unreachable' || r.status === 'auth-failed');
+    process.exit(failed.length > 0 ? 1 : 0);
   }
 
   if (command === 'generate') {

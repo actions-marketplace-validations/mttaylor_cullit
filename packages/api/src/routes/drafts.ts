@@ -58,7 +58,7 @@ export async function handleCreateDraft(req: IncomingMessage, res: ServerRespons
     orgId: user.orgId,
     userId: user.id,
     project,
-    version: String(body.version || '').slice(0, 64),
+    version: String(body.version || '').trim().slice(0, 64),
     sourceType: typeof body.sourceType === 'string' ? body.sourceType : 'local',
     provider: typeof body.provider === 'string' ? body.provider : 'none',
     model: typeof body.model === 'string' ? body.model : '',
@@ -163,7 +163,11 @@ export async function handleUpdateDraft(req: IncomingMessage, res: ServerRespons
     formattedHtml: body.formattedHtml ? String(body.formattedHtml).slice(0, 100_000) : undefined,
     audience: typeof body.audience === 'string' ? String(body.audience) : undefined,
     tone: typeof body.tone === 'string' ? String(body.tone) : undefined,
-  });
+  }, draft.updated_at);
+
+  if (!updated) {
+    json(res, 409, { error: 'Draft was modified concurrently. Please refresh and retry.', code: 'DRAFT_CONFLICT' }); return;
+  }
 
   json(res, 200, { draft: updated });
 }
