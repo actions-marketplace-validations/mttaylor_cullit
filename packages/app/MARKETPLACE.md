@@ -90,7 +90,7 @@ The GitHub App is **free** with template-based notes. Activate AI-powered genera
 ## Support
 
 - [Documentation](https://cullit.io/docs.html#github-app)
-- [GitHub Issues](https://github.com/mttaylor/cullit/issues)
+- [GitHub Issues](https://github.com/mttaylor/cullit-oss/issues)
 - Email: matt@cullit.io
 
 ## Links

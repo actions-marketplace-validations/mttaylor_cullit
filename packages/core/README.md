@@ -31,4 +31,4 @@ This package is a dependency of `cullit` (CLI), `@cullit/api`, `@cullit/pro`, an
 ## Docs
 
 - Full docs: https://cullit.io/docs
-- Repository: https://github.com/mttaylor/cullit
+- Repository: https://github.com/mttaylor/cullit-oss

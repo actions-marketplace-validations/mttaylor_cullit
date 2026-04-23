@@ -1,16 +1,20 @@
-# Cullit ⚡
+# Cullit ⚡ — Platform Repository
+
+> **This is the private platform repository** (hosted API, GitHub App, dashboard, billing, marketing site). It is **proprietary and not open source** — see [LICENSE-COMMERCIAL](LICENSE-COMMERCIAL).
+>
+> **For the open source CLI, libraries, and GitHub Action**, see **[mttaylor/cullit-oss](https://github.com/mttaylor/cullit-oss)** (MIT licensed).
 
 [![npm version](https://img.shields.io/npm/v/cullit.svg)](https://www.npmjs.com/package/cullit)
 [![CI](https://img.shields.io/badge/CI-passing-brightgreen)](https://cullit.io)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License: Commercial](https://img.shields.io/badge/License-Commercial-blue.svg)](LICENSE)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-ff69b4.svg)](https://github.com/sponsors/mttaylor)
-[![GitHub stars](https://img.shields.io/github/stars/mttaylor/cullit?style=social)](https://github.com/mttaylor/cullit)
+[![GitHub stars](https://img.shields.io/github/stars/mttaylor/cullit-oss?style=social)](https://github.com/mttaylor/cullit-oss)
 
 **Release notes that scale from a free local CLI to licensed hosted workflows.**
 
 Cullit reads your git history, enriches from Jira & Linear, and can generate categorized release notes for developers, customers, and executives. The public npm package is the free local/template CLI. AI providers, premium integrations, dashboard workflows, and private deployment surfaces are licensed separately.
 
-> Built by [Matt](https://cullit.io) — a solo developer. If Cullit saves you time, **[⭐ star the repo](https://github.com/mttaylor/cullit)** or **[❤️ sponsor on GitHub](https://github.com/sponsors/mttaylor)** — it really helps keep the project alive.
+> Built by [Matt](https://cullit.io) — a solo developer. If Cullit saves you time, **[⭐ star the repo](https://github.com/mttaylor/cullit-oss)** or **[❤️ sponsor on GitHub](https://github.com/sponsors/mttaylor)** — it really helps keep the project alive.
 
 ---
 
@@ -207,7 +211,7 @@ jobs:
         with:
           fetch-depth: 0  # Full history needed for git log
 
-      - uses: mttaylor/cullit@v1
+      - uses: mttaylor/cullit-oss@v2
         with:
           provider: anthropic
           audience: developer
@@ -526,7 +530,7 @@ See [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
 
 Cullit is built and maintained by **one developer** in their spare time. If it helps you ship better release notes faster:
 
-- ⭐ **[Star on GitHub](https://github.com/mttaylor/cullit)** — costs nothing, helps massively with discovery
+- ⭐ **[Star on GitHub](https://github.com/mttaylor/cullit-oss)** — costs nothing, helps massively with discovery
 - ❤️ **[Sponsor on GitHub](https://github.com/sponsors/mttaylor)** — recurring support, even $5/mo keeps the lights on
 - ☕ **[Buy a coffee](https://cullit.io/sponsor)** — one-time tip
 - 🐦 Tell other devs about it — word of mouth is everything for indie tools
@@ -557,4 +561,4 @@ See also: [TERMS.md](TERMS.md) • [CONTRIBUTING.md](CONTRIBUTING.md) (CLA requi
 
 ---
 
-Built by [Matt](https://cullit.io) • [GitHub](https://github.com/mttaylor/cullit)
+Built by [Matt](https://cullit.io) • [GitHub](https://github.com/mttaylor/cullit-oss)

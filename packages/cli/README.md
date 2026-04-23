@@ -122,6 +122,6 @@ cullit --version
 
 ## Source and Issues
 
-- Repository: https://github.com/mttaylor/cullit
-- Issues: https://github.com/mttaylor/cullit/issues
+- Repository: https://github.com/mttaylor/cullit-oss
+- Issues: https://github.com/mttaylor/cullit-oss/issues
 - Security: see `SECURITY.md` in the repository

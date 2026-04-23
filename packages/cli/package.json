@@ -7,7 +7,7 @@
   "author": "Cullit <matt@cullit.io>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mttaylor/cullit",
+    "url": "https://github.com/mttaylor/cullit-oss",
     "directory": "packages/cli"
   },
   "keywords": [
@@ -20,7 +20,7 @@
   ],
   "homepage": "https://cullit.io",
   "bugs": {
-    "url": "https://github.com/mttaylor/cullit/issues"
+    "url": "https://github.com/mttaylor/cullit-oss/issues"
   },
   "bin": {
     "cullit": "./dist/index.js"

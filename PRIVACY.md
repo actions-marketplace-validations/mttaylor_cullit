@@ -98,7 +98,7 @@ For vulnerability reporting, see [SECURITY.md](SECURITY.md).
 
 ## Source Transparency
 
-Cullit source code is available for review at [github.com/mttaylor/cullit](https://github.com/mttaylor/cullit). See [LICENSE](LICENSE) for usage terms.
+Cullit source code is available for review at [github.com/mttaylor/cullit-oss](https://github.com/mttaylor/cullit-oss). See [LICENSE](LICENSE) for usage terms.
 
 ## Contact
 

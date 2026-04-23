@@ -28,4 +28,4 @@ const config = loadConfig(); // finds and parses .cullit.yml
 ## Docs
 
 - Full docs: https://cullit.io/docs
-- Repository: https://github.com/mttaylor/cullit
+- Repository: https://github.com/mttaylor/cullit-oss
