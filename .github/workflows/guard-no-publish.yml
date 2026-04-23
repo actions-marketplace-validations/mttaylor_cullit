@@ -1,0 +1,18 @@
+name: Guard against publishing OSS packages from private repo
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  block-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail loudly
+        run: |
+          echo "::error::Publishing OSS packages from this repo is disabled."
+          echo "::error::OSS packages (cullit, @cullit/core, @cullit/config, @cullit/pro, @cullit/licensed)"
+          echo "::error::are published from https://github.com/mttaylor/cullit-oss only."
+          echo "::error::If you tagged a release here intending to publish, push the tag to cullit-oss instead."
+          exit 1
