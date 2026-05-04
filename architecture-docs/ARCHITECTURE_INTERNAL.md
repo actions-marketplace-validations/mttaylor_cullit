@@ -1,14 +1,14 @@
 # Cullit Architecture
 
-Last updated: 2026-03-27
+Last updated: 2026-05-04
 
 This document is the source of truth for Cullit's technical architecture, distribution model, runtime flows, and operational boundaries.
 
 ## Scope
 
 - Monorepo package topology
-- Free vs pro distribution boundaries
-- Runtime plugin registration and gating
+- Open-source distribution boundaries
+- Runtime plugin registration and compatibility behavior
 - API and dashboard request flows
 - Quality gates and release checks
 
@@ -19,16 +19,13 @@ flowchart TD
   Cfg["@cullit/config"]
   Core["@cullit/core"]
   Cli["cullit public npm CLI"]
-  Pro["@cullit/pro private plugin package"]
-  Lic["@cullit/licensed private pro distribution"]
+  Pro["@cullit/pro internal plugin package"]
   Api["@cullit/api private API server"]
   App["@cullit/app private GitHub App"]
 
   Cfg --> Core
   Core --> Cli
   Core --> Pro
-  Pro --> Lic
-  Cli --> Lic
   Core --> Api
   Pro --> Api
   Core --> App
@@ -39,23 +36,20 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-  PublicUser["Free user"]
-  PaidUser["Pro / Enterprise user"]
+  User["All users"]
   NpmPublic["npm public registry"]
-  NpmPrivate["private npm registry"]
   PublicPkg["cullit"]
-  LicensedPkg["@cullit/licensed"]
+  Sponsors["GitHub Sponsors"]
 
-  PublicUser --> NpmPublic --> PublicPkg
-  PaidUser --> NpmPrivate --> LicensedPkg
-  LicensedPkg --> PublicPkg
+  User --> NpmPublic --> PublicPkg
+  User --> Sponsors
 ```
 
 ### Boundaries
 
-- `cullit` is the public package for local/template workflows.
-- `@cullit/licensed` is the private distribution package for pro tiers.
-- `@cullit/pro` remains internal/private plugin implementation and is not a public customer install target.
+- `cullit` is the public package for all workflows.
+- Paid plan-specific distribution packages are retired.
+- `@cullit/pro` remains an internal package in the monorepo, but no longer represents a paywall boundary.
 
 ## Runtime Plugin Registration
 
@@ -81,20 +75,20 @@ sequenceDiagram
 ```mermaid
 flowchart TD
   Start[runPipeline]
-  Validate[validateLicense]
-  Provider{provider allowed?}
-  Enrich{enrichment allowed?}
-  Publisher{publisher allowed?}
+  Validate[validateLicense compatibility]
+  Provider{provider selected?}
+  Enrich{enrichment configured?}
+  Publisher{publisher configured?}
   End[Pipeline completed]
 
   Start --> Validate --> Provider
-  Provider -- no --> Stop1[throw upgrade message]
+  Provider -- no --> Stop1[skip provider stage]
   Provider -- yes --> Enrich
-  Enrich -- no --> Skip1[skip enrichment]
+  Enrich -- no --> Skip1[skip enrichment stage]
   Enrich -- yes --> DoEnrich[run enrichment]
   Skip1 --> Publisher
   DoEnrich --> Publisher
-  Publisher -- no --> Skip2[skip publisher]
+  Publisher -- no --> Skip2[skip publisher stage]
   Publisher -- yes --> DoPub[publish]
   Skip2 --> End
   DoPub --> End
@@ -102,9 +96,9 @@ flowchart TD
 
 ### Tier Expectations
 
-- Free: local source + template provider + stdout/file publishers. 3 AI gens/month (BYOK).
-- Pro ($9/seat/mo): All features — AI providers, enrichment, publishers, dashboard, orgs, drafts, team keys. 500+ gens/month, 100+ projects. Scales with seat count. Annual billing at $8.10/seat/mo.
-- Enterprise: All Pro capabilities plus SSO/SAML, dedicated support, on-prem, unlimited gens/projects.
+- Legacy tier values (`free`, `paid`, `pro`, `team`, `enterprise`) are kept for compatibility and analytics continuity.
+- Runtime behavior is open-access: features are not blocked by tier.
+- Billing endpoints are retained as compatibility stubs and no longer perform checkout.
 
 ## API and Dashboard Flow
 
@@ -122,7 +116,7 @@ sequenceDiagram
 
   B->>A: POST /generate
   A->>AU: resolveUser
-  A->>A: check monthly limits by effective tier
+  A->>A: apply compatibility checks and execute pipeline
   A->>A: runPipeline
   A->>DB: record history and usage
   A-->>B: generated notes and metadata
@@ -145,9 +139,9 @@ flowchart LR
 
 ## Operational Notes
 
-- `@cullit/licensed` should be published only to private registries.
-- Customer onboarding should include `.npmrc` private registry auth setup.
-- Public docs must never instruct pro users to install `@cullit/pro` directly.
+- Sponsorship CTA should point to `https://github.com/sponsors/mttaylor`.
+- Billing and Stripe references in product docs are considered legacy and should be removed when touched.
+- Public docs should reflect open-source and contribution-first messaging.
 
 ## Documentation Maintenance Policy
 
@@ -156,7 +150,7 @@ When architecture, distribution, or runtime flows change, update this file in th
 Required updates when relevant:
 
 - package topology or dependency direction changes
-- free/pro boundaries or install paths change
+- compatibility tier behavior or install paths change
 - authentication or gating logic changes
 - API route behavior affecting dashboard/runtime flows changes
 - build/test pipeline changes

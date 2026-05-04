@@ -5,7 +5,7 @@ const MOCK_OUTPUT = '## v1.1.0\n\n### Features\n\n- feat: add new sync engine\n'
 
 test.describe('dashboard generate flow', () => {
   test('successful generate renders output in #outputBody', async ({ page }) => {
-    await mockDashboardApis(page, { status: 200, body: makeUser('paid') });
+    await mockDashboardApis(page, { status: 200, body: makeUser('free') });
 
     // Mock the generate endpoint — must be registered AFTER the catch-all so it
     // takes precedence (Playwright evaluates routes LIFO).
@@ -26,7 +26,7 @@ test.describe('dashboard generate flow', () => {
 
     await page.goto('/dashboard.html');
 
-    // Dashboard should show (paid user authenticated)
+    // Dashboard should show for authenticated free users in OSS mode
     await expect(page.locator('#dashApp')).toBeVisible();
 
     // Fill the generate form
@@ -44,7 +44,7 @@ test.describe('dashboard generate flow', () => {
   });
 
   test('empty fromRef shows validation toast and keeps button enabled', async ({ page }) => {
-    await mockDashboardApis(page, { status: 200, body: makeUser('paid') });
+    await mockDashboardApis(page, { status: 200, body: makeUser('free') });
 
     await page.goto('/dashboard.html');
     await expect(page.locator('#dashApp')).toBeVisible();
@@ -60,7 +60,7 @@ test.describe('dashboard generate flow', () => {
     expect(outputText?.trim() ?? '').not.toMatch(/feat/);
   });
 
-  test('402 response redirects to billing tab', async ({ page }) => {
+  test('402 response keeps user on generate flow without billing redirect', async ({ page }) => {
     await mockDashboardApis(page, { status: 200, body: makeUser('free') });
 
     await page.route('**/generate', async (route: Route) => {
@@ -80,7 +80,8 @@ test.describe('dashboard generate flow', () => {
     await page.locator('#fromRef').fill('v1.0.0');
     await page.locator('#generateBtn').click();
 
-    // When limit is hit, the dashboard switches to billing tab
-    await expect(page.locator('#billingPlanName')).toBeVisible({ timeout: 10_000 });
+    // Legacy 402 should not force a billing redirect in OSS mode
+    await expect(page.locator('#generateBtn')).toBeEnabled({ timeout: 10_000 });
+    await expect(page.locator('#tab-generate')).toHaveClass(/active/);
   });
 });

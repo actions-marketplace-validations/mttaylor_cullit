@@ -30,7 +30,7 @@ inputs:
     required: false
     default: 'professional'
   source:
-    description: 'Source type: local (free), jira (paid), linear (paid), gitlab (paid), bitbucket (paid), or multi-repo (paid). Non-local sources require a CULLIT_API_KEY.'
+    description: 'Source type: local, jira, linear, gitlab, bitbucket, or multi-repo.'
     required: false
     default: 'local'
   format:
@@ -63,7 +63,7 @@ inputs:
     required: false
     default: 'false'
   publish-changelog:
-    description: 'Set to "true" to push to Cullit hosted changelog (requires CULLIT_API_KEY env var)'
+    description: 'Set to "true" to push to Cullit hosted changelog.'
     required: false
     default: 'false'
   jira-domain:
@@ -73,7 +73,7 @@ inputs:
     description: 'Path to .cullit.yml config file'
     required: false
   api-key:
-    description: 'Cullit API key for paid features. Set as CULLIT_API_KEY env var or pass here.'
+    description: 'Optional Cullit API key for authenticated hosted API routes (not required for core OSS generation).'
     required: false
 
 outputs:
@@ -85,5 +85,5 @@ outputs:
     description: 'Number of changes in the release'
 
 runs:
-  using: 'node22'
+  using: 'node20'
   main: 'dist/action.js'

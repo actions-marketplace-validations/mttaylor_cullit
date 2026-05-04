@@ -28,7 +28,7 @@ import { routes } from './routes/index.js';
 export { getCacheKey } from './routes/generate.js';
 
 // Load pro plugins if installed
-try { await import('@cullit/pro'); } catch { log.info('Pro plugins not installed — running in open-core mode'); }
+try { await import('@cullit/pro'); } catch { log.info('Optional plugin package not installed — running with core OSS modules only'); }
 
 // Production env validation (throws on misconfig); also warns about CORS in dev.
 assertProductionEnv();
@@ -50,10 +50,7 @@ const retentionTimer = setTimeout(() => {
 retentionTimer.unref();
 
 if (!isStripeConfigured()) {
-  log.warn(
-    'Stripe is not configured (STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET missing). ' +
-    'Billing endpoints will return errors. Set these environment variables to enable payments.',
-  );
+  log.info('Stripe is not configured. Billing endpoints are retained only for legacy compatibility responses.');
 }
 
 // --- Router ---

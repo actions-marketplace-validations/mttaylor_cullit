@@ -1,10 +1,10 @@
 {
   "name": "@cullit/api",
-  "version": "2.10.0",
+  "version": "2.11.0",
   "private": true,
   "type": "module",
   "description": "Cullit REST API server for AI-powered release note generation.",
-  "license": "SEE LICENSE IN LICENSE-COMMERCIAL",
+  "license": "MIT",
   "author": "Cullit <matt@cullit.io>",
   "main": "./dist/index.js",
   "engines": {

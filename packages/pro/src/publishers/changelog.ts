@@ -10,7 +10,8 @@ const log = createLogger();
  *   https://cullit.io/{org}/changelog  (free, Cullit-branded)
  *   https://changelog.yourdomain.com   (pro, custom domain)
  *
- * Requires CULLIT_API_KEY env var.
+ * Requires CULLIT_API_KEY env var for authenticated hosted changelog routes.
+ * This key is not required for local OSS generation.
  * Config (optional):
  *   - project: project slug for multi-project changelogs
  */
@@ -22,7 +23,7 @@ export class ChangelogPublisher implements Publisher {
   constructor(config?: { project?: string }) {
     this.apiKey = process.env.CULLIT_API_KEY || '';
     if (!this.apiKey) {
-      throw new Error('CULLIT_API_KEY is required for hosted changelog publishing. Get one at https://cullit.io/pricing');
+      throw new Error('CULLIT_API_KEY is required for hosted changelog publishing. Configure it from your Cullit dashboard settings.');
     }
 
     this.project = config?.project || 'default';

@@ -248,7 +248,7 @@ export async function sendPaymentFailed(email: string, name: string): Promise<bo
         </a>
       </p>
       <p style="color: #6b7280; font-size: 13px;">
-        If you need help, reply to this email or contact <a href="mailto:sales@cullit.io" style="color: #5eead4;">sales@cullit.io</a>.
+        If you need help, reply to this email or contact <a href="mailto:support@cullit.io" style="color: #5eead4;">support@cullit.io</a>.
       </p>
     ${FOOTER}`,
   });
@@ -313,7 +313,8 @@ export async function sendUsageAlert(email: string, name: string, used: number, 
         Hi ${escapeHtml(name)}, you've used <strong>${used} of ${limit}</strong> generations this month (${pct}%).
       </p>
       <p style="color: #374151; line-height: 1.6;">
-        <a href="https://cullit.io/pricing.html" style="color: #5eead4;">Upgrade your plan</a> for more generations.
+        Cullit is fully open source. If this project helps your team, consider supporting development via
+        <a href="https://github.com/sponsors/mttaylor" style="color: #5eead4;">GitHub Sponsors</a>.
       </p>
     ${FOOTER}`,
   });
@@ -322,20 +323,20 @@ export async function sendUsageAlert(email: string, name: string, used: number, 
 export async function sendProvisioningFailed(email: string, name: string, plan: string, seats: number): Promise<boolean> {
   return send({
     to: email,
-    subject: 'Cullit — Subscription canceled (team key provisioning failed)',
+    subject: 'Cullit — Legacy billing flow issue',
     html: `${BRAND}
-      <h2 style="color: #0f1117; margin-bottom: 16px;">We couldn't set up your team keys</h2>
+      <h2 style="color: #0f1117; margin-bottom: 16px;">Legacy billing flow issue</h2>
       <p style="color: #374151; line-height: 1.6;">
-        Hi ${escapeHtml(name)}, your <strong>${escapeHtml(plan)}</strong> subscription (${seats} seats) was canceled
-        because we couldn't provision your team API keys after several attempts.
+        Hi ${escapeHtml(name)}, a legacy billing workflow for <strong>${escapeHtml(plan)}</strong> (${seats} seats)
+        could not complete key provisioning.
       </p>
       <p style="color: #374151; line-height: 1.6;">
-        Your card has been refunded automatically by Stripe. You can try again from the
-        <a href="https://cullit.io/pricing.html" style="color: #5eead4;">pricing page</a>,
-        or reply to this email if you'd like help diagnosing the issue.
+        Cullit is now fully open source and feature access is not gated by billing.
+        Please open the <a href="https://cullit.io/dashboard.html" style="color: #5eead4;">dashboard</a>
+        and contact support if you need help diagnosing this legacy flow.
       </p>
       <p style="color: #6b7280; font-size: 13px;">
-        We're sorry for the inconvenience.
+        Need help? Email <a href="mailto:support@cullit.io" style="color: #5eead4;">support@cullit.io</a>.
       </p>
     ${FOOTER}`,
   });

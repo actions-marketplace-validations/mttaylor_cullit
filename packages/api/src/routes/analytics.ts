@@ -3,8 +3,7 @@
  */
 import type { IncomingMessage, ServerResponse } from 'http';
 
-import { isPlanFeatureAllowed } from '@cullit/core';
-import { resolveUser, getEffectiveTier, getUserPlan } from '../auth.js';
+import { resolveUser } from '../auth.js';
 import {
   getHistory, getHistoryCount, getUsageStats, getMonthlyGenerationCount,
 } from '../store.js';
@@ -35,11 +34,6 @@ export async function handleGetAnalytics(req: IncomingMessage, res: ServerRespon
   const user = await resolveUser(req);
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
 
-  const tier = getEffectiveTier(user);
-  if (tier === 'free') {
-    json(res, 403, { error: 'Usage analytics require a Pro plan', upgrade: 'https://cullit.io/pricing' }); return;
-  }
-
   const url = new URL(req.url || '/', `http://localhost:${PORT}`);
   const rawDays = parseInt(url.searchParams.get('days') || '30', 10);
   const days = Math.max(1, Math.min(isNaN(rawDays) ? 30 : rawDays, 90));
@@ -48,13 +42,10 @@ export async function handleGetAnalytics(req: IncomingMessage, res: ServerRespon
   const stats = await getUsageStats(key, days);
   const monthlyCount = await getMonthlyGenerationCount(key);
 
-  const plan = await getUserPlan(user);
-  const hasTeamAnalytics = isPlanFeatureAllowed('team_analytics', plan, tier);
-
   json(res, 200, {
     ...stats,
     monthlyGenerations: monthlyCount,
     tier: user.tier,
-    teamAnalytics: hasTeamAnalytics,
+    teamAnalytics: true,
   });
 }

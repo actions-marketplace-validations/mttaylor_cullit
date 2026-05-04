@@ -10,8 +10,8 @@ describe('Branded Widget Gate', () => {
     expect(isPlanFeatureAllowed('branded_widget', 'enterprise', 'enterprise')).toBe(true);
   });
 
-  it('blocks branded widget for free', () => {
-    expect(isPlanFeatureAllowed('branded_widget', 'free', 'free')).toBe(false);
+  it('allows branded widget for free (open source — all features available)', () => {
+    expect(isPlanFeatureAllowed('branded_widget', 'free', 'free')).toBe(true);
   });
 });
 
@@ -44,8 +44,8 @@ describe('Team Analytics Gate', () => {
     expect(isPlanFeatureAllowed('team_analytics', 'enterprise', 'enterprise')).toBe(true);
   });
 
-  it('blocks team analytics for free', () => {
-    expect(isPlanFeatureAllowed('team_analytics', 'free', 'free')).toBe(false);
+  it('allows team analytics for free (open source — all features available)', () => {
+    expect(isPlanFeatureAllowed('team_analytics', 'free', 'free')).toBe(true);
   });
 });
 
@@ -59,11 +59,11 @@ describe('Feature gating with invalid license', () => {
 });
 
 describe('Tier-level gating (isFeatureAllowed)', () => {
-  it('blocks all premium features for free tier', () => {
-    expect(isFeatureAllowed('branded_widget', 'free')).toBe(false);
-    expect(isFeatureAllowed('project_templates', 'free')).toBe(false);
-    expect(isFeatureAllowed('audit_logs', 'free')).toBe(false);
-    expect(isFeatureAllowed('team_analytics', 'free')).toBe(false);
+  it('allows all features for free tier (open source — no gating)', () => {
+    expect(isFeatureAllowed('branded_widget', 'free')).toBe(true);
+    expect(isFeatureAllowed('project_templates', 'free')).toBe(true);
+    expect(isFeatureAllowed('audit_logs', 'free')).toBe(true);
+    expect(isFeatureAllowed('team_analytics', 'free')).toBe(true);
   });
 
   it('allows all premium features for pro tier', () => {
@@ -90,12 +90,12 @@ describe('getFeatureGating includes all premium features', () => {
     expect(gating.team_analytics).toBe(true);
   });
 
-  it('free gating has all premium features disabled', () => {
+  it('free gating has all features enabled (open source — no gating)', () => {
     const gating = getFeatureGating('free');
-    expect(gating.branded_widget).toBe(false);
-    expect(gating.project_templates).toBe(false);
-    expect(gating.audit_logs).toBe(false);
-    expect(gating.team_analytics).toBe(false);
+    expect(gating.branded_widget).toBe(true);
+    expect(gating.project_templates).toBe(true);
+    expect(gating.audit_logs).toBe(true);
+    expect(gating.team_analytics).toBe(true);
   });
 
   it('pro gating has all features enabled except sso', () => {

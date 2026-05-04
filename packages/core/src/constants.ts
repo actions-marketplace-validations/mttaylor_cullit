@@ -1,6 +1,6 @@
 // Shared constants across Cullit packages
 
-export const VERSION = '2.10.0';
+export const VERSION = '2.11.0';
 
 export const DEFAULT_CATEGORIES = ['features', 'fixes', 'breaking', 'improvements', 'chores'];
 
@@ -25,7 +25,7 @@ export const SOURCE_TYPES = ['local', 'jira', 'linear', 'gitlab', 'bitbucket', '
 export const TIERS = ['free', 'pro', 'enterprise'] as const;
 export const PAID_TIERS = ['pro', 'enterprise'] as const;
 
-// Seat-based pricing ($9/seat/month, 1+ seats)
+// Legacy seat-pricing compatibility fields (retained for older configs/data)
 export const PRO_SEAT_PRICE = 9;            // $9/month per seat
 export const PRO_MIN_SEATS = 1;             // no minimum — single-seat is fine
 export const PRO_ANNUAL_DISCOUNT = 0.10;    // 10% annual discount

@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated:** March 27, 2026
+**Last updated:** May 4, 2026
 
 ## Overview
 
@@ -14,7 +14,7 @@ Depending on the features you enable, Cullit may process:
 - **Issue tracker metadata**: Jira/Linear issue titles, descriptions, labels, and statuses
 - **Generated release content**: summaries, categorized notes, formatted markdown/html output
 - **Team workflow metadata**: drafts, revisions, project settings, org membership and invites
-- **Billing/account metadata**: subscription state and customer identifiers from Stripe
+- **Optional sponsorship metadata**: sponsor-related activity handled by GitHub Sponsors
 
 Cullit only processes data you explicitly provide through configured sources and API calls.
 
@@ -36,7 +36,7 @@ Cullit only processes data you explicitly provide through configured sources and
 
 - Uses GitHub OAuth login and session cookies for authentication
 - Stores account, usage, team, and draft workflow records required for app functionality
-- Uses Stripe for subscription and billing state
+- Uses optional sponsorship links (for example GitHub Sponsors)
 
 ## Cookies and Local Storage
 
@@ -77,11 +77,11 @@ When you configure integrations, Cullit may send metadata to the following servi
 
 These integrations are opt-in and only active when configured by you.
 
-## Billing and Payment Data
+## Sponsorship and Donation Data
 
-- Billing is processed through Stripe
-- Cullit stores subscription state and Stripe identifiers needed to manage plans
-- Full payment card data is handled by Stripe, not stored by Cullit
+- Sponsorships are optional and do not unlock features
+- Sponsorship processing is handled by GitHub Sponsors under GitHub policies
+- Cullit does not process payment card details directly
 
 ## API Keys and Secrets
 
@@ -98,7 +98,7 @@ For vulnerability reporting, see [SECURITY.md](SECURITY.md).
 
 ## Source Transparency
 
-Cullit source code is available for review at [github.com/mttaylor/cullit-oss](https://github.com/mttaylor/cullit-oss). See [LICENSE](LICENSE) for usage terms.
+Cullit source code is available for review at [github.com/mttaylor/cullit](https://github.com/mttaylor/cullit). See [LICENSE](LICENSE) for usage terms.
 
 ## Contact
 

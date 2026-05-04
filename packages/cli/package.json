@@ -1,13 +1,13 @@
 {
   "name": "cullit",
-  "version": "2.10.0",
+  "version": "2.11.0",
   "type": "module",
-  "description": "Public Cullit CLI for local, template-based release notes. Licensed AI and integrations are delivered separately.",
+  "description": "Cullit CLI for local and integrated release note generation.",
   "license": "MIT",
   "author": "Cullit <matt@cullit.io>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mttaylor/cullit-oss",
+    "url": "https://github.com/mttaylor/cullit",
     "directory": "packages/cli"
   },
   "keywords": [
@@ -20,7 +20,7 @@
   ],
   "homepage": "https://cullit.io",
   "bugs": {
-    "url": "https://github.com/mttaylor/cullit-oss/issues"
+    "url": "https://github.com/mttaylor/cullit/issues"
   },
   "bin": {
     "cullit": "./dist/index.js"

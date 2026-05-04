@@ -1,35 +1,30 @@
-# Cullit v2.10.0 — Integration Verify Harness + Architectural Refactor
+# Cullit v2.10.1 — Open Source Sponsorship Transition
 
-This release introduces a **live integration verification harness** for diagnosing connectivity to AI providers, Linear, Jira, GitHub and Stripe — plus a **major god-file refactor** that splits the monolithic API and GitHub App entry points into focused per-domain modules. **Zero breaking changes.** All 667 tests pass.
+This release finalizes Cullit's move to a fully free and open-source model.
 
 ## Highlights
 
-### `cullit verify` — Diagnose your integrations
-A new CLI command and `POST /v1/integrations/test` endpoint that probes each configured integration and reports `ok / unreachable / auth-failed / misconfigured` with latency. Includes 13 new e2e tests in `packages/pro/__tests__/live-integrations.test.ts`.
+### Billing and plan retirement
 
-### Architectural refactor — God-files broken up
-- **`packages/api/src/db.ts`**: 1631 -> 11 lines (now a barrel re-export over `db/` modules).
-- **`packages/api/src/index.ts`**: 1198 -> 165 lines. Extracted into:
-  - `routes/index.ts` (declarative route table)
-  - `routes/{generate,system,analytics,audit-templates,billing,github-app,project-settings,integrations}.ts`
-  - `server-config.ts` (CORS, rate limit, prod env assertion)
-- **`packages/app/src/index.ts`**: 646 -> 185 lines. Extracted into:
-  - `config.ts`, `util.ts`, `github-api.ts`, `handlers.ts`, `metrics.ts`
+- Checkout and portal flows are retired.
+- Billing API routes now return compatibility responses with sponsor guidance.
+- Dashboard plan messaging is shifted to open-source support language.
 
-Net: **~3,100 lines moved out of god-files** into ~15 focused modules. Existing imports keep working via barrel re-exports.
+### Open-access runtime behavior
 
-## Security
-- New `scripts/audit-security.mjs` companion audit pipeline.
-- SSRF guard for Jira domain checks (`isBlockedJiraDomain`).
-- TRUST_PROXY-aware client IP extraction in `server-config.ts`.
+- Feature gating is now permissive across CLI, API, and dashboard workflows.
+- Legacy tier values are still accepted for compatibility in persisted data.
+- Existing analytics and history payload structures are preserved.
 
-## Tests
-- **52 test files, 667 tests, all passing.**
-- 13 new live integration tests (skipped when keys absent).
+### Documentation and legal alignment
+
+- Architecture, database, legal, and support pages now describe the sponsorship model.
+- Pricing content now points to GitHub Sponsors rather than paid plans.
 
 ## Upgrade
+
 ```bash
-npm install -g @cullit/cli@2.10.0
+npm install -g @cullit/cli@2.10.1
 ```
 
-No config changes required.
+No migration steps are required for existing users.

@@ -5,11 +5,11 @@ This directory contains the static site for cullit.io.
 ## Pages
 
 - `index.html` — marketing homepage
-- `pricing.html` — pricing and plan comparison
+- `pricing.html` — support and sponsorship page
 - `docs.html` — product and API documentation
 - `tutorial.html` — onboarding walkthrough
 - `setup.html` — guided setup flow
-- `dashboard.html` — authenticated dashboard (auth, billing, history, analytics, team, drafts)
+- `dashboard.html` — authenticated dashboard (auth, history, analytics, team, drafts)
 - `changelog.html` — hosted changelog surface
 - `free-trial.html` — redirects to dashboard
 - `releases.html` — public release notes browser

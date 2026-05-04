@@ -1,13 +1,13 @@
 {
   "name": "@cullit/licensed",
-  "version": "2.10.0",
+  "version": "2.11.0",
   "type": "module",
-  "description": "Private registry distribution for Cullit paid tiers (Paid and Enterprise).",
+  "description": "Cullit compatibility package for legacy imports.",
   "license": "MIT",
   "author": "Cullit <matt@cullit.io>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mttaylor/cullit-oss",
+    "url": "https://github.com/mttaylor/cullit",
     "directory": "packages/licensed"
   },
   "publishConfig": {
@@ -24,7 +24,7 @@
   },
   "homepage": "https://cullit.io",
   "bugs": {
-    "url": "https://github.com/mttaylor/cullit-oss/issues"
+    "url": "https://github.com/mttaylor/cullit/issues"
   },
   "files": [
     "dist",

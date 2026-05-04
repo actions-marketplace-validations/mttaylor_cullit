@@ -226,23 +226,11 @@ export async function handleGenerate(req: IncomingMessage, res: ServerResponse):
         error: 'Monthly generation limit reached',
         code: ErrorCode.BILLING_LIMIT_REACHED,
         used: limitResult.monthlyCount, limit: limits.generationsPerMonth,
-        tier: effectiveTier, upgrade: 'https://cullit.io/pricing',
+        tier: effectiveTier, support: 'https://github.com/sponsors/mttaylor',
       });
       return;
     }
     const monthlyCount = limitResult.monthlyCount;
-
-    // Audience/tone gating
-    const hasCustomAudience = config.ai.audience && config.ai.audience !== 'developer';
-    const hasCustomTone = config.ai.tone && config.ai.tone !== 'professional';
-    if ((hasCustomAudience || hasCustomTone) && effectiveTier === 'free') {
-      json(res, 403, {
-        error: 'Audience and tone control requires a Pro plan',
-        code: ErrorCode.BILLING_UPGRADE_REQUIRED,
-        tier: effectiveTier, upgrade: 'https://cullit.io/pricing',
-      });
-      return;
-    }
 
     // Cache lookup
     const cacheKey = getCacheKey(body.from, to, format, config as CullConfig, user.orgId || user.id);

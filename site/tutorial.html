@@ -768,7 +768,7 @@
     <a href="docs.html">Docs</a>
     <a href="tutorial.html" class="active">Tutorial</a>
     <a href="https://www.npmjs.com/package/cullit" target="_blank" rel="noopener noreferrer">npm</a>
-    <a href="pricing.html">Pricing</a>
+    <a href="pricing.html">Support</a>
     <a href="releases.html">Releases</a>
     <a href="dashboard.html">Dashboard</a>
     <a href="dashboard.html" class="nav-cta">Get Started Free</a>
@@ -872,7 +872,7 @@
 
       <div class="callout callout-tip">
         <span class="callout-icon">&#x1f4a1;</span>
-        <div><strong>No AI key?</strong> Cullit works without one! The free tier uses template-based generation &mdash; still categorized and structured, just without AI writing. You can add AI later.</div>
+        <div><strong>No AI key?</strong> Cullit works without one! Template-based generation is built in &mdash; still categorized and structured, just without AI writing. You can add an AI provider at any time.</div>
       </div>
 
       <h3>Which provider should I use?</h3>
@@ -997,7 +997,7 @@
 <span style="color:var(--text-dim)"># https://cullit.io</span>
 
 <span style="color:var(--terminal-blue)">ai</span>:
-  <span style="color:var(--terminal-blue)">provider</span>: <span style="color:var(--terminal-green)">none</span>          <span style="color:var(--text-dim)"># start free, upgrade anytime</span>
+  <span style="color:var(--terminal-blue)">provider</span>: <span style="color:var(--terminal-green)">none</span>          <span style="color:var(--text-dim)"># template-based, no AI key needed</span>
   <span style="color:var(--terminal-blue)">audience</span>: <span style="color:var(--terminal-green)">developer</span>
   <span style="color:var(--terminal-blue)">tone</span>: <span style="color:var(--terminal-green)">professional</span>
   <span style="color:var(--terminal-blue)">categories</span>: <span style="color:var(--terminal-green)">[features, fixes, breaking, improvements, chores]</span>
@@ -1185,7 +1185,7 @@
 
       <div class="callout callout-info">
         <span class="callout-icon">&#x1f511;</span>
-        <div><strong>Pro flows are separate from the public npm package.</strong> The npm CLI stays in local/template mode. AI providers, Jira/Linear enrichment, and premium publishers run through licensed Cullit-hosted or private distributions using <code>CULLIT_API_KEY</code>. <a href="index.html#cta" style="color: var(--accent)">View pricing &rarr;</a></div>
+        <div><strong>All flows are available in the public open-source package.</strong> The npm CLI supports local/template and provider-backed generation in one distribution. If Cullit helps your team, consider sponsoring the project. <a href="pricing.html" style="color: var(--accent)">Support Cullit &rarr;</a></div>
       </div>
 
       <p>Now generate with AI:</p>
@@ -1392,12 +1392,11 @@
         <span style="color:var(--terminal-blue)">with</span>:
           <span style="color:var(--terminal-blue)">fetch-depth</span>: <span style="color:var(--terminal-yellow)">0</span>    <span style="color:var(--text-dim)"># full history for commit range</span>
 
-      - <span style="color:var(--terminal-blue)">uses</span>: <span style="color:var(--terminal-green)">mttaylor/cullit-oss@v2</span>
+      - <span style="color:var(--terminal-blue)">uses</span>: <span style="color:var(--terminal-green)">mttaylor/cullit@v2</span>
         <span style="color:var(--terminal-blue)">with</span>:
           <span style="color:var(--terminal-blue)">provider</span>: <span style="color:var(--terminal-green)">anthropic</span>
           <span style="color:var(--terminal-blue)">publish-github-release</span>: <span style="color:var(--terminal-green)">'true'</span>
           <span style="color:var(--terminal-blue)">publish-slack-webhook</span>: <span style="color:var(--terminal-green)">${{ secrets.SLACK_WEBHOOK_URL }}</span>
-          <span style="color:var(--terminal-blue)">api-key</span>: <span style="color:var(--terminal-green)">${{ secrets.CULLIT_API_KEY }}</span>
         <span style="color:var(--terminal-blue)">env</span>:
           <span style="color:var(--terminal-blue)">ANTHROPIC_API_KEY</span>: <span style="color:var(--terminal-green)">${{ secrets.ANTHROPIC_API_KEY }}</span>
           <span style="color:var(--terminal-blue)">GITHUB_TOKEN</span>: <span style="color:var(--terminal-green)">${{ secrets.GITHUB_TOKEN }}</span>
@@ -1647,7 +1646,7 @@
     <a href="https://www.linkedin.com/company/cullit/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
     <a href="terms.html">Terms</a>
     <a href="privacy.html">Privacy</a>
-    <a href="mailto:sales@cullit.io">sales@cullit.io</a>
+    <a href="mailto:support@cullit.io">support@cullit.io</a>
   </div>
 </footer>
 

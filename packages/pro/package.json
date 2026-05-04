@@ -1,6 +1,6 @@
 {
   "name": "@cullit/pro",
-  "version": "2.10.0",
+  "version": "2.11.0",
   "private": true,
   "type": "module",
   "description": "Cullit Pro — AI generators, Jira/Linear integrations, Slack/Discord/GitHub publishers.",
@@ -8,7 +8,7 @@
   "author": "Cullit <matt@cullit.io>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mttaylor/cullit-oss",
+    "url": "https://github.com/mttaylor/cullit",
     "directory": "packages/pro"
   },
   "main": "./dist/index.js",

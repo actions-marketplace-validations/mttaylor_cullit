@@ -231,7 +231,7 @@
     document.getElementById('upgradeTitle').textContent = title;
     document.getElementById('upgradeMsg').textContent = msg;
     var btn = document.getElementById('upgradeAction');
-    btn.textContent = actionText || 'View Plans';
+    btn.textContent = actionText || 'Support Cullit';
     btn.href = actionHref || 'pricing.html';
     document.getElementById('upgradeOverlay').classList.add('visible');
   }
@@ -287,19 +287,8 @@
         showToast('Session expired. Please refresh and log in again.');
         return;
       }
-      if (res.status === 402) {
-        switchDashTab('billing');
-        showUpgradeModal(
-          'Generation Limit Reached',
-          'You\u2019ve used all ' + (data.limit || 'your') + ' generations this month. Upgrade to get more.',
-          'Upgrade Now', 'pricing.html'
-        );
-      } else if (res.status === 403) {
-        showUpgradeModal(
-          'Feature Locked',
-          data.error || 'This feature requires a higher plan.',
-          'View Plans', 'pricing.html'
-        );
+      if (res.status === 402 || res.status === 403) {
+        showToast(data.error || 'This endpoint returned a legacy billing response.');
       }
       if (!res.ok) throw new Error(data.error || 'Generation failed');
 
@@ -367,69 +356,35 @@
 
   var TAB_MIN_TIERS = {
     generate: 'free', history: 'free', settings: 'free', billing: 'free',
-    drafts: 'pro', analytics: 'pro', team: 'pro', changelog: 'pro',
+    drafts: 'free', analytics: 'free', team: 'free', changelog: 'free',
   };
   var TIER_RANK = { free: 0, paid: 1, pro: 1, team: 1, enterprise: 2 };
 
   function applyTabGating() {
-    var tier = getEffectiveTierClient();
-    var rank = TIER_RANK[tier] || 0;
     document.querySelectorAll('.dash-tab').forEach(function (btn) {
-      var tab = btn.dataset.tab;
-      var minTier = TAB_MIN_TIERS[tab] || 'free';
-      var minRank = TIER_RANK[minTier] || 0;
-      if (rank < minRank) {
-        btn.disabled = true;
-        btn.title = capitalize(minTier) + '+ plan required';
-        btn.style.opacity = '0.4';
-        btn.style.cursor = 'not-allowed';
-      } else {
-        btn.disabled = false;
-        btn.title = '';
-        btn.style.opacity = '';
-        btn.style.cursor = '';
-      }
+      btn.disabled = false;
+      btn.title = '';
+      btn.style.opacity = '';
+      btn.style.cursor = '';
     });
   }
 
   function applyAudienceToneGating() {
-    var tier = getEffectiveTierClient();
-    var rank = TIER_RANK[tier] || 0;
-    var proRank = TIER_RANK['pro'] || 1;
-    var isFree = rank < proRank;
-
     var audienceBadge = document.getElementById('audienceProBadge');
     var toneBadge = document.getElementById('toneProBadge');
-    if (audienceBadge) audienceBadge.style.display = isFree ? 'inline' : 'none';
-    if (toneBadge) toneBadge.style.display = isFree ? 'inline' : 'none';
+    if (audienceBadge) audienceBadge.style.display = 'none';
+    if (toneBadge) toneBadge.style.display = 'none';
 
     var audienceSelect = document.getElementById('audience');
     var toneSelect = document.getElementById('tone');
     if (audienceSelect) {
       Array.from(audienceSelect.options).forEach(function (opt) {
-        opt.disabled = isFree && opt.value !== 'developer';
+        opt.disabled = false;
       });
-      if (isFree) audienceSelect.value = 'developer';
     }
     if (toneSelect) {
       Array.from(toneSelect.options).forEach(function (opt) {
-        opt.disabled = isFree && opt.value !== 'professional';
-      });
-      if (isFree) toneSelect.value = 'professional';
-    }
-
-    if (isFree) {
-      [audienceSelect, toneSelect].forEach(function (select) {
-        if (!select) return;
-        select.addEventListener('focus', function handler() {
-          if (getEffectiveTierClient() === 'free' || (TIER_RANK[getEffectiveTierClient()] || 0) < (TIER_RANK['pro'] || 1)) {
-            showUpgradeModal(
-              'Audience & Tone Control',
-              'Custom audience and tone settings require a Pro plan. Upgrade to tailor output for customers, executives, or any audience.',
-              'Upgrade Now', 'pricing.html'
-            );
-          }
-        }, { once: true });
+        opt.disabled = false;
       });
     }
   }
@@ -744,42 +699,7 @@
   }
 
   async function updateProSeats() {
-    var input = document.getElementById('dashProSeats');
-    var rawVal = parseInt(input ? input.value : '1', 10);
-    if (isNaN(rawVal) || rawVal < 1) { showToast('Please enter a valid seat count (1 or more)'); return; }
-    var newSeats = Math.max(1, Math.min(100, rawVal));
-    if (manageSeatCount != null && newSeats === manageSeatCount) { showToast('Seat count unchanged'); return; }
-
-    var verb = manageSeatCount != null && newSeats > manageSeatCount ? 'Add' : (manageSeatCount != null && newSeats < manageSeatCount ? 'Remove' : 'Set');
-    var delta = manageSeatCount != null ? Math.abs(newSeats - manageSeatCount) : newSeats;
-    if (!confirm(verb + ' ' + delta + ' seat(s)? Your subscription will be updated with prorated billing.')) return;
-
-    var btn = document.getElementById('updateSeatsBtn');
-    try {
-      if (btn) { btn.disabled = true; btn.textContent = 'Updating\u2026'; }
-      var res = await apiFetch('/v1/billing/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: 'pro', seats: newSeats }),
-      });
-      var data = await res.json();
-      if (res.status === 401) {
-        showToast('Session expired. Please refresh and log in again.');
-        return;
-      }
-      if (data.updated) {
-        manageSeatCount = data.seats || newSeats;
-        showToast('Seats updated to ' + manageSeatCount + '!');
-        var meRes = await apiFetch('/auth/me');
-        if (meRes.ok) { currentUser = await meRes.json(); }
-        loadBilling();
-      } else if (data.url) {
-        window.location.href = data.url;
-      } else {
-        showToast(data.error || 'Unable to update seats');
-      }
-    } catch (e) { showToast('Failed to update seats. Please try again.'); }
-    finally { if (btn) { btn.disabled = false; btn.textContent = 'Update Seats'; } }
+    showToast('Seat billing is retired. Support Cullit via GitHub Sponsors.');
   }
 
   // --- Drafts Management ---
@@ -798,12 +718,10 @@
   }
 
   async function loadDrafts() {
-    var userTier = getEffectiveTierClient();
-    var isPaid = (TIER_RANK[userTier] || 0) >= (TIER_RANK['pro'] || 1);
-    document.getElementById('draftTeamGate').style.display = isPaid ? 'none' : 'block';
-    document.getElementById('draftList').parentElement.parentElement.style.display = isPaid ? 'block' : 'none';
+    var isPaid = true;
+    document.getElementById('draftTeamGate').style.display = 'none';
+    document.getElementById('draftList').parentElement.parentElement.style.display = 'block';
     if (document.getElementById('draftDetailPanel')) document.getElementById('draftDetailPanel').style.display = 'none';
-    if (!isPaid) return;
 
     var list = document.getElementById('draftList');
     var pager = document.getElementById('draftPager');
@@ -1006,12 +924,10 @@
   // --- Project Settings ---
 
   async function loadSettingsTab() {
-    var userTier = getEffectiveTierClient();
-    var isPaid = (TIER_RANK[userTier] || 0) >= (TIER_RANK['pro'] || 1);
-    document.getElementById('settingsTeamGate').style.display = isPaid ? 'none' : 'block';
-    document.getElementById('projectSettingsForm').parentElement.parentElement.style.display = isPaid ? 'block' : 'none';
+    var isPaid = true;
+    document.getElementById('settingsTeamGate').style.display = 'none';
+    document.getElementById('projectSettingsForm').parentElement.parentElement.style.display = 'block';
     loadGithubInstallations();
-    if (!isPaid) return;
 
     var select = document.getElementById('settingsProjectSelect');
     if (!select.options.length) {
@@ -1329,7 +1245,7 @@
 
   async function loadBilling() {
     var tier = (currentUser && (currentUser.effectiveTier || currentUser.tier)) ? (currentUser.effectiveTier || currentUser.tier) : 'free';
-    var planName = tier.charAt(0).toUpperCase() + tier.slice(1);
+    var planName = 'Open Source';
     document.getElementById('billingPlanName').textContent = planName;
 
     document.querySelectorAll('.billing-plan-option').forEach(function (el) { el.classList.remove('current'); });
@@ -1337,136 +1253,52 @@
     var planEl = document.getElementById('plan' + planName);
     if (planEl) planEl.classList.add('current');
 
-    var tierRank = { free: 0, pro: 1, team: 1, enterprise: 2 };
-    var currentRank = tierRank[tier] || 0;
     document.querySelectorAll('.billing-plan-option').forEach(function (el) {
       var btn = el.querySelector('.plan-upgrade-btn');
       if (!btn) return;
-      var cardPlan = cardPlanMap[el.id] || 'free';
-      var cardRank = tierRank[cardPlan] || 0;
-      if (cardRank <= currentRank) {
-        if (cardRank > 0 && cardRank < currentRank) {
-          btn.textContent = 'Downgrade';
-          btn.style.display = '';
-          btn.style.background = 'transparent';
-          btn.style.border = '1px solid var(--border)';
-          btn.style.color = 'var(--text-dim)';
-          btn.onclick = function () { openBillingPortal(); };
-        } else {
-          btn.style.display = 'none';
-        }
-      } else {
-        btn.textContent = 'Upgrade';
-        btn.style.display = '';
-        btn.style.background = '';
-        btn.style.border = '';
-        btn.style.color = '';
-      }
+      btn.textContent = 'Support';
+      btn.style.display = '';
+      btn.onclick = function () { window.location.href = 'pricing.html'; };
     });
 
     var manageSection = document.getElementById('manageSeatsSection');
-    if (manageSection) {
-      if (tier === 'pro' || tier === 'team') {
-        manageSection.style.display = '';
-        var updateBtn = document.getElementById('updateSeatsBtn');
-        var proNote = document.getElementById('prorationNote');
-        if (updateBtn) updateBtn.style.display = 'none';
-        if (proNote) proNote.style.display = 'none';
-      } else {
-        manageSection.style.display = 'none';
-      }
-    }
+    if (manageSection) manageSection.style.display = 'none';
 
     ['Free', 'Pro', 'Team', 'Enterprise'].forEach(function (t) {
       var el = document.getElementById('support' + t);
-      if (el) el.style.display = (t.toLowerCase() === tier) ? '' : 'none';
+      if (el) el.style.display = t === 'Free' ? '' : 'none';
     });
 
     var statusEl = document.getElementById('billingPlanStatus');
     var actionsEl = document.getElementById('billingActions');
     actionsEl.innerHTML = '';
 
-    var hasSub = false;
-    var subData = null;
-    try {
-      var res = await apiFetch('/v1/billing/subscription');
-      if (res.ok) {
-        subData = await res.json();
-        if (subData && subData.subscription) {
-          hasSub = true;
-          if (subData.subscription.seats) {
-            manageSeatCount = subData.subscription.seats;
-          }
-          if (subData.subscription.status === 'past_due') {
-            statusEl.textContent = 'Payment Failed';
-            statusEl.style.color = 'var(--terminal-red)';
-            var warningBtn = document.createElement('button');
-            warningBtn.className = 'btn-small';
-            warningBtn.style.background = 'var(--terminal-red)';
-            warningBtn.style.color = '#fff';
-            warningBtn.textContent = 'Update Payment Method';
-            warningBtn.addEventListener('click', openBillingPortal);
-            actionsEl.appendChild(warningBtn);
-          } else {
-            statusEl.textContent = subData.subscription.status === 'active' ? 'Active' : subData.subscription.status;
-          }
-          if (subData.subscription.cancelAtPeriodEnd) {
-            statusEl.textContent += ' (cancels at period end)';
-            statusEl.style.color = 'var(--terminal-yellow, #fbbf24)';
-          }
-          if (subData.subscription.currentPeriodEnd) {
-            var end = new Date(subData.subscription.currentPeriodEnd);
-            statusEl.textContent += ' \u2014 renews ' + end.toLocaleDateString();
-          }
-        } else {
-          statusEl.textContent = tier === 'free' ? 'No active subscription' : '';
-        }
-      }
-    } catch (e) {
-      statusEl.textContent = '';
-    }
+    statusEl.textContent = 'Billing retired. Cullit is free and open source.';
+    statusEl.style.color = 'var(--text-dim)';
 
-    // Always show billing management buttons for paid tiers
-    if (tier === 'pro' || tier === 'team' || tier === 'enterprise') {
-      var portalBtn = document.createElement('button');
-      portalBtn.className = 'btn-small';
-      portalBtn.textContent = 'Manage Billing';
-      portalBtn.addEventListener('click', openBillingPortal);
-      actionsEl.appendChild(portalBtn);
-
-      if (!hasSub || (subData && subData.subscription && !subData.subscription.cancelAtPeriodEnd)) {
-        var cancelBtn = document.createElement('button');
-        cancelBtn.className = 'btn-small';
-        cancelBtn.style.background = 'transparent';
-        cancelBtn.style.border = '1px solid var(--terminal-red)';
-        cancelBtn.style.color = 'var(--terminal-red)';
-        cancelBtn.textContent = 'Cancel Subscription';
-        cancelBtn.addEventListener('click', function () {
-          if (confirm('Cancel your subscription? You\u2019ll keep access until the end of your current billing period.')) {
-            openBillingPortal();
-          }
-        });
-        actionsEl.appendChild(cancelBtn);
-      }
-    }
+    var supportBtn = document.createElement('button');
+    supportBtn.className = 'btn-small';
+    supportBtn.textContent = 'Sponsor on GitHub';
+    supportBtn.addEventListener('click', function () {
+      window.location.href = 'https://github.com/sponsors/mttaylor';
+    });
+    actionsEl.appendChild(supportBtn);
 
     var teamKeysPanel = document.getElementById('teamKeysPanel');
     var hasOrg = currentUser && currentUser.orgId;
-    if (hasOrg && (tier === 'pro' || tier === 'team' || tier === 'enterprise')) {
+    if (hasOrg) {
       teamKeysPanel.style.display = '';
       await loadTeamKeys();
     } else {
       teamKeysPanel.style.display = 'none';
     }
 
-    if (tier === 'pro' || tier === 'team') {
-      var seatInput = document.getElementById('dashProSeats');
-      if (seatInput) { seatInput.value = manageSeatCount; updateProTotal(); }
-    }
+    var seatInput = document.getElementById('dashProSeats');
+    if (seatInput) { seatInput.value = manageSeatCount || 1; updateProTotal(); }
 
     var analyticsPanel = document.getElementById('analyticsQuickLink');
     if (analyticsPanel) {
-      analyticsPanel.style.display = tier !== 'free' ? '' : 'none';
+      analyticsPanel.style.display = '';
     }
 
     // Usage bar
@@ -1475,99 +1307,28 @@
       if (usageRes.ok) {
         var usageData = await usageRes.json();
         var used = usageData.monthlyGenerations || 0;
-        var limit = TIER_LIMITS[tier] || 3;
-        var pct = limit === Infinity ? 0 : Math.min(100, Math.round((used / limit) * 100));
+        var limit = Infinity;
+        var pct = 0;
 
         document.getElementById('usageCount').textContent = used.toLocaleString();
-        document.getElementById('usageLimit').textContent = limit === Infinity
-          ? '/ unlimited'
-          : '/ ' + limit.toLocaleString() + ' generations';
+        document.getElementById('usageLimit').textContent = '/ unlimited';
 
         var bar = document.getElementById('usageBarFill');
         bar.style.width = pct + '%';
         bar.className = 'usage-bar-fill' + (pct >= 90 ? ' danger' : pct >= 70 ? ' warning' : '');
 
         var warn = document.getElementById('usageWarning');
-        if (limit !== Infinity && pct >= 90) {
-          warn.innerHTML = 'You\u2019ve used ' + used.toLocaleString() + ' of ' + limit.toLocaleString() + ' generations this month. <a href="pricing.html" style="color:inherit;font-weight:600;text-decoration:underline">Upgrade your plan</a> for more.';
-          warn.className = 'usage-warning warn-red';
-          warn.style.display = '';
-        } else if (limit !== Infinity && pct >= 66) {
-          warn.innerHTML = 'Approaching your limit &mdash; ' + used.toLocaleString() + ' of ' + limit.toLocaleString() + ' generations used. <a href="pricing.html" style="color:inherit;font-weight:600;text-decoration:underline">View upgrade options</a>';
-          warn.className = 'usage-warning warn-yellow';
-          warn.style.display = '';
-        } else {
-          warn.style.display = 'none';
-        }
+        warn.style.display = 'none';
       }
     } catch (e) {}
   }
 
   async function upgradePlan(plan) {
-    try {
-      var body = { plan: plan };
-      if (plan === 'pro' || plan === 'team') {
-        var seatInput = document.getElementById('dashProSeats');
-        body.seats = parseInt(seatInput ? seatInput.value : '1', 10);
-      }
-      var res = await apiFetch('/v1/billing/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        var errText = await res.text();
-        try { var errData = JSON.parse(errText); showToast(errData.error || errData.detail || 'Checkout failed (' + res.status + ')'); }
-        catch (pe) { showToast('Checkout failed: ' + res.status + ' ' + errText.slice(0, 120)); }
-        return;
-      }
-      var data = await res.json();
-      if (data.updated) {
-        showToast('Plan updated to ' + capitalize(plan) + '!');
-        var meRes = await apiFetch('/auth/me');
-        if (!meRes.ok) { loadBilling(); return; }
-        var me = await meRes.json();
-        if (me.tier) {
-          currentUser = me;
-          document.getElementById('navTier').textContent = me.effectiveTier || me.tier;
-          loadBilling();
-        }
-      } else if (data.url) {
-        window.location.href = data.url;
-      } else {
-        showToast(data.error || 'Unable to start checkout');
-      }
-    } catch (e) {
-      console.error('Checkout error:', e);
-      showToast('Network error: ' + (e.message || 'Could not reach billing service'));
-    }
+    showToast('Paid upgrades are retired. Cullit is fully open source now.');
   }
 
   async function openBillingPortal() {
-    try {
-      var res = await apiFetch('/v1/billing/portal', { method: 'POST' });
-      if (!res.ok) {
-        var err = await res.json().catch(function () { return {}; });
-        showToast(err.error || 'Unable to open billing portal (' + res.status + ')');
-        return;
-      }
-      var data = await res.json();
-      if (data.url) {
-        try {
-          var portalUrl = new URL(data.url);
-          if (portalUrl.protocol === 'https:' &&
-              (portalUrl.hostname.endsWith('.stripe.com') || portalUrl.hostname === 'billing.stripe.com')) {
-            window.location.href = portalUrl.href;
-          } else {
-            showToast('Unexpected billing portal URL');
-          }
-        } catch (e) { showToast('Invalid billing portal URL'); }
-      } else {
-        showToast('Unable to open billing portal');
-      }
-    } catch (e) {
-      showToast('Billing portal unavailable');
-    }
+    window.location.href = 'pricing.html';
   }
 
   // --- Team Key Management ---

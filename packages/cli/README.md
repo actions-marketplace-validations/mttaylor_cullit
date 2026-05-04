@@ -1,20 +1,21 @@
 # cullit CLI
 
-Public CLI installer for Cullit's local, template-based workflow.
+Public CLI installer for Cullit's full open-source workflow.
 
-The `cullit` package on npm is intentionally limited to the free local surface:
+The `cullit` package on npm supports:
 
 - local git collection
 - template generation with `--provider none`
-- stdout and file publishing
+- AI providers with BYOK keys
+- enrichers and publishers
 - config, status, and tag helpers
 
-Installing from npm does not grant Pro access by itself. Licensed AI providers, Jira/Linear enrichment, premium publishers, dashboard workflows, and other Pro surfaces are delivered through Cullit-hosted or private licensed distributions.
+Installing from npm gives you the current open-source feature set.
 
 ## Install
 
 ```bash
-# one-off free local run
+# one-off run
 npx cullit generate --from v1.0.0 --to v1.1.0 --provider none
 
 # global install
@@ -45,10 +46,9 @@ cullit generate --from v1.8.0 --provider none --template customer-facing
 
 ## Licensing
 
-- Public npm package: free local/template workflow only
-- Paid tiers (Pro and Enterprise): delivered through the private package `@cullit/licensed`
-- `CULLIT_API_KEY`: used by licensed hosted/private Cullit surfaces
-- Need Pro access? See https://cullit.io/pricing
+- MIT licensed open-source project
+- `CULLIT_API_KEY` remains as optional compatibility env var
+- Support development at https://github.com/sponsors/mttaylor
 
 ## Commands
 
@@ -106,7 +106,7 @@ cullit --version
 - `--dry-run` print to stdout without publishing
 - `--template <name>` use a named template profile from `.cullit.yml`
 
-> **Note:** Sources other than `local`, and providers other than `none`, require a Pro tier via `@cullit/licensed`.
+> **Note:** Sources and providers are available in open-source mode. Configure required provider/integration API keys in your environment.
 - `--audience <type>` tune output for `developer|end-user|executive`
 - `--tone <style>` tone controls for generated output
 - `--format <fmt>` output format
@@ -118,10 +118,10 @@ cullit --version
 
 - Full docs: https://cullit.io/docs
 - Tutorial: https://cullit.io/tutorial
-- Pricing: https://cullit.io/pricing
+- Support: https://cullit.io/pricing
 
 ## Source and Issues
 
-- Repository: https://github.com/mttaylor/cullit-oss
-- Issues: https://github.com/mttaylor/cullit-oss/issues
+- Repository: https://github.com/mttaylor/cullit
+- Issues: https://github.com/mttaylor/cullit/issues
 - Security: see `SECURITY.md` in the repository

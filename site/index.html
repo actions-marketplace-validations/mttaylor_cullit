@@ -33,16 +33,11 @@
   "operatingSystem": "Cross-platform",
   "description": "AI release notes grounded in code, tickets, and release context. CLI, GitHub Action, dashboard, and API.",
   "offers": {
-    "@type": "AggregateOffer",
-    "lowPrice": "0",
-    "highPrice": "9",
+    "@type": "Offer",
+    "price": "0",
     "priceCurrency": "USD",
-    "offerCount": 3,
-    "offers": [
-      { "@type": "Offer", "price": "0", "priceCurrency": "USD", "name": "Free" },
-      { "@type": "Offer", "price": "9", "priceCurrency": "USD", "name": "Pro", "description": "Per seat per month" },
-      { "@type": "Offer", "price": "0", "priceCurrency": "USD", "name": "Enterprise", "description": "Custom pricing" }
-    ]
+    "name": "Open Source",
+    "description": "Fully free and community-supported"
   },
   "author": { "@type": "Person", "name": "Matt Taylor", "url": "https://cullit.io" }
 }
@@ -660,9 +655,9 @@
     <a href="tutorial.html">Tutorial</a>
     <a href="dashboard.html">Dashboard</a>
     <a href="https://www.npmjs.com/package/cullit" target="_blank" rel="noopener noreferrer">npm</a>
-    <a href="pricing.html">Pricing</a>
+    <a href="pricing.html">Support</a>
     <a href="releases.html">Releases</a>
-    <a href="dashboard.html" class="nav-cta">Get Started Free</a>
+    <a href="dashboard.html" class="nav-cta">Open Dashboard</a>
   </div>
   <button class="hamburger" id="hamburger" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
 </nav>
@@ -672,12 +667,12 @@
 <section class="hero">
 
   <h1>Cullit. <span class="accent">Release Notes</span><br>in no time, anytime.</h1>
-  <p style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 1rem; background: rgba(94,234,212,0.08); border: 1px solid rgba(94,234,212,0.2); border-radius: 100px; font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--accent); width: fit-content; margin-bottom: 0.75rem;"><a href="releases.html" style="color: var(--accent); text-decoration: none; font-weight: 600;">New in v2.10.0: Integration verify harness + major architectural refactor &rarr;</a></p>
-  <p style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 1rem; background: rgba(94,234,212,0.08); border: 1px solid rgba(94,234,212,0.2); border-radius: 100px; font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--accent); width: fit-content; margin-bottom: 2rem;"><a href="pricing.html" style="color: var(--accent); text-decoration: none; font-weight: 600;">View Pricing &rarr;</a></p>
+  <p style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 1rem; background: rgba(94,234,212,0.08); border: 1px solid rgba(94,234,212,0.2); border-radius: 100px; font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--accent); width: fit-content; margin-bottom: 0.75rem;"><a href="releases.html" style="color: var(--accent); text-decoration: none; font-weight: 600;">New in v2.11.0: Fully open source &mdash; no paid tiers, no API key required &rarr;</a></p>
+  <p style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 1rem; background: rgba(94,234,212,0.08); border: 1px solid rgba(94,234,212,0.2); border-radius: 100px; font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--accent); width: fit-content; margin-bottom: 2rem;"><a href="pricing.html" style="color: var(--accent); text-decoration: none; font-weight: 600;">Open Source Support &rarr;</a></p>
   <p class="hero-sub">From git commits to polished release announcements &mdash; automatically. Cullit pulls context from Jira, Linear, and your git history, then generates audience-aware notes with Claude, OpenAI, Gemini, or Ollama. Publish everywhere your team and customers already look.</p>
   <div class="hero-actions">
-    <a href="dashboard.html" class="btn-primary">&#9889; Get Started Free</a>
-    <a href="https://github.com/mttaylor/cullit-oss" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.7rem 1.2rem; border: 1px solid rgba(94,234,212,0.3); border-radius: 8px; color: var(--accent); text-decoration: none; font-weight: 600; font-size: 0.9rem; margin-left: 0.5rem;">&#11088; Star on GitHub</a>
+    <a href="dashboard.html" class="btn-primary">&#9889; Open Dashboard</a>
+    <a href="https://github.com/mttaylor/cullit" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.7rem 1.2rem; border: 1px solid rgba(94,234,212,0.3); border-radius: 8px; color: var(--accent); text-decoration: none; font-weight: 600; font-size: 0.9rem; margin-left: 0.5rem;">&#11088; Star on GitHub</a>
     <a href="https://github.com/sponsors/mttaylor" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.7rem 1.2rem; border: 1px solid rgba(255,105,180,0.4); border-radius: 8px; color: #ff69b4; text-decoration: none; font-weight: 600; font-size: 0.9rem; margin-left: 0.5rem;">&#10084;&#65039; Sponsor</a>
   </div>
   <p style="font-size: 0.75rem; color: var(--muted); margin-top: 0.75rem; opacity: 0.7;">Open source (MIT) &mdash; built and maintained by one developer. Tips & sponsorships keep the lights on.</p>
@@ -1090,7 +1085,7 @@
       <div style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.25rem;">Runtime dependencies</div>
     </div>
   </div>
-  <p style="text-align: center; color: var(--text-dim); margin-top: 1.5rem; font-size: 0.85rem;">Open-core architecture. Free CLI with AI included. Bring your own API key.</p>
+  <p style="text-align: center; color: var(--text-dim); margin-top: 1.5rem; font-size: 0.85rem;">Open-source architecture. Bring your own provider API keys, or run with provider none.</p>
 </section>
 
 <div class="section-divider"></div>
@@ -1098,15 +1093,15 @@
 <!-- CTA -->
 <section class="cta-section" id="cta">
   <h2>Stop writing release notes.<br>Start <span style="color: var(--accent)">culling</span> them.</h2>
-  <p>Try it free — 3 AI generations per month included. Upgrade anytime for more volume, Jira, Linear &amp; audience control.</p>
+  <p>Fully open source and free to use. Support the roadmap through GitHub Sponsors.</p>
   <div class="cta-buttons" style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin: 2rem 0 1rem;">
-    <a href="dashboard.html" id="ctaFree" class="cta-btn" style="display: inline-block; background: var(--accent); color: var(--bg); padding: 0.85rem 2rem; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 1rem;">Get Started Free</a>
-    <a href="pricing.html" id="ctaPricing" class="cta-btn-outline" style="display: inline-block; border: 2px solid var(--accent); color: var(--accent); padding: 0.85rem 2rem; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 1rem;">View Pricing</a>
+    <a href="dashboard.html" id="ctaFree" class="cta-btn" style="display: inline-block; background: var(--accent); color: var(--bg); padding: 0.85rem 2rem; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 1rem;">Open Dashboard</a>
+    <a href="https://github.com/sponsors/mttaylor" id="ctaPricing" class="cta-btn-outline" style="display: inline-block; border: 2px solid var(--accent); color: var(--accent); padding: 0.85rem 2rem; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 1rem;" target="_blank" rel="noopener noreferrer">Sponsor on GitHub</a>
   </div>
   <p style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.5rem;">
     Try the free local CLI in seconds: <code style="background: var(--bg-card); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem; cursor: pointer;" data-copy-text="npx cullit generate --provider none" data-copy-label="npx cullit generate --provider none" data-copy-success="✓ Copied!">npx cullit generate --provider none</code>
   </p>
-  <p class="email-note">Free to start &mdash; Pro seats, annual billing, and enterprise options. <a href="https://cullit.io/pricing" style="color: var(--accent)">See pricing</a></p>
+  <p class="email-note">No paid tiers. Star or sponsor Cullit to support continued development.</p>
 </section>
 
 <!-- FOOTER -->
@@ -1118,7 +1113,7 @@
     <a href="https://www.linkedin.com/company/cullit/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
     <a href="terms.html">Terms</a>
     <a href="privacy.html">Privacy</a>
-    <a href="mailto:sales@cullit.io">sales@cullit.io</a>
+    <a href="mailto:support@cullit.io">support@cullit.io</a>
   </div>
 </footer>
 

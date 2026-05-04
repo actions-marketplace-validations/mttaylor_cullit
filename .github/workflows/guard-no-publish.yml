@@ -1,4 +1,4 @@
-name: Guard against publishing OSS packages from private repo
+name: Package Publish Guard Notice
 
 on:
   push:
@@ -6,13 +6,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  block-publish:
+  publish-guard-notice:
     runs-on: ubuntu-latest
     steps:
-      - name: Fail loudly
+      - name: Print guard context
         run: |
-          echo "::error::Publishing OSS packages from this repo is disabled."
-          echo "::error::OSS packages (cullit, @cullit/core, @cullit/config, @cullit/pro, @cullit/licensed)"
-          echo "::error::are published from https://github.com/mttaylor/cullit-oss only."
-          echo "::error::If you tagged a release here intending to publish, push the tag to cullit-oss instead."
-          exit 1
+          echo "Cullit is now managed as a single open-source repository."
+          echo "This workflow is informational and does not block releases."

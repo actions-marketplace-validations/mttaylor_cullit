@@ -1,18 +1,15 @@
 # Contributing to Cullit
 
-Thanks for your interest in contributing! Cullit's engine, CLI, and AI/integration plugins are MIT-licensed and PRs are welcome. The hosted platform packages (`packages/api`, `packages/app`, `site/`) are source-available — see [LICENSE-COMMERCIAL](LICENSE-COMMERCIAL) — but contributions there are also welcome under the same CLA.
+Thanks for your interest in contributing. Cullit is MIT-licensed and PRs are welcome across the entire repository.
 
-## Contributor License Agreement (CLA)
+## Contribution Terms
 
-By submitting a pull request you agree that:
+By submitting a pull request you confirm that:
 
 1. **You have the right to contribute the code** — it is your original work, or you have explicit permission from the copyright holder, and it does not infringe any third-party IP.
-2. **You grant Cullit a perpetual, worldwide, non-exclusive, royalty-free license** to use, reproduce, modify, distribute, and sublicense your contribution under any license, including both the MIT license and the Cullit Commercial License.
-3. **Your contribution may be relicensed** by the project maintainers at any time without further notice or compensation.
+2. **Your contribution is provided under the project's MIT license**.
 
-This CLA is required because Cullit is dual-licensed (open core + commercial) and we need the right to ship contributions under both licenses. If you cannot agree to these terms, please do not submit a PR — open an issue instead so we can discuss alternatives.
-
-The CLA is implicit on every PR. We may add a bot-enforced sign-off step in the future.
+No separate CLA is required at this time.
 
 ## Development Setup
 
@@ -60,7 +57,7 @@ Cullit is a pnpm monorepo with a staged pipeline architecture:
 
 **Pipeline stages:**
 1. **Collect** — Gather commits between two refs (tags, SHAs, branches)
-2. **Enrich** — Cross-reference commits with Jira/Linear tickets (Pro feature)
+2. **Enrich** — Cross-reference commits with Jira/Linear tickets
 3. **Generate** — Produce structured release notes via AI or the built-in template engine
 4. **Publish** — Output to stdout, file, Slack, Discord, GitHub Release, etc.
 
@@ -72,9 +69,9 @@ packages/
   core/     — Pipeline orchestration, git collector, template generator,
               formatting, license gating, constants
   cli/      — CLI entry point (parseArgs, commands)
-  licensed/ — Private pro-tier distribution package (wraps CLI + pro plugins)
+  licensed/ — Compatibility wrapper retained during OSS transition
   api/      — REST API server (zero-dependency, Node http module)
-  pro/      — Pro features: AI generators (Anthropic, OpenAI, Gemini,
+  pro/      — Feature package: AI generators (Anthropic, OpenAI, Gemini,
               Ollama), source collectors (Jira, Linear, GitLab,
               Bitbucket), enrichers (Jira, Linear), publishers (Slack,
               Discord, Teams, GitHub Release, GitLab Release, Confluence,
@@ -148,7 +145,7 @@ Prefixes: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `perf`, `ci`, `bui
 
 ### Documentation and Legal Updates
 
-When behavior, pricing, tier limits, endpoints, or auth flows change, update docs in the same PR:
+When behavior, support messaging, endpoints, or auth flows change, update docs in the same PR:
 
 - Root docs: `README.md`, `CONTRIBUTING.md`, `SECURITY.md`
 - Website docs/tutorial: `site/docs.html`, `site/tutorial.html`, `site/setup.html`

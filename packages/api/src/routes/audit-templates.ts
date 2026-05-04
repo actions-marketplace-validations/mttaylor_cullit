@@ -1,11 +1,10 @@
 /**
- * Audit log + Project templates routes — Pro/Team feature.
+ * Audit log + Project templates routes.
  */
 import type { IncomingMessage, ServerResponse } from 'http';
 import { randomBytes } from 'crypto';
 
-import { isPlanFeatureAllowed } from '@cullit/core';
-import { resolveUser, getEffectiveTier, getUserPlan } from '../auth.js';
+import { resolveUser } from '../auth.js';
 import {
   dbGetAuditEvents, dbRecordAuditEvent,
   dbCreateProjectTemplate, dbListProjectTemplates, dbDeleteProjectTemplate,
@@ -17,12 +16,6 @@ import { json, readBody, parseJsonObject, isRecord, PORT } from '../utils.js';
 export async function handleGetAuditLog(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const user = await resolveUser(req);
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-
-  const tier = getEffectiveTier(user);
-  const plan = await getUserPlan(user);
-  if (!isPlanFeatureAllowed('audit_logs', plan, tier)) {
-    json(res, 403, { error: 'Audit logs require a Pro plan', upgrade: 'https://cullit.io/pricing' }); return;
-  }
 
   const url = new URL(req.url || '/', `http://localhost:${PORT}`);
   const rawLimit = parseInt(url.searchParams.get('limit') || '50', 10);
@@ -41,13 +34,6 @@ const TEMPLATE_ID_RE = /^tpl_[a-f0-9]{24}$/;
 async function requireTemplateAccess(req: IncomingMessage, res: ServerResponse) {
   const user = await resolveUser(req);
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return null; }
-
-  const tier = getEffectiveTier(user);
-  const plan = await getUserPlan(user);
-  if (!isPlanFeatureAllowed('project_templates', plan, tier)) {
-    json(res, 403, { error: 'Project templates require a Pro plan', upgrade: 'https://cullit.io/pricing' });
-    return null;
-  }
   if (!user.orgId) { json(res, 400, { error: 'Project templates require an organization' }); return null; }
   return user;
 }

@@ -1,13 +1,13 @@
 {
   "name": "@cullit/core",
-  "version": "2.10.0",
+  "version": "2.11.0",
   "type": "module",
   "description": "Core engine for Cullit — AI-powered release note generation.",
   "license": "MIT",
   "author": "Cullit <matt@cullit.io>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mttaylor/cullit-oss",
+    "url": "https://github.com/mttaylor/cullit",
     "directory": "packages/core"
   },
   "keywords": [
@@ -18,7 +18,7 @@
   ],
   "homepage": "https://cullit.io",
   "bugs": {
-    "url": "https://github.com/mttaylor/cullit-oss/issues"
+    "url": "https://github.com/mttaylor/cullit/issues"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

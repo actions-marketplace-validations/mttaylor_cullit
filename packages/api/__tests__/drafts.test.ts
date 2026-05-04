@@ -147,17 +147,18 @@ describe('Draft Routes — Authentication', () => {
 // --- Tier gating ---
 
 describe('Draft Routes — Tier gating', () => {
-  it('handleCreateDraft returns 403 for free-tier user', async () => {
+  it('handleCreateDraft allows free-tier user (open source — no gating)', async () => {
     mockResolveUser.mockResolvedValue(freeUser);
-    await handleCreateDraft(mockReq('{"project":"test"}'), mockRes());
-    expect(captured.status).toBe(403);
-    expect(captured.body.upgrade).toBeDefined();
+    mockDbCreateDraft.mockResolvedValue({ id: 'new1', project: 'test' });
+    await handleCreateDraft(mockReq(JSON.stringify({ project: 'test', formattedMd: '# Test' })), mockRes());
+    expect(captured.status).toBe(201);
   });
 
-  it('handleListDrafts returns 403 for free-tier user', async () => {
+  it('handleListDrafts allows free-tier user (open source — no gating)', async () => {
     mockResolveUser.mockResolvedValue(freeUser);
+    mockDbListDrafts.mockResolvedValue([]);
     await handleListDrafts(mockReq(), mockRes());
-    expect(captured.status).toBe(403);
+    expect(captured.status).toBe(200);
   });
 
   it('handleCreateDraft allows paid-tier user', async () => {

@@ -1,20 +1,20 @@
 # Cullit ⚡ — Platform Repository
 
-> **This is the private platform repository** (hosted API, GitHub App, dashboard, billing, marketing site). It is **proprietary and not open source** — see [LICENSE-COMMERCIAL](LICENSE-COMMERCIAL).
+> Cullit is now fully open source under MIT.
 >
-> **For the open source CLI, libraries, and GitHub Action**, see **[mttaylor/cullit-oss](https://github.com/mttaylor/cullit-oss)** (MIT licensed).
+> This repository is the primary home for CLI, API server, GitHub App, and website/dashboard code.
 
 [![npm version](https://img.shields.io/npm/v/cullit.svg)](https://www.npmjs.com/package/cullit)
 [![CI](https://img.shields.io/badge/CI-passing-brightgreen)](https://cullit.io)
-[![License: Commercial](https://img.shields.io/badge/License-Commercial-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-ff69b4.svg)](https://github.com/sponsors/mttaylor)
-[![GitHub stars](https://img.shields.io/github/stars/mttaylor/cullit-oss?style=social)](https://github.com/mttaylor/cullit-oss)
+[![GitHub stars](https://img.shields.io/github/stars/mttaylor/cullit?style=social)](https://github.com/mttaylor/cullit)
 
-**Release notes that scale from a free local CLI to licensed hosted workflows.**
+**Release notes automation that is fully free and community-supported.**
 
-Cullit reads your git history, enriches from Jira & Linear, and can generate categorized release notes for developers, customers, and executives. The public npm package is the free local/template CLI. AI providers, premium integrations, dashboard workflows, and private deployment surfaces are licensed separately.
+Cullit reads your git history, enriches from Jira and Linear, and generates categorized release notes for developers, customers, and executives. AI providers, integrations, dashboard workflows, and publishers are all available in the open-source codebase.
 
-> Built by [Matt](https://cullit.io) — a solo developer. If Cullit saves you time, **[⭐ star the repo](https://github.com/mttaylor/cullit-oss)** or **[❤️ sponsor on GitHub](https://github.com/sponsors/mttaylor)** — it really helps keep the project alive.
+> Built by [Matt](https://cullit.io) — a solo developer. If Cullit saves you time, **[⭐ star the repo](https://github.com/mttaylor/cullit)** or **[❤️ sponsor on GitHub](https://github.com/sponsors/mttaylor)** — it really helps keep the project alive.
 
 ---
 
@@ -33,9 +33,9 @@ npm install -D cullit
 
 ## Distribution Model
 
-- Public npm package `cullit`: local git, template generation with `--provider none`, stdout/file output
-- Private registry package `@cullit/licensed`: pro seat-based and enterprise access for AI providers, Jira/Linear enrichment, premium publishers, dashboard, API, GitHub App, and private deployment flows
-- npm is the delivery channel for the CLI runtime, not the pro entitlement layer
+- Public npm package `cullit`: full CLI with template and AI provider support
+- Monorepo packages: core engine, API server, GitHub App, website/dashboard
+- Community funding: GitHub Sponsors supports maintenance and roadmap work
 
 ## Quick Start
 
@@ -60,20 +60,14 @@ cullit generate --from v1.0.0 --verbose
 cullit generate --from v1.0.0 --quiet
 ```
 
-## Pro Upgrade In Under 10 Minutes
+## Support Cullit
 
 ```bash
-# 1) Install pro distribution from your private registry
-npm install -g @cullit/licensed
-
-# 2) Set your Cullit license key
-export CULLIT_API_KEY=clt_your_key_here
-
-# 3) Run your first AI generation
+# Run AI generation with your own provider key
 cullit generate --from v1.0.0 --to v1.1.0 --provider anthropic
 ```
 
-If you do not have a pro key yet, start at https://cullit.io/pricing.
+If Cullit is useful to your team, support the project at https://github.com/sponsors/mttaylor.
 
 ## CLI Command Reference
 
@@ -211,7 +205,7 @@ jobs:
         with:
           fetch-depth: 0  # Full history needed for git log
 
-      - uses: mttaylor/cullit-oss@v2
+      - uses: mttaylor/cullit@v2
         with:
           provider: anthropic
           audience: developer
@@ -273,10 +267,10 @@ docker compose up api
 | Feature | Description |
 |---------|-------------|
 | 🧠 **4 AI Providers + Template** | Anthropic Claude, OpenAI, Gemini, Ollama, or none (template) |
-| 🔑 **Licensed AI** | Pro AI and premium integrations are available through licensed hosted/private Cullit surfaces. |
+| 🔑 **BYOK AI** | Use your own provider keys with no paid tier requirement |
 | ⚡ **Flexible Sources** | Git, Jira, Linear, GitLab, or Bitbucket as primary data source |
 | 🔍 **Enrichment** | Cross-reference Jira & Linear tickets from commits |
-| 📤 **Multi-Publish** | Slack, Discord, GitHub Release, GitLab Release, Hosted Changelog, Embed Widget, file, stdout (Pro); Teams, Confluence, Notion on Pro org setups |
+| 📤 **Multi-Publish** | Slack, Discord, Teams, GitHub Release, GitLab Release, Hosted Changelog, Embed Widget, Confluence, Notion, file, stdout |
 | 🎯 **Audience Modes** | Developer, end-user, or executive summaries |
 | 📋 **Smart Categories** | Features, fixes, breaking changes, improvements, chores |
 | 🔇 **Structured Logging** | `--verbose` and `--quiet` flags for CI-friendly output |
@@ -288,12 +282,12 @@ docker compose up api
 
 | Package | Description |
 |---------|-------------|
-| [`cullit`](https://www.npmjs.com/package/cullit) | Public CLI installer — local/template workflow with `--provider none` |
-| `@cullit/licensed` | Private registry package for pro seat-based and enterprise access |
+| [`cullit`](https://www.npmjs.com/package/cullit) | CLI installer with full release-note generation workflows |
+| `@cullit/licensed` | Backward-compat helper package retained during OSS transition |
 | [`@cullit/core`](https://www.npmjs.com/package/@cullit/core) | Core engine — pipeline, generators, publishers |
 | [`@cullit/config`](https://www.npmjs.com/package/@cullit/config) | Config loader — YAML parsing with env var resolution |
-| `@cullit/api` | REST API server (private) — OpenAPI 3.1, rate limiting, pipeline cache |
-| `@cullit/app` | GitHub App (private) — auto-generate release notes on tag push or release publish |
+| `@cullit/api` | REST API server — OpenAPI 3.1, rate limiting, pipeline cache |
+| `@cullit/app` | GitHub App — auto-generate release notes on tag push or release publish |
 
 ## Configuration
 
@@ -395,10 +389,6 @@ jira:
 | `WORKOS_API_KEY` | Dashboard login (WorkOS API key) |
 | `CULLIT_JWT_SECRET` | Dashboard session signing secret |
 | `CULLIT_BASE_URL` | Public base URL for OAuth callbacks |
-| `STRIPE_SECRET_KEY` | Stripe billing API key |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature verification |
-| `STRIPE_PRO_PRICE_ID` | Stripe price ID for the Pro plan ($9/seat/month) |
-| `STRIPE_PRO_ANNUAL_PRICE_ID` | Stripe price ID for the Pro annual plan ($97.20/seat/year — 10% off) |
 | `RESEND_API_KEY` | Transactional email delivery |
 
 ## API Endpoints
@@ -408,13 +398,13 @@ jira:
 | `GET` | `/health` | Health check (status, version, uptime) |
 | `GET` | `/openapi.json` | OpenAPI 3.1 specification |
 | `POST` | `/generate` | Generate release notes |
-| `POST` | `/v1/generate` | Generate notes with usage and tier enforcement |
+| `POST` | `/v1/generate` | Generate notes with API/server-side defaults |
 | `GET` | `/auth/me` | Current authenticated dashboard user |
 | `POST` | `/auth/logout` | End dashboard session |
 | `GET` | `/v1/history` | Paginated generation history |
 | `GET` | `/v1/analytics/usage` | Usage analytics and provider breakdown |
-| `POST` | `/v1/drafts` | Create draft (Pro) |
-| `GET` | `/v1/drafts` | List drafts (Pro) |
+| `POST` | `/v1/drafts` | Create draft |
+| `GET` | `/v1/drafts` | List drafts |
 | `GET` | `/v1/drafts/:id` | Draft details with revisions |
 | `PATCH` | `/v1/drafts/:id` | Update draft |
 | `DELETE` | `/v1/drafts/:id` | Delete draft |
@@ -436,13 +426,13 @@ jira:
 
 ## Dashboard & Tutorials
 
-Cullit includes a hosted dashboard experience with authentication, billing, analytics, and team workflows:
+Cullit includes a hosted dashboard experience with authentication, analytics, and team workflows:
 
 - Dashboard: `site/dashboard.html`
 - Docs: `site/docs.html`
 - Interactive tutorial: `site/tutorial.html`
 - Setup guide: `site/setup.html`
-- Pricing: `site/pricing.html`
+- Support: `site/pricing.html`
 
 ## Roadmap
 
@@ -473,11 +463,11 @@ PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Troubleshooting
 
-### `CULLIT_API_KEY` not recognized
+### AI provider key not recognized
 
-- Ensure the key starts with `clt_` and is at least 32 characters
-- Check for trailing whitespace: `echo -n "$CULLIT_API_KEY" | wc -c`
-- In GitHub Actions, set it as a repository secret and reference with `${{ secrets.CULLIT_API_KEY }}`
+- Ensure you set the key matching your selected provider (for example `ANTHROPIC_API_KEY` for `--provider anthropic`)
+- Check for trailing whitespace in the secret value
+- In GitHub Actions, set provider keys as repository secrets and expose them in `env`
 
 ### `provider none` produces limited output
 
@@ -530,17 +520,17 @@ See [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
 
 Cullit is built and maintained by **one developer** in their spare time. If it helps you ship better release notes faster:
 
-- ⭐ **[Star on GitHub](https://github.com/mttaylor/cullit-oss)** — costs nothing, helps massively with discovery
+- ⭐ **[Star on GitHub](https://github.com/mttaylor/cullit)** — costs nothing, helps massively with discovery
 - ❤️ **[Sponsor on GitHub](https://github.com/sponsors/mttaylor)** — recurring support, even $5/mo keeps the lights on
 - ☕ **[Buy a coffee](https://cullit.io/sponsor)** — one-time tip
 - 🐦 Tell other devs about it — word of mouth is everything for indie tools
-- 🪄 **[Subscribe to the hosted plan](https://cullit.io/pricing)** — the strongest possible support, and you get team features, audit log, and dashboard
+- 🛠️ Open issues and PRs — code, docs, tests, and review help all move the project forward
 
 Every star, sponsor, and shoutout is genuinely appreciated.
 
 ## License
 
-Cullit is **open core**:
+Cullit is MIT licensed across this repository:
 
 | Component | Package(s) | License |
 |---|---|---|
@@ -549,16 +539,14 @@ Cullit is **open core**:
 | **AI providers + integrations** — OpenAI, Anthropic, Gemini, Ollama, Linear, Jira | `@cullit/pro` | [MIT](LICENSE) |
 | **License helper** | `@cullit/licensed` | [MIT](LICENSE) |
 | **GitHub Action** | `action.yml` | [MIT](LICENSE) |
-| **Hosted API server** | `packages/api` | [Source-Available](LICENSE-COMMERCIAL) |
-| **GitHub App webhook server** | `packages/app` | [Source-Available](LICENSE-COMMERCIAL) |
-| **Dashboard + landing page** | `site/` | [Source-Available](LICENSE-COMMERCIAL) |
+| **Hosted API server** | `packages/api` | [MIT](LICENSE) |
+| **GitHub App webhook server** | `packages/app` | [MIT](LICENSE) |
+| **Dashboard + landing page** | `site/` | [MIT](LICENSE) |
 
-The MIT-licensed packages give you a fully-featured local CLI with AI changelog generation — bring your own API key and you get the same engine that powers cullit.io.
+Everything needed for local and hosted workflows is open source and available for community use and contribution.
 
-The hosted platform components (auth, billing, team dashboard, audit log) are source-available for transparency but require a [commercial license](LICENSE-COMMERCIAL) for production / SaaS use. Internal self-hosting is free for organizations with fewer than 25 employees.
-
-See also: [TERMS.md](TERMS.md) • [CONTRIBUTING.md](CONTRIBUTING.md) (CLA required)
+See also: [TERMS.md](TERMS.md) • [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
-Built by [Matt](https://cullit.io) • [GitHub](https://github.com/mttaylor/cullit-oss)
+Built by [Matt](https://cullit.io) • [GitHub](https://github.com/mttaylor/cullit)

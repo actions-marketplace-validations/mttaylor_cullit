@@ -22,13 +22,13 @@ GitHub OAuth users and API keys.
 | `role` | TEXT | `member` or `admin` |
 | `api_key` | TEXT UNIQUE | CULLIT_API_KEY value (deprecated — see `api_key_hash`) |
 | `api_key_hash` | TEXT | SHA-256 hash of API key (used for lookups after key rotation) |
-| `stripe_customer_id` | TEXT | Stripe customer link |
-| `stripe_subscription_id` | TEXT | Stripe subscription link |
+| `stripe_customer_id` | TEXT | Legacy billing link (retained for historical data compatibility) |
+| `stripe_subscription_id` | TEXT | Legacy billing link (retained for historical data compatibility) |
 | `github_username` | TEXT | GitHub username (for app linking) |
 | `created_at` | TIMESTAMPTZ | Account creation |
 | `last_login_at` | TIMESTAMPTZ | Last login timestamp |
 
-Indexes: `idx_users_api_key (api_key)`, `idx_users_api_key_hash (api_key_hash)`, `idx_users_stripe_customer (stripe_customer_id)`
+Indexes: `idx_users_api_key (api_key)`, `idx_users_api_key_hash (api_key_hash)`, `idx_users_stripe_customer (stripe_customer_id)` (legacy compatibility)
 
 ---
 
@@ -128,15 +128,15 @@ Index: `idx_changelog_project (project, published_at DESC)`
 
 ### `subscriptions`
 
-Stripe billing state.
+Legacy billing state retained for compatibility and historical records. New checkout flows are retired.
 
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | TEXT PK | Subscription record ID |
 | `user_id` | TEXT | FK → `users.id` |
-| `stripe_subscription_id` | TEXT UNIQUE | Stripe subscription ID |
-| `stripe_customer_id` | TEXT | Stripe customer ID |
-| `plan` | TEXT | `free`, `pro` (legacy `paid` and `team` are mapped to `pro`) |
+| `stripe_subscription_id` | TEXT UNIQUE | Legacy Stripe subscription ID |
+| `stripe_customer_id` | TEXT | Legacy Stripe customer ID |
+| `plan` | TEXT | Legacy plan value (`free`, `pro`; `paid`/`team` map to `pro`) |
 | `status` | TEXT | `active`, `past_due`, `canceled` |
 | `current_period_start` | TIMESTAMPTZ | Billing period start |
 | `current_period_end` | TIMESTAMPTZ | Billing period end |
@@ -144,13 +144,13 @@ Stripe billing state.
 | `created_at` | TIMESTAMPTZ | Record creation |
 | `updated_at` | TIMESTAMPTZ | Last update |
 
-Indexes: `idx_subscriptions_user (user_id)`, `idx_subscriptions_stripe (stripe_subscription_id)`
+Indexes: `idx_subscriptions_user (user_id)`, `idx_subscriptions_stripe (stripe_subscription_id)` (legacy compatibility)
 
 ---
 
 ### `release_drafts`
 
-Draft release notes (pro workflow).
+Draft release notes workflow (available to all users in OSS mode).
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -200,7 +200,7 @@ Index: `idx_revisions_draft (draft_id, revision_number)`
 
 ### `project_settings`
 
-Saved per-project defaults (pro).
+Saved per-project defaults (available in OSS mode).
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -260,7 +260,7 @@ Auto-prune: expired entries deleted on startup.
 
 ### `webhook_events`
 
-Stripe webhook idempotency table.
+Legacy Stripe webhook idempotency table retained for compatibility.
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -290,7 +290,7 @@ Index: `idx_gh_install_user (user_id)`
 
 ### `team_api_keys`
 
-Per-seat API keys for pro org plans.
+Team API keys for org workflows (legacy seat metadata may still exist).
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -311,7 +311,7 @@ Index: `idx_team_keys_org (org_id) WHERE revoked_at IS NULL`
 
 ### `audit_events`
 
-Audit trail for billing and admin actions.
+Audit trail for admin, org, and legacy billing actions.
 
 | Column | Type | Notes |
 |--------|------|-------|

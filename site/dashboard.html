@@ -1043,9 +1043,9 @@
 <!-- Upgrade Modal -->
 <div class="upgrade-overlay" id="upgradeOverlay">
   <div class="upgrade-card">
-    <h3 id="upgradeTitle">Upgrade Required</h3>
+    <h3 id="upgradeTitle">Support Cullit</h3>
     <p id="upgradeMsg"></p>
-    <a class="btn-upgrade" id="upgradeAction" href="pricing.html">View Plans</a>
+    <a class="btn-upgrade" id="upgradeAction" href="pricing.html">Support Project</a>
     <button class="btn-dismiss" data-action="dismiss-upgrade">Not now</button>
   </div>
 </div>
@@ -1059,7 +1059,7 @@
     <a href="docs.html">Docs</a>
     <a href="tutorial.html">Tutorial</a>
     <a href="https://www.npmjs.com/package/cullit" target="_blank" rel="noopener noreferrer">npm</a>
-    <a href="pricing.html">Pricing</a>
+    <a href="pricing.html">Support</a>
     <a href="releases.html">Releases</a>
     <a href="dashboard.html" class="active">Dashboard</a>
     <div class="nav-user" id="navUser" style="display:none">
@@ -1184,7 +1184,7 @@
       <button class="dash-tab" data-tab="team">&#128101; Team</button>
       <button class="dash-tab" data-tab="settings">&#9881;&#65039; Settings</button>
       <button class="dash-tab" data-tab="changelog">&#128240; Changelog</button>
-      <button class="dash-tab" data-tab="billing">&#128179; Billing</button>
+      <button class="dash-tab" data-tab="billing">&#128179; Support</button>
     </div>
 
     <!-- GENERATE TAB -->
@@ -1251,8 +1251,8 @@
       <div class="panel" style="margin-top:1rem" id="draftTeamGate">
         <div class="panel-body" style="text-align:center;padding:2rem">
           <div style="font-size:1.2rem;margin-bottom:0.5rem">&#128274;</div>
-          <p style="font-size:0.85rem;color:var(--text-dim)">Release drafts and approval workflows require a <strong>Team</strong> plan.</p>
-          <button class="btn-small" data-action="switch-tab" data-tab="billing" style="margin-top:0.75rem">View Plans</button>
+          <p style="font-size:0.85rem;color:var(--text-dim)">Draft workflows are available in open-source mode. If you find this useful, consider sponsoring the project.</p>
+          <button class="btn-small" data-action="switch-tab" data-tab="billing" style="margin-top:0.75rem">Support Project</button>
         </div>
       </div>
     </div>
@@ -1402,14 +1402,14 @@
       <div class="panel" style="margin-top:1rem" id="settingsTeamGate">
         <div class="panel-body" style="text-align:center;padding:2rem">
           <div style="font-size:1.2rem;margin-bottom:0.5rem">&#128274;</div>
-          <p style="font-size:0.85rem;color:var(--text-dim)">Saved project settings require a <strong>Team</strong> plan.</p>
-          <button class="btn-small" data-action="switch-tab" data-tab="billing" style="margin-top:0.75rem">View Plans</button>
+          <p style="font-size:0.85rem;color:var(--text-dim)">Project settings are available in open-source mode. Sponsorship helps keep this maintained.</p>
+          <button class="btn-small" data-action="switch-tab" data-tab="billing" style="margin-top:0.75rem">Support Project</button>
         </div>
       </div>
       <div class="panel" style="margin-top:1rem" id="settingsApiKey">
         <div class="panel-header">&#128273; API Key</div>
         <div class="panel-body">
-          <p style="font-size:0.8rem;color:var(--text-dim);margin:0 0 0.75rem">Use this key in your GitHub Actions workflow or CLI to authenticate with Cullit.</p>
+          <p style="font-size:0.8rem;color:var(--text-dim);margin:0 0 0.75rem">Optional hosted API key for dashboard-backed routes. Core OSS generation only needs provider keys (or <code>--provider none</code>).</p>
           <div style="display:flex;gap:0.5rem;align-items:center">
             <input id="apiKeyDisplay" type="password" readonly style="flex:1;padding:0.45rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.8rem;font-family:'Space Mono',monospace" value="">
             <button class="btn-small" id="apiKeyToggle" data-action="toggle-api-key" style="font-size:0.7rem;min-width:3.5rem">Show</button>
@@ -1420,9 +1420,9 @@
             <div style="margin-top:0.5rem;font-size:0.78rem;color:var(--text-dim);line-height:1.6">
               <p style="margin:0 0 0.5rem"><strong>GitHub Actions</strong> &mdash; add to your repository secrets:</p>
               <pre style="background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:0.5rem;overflow-x:auto;font-size:0.75rem">env:
-  CULLIT_API_KEY: ${{ secrets.CULLIT_API_KEY }}</pre>
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}</pre>
               <p style="margin:0.75rem 0 0.5rem"><strong>CLI</strong> &mdash; set as environment variable:</p>
-              <pre style="background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:0.5rem;overflow-x:auto;font-size:0.75rem">export CULLIT_API_KEY="your-key-here"</pre>
+              <pre style="background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:0.5rem;overflow-x:auto;font-size:0.75rem">export ANTHROPIC_API_KEY="your-provider-key"</pre>
             </div>
           </details>
           <div style="margin-top:0.75rem;border-top:1px solid var(--border);padding-top:0.75rem">
@@ -1500,12 +1500,12 @@
       </div>
     </div>
 
-    <!-- BILLING TAB -->
+    <!-- SUPPORT TAB -->
     <div class="tab-content" id="tab-billing">
       <div class="billing-header">
         <div class="billing-plan-card">
-          <div class="billing-plan-label">Current Plan</div>
-          <div class="billing-plan-name" id="billingPlanName">Free</div>
+          <div class="billing-plan-label">Current Mode</div>
+          <div class="billing-plan-name" id="billingPlanName">Open Source</div>
           <div class="billing-plan-status" id="billingPlanStatus"></div>
         </div>
         <div class="billing-actions" id="billingActions"></div>
@@ -1532,7 +1532,7 @@
           <div class="plan-tier">Free</div>
           <div class="plan-price">$0<span>/mo</span></div>
           <ul class="plan-features">
-            <li>3 generations / month</li>
+            <li>Unlimited generations</li>
             <li>3 projects</li>
             <li>AI generation (BYOK)</li>
           </ul>
@@ -1552,16 +1552,16 @@
             <input type="number" id="dashProSeats" min="1" max="100" value="1" style="width:4rem;margin:0 0.4rem;background:var(--bg-card);color:var(--text);border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:0.2rem 0.4rem;font-size:0.75rem;text-align:center">
             <span id="dashProTotal" style="font-size:0.8rem;font-weight:600;color:var(--accent)">$9/mo</span>
           </div>
-          <button class="btn-small plan-upgrade-btn" style="margin-top:0.5rem" data-action="upgrade-pro">Upgrade</button>
+          <button class="btn-small plan-upgrade-btn" style="margin-top:0.5rem" data-action="upgrade-pro">Support</button>
           <div id="manageSeatsSection" style="display:none;margin-top:0.5rem;text-align:center">
             <div style="display:flex;align-items:center;justify-content:center;gap:0.3rem;margin-bottom:0.4rem">
               <button class="btn-small" id="seatDecrBtn" data-action="seat-decr" style="width:2rem;height:2rem;padding:0;font-size:1rem;line-height:1">−</button>
               <button class="btn-small" id="seatIncrBtn" data-action="seat-incr" style="width:2rem;height:2rem;padding:0;font-size:1rem;line-height:1">+</button>
             </div>
             <button class="btn-small" id="updateSeatsBtn" data-action="update-seats" style="display:none;margin-top:0.3rem;width:100%;background:var(--teal);color:#fff">Update Seats</button>
-            <p id="prorationNote" style="display:none;font-size:0.7rem;color:var(--text-dim);margin-top:0.3rem;line-height:1.4">Changes are prorated — you'll be charged or credited for the remainder of your billing cycle.</p>
+            <p id="prorationNote" style="display:none;font-size:0.7rem;color:var(--text-dim);margin-top:0.3rem;line-height:1.4">Seat billing is retired in open-source mode.</p>
           </div>
-          <span style="display:block;font-size:0.7rem;color:var(--accent);margin-top:0.4rem;opacity:0.85">Save 10% with annual billing</span>
+          <span style="display:block;font-size:0.7rem;color:var(--accent);margin-top:0.4rem;opacity:0.85">Support via GitHub Sponsors</span>
         </div>
         <div class="billing-plan-option" id="planEnterprise">
           <div class="plan-tier">Enterprise</div>
@@ -1572,7 +1572,7 @@
             <li>SSO &amp; SAML</li>
             <li>Dedicated support</li>
           </ul>
-          <a class="btn-small plan-upgrade-btn" href="mailto:sales@cullit.io?subject=Cullit%20Enterprise">Contact Sales</a>
+          <a class="btn-small plan-upgrade-btn" href="https://github.com/sponsors/mttaylor" target="_blank" rel="noopener noreferrer">Sponsor on GitHub</a>
         </div>
       </div>
 
@@ -1634,11 +1634,11 @@
 
 <!-- FOOTER -->
 <footer style="text-align: center; padding: 2rem 1rem; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 0.85rem;">
-  <p>&copy; 2026 Cullit &mdash; built by one developer. <a href="https://github.com/sponsors/mttaylor" target="_blank" rel="noopener" style="color: #ff69b4; text-decoration: none;">&#10084;&#65039; Sponsor</a> &middot; <a href="https://github.com/mttaylor/cullit-oss" target="_blank" rel="noopener" style="color: var(--accent); text-decoration: none;">&#11088; Star on GitHub</a></p>
+  <p>&copy; 2026 Cullit &mdash; built by one developer. <a href="https://github.com/sponsors/mttaylor" target="_blank" rel="noopener" style="color: #ff69b4; text-decoration: none;">&#10084;&#65039; Sponsor</a> &middot; <a href="https://github.com/mttaylor/cullit" target="_blank" rel="noopener" style="color: var(--accent); text-decoration: none;">&#11088; Star on GitHub</a></p>
   <div style="margin-top: 0.5rem; display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;">
     <a href="terms.html" style="color: var(--text-dim);">Terms</a>
     <a href="privacy.html" style="color: var(--text-dim);">Privacy</a>
-    <a href="mailto:sales@cullit.io" style="color: var(--text-dim);">sales@cullit.io</a>
+    <a href="mailto:support@cullit.io" style="color: var(--text-dim);">support@cullit.io</a>
   </div>
 </footer>
 

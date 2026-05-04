@@ -1,57 +1,26 @@
-# Pricing
+# Support Cullit
 
-Cullit has three tiers: **Free**, **Pro**, and **Enterprise**.
+Cullit is fully free and open source.
 
-| Plan | Price | Generations | Projects | Features |
-| --- | --- | --- | --- | --- |
-| Free | $0 | 3 / month | 3 | Template only, stdout/file output |
-| Pro | $9 / seat / month | 500+ / month (100/seat scaling) | 100+ (5/seat scaling) | All features: AI providers, enrichment, publishers, dashboard, orgs, drafts, changelogs |
-| Enterprise | Custom | Unlimited | Unlimited | SSO/SAML, dedicated support, on-prem, custom SLA |
+There are no paid tiers, seat limits, or checkout flows. All features are available to everyone.
 
-Annual billing is available for Pro at **$8.10 / seat / month** ($97.20 / seat / year — 10% off).
+## What Changed
 
-## Feature Comparison
+- Removed paid plan gating from feature access
+- Retired Stripe checkout and billing endpoints
+- Kept tier fields only for backward compatibility with older stored data
 
-| Feature | Free | Pro | Enterprise |
-| --- | --- | --- | --- |
-| Template-based generation | ✓ | ✓ | ✓ |
-| AI providers (BYOK) | 3 gens/month | ✓ | ✓ |
-| Jira & Linear enrichment | — | ✓ | ✓ |
-| Audience & tone control | — | ✓ | ✓ |
-| Multi-format output (Markdown, HTML, JSON) | ✓ | ✓ | ✓ |
-| Slack, Discord, Teams publishers | — | ✓ | ✓ |
-| GitHub Release & GitLab Release publishers | — | ✓ | ✓ |
-| Confluence & Notion publishers | — | ✓ | ✓ |
-| Hosted changelog & embeddable widget | — | ✓ | ✓ |
-| GitLab & Bitbucket collectors | — | ✓ | ✓ |
-| Dashboard & generation history | — | ✓ | ✓ |
-| GitHub App (auto-generate on release) | — | ✓ | ✓ |
-| Drafts & approvals | — | ✓ | ✓ |
-| Organization management & team API keys | — | ✓ | ✓ |
-| Project templates | — | ✓ | ✓ |
-| Audit logs | — | ✓ | ✓ |
-| SSO / SAML | — | — | ✓ |
-| Dedicated support & SLA | — | — | ✓ |
-| On-premises deployment | — | — | ✓ |
+## How To Support
+
+- GitHub Sponsors: https://github.com/sponsors/mttaylor
+- Star the repo: https://github.com/mttaylor/cullit
+- Contribute code/docs/tests via pull requests
 
 ## Messaging Guidance
 
 When describing Cullit publicly:
 
-1. Lead with **Free to try**
-2. Position **Pro** as the default production plan
-3. Describe collaboration, org keys, approvals, and governance as part of paid usage
-4. Reserve **Enterprise** for SSO, procurement, and support-heavy deals
-
-## Environment Variables
-
-The primary Stripe price variables are:
-
-- `STRIPE_PRO_PRICE_ID` — Stripe price ID for the Pro plan ($9/seat/month)
-- `STRIPE_PRO_ANNUAL_PRICE_ID` — Stripe price ID for the Pro annual plan ($97.20/seat/year)
-
-> **Fallback:** The older `STRIPE_PAID_PRICE_ID`, `STRIPE_PAID_ANNUAL_PRICE_ID`, `STRIPE_TEAM_PRICE_ID`, and `STRIPE_TEAM_ANNUAL_PRICE_ID` variables still work as fallbacks if the `STRIPE_PRO_*` variants are not set.
-
-## Legacy Tier Mapping
-
-Existing subscribers on the former **Pro** or **Team** plans are automatically mapped to the **Pro** tier at the code level. No action is required — all Pro/Team features are included in Pro. The `STRIPE_PAID_*` and `STRIPE_TEAM_*` environment variables remain functional as fallbacks during the transition period.
+1. Lead with fully open source and free to use.
+2. Mention BYOK AI provider support.
+3. Point supporters to GitHub Sponsors.
+4. Avoid references to Pro, Enterprise, subscriptions, or seat pricing.

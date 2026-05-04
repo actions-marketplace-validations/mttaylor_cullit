@@ -77,20 +77,22 @@ Required environment variables:
 | `CULLIT_AI_MODEL` | Model override (e.g. `gpt-4o`, `claude-sonnet-4-20250514`) |
 | `CULLIT_AI_API_KEY` | API key for the chosen AI provider |
 
-## Pricing
+## Open Source Model
 
-| Plan | Price | What you get |
-|------|-------|--------------|
-| **Free** | $0 | Template workflows, 3 gens/month, local evaluation |
-| **Pro** | $9/seat/month | AI-powered notes, enrichment, hosted workflows, all features. Annual billing available ($8.10/seat/month). |
-| **Enterprise** | Custom | SSO/SAML, SLA, on-prem, unlimited generations &amp; projects — [sales@cullit.io](mailto:sales@cullit.io) |
+Cullit is fully open source and free to use.
 
-The GitHub App is **free** with template-based notes. Activate AI-powered generation with a `CULLIT_API_KEY` on a Pro seat.
+- No paid tiers
+- No checkout flow
+- No feature gating
+
+If the project helps your team, support development via GitHub Sponsors:
+
+- https://github.com/sponsors/mttaylor
 
 ## Support
 
 - [Documentation](https://cullit.io/docs.html#github-app)
-- [GitHub Issues](https://github.com/mttaylor/cullit-oss/issues)
+- [GitHub Issues](https://github.com/mttaylor/cullit/issues)
 - Email: matt@cullit.io
 
 ## Links

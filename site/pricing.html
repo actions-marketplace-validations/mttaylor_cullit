@@ -1,772 +1,121 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0f1117">
-<title>Pricing — Cullit</title>
-<meta name="description" content="Cullit pricing — AI-generated release notes grounded in git, Jira, and Linear. Start free, upgrade for model choice, audience-aware output, and team release workflows.">
-<meta property="og:title" content="Pricing — Cullit">
-<meta property="og:description" content="Cullit pricing — AI release notes from $0/mo. Free, Pro & Enterprise plans.">
+<title>Support Cullit - Open Source</title>
+<meta name="description" content="Cullit is fully open source and free to use. Support development through GitHub Sponsors and community contributions.">
+<meta property="og:title" content="Support Cullit - Open Source">
+<meta property="og:description" content="Cullit is fully open source. Sponsor development on GitHub.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://cullit.io/pricing">
-<meta property="og:image" content="https://cullit.io/og-image.png">
-<meta property="og:site_name" content="Cullit">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:site" content="@cullit_io">
-<meta name="twitter:title" content="Pricing — Cullit">
-<meta name="twitter:description" content="Cullit pricing — AI release notes from $0/mo. Free, Pro & Enterprise plans.">
-<meta name="twitter:image" content="https://cullit.io/og-image.png">
 <link rel="canonical" href="https://cullit.io/pricing">
-<link rel="icon" href="/favicon.ico" sizes="any">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="manifest" href="/manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Chakra+Petch:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #0f1117;
-    --bg-card: #161822;
-    --bg-card-hover: #1e2030;
-    --accent: #5eead4;
-    --accent-dim: #2dd4bf;
+    --card: #161822;
     --text: #d4d4e0;
-    --text-dim: #8f92ab;
-    --text-bright: #f0f0f5;
+    --muted: #8f92ab;
+    --accent: #5eead4;
     --border: #282a3a;
   }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-
+  * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: 'DM Sans', sans-serif;
-    background: var(--bg);
+    background: radial-gradient(circle at 20% 20%, rgba(94, 234, 212, 0.08), transparent 40%), var(--bg);
     color: var(--text);
     line-height: 1.7;
-    overflow-x: hidden;
   }
-
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 9999;
-  }
-
-  /* NAV */
   nav {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    padding: 1rem 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(15, 17, 23, 0.85);
-    backdrop-filter: blur(20px);
+    padding: 1rem 1.5rem;
     border-bottom: 1px solid var(--border);
-    z-index: 100;
+    background: rgba(15, 17, 23, 0.88);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
   }
-  .logo {
-    font-family: 'Space Mono', monospace;
-    font-size: 1.3rem;
-    font-weight: 700;
-    color: var(--accent);
-    text-decoration: none;
-    letter-spacing: -0.5px;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  .logo-mark { width: 28px; height: 28px; flex-shrink: 0; }
-  .logo span { color: var(--text-dim); font-weight: 400; }
-  .nav-links { display: flex; gap: 2rem; align-items: center; }
-  .nav-links a {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.9rem;
-    color: var(--text-dim);
-    text-decoration: none;
-    transition: color 0.2s;
-  }
-  .nav-links a:hover, .nav-links a.active { color: var(--accent); }
-  .nav-cta {
-    background: var(--accent) !important;
-    color: var(--bg) !important;
-    padding: 0.5rem 1.2rem !important;
-    border-radius: 4px;
-    font-weight: 600 !important;
-    font-size: 0.85rem !important;
-    line-height: 1.2;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.2s, box-shadow 0.2s !important;
-  }
-  .nav-cta:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 20px rgba(94,234,212,0.25);
-  }
-
-  /* PRICING */
-  .pricing-container {
-    max-width: 1320px;
-    margin: 0 auto;
-    padding: 8rem 2rem 4rem;
-  }
-
-  .pricing-header {
-    text-align: center;
-    margin-bottom: 3rem;
-  }
-
-  .pricing-header h1 {
+  nav a { color: var(--muted); text-decoration: none; font-family: 'Space Mono', monospace; font-size: 0.9rem; }
+  nav .links { display: flex; gap: 1.2rem; align-items: center; }
+  nav .cta { color: #0f1117; background: var(--accent); padding: 0.45rem 0.9rem; border-radius: 8px; font-weight: 700; }
+  .container { max-width: 980px; margin: 0 auto; padding: 3rem 1.25rem 4rem; }
+  h1 {
     font-family: 'Chakra Petch', sans-serif;
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: var(--text-bright);
-    margin-bottom: 0.75rem;
+    font-size: clamp(2rem, 4vw, 3rem);
+    margin-bottom: 0.8rem;
   }
-
-  .pricing-header p {
-    color: var(--text-dim);
-    font-size: 1.05rem;
-    max-width: 520px;
-    margin: 0 auto;
-  }
-
-  .pricing-grid {
+  .lead { color: var(--muted); max-width: 760px; margin-bottom: 2rem; }
+  .grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem;
-    margin-bottom: 4rem;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    margin-bottom: 2rem;
   }
-
-  .pricing-card {
-    background: var(--bg-card);
+  .card {
     border: 1px solid var(--border);
+    background: var(--card);
     border-radius: 12px;
-    padding: 2rem 1.5rem;
-    display: flex;
-    flex-direction: column;
-    transition: border-color 0.2s;
+    padding: 1.1rem;
   }
-
-  .pricing-card:hover {
-    border-color: var(--accent);
-  }
-
-  .pricing-card.featured {
-    border-color: var(--accent);
-    position: relative;
-  }
-
-  .pricing-card.featured::before {
-    content: 'Most Popular';
-    position: absolute;
-    top: -12px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--accent);
-    color: var(--bg);
-    font-family: 'Space Mono', monospace;
-    font-size: 0.7rem;
-    font-weight: 700;
-    padding: 0.25rem 0.75rem;
-    border-radius: 20px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .plan-name {
-    font-family: 'Chakra Petch', sans-serif;
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: var(--text-bright);
-    margin-bottom: 0.5rem;
-  }
-
-  .plan-price {
-    font-family: 'Chakra Petch', sans-serif;
-    font-size: 2.2rem;
-    font-weight: 700;
-    color: var(--accent);
-    margin-bottom: 0.25rem;
-  }
-
-  .plan-price .period {
-    font-size: 0.85rem;
-    font-weight: 400;
-    color: var(--text-dim);
-  }
-
-  .plan-desc {
-    font-size: 0.85rem;
-    color: var(--text-dim);
-    margin-bottom: 1.5rem;
-    min-height: 2.5rem;
-  }
-
-  .plan-features {
-    list-style: none;
-    margin-bottom: 1.5rem;
-    flex: 1;
-  }
-
-  .plan-features li {
-    font-size: 0.88rem;
-    color: var(--text);
-    padding: 0.4rem 0;
-    border-bottom: 1px solid rgba(40, 42, 58, 0.5);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .plan-features li:last-child {
-    border-bottom: none;
-  }
-
-  .plan-features .check {
-    color: var(--accent);
-    font-size: 0.9rem;
-    flex-shrink: 0;
-  }
-
-  .plan-features .dash {
-    color: var(--text-dim);
-    font-size: 0.9rem;
-    flex-shrink: 0;
-  }
-
-  .plan-btn {
-    display: block;
-    text-align: center;
-    padding: 0.75rem;
+  .card h2 { font-family: 'Chakra Petch', sans-serif; font-size: 1.25rem; margin-bottom: 0.4rem; }
+  .card p { color: var(--muted); font-size: 0.95rem; }
+  .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.25rem; }
+  .btn {
+    display: inline-block;
+    text-decoration: none;
+    padding: 0.7rem 1rem;
     border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.9rem;
-    text-decoration: none;
-    transition: opacity 0.2s;
-  }
-
-  .plan-btn:hover { opacity: 0.85; }
-
-  .plan-btn-primary {
-    background: var(--accent);
-    color: var(--bg);
-  }
-
-  .plan-btn-outline {
-    border: 2px solid var(--border);
-    color: var(--text);
-  }
-
-  .plan-btn-outline:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
-  /* BILLING TOGGLE */
-  .billing-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    margin-bottom: 2rem;
-  }
-  .billing-toggle label {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.9rem;
-    color: var(--text-dim);
-    cursor: pointer;
-    transition: color 0.2s;
-    user-select: none;
-  }
-  .billing-toggle label.active {
-    color: var(--text-bright);
-  }
-  .toggle-track {
-    width: 48px;
-    height: 26px;
-    background: var(--border);
-    border-radius: 13px;
-    cursor: pointer;
-    position: relative;
-    transition: background 0.2s;
-  }
-  .toggle-track.on {
-    background: var(--accent);
-  }
-  .toggle-thumb {
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 20px;
-    height: 20px;
-    background: var(--bg);
-    border-radius: 50%;
-    transition: transform 0.2s;
-  }
-  .toggle-track.on .toggle-thumb {
-    transform: translateX(22px);
-  }
-  .billing-save-badge {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.7rem;
-    font-weight: 700;
-    background: rgba(94, 234, 212, 0.15);
-    color: var(--accent);
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-  }
-  .plan-annual-note {
-    font-size: 0.75rem;
-    color: var(--text-dim);
-    margin-top: -0.1rem;
-    margin-bottom: 0.25rem;
-  }
-
-  /* Seat selector */
-  .seat-selector {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-  }
-  .seat-selector label {
-    font-size: 0.85rem;
-    color: var(--text-dim);
-    white-space: nowrap;
-  }
-  .seat-input {
-    appearance: none;
-    -moz-appearance: textfield;
-    background: var(--bg);
-    color: var(--accent);
     border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 0.45rem 0.6rem;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.95rem;
-    font-weight: 600;
-    width: 72px;
-    text-align: center;
-    transition: border-color 0.2s;
-  }
-  .seat-input::-webkit-inner-spin-button,
-  .seat-input::-webkit-outer-spin-button {
-    opacity: 1;
-  }
-  .seat-input:hover,
-  .seat-input:focus {
-    border-color: var(--accent);
-    outline: none;
-  }
-  .seat-total {
-    font-family: 'Chakra Petch', sans-serif;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-bright);
-    margin-bottom: 0.5rem;
-  }
-
-  /* FAQ */
-  .faq-section {
-    max-width: 700px;
-    margin: 0 auto 3rem;
-  }
-
-  .faq-section h2 {
-    font-family: 'Chakra Petch', sans-serif;
-    font-size: 1.6rem;
-    color: var(--text-bright);
-    text-align: center;
-    margin-bottom: 2rem;
-  }
-
-  .faq-item {
-    border-bottom: 1px solid var(--border);
-    padding: 1.25rem 0;
-  }
-
-  .faq-item:first-of-type {
-    border-top: 1px solid var(--border);
-  }
-
-  .faq-q {
-    font-family: 'Chakra Petch', sans-serif;
-    font-weight: 600;
-    font-size: 1rem;
-    color: var(--text-bright);
-    margin-bottom: 0.5rem;
-  }
-
-  .faq-a {
-    font-size: 0.9rem;
-    color: var(--text-dim);
-    line-height: 1.6;
-  }
-
-  .faq-a a {
-    color: var(--accent);
-    text-decoration: none;
-  }
-
-  .faq-a a:hover { text-decoration: underline; }
-
-  /* COMPARISON TABLE */
-  .compare-section {
-    max-width: 1100px;
-    margin: 3rem auto;
-    padding: 0 2rem;
-  }
-  .compare-section h2 {
-    font-family: 'Chakra Petch', sans-serif;
-    font-size: 1.6rem;
-    text-align: center;
-    margin-bottom: 1.5rem;
     color: var(--text);
-  }
-  .compare-wrap {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .compare-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.85rem;
-  }
-  .compare-table th,
-  .compare-table td {
-    padding: 0.55rem 0.75rem;
-    border-bottom: 1px solid var(--border);
-    text-align: center;
-    white-space: nowrap;
-  }
-  .compare-table th:first-child,
-  .compare-table td:first-child {
-    text-align: left;
-    white-space: normal;
-    min-width: 200px;
-  }
-  .compare-table thead th {
-    font-family: 'Chakra Petch', sans-serif;
     font-weight: 600;
-    color: var(--accent);
-    font-size: 0.9rem;
-    padding-bottom: 0.75rem;
   }
-  .compare-table tbody tr:hover {
-    background: rgba(94, 234, 212, 0.04);
-  }
-  .compare-table .cmp-check { color: var(--accent); }
-  .compare-table .cmp-dash { color: var(--text-dim); }
-
-  /* FOOTER */
-  footer {
-    padding: 3rem 2rem;
-    border-top: 1px solid var(--border);
-    text-align: center;
-  }
-  .footer-brand {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.8rem;
-    color: var(--text-dim);
-    margin-bottom: 0.5rem;
-  }
-  .footer-brand a { color: var(--accent); text-decoration: none; }
-  .footer-links {
-    display: flex;
-    justify-content: center;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-  }
-  .footer-links a {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.75rem;
-    color: var(--text-dim);
-    text-decoration: none;
-    transition: color 0.2s;
-  }
-  .footer-links a:hover { color: var(--accent); }
-
-  /* HAMBURGER */
-  .hamburger {
-    display: none;
-    background: none; border: none; cursor: pointer;
-    flex-direction: column; gap: 5px; padding: 4px; z-index: 301;
-  }
-  .hamburger span {
-    display: block; width: 22px; height: 2px;
-    background: var(--text); border-radius: 2px;
-    transition: transform 0.3s, opacity 0.3s;
-  }
-  .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-  .hamburger.open span:nth-child(2) { opacity: 0; }
-  .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
-
-  /* RESPONSIVE */
-  @media (max-width: 1024px) {
-    .pricing-grid { grid-template-columns: repeat(2, 1fr); }
-  }
-
-  @media (max-width: 768px) {
-    .pricing-grid { grid-template-columns: repeat(2, 1fr); }
-    .pricing-container { padding: 6rem 1.25rem 3rem; }
-    .pricing-header h1 { font-size: 1.8rem; }
-    .hamburger { display: flex; }
-    .nav-links {
-      display: none; position: fixed; top: 52px; right: 0;
-      background: var(--bg); border: 1px solid var(--border);
-      border-radius: 0 0 0 8px;
-      flex-direction: column; padding: 1rem 1.5rem; gap: 0.8rem;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-    }
-    .nav-links.open { display: flex; }
-    footer { padding: 2rem 1rem; }
-    .footer-links { flex-wrap: wrap; gap: 1rem; }
-    .footer-links a { font-size: 0.7rem; }
-  }
-
-  @media (max-width: 520px) {
-    .pricing-grid { grid-template-columns: 1fr; }
-  }
-.skip-link:focus{position:fixed!important;left:1rem!important;top:1rem!important;width:auto!important;height:auto!important;overflow:visible!important;clip:auto!important;border-radius:6px;z-index:10000;}
+  .btn.primary { background: var(--accent); color: #0f1117; border-color: transparent; }
+  .note { margin-top: 1.5rem; color: var(--muted); font-size: 0.92rem; }
 </style>
 </head>
 <body>
-<a href="#main" class="skip-link" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;z-index:9999;padding:0.5rem 1rem;background:var(--accent,#5eead4);color:#0f1117;font-weight:700;text-decoration:none;">Skip to content</a>
-<noscript><p style="background:#161822;color:#d4d4e0;padding:1rem;text-align:center;">JavaScript is required for the full Cullit experience. Core content is still accessible.</p></noscript>
-
 <nav>
-  <a href="index.html" class="logo"><svg class="logo-mark" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#0f1117"/><path d="M42 22A17 17 0 1 0 42 42" stroke="#5eead4" stroke-width="5" stroke-linecap="round" fill="none"/><circle cx="50" cy="32" r="3.5" fill="#2dd4bf"/></svg>cullit<span>.io</span></a>
-  <div class="nav-links" id="navLinks">
-    <a href="index.html">Home</a>
+  <a href="index.html">Cullit</a>
+  <div class="links">
     <a href="docs.html">Docs</a>
-    <a href="tutorial.html">Tutorial</a>
-    <a href="https://www.npmjs.com/package/cullit" target="_blank" rel="noopener noreferrer">npm</a>
-    <a href="pricing.html" class="active">Pricing</a>
-    <a href="releases.html">Releases</a>
     <a href="dashboard.html">Dashboard</a>
-    <a href="dashboard.html" class="nav-cta">Get Started Free</a>
+    <a href="pricing.html" class="cta">Support</a>
   </div>
-  <button class="hamburger" id="hamburger" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
 </nav>
 
-<main class="pricing-container">
-  <header class="pricing-header">
-    <h1>Simple, transparent <span style="color: var(--accent)">pricing</span></h1>
-    <p>Simple, transparent pricing. Start free, upgrade when you're ready.</p>
-  </header>
+<main class="container">
+  <h1>Cullit is fully free and open source</h1>
+  <p class="lead">There are no paid tiers, no checkout flow, and no feature paywalls. If Cullit saves your team time, support ongoing development through GitHub Sponsors.</p>
 
-  <div class="billing-toggle">
-    <label id="lblMonthly" class="active">Monthly</label>
-    <div class="toggle-track" id="billingToggle" role="switch" aria-checked="false" tabindex="0">
-      <div class="toggle-thumb"></div>
-    </div>
-    <label id="lblAnnual">Annual</label>
-    <span class="billing-save-badge">Save 10%</span>
+  <section class="grid">
+    <article class="card">
+      <h2>Use Everything</h2>
+      <p>All features are available to everyone, including AI providers, integrations, dashboard workflows, and publishers.</p>
+    </article>
+    <article class="card">
+      <h2>Sponsor Development</h2>
+      <p>Recurring or one-time support through GitHub Sponsors helps fund maintenance, fixes, and new features.</p>
+    </article>
+    <article class="card">
+      <h2>Contribute</h2>
+      <p>Contributions, issue triage, docs updates, and testing feedback are all meaningful ways to help the project grow.</p>
+    </article>
+  </section>
+
+  <div class="actions">
+    <a class="btn primary" href="https://github.com/sponsors/mttaylor" target="_blank" rel="noopener noreferrer">Sponsor on GitHub</a>
+    <a class="btn" href="https://github.com/mttaylor/cullit" target="_blank" rel="noopener noreferrer">View Repository</a>
+    <a class="btn" href="dashboard.html">Open Dashboard</a>
   </div>
 
-  <section style="max-width:900px;margin:0 auto 2rem;padding:1rem 1.25rem;border:1px solid var(--border);border-radius:10px;background:var(--bg-card)">
-    <h2 style="font-family:'Chakra Petch',sans-serif;font-size:1.2rem;margin-bottom:0.5rem">Upgrade in 4 steps</h2>
-    <ol style="margin:0;padding-left:1.2rem;color:var(--text-dim);line-height:1.7">      <li>Sign in with <strong>GitHub</strong> &mdash; no email or password required.</li>      <li>Choose the Pro plan that fits your seats today and complete checkout.</li>
-      <li>Install <code style="background:#0d0d14;padding:0.1rem 0.35rem;border-radius:4px">@cullit/licensed</code> from your private registry.</li>
-      <li>Set your <code style="background:#0d0d14;padding:0.1rem 0.35rem;border-radius:4px">CULLIT_API_KEY</code> and run your first generation.</li>
-    </ol>
-  </section>
-
-  <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:2rem;">
-    <div class="pricing-card" style="padding:1.25rem;">
-      <div class="plan-name" style="font-size:1rem;">Grounded AI</div>
-      <p class="plan-desc" style="min-height:0;margin-bottom:0;">Cullit combines commits, ticket context, and release metadata before the model writes, so the output reads like a release note, not a prompt experiment.</p>
-    </div>
-    <div class="pricing-card" style="padding:1.25rem;">
-      <div class="plan-name" style="font-size:1rem;">Model Choice</div>
-      <p class="plan-desc" style="min-height:0;margin-bottom:0;">Bring your own Claude, OpenAI, Gemini, or Ollama setup. Optimize for quality, cost, privacy, or local inference.</p>
-    </div>
-    <div class="pricing-card" style="padding:1.25rem;">
-      <div class="plan-name" style="font-size:1rem;">Audience Control</div>
-      <p class="plan-desc" style="min-height:0;margin-bottom:0;">Generate technical notes for engineers, cleaner language for customers, and summaries for leadership from the same release range.</p>
-    </div>
-  </section>
-
-  <div class="pricing-grid">
-
-    <!-- FREE -->
-    <div class="pricing-card">
-      <div class="plan-name">Free</div>
-      <div class="plan-price">$0 <span class="period">/ mo</span></div>
-      <p class="plan-desc">Try release notes with template-based generation and 3 AI generations per month.</p>
-      <ul class="plan-features">
-        <li><span class="check">&#10003;</span> 3 generations / month</li>
-        <li><span class="check">&#10003;</span> 3 projects</li>
-        <li><span class="check">&#10003;</span> Template-based generation</li>
-        <li><span class="check">&#10003;</span> Stdout &amp; file output</li>
-        <li><span class="check">&#10003;</span> All AI providers (BYOK)</li>
-        <li><span class="check">&#10003;</span> CLI &amp; GitHub Action</li>
-      </ul>
-      <a href="dashboard.html" class="plan-btn plan-btn-outline">Get Started Free</a>
-    </div>
-
-    <!-- PRO -->
-    <div class="pricing-card featured" id="proCard">
-      <div class="popular-badge">Most Popular</div>
-      <div class="plan-name">Pro</div>
-      <div class="plan-price" id="proPrice">$9.00 <span class="period">/ seat / mo</span></div>
-      <p class="plan-annual-note" id="proAnnualNote" style="display:none"></p>
-      <div class="seat-selector">
-        <label for="proSeats">Seats:</label>
-        <input type="number" id="proSeats" class="seat-input" min="1" max="100" value="1">
-      </div>
-      <div class="seat-total" id="proTotal">Total: $9.00 / mo</div>
-      <p class="plan-desc">Everything unlocked. All AI providers, all publishers, enrichment, audience control, analytics, and more.</p>
-      <ul class="plan-features">
-        <li><span class="check">&#10003;</span> All AI providers (BYOK)</li>
-        <li><span class="check">&#10003;</span> All publishers (Slack, Discord, GitHub, Confluence, Notion, Teams)</li>
-        <li><span class="check">&#10003;</span> Jira &amp; Linear enrichment</li>
-        <li><span class="check">&#10003;</span> Audience &amp; tone control</li>
-        <li><span class="check">&#10003;</span> Hosted changelog</li>
-        <li><span class="check">&#10003;</span> Drafts &amp; approvals</li>
-        <li><span class="check">&#10003;</span> Branded changelog widget</li>
-        <li><span class="check">&#10003;</span> Project templates</li>
-        <li><span class="check">&#10003;</span> Audit logs &amp; analytics</li>
-        <li><span class="check">&#10003;</span> Org settings</li>
-      </ul>
-      <button id="proCta" class="plan-btn plan-btn-primary">Start Pro Plan</button>
-    </div>
-
-    <!-- ENTERPRISE -->
-    <div class="pricing-card">
-      <div class="plan-name">Enterprise</div>
-      <div class="plan-price">Custom</div>
-      <p class="plan-desc">Everything in Pro plus SSO, dedicated support, and on-prem deployment.</p>
-      <ul class="plan-features">
-        <li><span class="check">&#10003;</span> Everything in Pro</li>
-        <li><span class="check">&#10003;</span> SSO &amp; SAML</li>
-        <li><span class="check">&#10003;</span> Dedicated support</li>
-        <li><span class="check">&#10003;</span> Self-hosted / on-prem</li>
-        <li><span class="check">&#10003;</span> Custom SLAs</li>
-        <li><span class="check">&#10003;</span> Invoice billing</li>
-        <li><span class="check">&#10003;</span> Unlimited seats &amp; usage</li>
-      </ul>
-      <a href="mailto:sales@cullit.io?subject=Cullit%20Enterprise" class="plan-btn plan-btn-outline">Contact Sales</a>
-    </div>
-
-  </div>
-
-  <!-- Comparison table -->
-  <section class="compare-section">
-    <h2>Compare all plans</h2>
-    <div class="compare-wrap">
-      <table class="compare-table">
-        <thead>
-          <tr>
-            <th>Feature</th>
-            <th>Free</th>
-            <th>Pro</th>
-            <th>Enterprise</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>Price</td><td>$0</td><td>$9/seat/mo</td><td>Custom</td></tr>
-          <tr><td>Annual price</td><td class="cmp-dash">&mdash;</td><td>$8.10/seat/mo</td><td>Custom</td></tr>
-          <tr><td>Seats</td><td>1</td><td>1&ndash;100</td><td>Unlimited</td></tr>
-          <tr><td>Generations / month</td><td>3</td><td>500 (+ 100/seat)</td><td>Unlimited</td></tr>
-          <tr><td>Projects</td><td>3</td><td>100 (+ 5/seat)</td><td>Unlimited</td></tr>
-          <tr><td>AI providers (BYOK)</td><td class="cmp-check">&#10003;</td><td class="cmp-check">All</td><td class="cmp-check">All</td></tr>
-          <tr><td>Publishers</td><td>stdout, file</td><td>All (Slack, Discord, GitHub, Confluence, Notion, Teams)</td><td>All</td></tr>
-          <tr><td>Enrichment</td><td class="cmp-dash">&mdash;</td><td>Jira, Linear</td><td>All</td></tr>
-          <tr><td>Audience &amp; tone</td><td>developer / professional only</td><td class="cmp-check">Full control</td><td class="cmp-check">Full control</td></tr>
-          <tr><td>Drafts &amp; approvals</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>Hosted changelog</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>Branded widget</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>Project templates</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>Audit logs</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>Team analytics</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>SSO &amp; SAML</td><td class="cmp-dash">&mdash;</td><td class="cmp-dash">&mdash;</td><td class="cmp-check">&#10003;</td></tr>
-          <tr><td>Support</td><td>Community</td><td>Email</td><td>Dedicated</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- FAQ -->
-  <section class="faq-section">
-    <h2>Frequently asked questions</h2>
-
-    <div class="faq-item">
-      <p class="faq-q">What does BYOK mean?</p>
-      <p class="faq-a">Bring Your Own Key. You provide your own API key for OpenAI, Anthropic, Google Gemini, or Ollama. Cullit never stores or proxies your keys &mdash; they stay in your environment.</p>
-    </div>
-
-    <div class="faq-item">
-      <p class="faq-q">Can I use Cullit without AI?</p>
-      <p class="faq-a">Yes. Set your provider to <code style="background: var(--bg-card); padding: 0.15rem 0.4rem; border-radius: 4px;">none</code> to use template-based generation from your git history. No API key required. But the free tier also includes 3 AI generations per month &mdash; bring your own key and try it.</p>
-    </div>
-
-    <div class="faq-item">
-      <p class="faq-q">What counts as a &ldquo;generation&rdquo;?</p>
-      <p class="faq-a">Each run of <code style="background: var(--bg-card); padding: 0.15rem 0.4rem; border-radius: 4px;">cullit generate</code> counts as one generation, whether via CLI, GitHub Action, or API.</p>
-    </div>
-
-    <div class="faq-item">
-      <p class="faq-q">How do I cancel?</p>
-      <p class="faq-a">Cancel anytime from the <a href="dashboard.html">billing dashboard</a> or email <a href="mailto:sales@cullit.io">sales@cullit.io</a>. Access continues through your billing period; partial periods are not prorated.</p>
-    </div>
-
-    <div class="faq-item">
-      <p class="faq-q">What is your refund policy?</p>
-      <p class="faq-a">Fees are non-refundable except where required by applicable law. Full policy details are in <a href="terms.html">Terms</a>.</p>
-    </div>
-
-    <div class="faq-item">
-
-      <p class="faq-q">How do I recover a lost API key?</p>
-      <p class="faq-a">Your <code style="background:var(--bg-card);padding:0.15rem 0.4rem;border-radius:4px">CULLIT_API_KEY</code> is always visible in the <a href="dashboard.html#billing">Billing tab</a> of your dashboard. If you are locked out, email <a href="mailto:support@cullit.io">support@cullit.io</a> and we will verify ownership and resend it.</p>
-    </div>
-
-    <div class="faq-item">
-      <p class="faq-q">How do I sign in?</p>
-      <p class="faq-a">Click <em>Sign in</em> on the <a href="dashboard.html">dashboard</a>. You can use GitHub, GitLab, Google, or email &mdash; whatever works best for your team. No separate password is required for social logins.</p>
-    </div>
-
-    <div class="faq-item">
-      <p class="faq-q">Why limit the free tier?</p>
-      <p class="faq-a">AI generation costs real compute. Pro access covers those costs and funds continued development. The free tier gives you 3 generations per month &mdash; enough to evaluate Cullit on a real project. When you&rsquo;re ready for production use, <a href="dashboard.html">upgrade from the dashboard</a> and pick the Pro plan that matches your current seat count.</p>
-    </div>
-
-    <div class="faq-item">
-      <p class="faq-q">How do seats work on the Pro plan?</p>
-      <p class="faq-a">The Pro plan uses simple seat-based billing at $9/seat/month ($8.10/seat on annual). Start with 1 seat and add more anytime from the <a href="dashboard.html">billing dashboard</a>. All features are unlocked regardless of seat count.</p>
-    </div>
-
-    <div class="faq-item">
-      <p class="faq-q">How does Pro pricing scale?</p>
-      <p class="faq-a">Pro billing is $9/seat/month ($8.10/seat on annual). No minimum seats required. Limits scale with your team: 500 base generations plus 100 per seat, and 100 base projects plus 5 per seat. Add or remove seats anytime from the <a href="dashboard.html">billing dashboard</a>.</p>
-    </div>
-  </section>
+  <p class="note">Thank you for helping keep Cullit healthy, independent, and community-driven.</p>
 </main>
-
-<footer>
-  <p class="footer-brand">&copy; 2026 Cullit &mdash; Built by <a href="https://cullit.io" target="_blank" rel="noopener noreferrer">Cullit</a></p>
-  <div class="footer-links">
-    <a href="https://x.com/Cullit_io" target="_blank" rel="noopener noreferrer">X / Twitter</a>
-    <a href="https://www.linkedin.com/company/cullit/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
-    <a href="terms.html">Terms</a>
-    <a href="privacy.html">Privacy</a>
-    <a href="mailto:sales@cullit.io">sales@cullit.io</a>
-  </div>
-</footer>
-
-<script src="assets/site-common.js" defer></script>
-<script src="assets/pricing.js" defer></script>
-<div id="cookie-consent" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#161822;border-top:1px solid #282a3a;padding:1rem 2rem;z-index:10000;font-family:'DM Sans',sans-serif;font-size:0.85rem;color:#d4d4e0;text-align:center;">
-This site uses essential cookies only &mdash; no tracking. <button type="button" data-cookie-consent-accept style="margin-left:1rem;padding:0.4rem 1.2rem;background:#5eead4;color:#0f1117;border:none;border-radius:4px;font-weight:700;cursor:pointer;">OK</button>
-</div>
+<script src="assets/pricing.js"></script>
 </body>
 </html>

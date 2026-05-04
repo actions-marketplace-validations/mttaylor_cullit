@@ -23,26 +23,14 @@ const pricing = readText('site/pricing.html');
 const terms = readText('TERMS.md');
 const appDockerfile = readText('packages/app/Dockerfile');
 
-// Pricing page checks are regex-based to avoid failures on harmless whitespace/layout shifts.
-if (!hasPattern(pricing, /<div\s+class="plan-name">\s*Free\s*<\/div>/i)) {
-  fail('pricing page is missing Free plan heading');
+if (!hasPattern(pricing, /fully\s+free\s+and\s+open\s+source/i)) {
+  fail('pricing page is missing open-source statement');
 }
-if (!hasPattern(pricing, /<div\s+class="plan-name">\s*Pro\s*<\/div>/i)) {
-  fail('pricing page is missing Pro plan heading');
+if (!hasPattern(pricing, /github\.com\/sponsors\/mttaylor/i)) {
+  fail('pricing page is missing GitHub Sponsors link');
 }
-if (!hasPattern(pricing, /\$9\.00\s*<span\s+class="period">/i)) {
-  fail('pricing page is missing Pro price formatting');
-}
-if (!hasPattern(pricing, /<div\s+class="plan-name">\s*Enterprise\s*<\/div>/i)) {
-  fail('pricing page is missing Enterprise plan heading');
-}
-
-
-if (!hasPattern(pricing, /Cancel anytime from the\s*<a\s+href="dashboard\.html">\s*billing dashboard\s*<\/a>/i)) {
-  fail('pricing page is missing billing dashboard trust link');
-}
-if (!hasPattern(terms, /All fees are non-refundable except as required by\s+(?:applicable\s+)?law/i)) {
-  fail('TERMS is missing non-refundable legal statement');
+if (!hasPattern(terms, /Donations\s+and\s+Sponsorships/i)) {
+  fail('TERMS is missing donations/sponsorships section');
 }
 
 if (!hasPattern(appDockerfile, /COPY\s+\.npmrc\s+\.\//)) {

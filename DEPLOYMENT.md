@@ -7,7 +7,6 @@ This guide covers deploying the Cullit API server. For CLI-only usage, no deploy
 - Node.js 22+
 - pnpm 10+
 - PostgreSQL 14+ (recommended for production; optional for local dev)
-- A Stripe account (for billing features)
 - A WorkOS account (for GitHub OAuth login)
 
 ## Deployment Modes
@@ -92,16 +91,13 @@ Without `DATABASE_URL`, data is stored in-memory and lost on restart.
 
 Configure the redirect URI in WorkOS as: `{CULLIT_BASE_URL}/auth/callback`
 
-### Billing
+### Sponsorship (Optional)
 
-| Variable | Description |
-|----------|-------------|
-| `STRIPE_SECRET_KEY` | Stripe secret key |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
-| `STRIPE_PRO_PRICE_ID` | Stripe price ID for the Pro plan ($9/seat/month) |
-| `STRIPE_PRO_ANNUAL_PRICE_ID` | Stripe price ID for the Pro annual plan ($97.20/seat/year — 10% off) |
+Cullit is fully open source. There is no billing configuration required.
 
-> **Fallback:** The older `STRIPE_PAID_*` and `STRIPE_TEAM_*` variables still work as additional fallbacks if `STRIPE_PRO_*` variants are not set.
+If you expose support links in your deployment, point users to:
+
+- `https://github.com/sponsors/mttaylor`
 
 ### Optional
 
@@ -130,17 +126,6 @@ pg_dump $DATABASE_URL > backup.sql
 0 2 * * * pg_dump $DATABASE_URL | gzip > /backups/cullit-$(date +\%F).sql.gz
 ```
 
-## Stripe Webhook Setup
-
-1. Go to [Stripe Webhooks](https://dashboard.stripe.com/webhooks)
-2. Add endpoint: `{CULLIT_BASE_URL}/v1/billing/webhook`
-3. Select events:
-   - `checkout.session.completed`
-   - `customer.subscription.updated`
-   - `customer.subscription.deleted`
-   - `invoice.payment_failed`
-4. Copy the signing secret to `STRIPE_WEBHOOK_SECRET`
-
 ## Health Checks
 
 The API exposes health check endpoints:
@@ -162,7 +147,6 @@ Configure your load balancer or container orchestrator to use these.
 - [ ] `NODE_ENV=production` is set
 - [ ] `METRICS_TOKEN` is set (required in production)
 - [ ] Database connections use SSL in production
-- [ ] Stripe webhook secret is set
 - [ ] All secrets are stored in environment variables, not in code
 - [ ] Docker container runs as non-root user (default in provided Dockerfile)
 - [ ] HTTPS is terminated at the load balancer / reverse proxy
@@ -191,5 +175,5 @@ export REDIS_URL=redis://your-redis-server:6379
 | Sessions don't persist across restarts | `CULLIT_JWT_SECRET` not set | Set a stable secret |
 | 401 on all auth endpoints | WorkOS not configured | Set `WORKOS_CLIENT_ID` and `WORKOS_API_KEY` |
 | Data lost on restart | No database | Set `DATABASE_URL` |
-| Billing not working | Stripe not configured | Set all `STRIPE_*` variables |
+| Legacy billing endpoint returns 410 | Billing retired in OSS mode | Remove checkout flows and use sponsor links instead |
 | CORS errors on dashboard | Wrong `ALLOWED_ORIGINS` | Add your dashboard domain |

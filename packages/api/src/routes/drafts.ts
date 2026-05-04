@@ -6,7 +6,7 @@
 
 import type { IncomingMessage, ServerResponse } from 'http';
 import { randomBytes } from 'crypto';
-import { json, readBody, parseJsonObject, isPaidTier, PORT } from '../utils.js';
+import { json, readBody, parseJsonObject, PORT } from '../utils.js';
 import { log } from '../logger.js';
 import { resolveUser, getEffectiveTier, getOrg } from '../auth.js';
 import {
@@ -34,11 +34,6 @@ function hasDraftAdminAccess(user: { id: string; orgId: string | null; role: str
 export async function handleCreateDraft(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const user = await resolveUser(req);
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-
-  const tier = getEffectiveTier(user);
-  if (!isPaidTier(tier)) {
-    json(res, 403, { error: 'Release drafts require a Pro plan', upgrade: 'https://cullit.io/pricing' }); return;
-  }
 
   const raw = await readBody(req);
   const body = parseJsonObject(raw);
@@ -77,11 +72,6 @@ export async function handleCreateDraft(req: IncomingMessage, res: ServerRespons
 export async function handleListDrafts(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const user = await resolveUser(req);
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-
-  const tier = getEffectiveTier(user);
-  if (!isPaidTier(tier)) {
-    json(res, 403, { error: 'Release drafts require a Pro plan', upgrade: 'https://cullit.io/pricing' }); return;
-  }
 
   const url = new URL(req.url|| '/', `http://localhost:${PORT}`);
   const rawLimit = parseInt(url.searchParams.get('limit') || '20', 10);

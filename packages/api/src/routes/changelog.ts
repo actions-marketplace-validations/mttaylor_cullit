@@ -153,12 +153,12 @@ export async function handleChangelogPublish(req: IncomingMessage, res: ServerRe
       const userProjectCount = await dbGetUserProjectCount(user.id);
       if (userProjectCount >= tierLimits.maxProjects) {
         json(res, 402, {
-          error: `Project limit reached (${userProjectCount}/${tierLimits.maxProjects}). Upgrade your plan for more projects.`,
+          error: `Project limit reached (${userProjectCount}/${tierLimits.maxProjects}).`,
           code: 'BILLING_PROJECT_LIMIT',
           used: userProjectCount,
           limit: tierLimits.maxProjects,
           tier: effectiveTier,
-          upgrade: 'https://cullit.io/pricing',
+          support: 'https://github.com/sponsors/mttaylor',
         });
         return;
       }
@@ -195,12 +195,12 @@ export async function handleChangelogPublish(req: IncomingMessage, res: ServerRe
       const userProjects = [...changelogStore.entries()].filter(([, rels]) => rels.some(r => r.userId === user.id));
       if (userProjects.length >= tierLimits.maxProjects) {
         json(res, 402, {
-          error: `Project limit reached (${userProjects.length}/${tierLimits.maxProjects}). Upgrade your plan for more projects.`,
+          error: `Project limit reached (${userProjects.length}/${tierLimits.maxProjects}).`,
           code: 'BILLING_PROJECT_LIMIT',
           used: userProjects.length,
           limit: tierLimits.maxProjects,
           tier: effectiveTier,
-          upgrade: 'https://cullit.io/pricing',
+          support: 'https://github.com/sponsors/mttaylor',
         });
         return;
       }

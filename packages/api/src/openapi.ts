@@ -19,7 +19,7 @@ export const openApiSpec = {
       email: 'matt@cullit.io',
     },
     license: {
-      name: 'Proprietary',
+      name: 'MIT',
       url: 'https://github.com/mttaylor/cullit/blob/main/LICENSE',
     },
   },

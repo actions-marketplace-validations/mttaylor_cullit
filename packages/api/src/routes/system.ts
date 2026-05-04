@@ -35,7 +35,7 @@ export async function handleOpenAPI(_req: IncomingMessage, res: ServerResponse):
 }
 
 const FUNNEL_EVENTS = new Set([
-  'landing_cta_clicked', 'pricing_viewed',
+  'landing_cta_clicked', 'pricing_viewed', 'support_page_viewed',
   'checkout_started', 'checkout_redirected', 'checkout_failed',
   'paid_activated', 'first_generate_success', 'first_publish_success',
 ]);

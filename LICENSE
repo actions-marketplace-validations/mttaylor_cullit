@@ -1,50 +1,6 @@
-Cullit License
-
-Copyright (c) 2026 Cullit (Matt Taylor)
-
-This repository contains proprietary, commercial source code for the Cullit
-hosted platform. All rights reserved.
-
-The open source components of Cullit (CLI, core library, GitHub Action, etc.)
-are published separately under the MIT License at:
-
-  https://github.com/mttaylor/cullit-oss
-
-The contents of THIS repository — including but not limited to:
-
-  - packages/api          (hosted API server)
-  - packages/app          (GitHub App webhook server)
-  - site/                 (landing page, dashboard, marketing)
-  - infrastructure, deployment, and operational code
-
-— are NOT licensed under MIT and are governed by LICENSE-COMMERCIAL.
-See LICENSE-COMMERCIAL for terms.
-
-No license is granted to use, copy, modify, or distribute the contents of
-this repository except as expressly permitted in LICENSE-COMMERCIAL or by
-written agreement with the copyright holder.
 MIT License
 
 Copyright (c) 2026 Cullit (Matt Taylor)
-
-This MIT license applies to the following packages and files in this repository:
-
-  - packages/core         (@cullit/core)
-  - packages/cli          (@cullit/cli, published as `cullit` on npm)
-  - packages/config       (@cullit/config)
-  - packages/licensed     (@cullit/licensed)
-  - packages/pro          (@cullit/pro)
-  - action.yml            (Cullit GitHub Action)
-
-The hosted platform components are NOT covered by this MIT license and are
-governed separately by LICENSE-COMMERCIAL. See LICENSE-COMMERCIAL for terms
-covering:
-
-  - packages/api          (hosted API server)
-  - packages/app          (GitHub App webhook server)
-  - site/                 (landing page, dashboard, marketing)
-
----
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

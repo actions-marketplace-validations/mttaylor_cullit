@@ -4,12 +4,11 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { randomBytes } from 'crypto';
 
-import { isPlanFeatureAllowed } from '@cullit/core';
-import { resolveUser, getEffectiveTier, getUserPlan } from '../auth.js';
+import { resolveUser } from '../auth.js';
 import {
   dbGetProjectSettings, dbUpsertProjectSettings, dbListProjectSettings,
 } from '../db.js';
-import { json, readBody, parseJsonObject, isRecord, isPaidTier, type JsonObject } from '../utils.js';
+import { json, readBody, parseJsonObject, isRecord, type JsonObject } from '../utils.js';
 
 const PROJECT_SLUG_RE = /^[a-zA-Z0-9_-]{1,64}$/;
 
@@ -34,11 +33,6 @@ export async function handleGetProjectSettings(req: IncomingMessage, res: Server
   const user = await resolveUser(req);
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
 
-  const tier = getEffectiveTier(user);
-  if (!isPaidTier(tier)) {
-    json(res, 403, { error: 'Saved project settings require a Pro plan', upgrade: 'https://cullit.io/pricing' }); return;
-  }
-
   const settings = await dbListProjectSettings(user.id, user.orgId);
   json(res, 200, { settings });
 }
@@ -46,11 +40,6 @@ export async function handleGetProjectSettings(req: IncomingMessage, res: Server
 export async function handlePutProjectSettings(req: IncomingMessage, res: ServerResponse, project: string): Promise<void> {
   const user = await resolveUser(req);
   if (!user) { json(res, 401, { error: 'Not authenticated' }); return; }
-
-  const tier = getEffectiveTier(user);
-  if (!isPaidTier(tier)) {
-    json(res, 403, { error: 'Saved project settings require a Pro plan', upgrade: 'https://cullit.io/pricing' }); return;
-  }
 
   if (!PROJECT_SLUG_RE.test(project)) { json(res, 400, { error: 'Invalid project slug' }); return; }
 
@@ -83,14 +72,6 @@ export async function handlePutProjectSettings(req: IncomingMessage, res: Server
   if (typeof templateProfile === 'string') currentTemplate.profile = templateProfile;
   if (templateSectionOrder) currentTemplate.sectionOrder = templateSectionOrder;
   if (Object.keys(currentTemplate).length) widgetConfig.template = currentTemplate;
-
-  if (widgetConfig.branding === false) {
-    const plan = await getUserPlan(user);
-    if (!isPlanFeatureAllowed('branded_widget', plan, tier)) {
-      json(res, 403, { error: 'Branded widget (removing Cullit branding) requires a Pro plan', upgrade: 'https://cullit.io/pricing' });
-      return;
-    }
-  }
 
   const existing = await dbGetProjectSettings(user.id, project, user.orgId);
 

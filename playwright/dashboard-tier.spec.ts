@@ -101,8 +101,8 @@ test('free tier shows free badge and paid gates remain locked', async ({ page })
 
   await expect(page.locator('#navTier')).toHaveText('free');
 
-  // Drafts tab is disabled for free tier (tab gating)
-  await expect(page.locator('.dash-tab[data-tab="drafts"]')).toBeDisabled();
+  // Drafts tab is available for all tiers in OSS mode
+  await expect(page.locator('.dash-tab[data-tab="drafts"]')).toBeEnabled();
 });
 
 test('paid tier unlocks all features and shows paid badge', async ({ page }) => {
@@ -111,9 +111,9 @@ test('paid tier unlocks all features and shows paid badge', async ({ page }) => 
   await page.goto('/dashboard.html');
 
   await expect(page.locator('#navTier')).toHaveText('paid');
-  // Drafts tab is enabled for paid tier
+  // Drafts remains available in OSS mode
   await expect(page.locator('.dash-tab[data-tab="drafts"]')).toBeEnabled();
-  await expect(page.locator('#billingPlanName')).toHaveText('Paid');
+  await expect(page.locator('#billingPlanName')).toHaveText('Open Source');
 });
 
 test('legacy pro tier maps to paid behavior', async ({ page }) => {
@@ -122,9 +122,9 @@ test('legacy pro tier maps to paid behavior', async ({ page }) => {
   await page.goto('/dashboard.html');
 
   await expect(page.locator('#navTier')).toHaveText('pro');
-  // Legacy pro maps to paid rank — drafts enabled
+  // Legacy pro remains fully enabled
   await expect(page.locator('.dash-tab[data-tab="drafts"]')).toBeEnabled();
-  await expect(page.locator('#billingPlanName')).toHaveText('Pro');
+  await expect(page.locator('#billingPlanName')).toHaveText('Open Source');
 });
 
 test('enterprise tier shows enterprise plan and unlocked draft flow', async ({ page }) => {
@@ -135,7 +135,7 @@ test('enterprise tier shows enterprise plan and unlocked draft flow', async ({ p
   await expect(page.locator('#navTier')).toHaveText('enterprise');
   await page.getByRole('button', { name: /drafts/i }).click();
   await expect(page.locator('#draftTeamGate')).toBeHidden();
-  await expect(page.locator('#billingPlanName')).toHaveText('Enterprise');
+  await expect(page.locator('#billingPlanName')).toHaveText('Open Source');
 });
 
 

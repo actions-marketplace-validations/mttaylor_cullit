@@ -268,7 +268,7 @@
     <a href="docs.html" class="active">Docs</a>
     <a href="tutorial.html">Tutorial</a>
     <a href="https://www.npmjs.com/package/cullit" target="_blank" rel="noopener noreferrer">npm</a>
-    <a href="pricing.html">Pricing</a>
+    <a href="pricing.html">Support</a>
     <a href="releases.html">Releases</a>
     <a href="dashboard.html">Dashboard</a>
     <a href="dashboard.html" class="nav-cta">Get Started Free</a>
@@ -285,7 +285,7 @@
   <a href="#quick-start">Quick Start</a>
   <a href="#installation">Installation</a>
   <a href="#first-run">Your First Run</a>
-  <a href="#pricing">Pricing &amp; Tiers</a>
+  <a href="#pricing">Open Source &amp; Support</a>
 
   <h4>Configuration</h4>
   <a href="#config-file">Config File</a>
@@ -368,24 +368,22 @@
 
 <div class="tip">Best results come from pairing AI generation with Jira or Linear enrichment. Richer context produces cleaner summaries, clearer categories, and fewer low-signal commit dumps.</div>
 
-<h3 id="pricing">Pricing &amp; Access</h3>
-<p>The public npm package is the free local CLI surface: local git, template generation with <code>--provider none</code>, and stdout/file output. Cullit is simplifying commercial access to <strong>Free</strong>, <strong>Pro</strong>, and <strong>Enterprise</strong>.</p>
+<h3 id="pricing">Open Source &amp; Support</h3>
+<p>Cullit is fully open source and free to use. There are no paid tiers, no checkout flow, and no feature-gated integrations.</p>
 
 <ul>
-  <li><strong>Free</strong> &mdash; local CLI, template workflows, and a small monthly usage allowance to evaluate Cullit on a real project.</li>
-  <li><strong>Pro</strong> &mdash; seat-based access with monthly or annual billing. This is the main commercial path for AI providers, enrichment, hosted changelogs, and production workflows.</li>
-  <li><strong>Enterprise</strong> &mdash; custom pricing for SSO/SAML, procurement, support, and larger deployment requirements.</li>
+  <li><strong>Use Everything</strong> &mdash; AI providers, enrichers, publishers, and dashboard workflows are all available.</li>
+  <li><strong>Support Development</strong> &mdash; sponsor at <a href="https://github.com/sponsors/mttaylor" target="_blank" rel="noopener noreferrer">GitHub Sponsors</a> if Cullit helps your team.</li>
+  <li><strong>Contribute</strong> &mdash; issues, PRs, docs updates, and testing feedback keep the project healthy.</li>
 </ul>
 
-<div class="tip">To activate paid access, set your API key in your shell or <code>.env</code> file.</div>
+<div class="tip">No paid activation is required. Use your own provider keys and start shipping release notes.</div>
 
-<p>To activate paid access, set your API key:</p>
-<pre><code><span class="cmt"># In your shell or .env file</span>
-<span class="key">CULLIT_API_KEY</span>=<span class="val">clt_your_key_here</span></code></pre>
+<p>Use provider keys in your environment when you want AI generation (for example <code>ANTHROPIC_API_KEY</code> or <code>OPENAI_API_KEY</code>). Use <code>--provider none</code> for template-only generation with no provider key.</p>
 
-<p>Get your key at <a href="https://cullit.io/dashboard">cullit.io/dashboard</a> or visit <strong><a href="https://cullit.io/pricing">cullit.io/pricing</a></strong>.</p>
+<p>There is no paid activation key required for Cullit features.</p>
 
-<div class="tip">Enterprise plans include unlimited generations, SSO/SAML, SLAs, on-prem deployment, and audit logs. <a href="https://cullit.io/pricing">View pricing</a> or contact <a href="mailto:sales@cullit.io">sales@cullit.io</a>.</div>
+<div class="tip">Support ongoing development at <a href="https://github.com/sponsors/mttaylor" target="_blank" rel="noopener noreferrer">github.com/sponsors/mttaylor</a>.</div>
 
 <!-- ============================================ -->
 <h2 id="config-file">Configuration</h2>
@@ -431,7 +429,7 @@
   <span class="cmt"># Set LINEAR_API_KEY in your environment</span></code></pre>
 
 <h3 id="ai-providers">AI Providers</h3>
-<p>Cullit supports five providers on the paid tier. The public npm CLI uses <code>--provider none</code> unless you are running a hosted/private Cullit distribution with premium providers enabled.</p>
+<p>Cullit supports five providers in open-source mode. Use <code>--provider none</code> for template-only generation or configure provider API keys for AI generation.</p>
 
 <div class="table-wrap">
 <table>
@@ -455,7 +453,6 @@
 <table>
   <thead><tr><th>Variable</th><th>Purpose</th></tr></thead>
   <tbody>
-    <tr><td><code>CULLIT_API_KEY</code></td><td>Cullit license key for hosted/private paid flows and advanced publishing surfaces</td></tr>
     <tr><td><code>ANTHROPIC_API_KEY</code></td><td>Anthropic API key</td></tr>
     <tr><td><code>OPENAI_API_KEY</code></td><td>OpenAI API key</td></tr>
     <tr><td><code>GOOGLE_API_KEY</code></td><td>Google Gemini API key</td></tr>
@@ -596,7 +593,7 @@
         <span class="key">with</span>:
           <span class="key">fetch-depth</span>: <span class="val">0</span>  <span class="cmt"># full history for tag comparison</span>
 
-      - <span class="key">uses</span>: <span class="str">mttaylor/cullit-oss@v2</span>
+      - <span class="key">uses</span>: <span class="str">mttaylor/cullit@v2</span>
         <span class="key">with</span>:
           <span class="key">provider</span>: <span class="str">anthropic</span>
           <span class="key">audience</span>: <span class="str">end-user</span>
@@ -675,7 +672,7 @@
 </table>
 </div>
 
-<div class="tip">The GitHub App uses template-based generation by default (no AI key required). To enable AI-powered notes in paid tiers, use the licensed private distribution (<code>@cullit/licensed</code>) and provide an AI provider API key.</div>
+<div class="tip">The GitHub App uses template-based generation by default (no AI key required). To enable AI-powered notes, provide an AI provider API key.</div>
 
 <h3 id="multi-repo">Multi-Repo Aggregation</h3>
 <p>Aggregate release notes across multiple repositories into a single changelog &mdash; ideal for monorepo-adjacent setups, platform teams, or microservices.</p>
@@ -696,7 +693,7 @@
 <pre><code><span class="cmd">cullit</span> generate <span class="flag">--source</span> <span class="val">multi-repo</span> <span class="flag">--from</span> <span class="val">v1.0.0</span> <span class="flag">--to</span> <span class="val">v1.1.0</span></code></pre>
 
 <p><strong>GitHub Action:</strong></p>
-<pre><code>- <span class="key">uses</span>: <span class="str">mttaylor/cullit-oss@v2</span>
+<pre><code>- <span class="key">uses</span>: <span class="str">mttaylor/cullit@v2</span>
   <span class="key">with</span>:
     <span class="key">source</span>: <span class="str">multi-repo</span>
     <span class="key">from</span>: <span class="str">v1.0.0</span>
@@ -802,13 +799,13 @@
 <pre><code><span class="key">publish</span>:
   - <span class="key">type</span>: <span class="str">notion</span></code></pre>
 
-<h3 id="pub-changelog">Hosted Changelog <span style="font-size:0.7em; color:var(--accent); border:1px solid var(--accent); padding:0.1rem 0.4rem; border-radius:4px; margin-left:0.5rem;">Pro</span></h3>
+<h3 id="pub-changelog">Hosted Changelog</h3>
 <p>Push release notes to Cullit&apos;s hosted changelog &mdash; a public, embeddable page that your users can visit or you can embed in your app with the widget.</p>
 <pre><code><span class="key">publish</span>:
   - <span class="key">type</span>: <span class="str">changelog</span></code></pre>
 <p>Your changelog will be available at <code>cullit.io/changelog?project=your-project</code>. To embed a &ldquo;What&apos;s New&rdquo; widget in your app:</p>
 <pre><code>&lt;script src="https://cullit.io/widget.js" data-project="your-project"&gt;&lt;/script&gt;</code></pre>
-<p>Requires <code>CULLIT_API_KEY</code> environment variable. The GitHub App can also auto-publish to the hosted changelog &mdash; set <code>CULLIT_APP_CHANGELOG_ENABLED=true</code>.</p>
+<p>For authenticated hosted API routes, set <code>CULLIT_API_KEY</code> when needed. Core local generation does not require this key. The GitHub App can also auto-publish to the hosted changelog &mdash; set <code>CULLIT_APP_CHANGELOG_ENABLED=true</code>.</p>
 
 <!-- ============================================ -->
 <h2 id="advanced">Advanced Usage</h2>
@@ -838,7 +835,7 @@ console.log(result.duration);      <span class="cmt">// pipeline duration in ms<
   <thead><tr><th>Package</th><th>Purpose</th></tr></thead>
   <tbody>
     <tr><td><code>cullit</code></td><td>Public CLI package &mdash; local/template workflow via <code>npx cullit generate --provider none</code></td></tr>
-    <tr><td><code>@cullit/licensed</code></td><td>Private registry package for paid tiers (Pro, Enterprise)</td></tr>
+    <tr><td><code>@cullit/licensed</code></td><td>Compatibility wrapper retained during OSS transition</td></tr>
     <tr><td><code>@cullit/core</code></td><td>Core engine: pipeline, collectors, generators, publishers</td></tr>
     <tr><td><code>@cullit/config</code></td><td>Config loader: YAML parsing, env var resolution, type exports</td></tr>
   </tbody>
@@ -896,11 +893,11 @@ console.log(advisory.breakdown);       <span class="cmt">// { features: 4, fixes
     <tr><td><code>DELETE</code></td><td><code>/auth/me</code></td><td>Delete account</td></tr>
     <tr><td><code>POST</code></td><td><code>/auth/logout</code></td><td>Logout (clear session)</td></tr>
     <tr><td><code>POST</code></td><td><code>/auth/rotate-key</code></td><td>Rotate API key</td></tr>
-    <tr><td colspan="3" style="padding:0.5rem;font-weight:600;color:var(--text-dim)">Billing (requires Stripe)</td></tr>
-    <tr><td><code>POST</code></td><td><code>/v1/billing/checkout</code></td><td>Create Stripe checkout session</td></tr>
-    <tr><td><code>POST</code></td><td><code>/v1/billing/portal</code></td><td>Create Stripe customer portal session</td></tr>
-    <tr><td><code>GET</code></td><td><code>/v1/billing/subscription</code></td><td>Get subscription status</td></tr>
-    <tr><td><code>POST</code></td><td><code>/v1/billing/webhook</code></td><td>Stripe webhook handler</td></tr>
+    <tr><td colspan="3" style="padding:0.5rem;font-weight:600;color:var(--text-dim)">Legacy Billing Endpoints (retired)</td></tr>
+    <tr><td><code>POST</code></td><td><code>/v1/billing/checkout</code></td><td>Returns HTTP 410 (retired)</td></tr>
+    <tr><td><code>POST</code></td><td><code>/v1/billing/portal</code></td><td>Returns HTTP 410 (retired)</td></tr>
+    <tr><td><code>GET</code></td><td><code>/v1/billing/subscription</code></td><td>Returns open-source compatibility status</td></tr>
+    <tr><td><code>POST</code></td><td><code>/v1/billing/webhook</code></td><td>Returns HTTP 410 (retired)</td></tr>
     <tr><td colspan="3" style="padding:0.5rem;font-weight:600;color:var(--text-dim)">Changelog</td></tr>
     <tr><td><code>POST</code></td><td><code>/v1/changelog</code></td><td>Publish changelog entry</td></tr>
     <tr><td><code>GET</code></td><td><code>/v1/changelog/projects</code></td><td>List changelog projects</td></tr>
@@ -949,13 +946,11 @@ console.log(advisory.breakdown);       <span class="cmt">// { features: 4, fixes
 </table>
 </div>
 
-<p><strong>Subscription &amp; Downgrade Behavior:</strong></p>
+<p><strong>Team &amp; Org Behavior:</strong></p>
 <ul style="margin:0.5rem 0 1rem 1.5rem;">
-  <li><strong>Upgrade:</strong> New tier limits apply immediately. Pro org plans auto-provision API keys matching the seat count.</li>
-  <li><strong>Reducing seats:</strong> Reducing seats revokes excess team API keys. Remaining keys stay active.</li>
-  <li><strong>Downgrade (pro &rarr; free):</strong> All team API keys are revoked. The org remains but keys are deactivated.</li>
-  <li><strong>Cancellation:</strong> Tier reverts to free. All team API keys are revoked.</li>
-  <li><strong>Database required:</strong> Billing, orgs, and team features require <code>DATABASE_URL</code>. Without it, the server runs in file-backed mode (suitable for local dev only).</li>
+  <li><strong>Reducing seats:</strong> Reducing org seats revokes excess team API keys. Remaining keys stay active.</li>
+  <li><strong>Removing an org member:</strong> That member's team API key is revoked immediately.</li>
+  <li><strong>Database required:</strong> Orgs and team features require <code>DATABASE_URL</code>. Without it, the server runs in file-backed mode (suitable for local dev only).</li>
 </ul>
 
 <h3 id="web-dashboard">Web Dashboard</h3>
@@ -1054,7 +1049,7 @@ console.log(advisory.breakdown);       <span class="cmt">// { features: 4, fixes
         <span class="key">with</span>:
           <span class="key">fetch-depth</span>: <span class="val">0</span>
 
-      - <span class="key">uses</span>: <span class="str">mttaylor/cullit-oss@v2</span>
+      - <span class="key">uses</span>: <span class="str">mttaylor/cullit@v2</span>
         <span class="key">with</span>:
           <span class="key">provider</span>: <span class="str">anthropic</span>
           <span class="key">audience</span>: <span class="str">end-user</span>
@@ -1153,10 +1148,10 @@ formats, and several performance improvements.</span>
   <li><code>DELETE /v1/org/members</code> &mdash; remove a member (owner/admin only)</li>
   <li><code>GET /v1/org/usage</code> &mdash; org usage and seat snapshot</li>
 </ul>
-<p>Pro org setups start at 1 seat ($9/seat/mo) and include branded changelog widgets, project templates, audit logs, team analytics, and collaboration tools. Limits scale with seat count. Annual billing is available at a 10% discount.</p>
+<p>Organization workflows include branded changelog widgets, project templates, audit logs, team analytics, and collaboration tools in open-source mode.</p>
 
 <h3 id="team-api-keys">Team API Key Management</h3>
-<p>When you subscribe to a Pro org setup, API keys are automatically provisioned for each seat. Org owners and admins can manage these keys from the Billing tab in the dashboard:</p>
+<p>Org owners and admins can manage team API keys from the dashboard:</p>
 <ul>
   <li><strong>Label</strong> &mdash; name each key (e.g. "Frontend Dev", "CI Pipeline")</li>
   <li><strong>Assign</strong> &mdash; associate a team member&rsquo;s email and name with each key</li>
@@ -1172,10 +1167,10 @@ formats, and several performance improvements.</span>
   <li><code>POST /v1/org/keys/:id/revoke</code> &mdash; revoke a key</li>
   <li><code>POST /v1/org/keys/:id/rotate</code> &mdash; rotate a key (returns new value)</li>
 </ul>
-<p>Team members use their assigned key with <code>CULLIT_API_KEY=clt_their_key</code>. Usage from team keys is tracked under the org owner&rsquo;s account for billing purposes.</p>
+<p>Team members can use assigned keys for hosted API routes where authentication is enabled. Local CLI generation can run without this key.</p>
 
 <h3 id="team-drafts">Release Draft Workflow</h3>
-<p>Pro org setups unlock collaborative release drafting and approvals:</p>
+<p>Collaborative release drafting and approvals are available in the open-source dashboard workflow:</p>
 <ul>
   <li><code>POST /v1/drafts</code> &mdash; create a draft from generated output</li>
   <li><code>GET /v1/drafts</code> &mdash; list drafts with status filter and pagination</li>
@@ -1193,12 +1188,12 @@ formats, and several performance improvements.</span>
   <li><code>PUT /v1/projects/:project/settings</code> &mdash; upsert defaults (source, provider, audience, tone, categories)</li>
 </ul>
 
-<div class="tip">The collaboration-heavy dashboard workflow is available on paid org setups. Free-tier users get template-based generation with no time limit.</div>
+<div class="tip">Cullit is fully open source. If this workflow helps your team, consider sponsoring at <a href="https://github.com/sponsors/mttaylor" target="_blank" rel="noopener noreferrer">GitHub Sponsors</a>.</div>
 
 <div class="section-divider"></div>
 
 <p style="color: var(--text-dim); margin-top: 2rem; font-size: 0.85rem;">
-  Cullit is source-available under a proprietary license.
+  Cullit is MIT-licensed and open source.
   <a href="https://www.npmjs.com/package/cullit" target="_blank" rel="noopener noreferrer">npm</a> &bull;
   <a href="index.html">Home</a>
 </p>
@@ -1211,7 +1206,7 @@ formats, and several performance improvements.</span>
   <div style="margin-top: 0.5rem; display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;">
     <a href="terms.html" style="color: var(--text-dim);">Terms</a>
     <a href="privacy.html" style="color: var(--text-dim);">Privacy</a>
-    <a href="mailto:sales@cullit.io" style="color: var(--text-dim);">sales@cullit.io</a>
+    <a href="mailto:support@cullit.io" style="color: var(--text-dim);">support@cullit.io</a>
   </div>
 </footer>
 

@@ -54,10 +54,10 @@ describe('Tier workflow matrix', () => {
       userTier: 'free',
       expectedEffectiveTier: 'free',
       expectAiProvider: true,
-      expectSlackPublisher: false,
-      expectTeamPublisher: false,
-      expectDrafts: false,
-      expectSso: false,
+      expectSlackPublisher: true,
+      expectTeamPublisher: true,
+      expectDrafts: true,
+      expectSso: true,
     },
     {
       name: 'pro plan',
@@ -67,7 +67,7 @@ describe('Tier workflow matrix', () => {
       expectSlackPublisher: true,
       expectTeamPublisher: true,
       expectDrafts: true,
-      expectSso: false,
+      expectSso: true,
     },
     {
       name: 'enterprise plan',
@@ -92,12 +92,8 @@ describe('Tier workflow matrix', () => {
 
       expect(isProviderAllowed('anthropic', license)).toBe(scenario.expectAiProvider);
       expect(isProviderAllowed('none', license)).toBe(true);
-      expect(isEnrichmentAllowed(license)).toBe(
-        scenario.userTier === 'pro' || scenario.userTier === 'enterprise'
-      );
-      expect(isAudienceToneAllowed(license)).toBe(
-        scenario.userTier === 'pro' || scenario.userTier === 'enterprise'
-      );
+      expect(isEnrichmentAllowed(license)).toBe(true);
+      expect(isAudienceToneAllowed(license)).toBe(true);
 
       expect(isPublisherAllowed('stdout', license)).toBe(true);
       expect(isPublisherAllowed('file', license)).toBe(true);
@@ -107,15 +103,8 @@ describe('Tier workflow matrix', () => {
       expect(isFeatureAllowed('drafts', effectiveTier)).toBe(scenario.expectDrafts);
       expect(isFeatureAllowed('sso', effectiveTier)).toBe(scenario.expectSso);
 
-      if (effectiveTier === 'free') {
-        expect(limits.generationsPerMonth).toBe(3);
-      }
-      if (effectiveTier === 'pro') {
-        expect(limits.generationsPerMonth).toBe(500);
-      }
-      if (effectiveTier === 'enterprise') {
-        expect(limits.generationsPerMonth).toBe(Infinity);
-      }
+      // All tiers are unlimited in open-source mode
+      expect(limits.generationsPerMonth).toBe(Infinity);
     });
   }
 
