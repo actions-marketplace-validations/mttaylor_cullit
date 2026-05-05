@@ -175,30 +175,30 @@ cullit generate --from v1.0.0</pre>
 
 const PLAN_DETAILS: Record<string, { label: string; features: string[] }> = {
   pro: {
-    label: 'Pro ($9/mo)',
+    label: 'Open Source Access',
     features: [
-      '500 generations/month',
-      '100 projects',
-      'AI generation (OpenAI, Anthropic, Gemini, Ollama)',
+      'Unlimited generations',
+      'Unlimited projects',
+      'AI generation (OpenAI, Anthropic, Gemini, Ollama) via BYOK',
       'Jira & Linear enrichment',
       'All publishers (Slack, Discord, GitHub, Teams)',
     ],
   },
   team: {
-    label: 'Team ($9/seat/mo)',
+    label: 'Open Source Team Access',
     features: [
-      'Dynamic seats (1+ seats)',
-      'All Pro features',
       'Team management dashboard',
+      'Shared team API keys',
+      'All open-source features',
       'GitLab & Bitbucket',
-      'Priority support',
+      'Community support',
     ],
   },
 };
 
 export async function sendSubscriptionConfirmed(email: string, name: string, plan: string, apiKey?: string): Promise<boolean> {
   const details = PLAN_DETAILS[plan] || PLAN_DETAILS.pro;
-  const displayName = plan.startsWith('team') ? 'Team' : plan.charAt(0).toUpperCase() + plan.slice(1);
+  const displayName = plan.startsWith('team') ? 'Team' : 'Open Source';
   const apiKeySection = apiKey ? `
       <div style="background: #1a1a2e; border: 1px solid #2d2d44; border-radius: 8px; padding: 16px; margin: 16px 0;">
         <p style="color: #5eead4; font-weight: 600; margin: 0 0 8px 0;">Your API Key</p>
@@ -210,11 +210,11 @@ export async function sendSubscriptionConfirmed(email: string, name: string, pla
       </div>` : '';
   return send({
     to: email,
-    subject: `You're on Cullit ${displayName}!`,
+    subject: `Cullit ${displayName} access is active`,
     html: `${BRAND}
-      <h2 style="color: #0f1117; margin-bottom: 16px;">Subscription confirmed</h2>
+      <h2 style="color: #0f1117; margin-bottom: 16px;">Access confirmed</h2>
       <p style="color: #374151; line-height: 1.6;">
-        Hi ${escapeHtml(name)}, your <strong>${details.label}</strong> subscription is now active.
+        Hi ${escapeHtml(name)}, your <strong>${details.label}</strong> is active.
       </p>${apiKeySection}
       <p style="color: #374151; line-height: 1.6;">
         You now have access to:
@@ -223,8 +223,12 @@ export async function sendSubscriptionConfirmed(email: string, name: string, pla
         ${details.features.map(f => `<li>${f}</li>`).join('\n        ')}
       </ul>
       <p style="color: #374151; line-height: 1.6;">
-        View your API key and manage your subscription from the
+        View your API key and manage your settings from the
         <a href="https://cullit.io/dashboard.html" style="color: #5eead4;">dashboard</a>.
+      </p>
+      <p style="color: #374151; line-height: 1.6;">
+        Cullit is fully open source and free. If it helps your team, consider supporting development on
+        <a href="https://github.com/sponsors/mttaylor" style="color: #5eead4;">GitHub Sponsors</a>.
       </p>
     ${FOOTER}`,
   });
@@ -233,18 +237,18 @@ export async function sendSubscriptionConfirmed(email: string, name: string, pla
 export async function sendPaymentFailed(email: string, name: string): Promise<boolean> {
   return send({
     to: email,
-    subject: 'Cullit — Payment failed',
+    subject: 'Cullit — Billing retired in open-source mode',
     html: `${BRAND}
-      <h2 style="color: #0f1117; margin-bottom: 16px;">Payment issue</h2>
+      <h2 style="color: #0f1117; margin-bottom: 16px;">Billing retired</h2>
       <p style="color: #374151; line-height: 1.6;">
-        Hi ${escapeHtml(name)}, we couldn't process your latest payment.
+        Hi ${escapeHtml(name)}, Cullit is fully open source and paid billing has been retired.
       </p>
       <p style="color: #374151; line-height: 1.6;">
-        Please update your payment method to keep your subscription active:
+        You can continue using all features without a subscription.
       </p>
       <p style="margin: 16px 0;">
-        <a href="https://cullit.io/dashboard.html" style="background: #5eead4; color: #0f1117; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">
-          Update Payment Method
+        <a href="https://github.com/sponsors/mttaylor" style="background: #5eead4; color: #0f1117; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">
+          Support on GitHub Sponsors
         </a>
       </p>
       <p style="color: #6b7280; font-size: 13px;">

@@ -33,7 +33,7 @@ pnpm lint
 # Verify lockfile consistency (CI parity)
 pnpm lockfile:check
 
-# Validate pricing/legal/docker consistency guards
+# Validate open-source/legal/docker consistency guards
 pnpm validate:guards
 
 # Install the pre-push gate once per clone
@@ -138,7 +138,7 @@ Prefixes: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `perf`, `ci`, `bui
 - Add tests for new features or bug fixes
 - Run `pnpm test` and `pnpm lint` before submitting
 - Run `pnpm lockfile:check` after any `package.json` change
-- Run `pnpm validate:guards` when touching pricing/legal pages or Docker install config
+- Run `pnpm validate:guards` when touching support/legal pages or Docker install config
 - Install hooks once with `pnpm hooks:install` so `pnpm launch:ready` runs automatically on push
 - Use conventional commit format for PR titles
 - Fill out the PR description explaining what changed and why

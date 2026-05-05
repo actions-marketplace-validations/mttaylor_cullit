@@ -664,7 +664,7 @@ export async function handleAuthRedirect(req: IncomingMessage, res: ServerRespon
     return;
   }
 
-  // Accept ?returnTo= so callers can resume after login (e.g. pricing checkout)
+  // Accept ?returnTo= so callers can resume after login (e.g. dashboard/support pages)
   const loginUrl = new URL(req.url || '/', `http://localhost`);
   const rawReturnTo = loginUrl.searchParams.get('returnTo') || '';
   // Only allow safe relative paths to prevent open-redirect (block //, /\, protocol-relative, path traversal)

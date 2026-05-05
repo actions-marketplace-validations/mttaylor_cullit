@@ -1,7 +1,7 @@
 /**
  * Team API Key Management Routes
  *
- * Handles CRUD for seat-based team API keys.
+ * Handles CRUD for organization-scoped team API keys.
  * Only org owners and admins can manage keys.
  */
 
@@ -23,7 +23,7 @@ import { log } from '../logger.js';
 export async function handleListTeamKeys(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const user = await requireAuth(resolveUser, req, res as CorsResponse);
   if (!user) return;
-  if (!user.orgId) { json(res as CorsResponse, 403, { error: 'No organization. Subscribe to a Pro plan first.' }); return; }
+  if (!user.orgId) { json(res as CorsResponse, 403, { error: 'No organization. Create an organization first.' }); return; }
 
   const keys = await dbGetTeamApiKeys(user.orgId);
 

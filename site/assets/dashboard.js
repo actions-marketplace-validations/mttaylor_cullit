@@ -133,7 +133,7 @@
       avatarEl.hidden = false;
     }
     document.getElementById('navLogin').textContent = currentUser.login;
-    document.getElementById('navTier').textContent = currentUser.effectiveTier || currentUser.tier;
+    document.getElementById('navTier').textContent = 'open-source';
 
     applyTabGating();
     applyAudienceToneGating();
@@ -144,58 +144,18 @@
     loadBilling().catch(function () {});
 
     var params = new URLSearchParams(location.search);
-    var pendingPlan = params.get('checkout');
-    if (pendingPlan && ['pro', 'team'].indexOf(pendingPlan) !== -1) {
+    if (params.get('checkout') || params.get('billing')) {
       history.replaceState(null, '', 'dashboard.html');
-      upgradePlan(pendingPlan);
-    }
-    if (params.get('billing') === 'success') {
-      history.replaceState(null, '', 'dashboard.html');
-      pollForTierUpdate();
-    }
-    if (params.get('billing') === 'updated') {
-      history.replaceState(null, '', 'dashboard.html');
-      refreshAfterPortal();
+      showToast('Billing and upgrades are retired. Cullit is fully open source.');
     }
   }
 
   async function pollForTierUpdate() {
-    for (var i = 0; i < 10; i++) {
-      await new Promise(function (r) { setTimeout(r, 2000); });
-      try {
-        var res = await apiFetch('/auth/me');
-        if (!res.ok) continue;
-        var data = await res.json();
-        if (data.tier && data.tier !== 'free') {
-          currentUser = data;
-          document.getElementById('navTier').textContent = data.effectiveTier || data.tier;
-          var tierName = capitalize(data.effectiveTier || data.tier);
-          showUpgradeModal(
-            'Welcome to ' + tierName + '!',
-            'Your upgrade is confirmed. All ' + tierName + ' features are now unlocked. Generate release notes, explore new publishers, and make the most of your plan.',
-            'Start Generating', '#'
-          );
-          document.getElementById('upgradeAction').onclick = function (e) { e.preventDefault(); dismissUpgrade(); switchDashTab('generate'); };
-          loadBilling();
-          return;
-        }
-      } catch (e) {}
-    }
-    showToast('Payment is being processed. Refresh in a moment.');
+    showToast('Billing and checkout are retired. Cullit is fully open source.');
   }
 
   async function refreshAfterPortal() {
-    try {
-      var res = await apiFetch('/auth/me');
-      if (!res.ok) return;
-      var data = await res.json();
-      if (data.tier) {
-        currentUser = data;
-        document.getElementById('navTier').textContent = data.effectiveTier || data.tier;
-        loadBilling();
-        showToast('Billing updated \u2014 you are on ' + capitalize(data.effectiveTier || data.tier) + '.');
-      }
-    } catch (e) {}
+    showToast('Billing portal is retired. Support Cullit on GitHub Sponsors.');
   }
 
   async function logout() {
@@ -667,7 +627,7 @@
 
   // --- Billing ---
 
-  var TIER_LIMITS = { free: 3, pro: 500, team: 2000, enterprise: Infinity };
+  var TIER_LIMITS = { free: Infinity, pro: Infinity, team: Infinity, enterprise: Infinity };
 
   function updateProTotal() {
     var input = document.getElementById('dashProSeats');
@@ -1249,7 +1209,6 @@
     document.getElementById('billingPlanName').textContent = planName;
 
     document.querySelectorAll('.billing-plan-option').forEach(function (el) { el.classList.remove('current'); });
-    var cardPlanMap = { planFree: 'free', planPro: 'pro', planEnterprise: 'enterprise' };
     var planEl = document.getElementById('plan' + planName);
     if (planEl) planEl.classList.add('current');
 
@@ -1354,7 +1313,7 @@
       var res = await apiFetch('/v1/org/keys');
       if (!res.ok) {
         if (res.status === 403 || res.status === 401) {
-          list.innerHTML = '<div style="color:var(--text-dim)">No team API keys yet. Keys are provisioned when you subscribe to a Pro plan.</div>';
+          list.innerHTML = '<div style="color:var(--text-dim)">No team API keys yet. Create an organization to start sharing keys with your team.</div>';
         } else {
           list.innerHTML = '<div style="color:var(--terminal-red)">Failed to load team keys</div>';
         }

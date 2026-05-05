@@ -1,23 +1,20 @@
 /**
- * Cullit Stripe Billing
+ * Cullit Legacy Stripe Billing (Compatibility Module)
  *
- * Handles:
- *   - Checkout session creation (single Pro plan with per-seat pricing)
- *   - Webhook processing (subscription lifecycle)
- *   - Customer portal sessions
- *   - Tier sync (Stripe status → user tier in DB)
- *   - Team API key provisioning and lifecycle (create on checkout, revoke on cancel/downgrade)
+ * This module is retained for backward compatibility with legacy tests, older
+ * deployments, and historical webhook payload handling.
  *
- * Simplified pricing model:
- *   Free       → $0 (3 gens/month)
- *   Pro        → $9/seat/mo, 1+ seats (all features, per-seat limits)
- *   Enterprise → custom
+ * Active production billing routes are disabled in open-source mode and return
+ * compatibility responses from route wrappers in routes/billing.ts.
+ *
+ * Legacy behavior below may still reference Stripe concepts such as checkout,
+ * subscriptions, and seats, but these are no longer part of the active OSS UX.
  *
  * Environment Variables:
- *   STRIPE_SECRET_KEY              — Stripe API secret key (sk_test_... or sk_live_...)
- *   STRIPE_WEBHOOK_SECRET          — Webhook endpoint signing secret (whsec_...)
- *   STRIPE_PRO_PRICE_ID            — Price ID for Pro plan ($9/seat/mo)
- *   STRIPE_PRO_ANNUAL_PRICE_ID     — Price ID for Pro annual plan ($97.20/seat/yr)
+ *   STRIPE_SECRET_KEY              — Legacy Stripe API key
+ *   STRIPE_WEBHOOK_SECRET          — Legacy webhook signing secret
+ *   STRIPE_PRO_PRICE_ID            — Legacy price ID
+ *   STRIPE_PRO_ANNUAL_PRICE_ID     — Legacy annual price ID
  *   (Legacy fallbacks: STRIPE_PAID_PRICE_ID, STRIPE_TEAM_PRICE_ID, etc.)
  *   CULLIT_BASE_URL                — Public base URL for success/cancel redirects
  *
@@ -50,7 +47,7 @@ const STRIPE_PRO_PRICE_ID = process.env['STRIPE_PRO_PRICE_ID'] || process.env['S
 const STRIPE_PRO_ANNUAL_PRICE_ID = process.env['STRIPE_PRO_ANNUAL_PRICE_ID'] || process.env['STRIPE_PAID_ANNUAL_PRICE_ID'] || process.env['STRIPE_TEAM_ANNUAL_PRICE_ID'] || '';
 
 if (STRIPE_SECRET_KEY) {
-  if (!STRIPE_PRO_PRICE_ID) log.warn('STRIPE_PRO_PRICE_ID not set — Pro checkout will fail');
+  if (!STRIPE_PRO_PRICE_ID) log.warn('STRIPE_PRO_PRICE_ID not set — legacy Stripe checkout compatibility paths may fail');
 }
 const BASE_URL = process.env['CULLIT_BASE_URL'] || 'http://localhost:3000';
 const DASHBOARD_URL = process.env['CULLIT_DASHBOARD_URL'] || BASE_URL;

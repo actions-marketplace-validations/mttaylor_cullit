@@ -56,7 +56,7 @@ jobs:
           npx playwright install --with-deps chromium
           pnpm test:e2e
 
-      - name: Validate pricing and legal guards
+      - name: Validate open-source and legal guards
         run: pnpm validate:guards
 
       - name: Security audit

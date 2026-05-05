@@ -265,24 +265,24 @@
       {
         id: 'gating',
         title: 'Gating and Tier Controls',
-        hint: 'License checks and allowlists',
-        description: 'License validation controls provider, enrichment, and publisher access at runtime.',
+        hint: 'Compatibility tier metadata',
+        description: 'Tier values are kept for compatibility and analytics; runtime access is open for all features.',
         code: `flowchart TD
   Start[runPipeline]
-  Validate[validateLicense]
-  Provider{provider allowed}
-  Enrich{enrichment allowed}
-  Publisher{publisher allowed}
+  Validate[validateLicense compatibility]
+  Provider{provider selected}
+  Enrich{enrichment configured}
+  Publisher{publisher configured}
   End[Pipeline completed]
 
   Start --> Validate --> Provider
-  Provider -- no --> Stop1[throw upgrade message]
+  Provider -- no --> Stop1[skip provider stage]
   Provider -- yes --> Enrich
-  Enrich -- no --> Skip1[skip enrichment]
+  Enrich -- no --> Skip1[skip enrichment stage]
   Enrich -- yes --> DoEnrich[run enrichment]
   Skip1 --> Publisher
   DoEnrich --> Publisher
-  Publisher -- no --> Skip2[skip publisher]
+  Publisher -- no --> Skip2[skip publisher stage]
   Publisher -- yes --> DoPub[publish]
   Skip2 --> End
   DoPub --> End`
@@ -291,7 +291,7 @@
         id: 'api-dashboard',
         title: 'API and Dashboard Flow',
         hint: 'Auth, tier, generation, usage',
-        description: 'Dashboard calls auth and generation endpoints; server enforces effective-tier limits and records usage.',
+          description: 'Dashboard calls auth and generation endpoints; server records usage and runs an open-access pipeline.',
         code: `sequenceDiagram
   participant B as Browser dashboard
   participant A as API server
@@ -305,7 +305,7 @@
 
   B->>A: POST generate
   A->>AU: resolveUser
-  A->>A: check monthly limits by effective tier
+  A->>A: apply compatibility checks
   A->>A: runPipeline
   A->>DB: record history and usage
   A-->>B: generated notes and metadata`
