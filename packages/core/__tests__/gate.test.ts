@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-vi.mock('@cullit/core', async (importOriginal) => {
-  const actual = await importOriginal() as any;
-  return { ...actual, fetchWithTimeout: vi.fn() };
-});
+vi.mock('../src/fetch', () => ({
+  fetchWithTimeout: vi.fn(),
+}));
+
+import { fetchWithTimeout } from '../src/fetch';
 
 import {
   resolveLicense,
@@ -19,7 +20,7 @@ import {
   isFeatureAllowed,
   isPlanFeatureAllowed,
   getFeatureGating,
-} from '@cullit/core';
+} from '../src/gate';
 
 describe('Gate — resolveLicense', () => {
   const savedKey = process.env.CULLIT_API_KEY;
@@ -412,6 +413,12 @@ describe('Gate — validateLicense', () => {
 describe('Gate — reportUsage', () => {
   const savedKey = process.env.CULLIT_API_KEY;
   const savedUrl = process.env.CULLIT_METER_URL;
+  const mockFetchWithTimeout = vi.mocked(fetchWithTimeout);
+
+  beforeEach(() => {
+    mockFetchWithTimeout.mockReset();
+    mockFetchWithTimeout.mockResolvedValue({ ok: true } as any);
+  });
 
   afterEach(() => {
     if (savedKey) process.env.CULLIT_API_KEY = savedKey;
@@ -436,11 +443,14 @@ describe('Gate — reportUsage', () => {
     process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
     process.env.CULLIT_METER_URL = 'https://meter.cullit.io/v1/usage';
     await expect(reportUsage('my-project')).resolves.toBeUndefined();
+    expect(mockFetchWithTimeout).toHaveBeenCalledTimes(1);
   });
 
   it('swallows errors silently', async () => {
     process.env.CULLIT_API_KEY = 'clt_' + 'a'.repeat(32);
     process.env.CULLIT_METER_URL = 'https://meter.cullit.io/v1/usage';
+    mockFetchWithTimeout.mockRejectedValueOnce(new Error('network'));
     await expect(reportUsage()).resolves.toBeUndefined();
+    expect(mockFetchWithTimeout).toHaveBeenCalledTimes(1);
   });
 });
