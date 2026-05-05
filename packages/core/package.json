@@ -1,6 +1,6 @@
 {
   "name": "@cullit/core",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "type": "module",
   "description": "Core engine for Cullit — AI-powered release note generation.",
   "license": "MIT",
