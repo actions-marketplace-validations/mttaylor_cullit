@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0f1117">
 <title>Support Cullit - Open Source</title>
-<meta name="description" content="Cullit is fully open source and free to use. Support development through GitHub Sponsors and community contributions.">
+<meta name="description" content="Cullit is fully open source and free to use. Support development through GitHub Sponsors, PayPal, Venmo, Buy Me a Coffee, Ko-fi, and community contributions.">
 <meta property="og:title" content="Support Cullit - Open Source">
-<meta property="og:description" content="Cullit is fully open source. Sponsor development on GitHub.">
+<meta property="og:description" content="Cullit is fully open source. Support development through GitHub Sponsors, PayPal, Venmo, Buy Me a Coffee, or Ko-fi.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://cullit.io/pricing">
 <link rel="canonical" href="https://cullit.io/pricing">
@@ -44,13 +44,13 @@
   nav a { color: var(--muted); text-decoration: none; font-family: 'Space Mono', monospace; font-size: 0.9rem; }
   nav .links { display: flex; gap: 1.2rem; align-items: center; }
   nav .cta { color: #0f1117; background: var(--accent); padding: 0.45rem 0.9rem; border-radius: 8px; font-weight: 700; }
-  .container { max-width: 980px; margin: 0 auto; padding: 3rem 1.25rem 4rem; }
+  .container { max-width: 980px; margin: 0 auto; padding: 3rem 1.25rem 4rem; text-align: center; }
   h1 {
     font-family: 'Chakra Petch', sans-serif;
     font-size: clamp(2rem, 4vw, 3rem);
     margin-bottom: 0.8rem;
   }
-  .lead { color: var(--muted); max-width: 760px; margin-bottom: 2rem; }
+  .lead { color: var(--muted); max-width: 760px; margin: 0 auto 2rem; }
   .grid {
     display: grid;
     gap: 1rem;
@@ -65,7 +65,7 @@
   }
   .card h2 { font-family: 'Chakra Petch', sans-serif; font-size: 1.25rem; margin-bottom: 0.4rem; }
   .card p { color: var(--muted); font-size: 0.95rem; }
-  .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.25rem; }
+  .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.25rem; justify-content: center; }
   .btn {
     display: inline-block;
     text-decoration: none;
@@ -77,6 +77,9 @@
   }
   .btn.primary { background: var(--accent); color: #0f1117; border-color: transparent; }
   .note { margin-top: 1.5rem; color: var(--muted); font-size: 0.92rem; }
+  .qr-section { margin-top: 2rem; display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
+  .qr-section img { width: 160px; height: 160px; border-radius: 12px; border: 1px solid var(--border); background: #fff; padding: 8px; }
+  .qr-label { font-size: 0.85rem; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -91,7 +94,7 @@
 
 <main class="container">
   <h1>Cullit is fully free and open source</h1>
-  <p class="lead">There are no paid tiers, no checkout flow, and no feature paywalls. If Cullit saves your team time, support ongoing development through GitHub Sponsors.</p>
+  <p class="lead">There are no paid tiers, no checkout flow, and no feature paywalls. If Cullit saves your team time, support ongoing development through GitHub Sponsors, PayPal, Venmo, Buy Me a Coffee, or Ko-fi.</p>
 
   <section class="grid">
     <article class="card">
@@ -100,7 +103,7 @@
     </article>
     <article class="card">
       <h2>Sponsor Development</h2>
-      <p>Recurring or one-time support through GitHub Sponsors helps fund maintenance, fixes, and new features.</p>
+      <p>Recurring or one-time support through GitHub Sponsors, PayPal, Venmo, Buy Me a Coffee, or Ko-fi helps fund maintenance, fixes, and new features.</p>
     </article>
     <article class="card">
       <h2>Contribute</h2>
@@ -110,8 +113,27 @@
 
   <div class="actions">
     <a class="btn primary" href="https://github.com/sponsors/mttaylor" target="_blank" rel="noopener noreferrer">Sponsor on GitHub</a>
+    <a class="btn" href="https://paypal.me/mtaylorCE" target="_blank" rel="noopener noreferrer">Donate via PayPal</a>
+    <a class="btn" href="https://buymeacoffee.com/engineeringdad" target="_blank" rel="noopener noreferrer">Buy Me a Coffee</a>
+    <a class="btn" href="https://ko-fi.com/mttaylor" target="_blank" rel="noopener noreferrer">Support on Ko-fi</a>
+    <a class="btn" href="https://venmo.com/engineeringdad" target="_blank" rel="noopener noreferrer">Donate via Venmo</a>
     <a class="btn" href="https://github.com/mttaylor/cullit" target="_blank" rel="noopener noreferrer">View Repository</a>
     <a class="btn" href="dashboard.html">Open Dashboard</a>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:2rem;justify-content:center;margin-top:2rem;">
+    <div class="qr-section">
+      <a href="https://paypal.me/mtaylorCE" target="_blank" rel="noopener noreferrer">
+        <img src="assets/paypal-qr.png" alt="Scan to donate via PayPal" width="160" height="160">
+      </a>
+      <span class="qr-label">Scan to donate via PayPal</span>
+    </div>
+    <div class="qr-section">
+      <a href="https://venmo.com/engineeringdad" target="_blank" rel="noopener noreferrer">
+        <img src="assets/venmo-qr.png" alt="Scan to donate via Venmo" style="width:auto;height:200px;max-width:160px;">
+      </a>
+      <span class="qr-label">Scan to donate via Venmo</span>
+    </div>
   </div>
 
   <p class="note">Thank you for helping keep Cullit healthy, independent, and community-driven.</p>

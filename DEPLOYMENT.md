@@ -98,6 +98,10 @@ Cullit is fully open source. There is no billing configuration required.
 If you expose support links in your deployment, point users to:
 
 - `https://github.com/sponsors/mttaylor`
+- `https://paypal.me/mtaylorCE`
+- `https://venmo.com/engineeringdad`
+- `https://buymeacoffee.com/engineeringdad`
+- `https://ko-fi.com/mttaylor`
 
 ### Optional
 

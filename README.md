@@ -14,7 +14,7 @@
 
 Cullit reads your git history, enriches from Jira and Linear, and generates categorized release notes for developers, customers, and executives. AI providers, integrations, dashboard workflows, and publishers are all available in the open-source codebase.
 
-> Built by [Matt](https://cullit.io) — a solo developer. If Cullit saves you time, **[⭐ star the repo](https://github.com/mttaylor/cullit)** or **[❤️ sponsor on GitHub](https://github.com/sponsors/mttaylor)** — it really helps keep the project alive.
+> Built by [Matt](https://cullit.io) — a solo developer. If Cullit saves you time, **[⭐ star the repo](https://github.com/mttaylor/cullit)** or support via **[GitHub Sponsors](https://github.com/sponsors/mttaylor)**, **[PayPal](https://paypal.me/mtaylorCE)**, **[Venmo](https://venmo.com/engineeringdad)**, **[Buy Me a Coffee](https://buymeacoffee.com/engineeringdad)**, or **[Ko-fi](https://ko-fi.com/mttaylor)** — it really helps keep the project alive.
 
 ---
 
@@ -35,7 +35,7 @@ npm install -D cullit
 
 - Public npm package `cullit`: full CLI with template and AI provider support
 - Monorepo packages: core engine, API server, GitHub App, website/dashboard
-- Community funding: GitHub Sponsors supports maintenance and roadmap work
+- Community funding: GitHub Sponsors, PayPal, Venmo, Buy Me a Coffee, and Ko-fi support maintenance and roadmap work
 
 ## Quick Start
 
@@ -67,7 +67,13 @@ cullit generate --from v1.0.0 --quiet
 cullit generate --from v1.0.0 --to v1.1.0 --provider anthropic
 ```
 
-If Cullit is useful to your team, support the project at https://github.com/sponsors/mttaylor.
+If Cullit is useful to your team, support the project through one of these options:
+
+- GitHub Sponsors: https://github.com/sponsors/mttaylor
+- PayPal: https://paypal.me/mtaylorCE
+- Venmo: https://venmo.com/engineeringdad
+- Buy Me a Coffee: https://buymeacoffee.com/engineeringdad
+- Ko-fi: https://ko-fi.com/mttaylor
 
 ## CLI Command Reference
 
