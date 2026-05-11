@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Core engine for Cullit — AI-powered release note generation.",
   "license": "MIT",
-  "author": "Cullit <matt@cullit.io>",
+  "author": "Cullit <dev@cullit.io>",
   "repository": {
     "type": "git",
     "url": "https://github.com/mttaylor/cullit",

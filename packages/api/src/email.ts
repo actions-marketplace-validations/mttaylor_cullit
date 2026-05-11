@@ -252,7 +252,7 @@ export async function sendPaymentFailed(email: string, name: string): Promise<bo
         </a>
       </p>
       <p style="color: #6b7280; font-size: 13px;">
-        If you need help, reply to this email or contact <a href="mailto:support@cullit.io" style="color: #5eead4;">support@cullit.io</a>.
+        If you need help, reply to this email or contact <a href="mailto:dev@cullit.io" style="color: #5eead4;">dev@cullit.io</a>.
       </p>
     ${FOOTER}`,
   });
@@ -340,7 +340,7 @@ export async function sendProvisioningFailed(email: string, name: string, plan: 
         and contact support if you need help diagnosing this legacy flow.
       </p>
       <p style="color: #6b7280; font-size: 13px;">
-        Need help? Email <a href="mailto:support@cullit.io" style="color: #5eead4;">support@cullit.io</a>.
+        Need help? Email <a href="mailto:dev@cullit.io" style="color: #5eead4;">dev@cullit.io</a>.
       </p>
     ${FOOTER}`,
   });

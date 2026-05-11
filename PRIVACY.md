@@ -102,7 +102,7 @@ Cullit source code is available for review at [github.com/mttaylor/cullit](https
 
 ## Contact
 
-For privacy questions: **matt@cullit.io**
+For privacy questions: **dev@cullit.io**
 
 ## Changes
 

@@ -93,7 +93,7 @@ If the project helps your team, support development via GitHub Sponsors:
 
 - [Documentation](https://cullit.io/docs.html#github-app)
 - [GitHub Issues](https://github.com/mttaylor/cullit/issues)
-- Email: matt@cullit.io
+- Email: dev@cullit.io
 
 ## Links
 

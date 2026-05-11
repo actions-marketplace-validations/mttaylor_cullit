@@ -16,7 +16,7 @@ We take security seriously. If you discover a vulnerability, please report it re
 
 ### How to Report
 
-1. **Email:** Send details to **matt@cullit.io**
+1. **Email:** Send details to **dev@cullit.io**
 2. **Subject line:** `[SECURITY] Cullit — <brief description>`
 3. **Include:**
    - Description of the vulnerability
@@ -80,4 +80,4 @@ The following are **out of scope:**
 
 ## PGP Key
 
-For encrypted communications, request our PGP key at matt@cullit.io.
+For encrypted communications, request our PGP key at dev@cullit.io.

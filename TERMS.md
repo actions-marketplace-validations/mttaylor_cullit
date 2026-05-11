@@ -62,5 +62,5 @@ We may update these Terms from time to time. Continued use after updates constit
 
 **Cullit**
 
-- matt@cullit.io
+- dev@cullit.io
 - https://cullit.io

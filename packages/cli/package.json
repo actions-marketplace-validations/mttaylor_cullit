@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Cullit CLI for local and integrated release note generation.",
   "license": "MIT",
-  "author": "Cullit <matt@cullit.io>",
+  "author": "Cullit <dev@cullit.io>",
   "repository": {
     "type": "git",
     "url": "https://github.com/mttaylor/cullit",

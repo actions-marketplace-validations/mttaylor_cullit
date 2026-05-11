@@ -16,7 +16,7 @@ export const openApiSpec = {
     contact: {
       name: 'Cullit',
       url: 'https://cullit.io',
-      email: 'matt@cullit.io',
+      email: 'dev@cullit.io',
     },
     license: {
       name: 'MIT',

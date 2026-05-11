@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Cullit REST API server for AI-powered release note generation.",
   "license": "MIT",
-  "author": "Cullit <matt@cullit.io>",
+  "author": "Cullit <dev@cullit.io>",
   "main": "./dist/index.js",
   "engines": {
     "node": ">=22"
