@@ -1080,7 +1080,7 @@
   </a>
   <div id="apiStatus" style="display:none;margin-top:1.25rem;padding:1rem 1.25rem;border-radius:8px;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.25);max-width:420px;">
     <p style="font-size:0.82rem;color:#eab308;margin:0 0 0.4rem;font-weight:600;">API not available</p>
-    <p style="font-size:0.75rem;color:var(--text-dim);margin:0;">The Cullit API (<code style="font-size:0.72rem">api.cullit.io</code>) is not deployed yet. Login will be available once the backend is live. In the meantime, use the CLI:</p>
+    <p id="apiStatusMessage" style="font-size:0.75rem;color:var(--text-dim);margin:0;">Could not verify the API endpoint. Login may still work, but if it fails, confirm the API is running and CORS is configured.</p>
     <pre style="margin:0.6rem 0 0;padding:0.5rem 0.75rem;background:var(--bg-card);border-radius:4px;font-size:0.72rem;color:var(--teal);overflow-x:auto;">npx cullit generate --from v1.0.0 --provider none</pre>
   </div>
   <p id="cliHint" style="font-size:0.75rem;margin-top:1rem;color:var(--text-dim)">Free users: use the CLI with <code style="font-size:0.75rem">cullit generate --provider none</code></p>

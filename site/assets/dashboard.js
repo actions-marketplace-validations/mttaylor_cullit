@@ -64,18 +64,34 @@
     document.getElementById('navUser').style.display = 'none';
 
     var btn = document.getElementById('loginBtn');
+    var statusBox = document.getElementById('apiStatus');
+    var statusMessage = document.getElementById('apiStatusMessage');
+    var cliHint = document.getElementById('cliHint');
+    var base = apiUrl();
+
+    btn.style.opacity = '';
+    btn.style.pointerEvents = '';
+    btn.href = base + '/auth/login?returnTo=' + encodeURIComponent(window.location.pathname + window.location.search + window.location.hash);
+
+    statusBox.style.display = 'none';
+    cliHint.style.display = '';
+
     try {
-      var health = await fetch(apiUrl() + '/health', { mode: 'cors' });
+      var health = await fetch(base + '/healthz', { mode: 'cors', credentials: 'include' });
       if (health.ok) {
-        btn.href = apiUrl() + '/auth/login';
         return;
       }
     } catch (e) {}
-    btn.style.opacity = '0.5';
-    btn.style.pointerEvents = 'none';
-    btn.removeAttribute('href');
-    document.getElementById('apiStatus').style.display = 'block';
-    document.getElementById('cliHint').style.display = 'none';
+
+    if (statusMessage) {
+      statusMessage.innerHTML =
+        'Could not verify API health at <code style="font-size:0.72rem">' + escapeHtml(base) + '</code>. '
+        + 'Login may still work, but if it fails, make sure the API is running and '
+        + '<code style="font-size:0.72rem">ALLOWED_ORIGINS</code> includes '
+        + '<code style="font-size:0.72rem">' + escapeHtml(window.location.origin) + '</code>.';
+    }
+    statusBox.style.display = 'block';
+    cliHint.style.display = 'none';
   }
 
   function toggleApiKeyVisibility() {
