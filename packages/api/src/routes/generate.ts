@@ -188,6 +188,49 @@ function recordGeneration(
   }).catch((err) => log.warn({ err: (err as Error).message }, 'Failed to record usage event'));
 }
 
+function isInvalidRefError(message: string): boolean {
+  return /bad revision|unknown revision|ambiguous argument|not a valid object name|unknown ref/i.test(message);
+}
+
+function isNoChangesError(message: string): boolean {
+  return /no commits found|no issues found/i.test(message);
+}
+
+function isGitRepoMissingError(message: string): boolean {
+  return /not a git repository|inside a git repository/i.test(message);
+}
+
+function resolveHostedRepo(): { owner: string; repo: string } | null {
+  const combined = process.env['CULLIT_GITHUB_REPOSITORY'] || process.env['GITHUB_REPOSITORY'] || '';
+  if (combined.includes('/')) {
+    const [owner, repo] = combined.split('/').map(v => v.trim()).filter(Boolean);
+    if (owner && repo) return { owner, repo };
+  }
+  const owner = (process.env['CULLIT_GITHUB_OWNER'] || process.env['GITHUB_OWNER'] || '').trim();
+  const repo = (process.env['CULLIT_GITHUB_REPO'] || process.env['GITHUB_REPO'] || '').trim();
+  return owner && repo ? { owner, repo } : null;
+}
+
+async function runHostedGithubFallback(
+  from: string,
+  to: string,
+  config: CullConfig,
+  format: OutputFormat,
+): Promise<Awaited<ReturnType<typeof runPipeline>> | null> {
+  const hostedRepo = resolveHostedRepo();
+  if (!hostedRepo) return null;
+  const fallbackConfig: CullConfig = {
+    ...config,
+    source: {
+      ...(config.source || {}),
+      type: 'github',
+      owner: hostedRepo.owner,
+      repo: hostedRepo.repo,
+    },
+  };
+  return runPipeline(from, to, fallbackConfig, { format, dryRun: true });
+}
+
 // --- Handler ---
 
 export async function handleGenerate(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -238,7 +281,18 @@ export async function handleGenerate(req: IncomingMessage, res: ServerResponse):
     if (cached) { json(res, 200, cached); return; }
 
     // Execute pipeline
-    const result = await runPipeline(body.from, to, config as CullConfig, { format, dryRun: true });
+    let result: Awaited<ReturnType<typeof runPipeline>>;
+    try {
+      result = await runPipeline(body.from, to, config as CullConfig, { format, dryRun: true });
+    } catch (pipelineErr) {
+      const message = (pipelineErr as Error).message || 'Unknown pipeline error';
+      const shouldFallback = isGitRepoMissingError(message) && ((config as CullConfig).source?.type || 'local') === 'local';
+      if (!shouldFallback) throw pipelineErr;
+
+      const fallback = await runHostedGithubFallback(body.from, to, config as CullConfig, format);
+      if (!fallback) throw pipelineErr;
+      result = fallback;
+    }
 
     const response = {
       version: result.notes.version, date: result.notes.date,
@@ -264,7 +318,29 @@ export async function handleGenerate(req: IncomingMessage, res: ServerResponse):
         .catch((err) => log.warn({ err: (err as Error).message }, 'Failed to send usage alert'));
     }
   } catch (err) {
-    log.error({ err: (err as Error).message }, 'Pipeline error');
+    const message = (err as Error).message || 'Unknown pipeline error';
+    log.error({ err: message }, 'Pipeline error');
+    if (isInvalidRefError(message)) {
+      json(res, 400, {
+        error: 'Invalid git ref in "from" or "to". Use an existing tag/SHA/branch (for example: v3.1.1 -> HEAD).',
+        code: ErrorCode.VALIDATION_INVALID_PARAMETER,
+      });
+      return;
+    }
+    if (isNoChangesError(message)) {
+      json(res, 400, {
+        error: 'No changes found between the selected refs. Choose an earlier "from" value (for example: v3.1.0 -> HEAD).',
+        code: ErrorCode.VALIDATION_INVALID_PARAMETER,
+      });
+      return;
+    }
+    if (isGitRepoMissingError(message)) {
+      json(res, 503, {
+        error: 'Generation source is unavailable on this deployment. The API runtime has no git repository context for local ref generation.',
+        code: ErrorCode.SERVER_GENERATION_FAILED,
+      });
+      return;
+    }
     metrics.generationError();
     json(res, 500, { error: 'Generation failed. Check server logs for details.', code: ErrorCode.SERVER_GENERATION_FAILED });
   }

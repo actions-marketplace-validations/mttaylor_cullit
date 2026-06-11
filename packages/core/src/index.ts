@@ -22,6 +22,7 @@ import { DEFAULT_MODELS } from './constants';
 import { createLogger, type Logger } from './logger';
 
 export { GitCollector, getRecentTags, getLatestTag } from './collectors/git';
+export { GitHubCollector } from './collectors/github';
 export { MultiRepoCollector } from './collectors/multi-repo';
 export { TemplateGenerator } from './generators/template';
 export { formatNotes, registerFormatter, getFormatter, listFormatters, escapeHtml } from './formatter';
@@ -49,6 +50,7 @@ import type { CullConfig, EnrichedContext, PipelineResult, OutputFormat, Enriche
 import { CullitError, CoreErrorCode } from './errors';
 import { validateLicense, isProviderAllowed, isPublisherAllowed, isEnrichmentAllowed, isAudienceToneAllowed, upgradeMessage } from './gate';
 import { GitCollector } from './collectors/git';
+import { GitHubCollector } from './collectors/github';
 import { MultiRepoCollector } from './collectors/multi-repo';
 import { TemplateGenerator } from './generators/template';
 import { formatNotes } from './formatter';
@@ -60,6 +62,15 @@ import {
 
 // --- Register free (core) plugins ---
 registerCollector('local', (config: CullConfig) => new GitCollector(config.source?.repoPath));
+registerCollector('github', (config: CullConfig) => {
+  const owner = config.source?.owner || process.env['CULLIT_GITHUB_OWNER'] || process.env['GITHUB_OWNER'] || '';
+  const repo = config.source?.repo || process.env['CULLIT_GITHUB_REPO'] || process.env['GITHUB_REPO'] || '';
+  if (!owner || !repo) {
+    throw new Error('GitHub source requires owner and repo (set source.owner/source.repo or CULLIT_GITHUB_OWNER/CULLIT_GITHUB_REPO).');
+  }
+  const token = process.env['GITHUB_TOKEN'];
+  return new GitHubCollector(owner, repo, token);
+});
 registerCollector('multi-repo', (config: CullConfig) => {
   if (!config.repos?.length) throw new Error('Multi-repo source requires "repos" array in config');
   return new MultiRepoCollector(config.repos);
