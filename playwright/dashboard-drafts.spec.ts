@@ -90,14 +90,14 @@ async function mockDraftApis(
 }
 
 test.describe('dashboard drafts tab', () => {
-  test('free user sees drafts tab disabled (paid-gated)', async ({ page }) => {
+  test('free user sees drafts tab enabled in OSS mode', async ({ page }) => {
     await mockDashboardApis(page, { status: 200, body: makeUser('free') });
 
     await page.goto('/dashboard.html');
     await expect(page.locator('#dashApp')).toBeVisible();
 
-    // Drafts tab is disabled for free tier (requires paid+)
-    await expect(page.locator('.dash-tab[data-tab="drafts"]')).toBeDisabled();
+    // Drafts tab is available for all tiers in OSS mode.
+    await expect(page.locator('.dash-tab[data-tab="drafts"]')).toBeEnabled();
   });
 
   test('paid user sees draft list, not gate', async ({ page }) => {

@@ -99,7 +99,7 @@ test('free tier shows free badge and paid gates remain locked', async ({ page })
 
   await page.goto('/dashboard.html');
 
-  await expect(page.locator('#navTier')).toHaveText('free');
+  await expect(page.locator('#navTier')).toHaveText('open-source');
 
   // Drafts tab is available for all tiers in OSS mode
   await expect(page.locator('.dash-tab[data-tab="drafts"]')).toBeEnabled();
@@ -110,7 +110,7 @@ test('paid tier unlocks all features and shows paid badge', async ({ page }) => 
 
   await page.goto('/dashboard.html');
 
-  await expect(page.locator('#navTier')).toHaveText('paid');
+  await expect(page.locator('#navTier')).toHaveText('open-source');
   // Drafts remains available in OSS mode
   await expect(page.locator('.dash-tab[data-tab="drafts"]')).toBeEnabled();
   await expect(page.locator('#billingPlanName')).toHaveText('Open Source');
@@ -121,7 +121,7 @@ test('legacy pro tier maps to paid behavior', async ({ page }) => {
 
   await page.goto('/dashboard.html');
 
-  await expect(page.locator('#navTier')).toHaveText('pro');
+  await expect(page.locator('#navTier')).toHaveText('open-source');
   // Legacy pro remains fully enabled
   await expect(page.locator('.dash-tab[data-tab="drafts"]')).toBeEnabled();
   await expect(page.locator('#billingPlanName')).toHaveText('Open Source');
@@ -132,7 +132,7 @@ test('enterprise tier shows enterprise plan and unlocked draft flow', async ({ p
 
   await page.goto('/dashboard.html');
 
-  await expect(page.locator('#navTier')).toHaveText('enterprise');
+  await expect(page.locator('#navTier')).toHaveText('open-source');
   await page.getByRole('button', { name: /drafts/i }).click();
   await expect(page.locator('#draftTeamGate')).toBeHidden();
   await expect(page.locator('#billingPlanName')).toHaveText('Open Source');
