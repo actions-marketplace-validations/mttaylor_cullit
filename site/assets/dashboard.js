@@ -7,6 +7,60 @@
   var currentView = 'rendered';
   var currentUser = null;
   var manageSeatCount = null;
+  var PROVIDER_KEY_STORE = 'cullit_provider_keys';
+
+  function readProviderKeyStore() {
+    try {
+      var raw = localStorage.getItem(PROVIDER_KEY_STORE);
+      var parsed = raw ? JSON.parse(raw) : {};
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function writeProviderKeyStore(store) {
+    try {
+      localStorage.setItem(PROVIDER_KEY_STORE, JSON.stringify(store || {}));
+    } catch (e) {}
+  }
+
+  function getRememberedProviderKey(provider) {
+    if (!provider) return '';
+    var store = readProviderKeyStore();
+    var value = store[provider];
+    return typeof value === 'string' ? value : '';
+  }
+
+  function rememberProviderKey(provider, key) {
+    if (!provider) return;
+    var store = readProviderKeyStore();
+    if (key) store[provider] = key;
+    else delete store[provider];
+    writeProviderKeyStore(store);
+  }
+
+  function refreshProviderKeyInput() {
+    var providerEl = document.getElementById('provider');
+    var keyEl = document.getElementById('providerApiKey');
+    var rememberEl = document.getElementById('rememberProviderKey');
+    if (!providerEl || !keyEl || !rememberEl) return;
+
+    var provider = providerEl.value;
+    var remembered = getRememberedProviderKey(provider);
+    keyEl.value = remembered;
+    rememberEl.checked = !!remembered;
+  }
+
+  function sourceDefaultsFromSettings() {
+    var ownerInput = document.getElementById('sourceOwner');
+    var repoInput = document.getElementById('sourceRepo');
+    var psOwner = document.getElementById('ps-github-owner');
+    var psRepo = document.getElementById('ps-github-repo');
+    if (!ownerInput || !repoInput || !psOwner || !psRepo) return;
+    if (!ownerInput.value.trim() && psOwner.value.trim()) ownerInput.value = psOwner.value.trim();
+    if (!repoInput.value.trim() && psRepo.value.trim()) repoInput.value = psRepo.value.trim();
+  }
 
   function capitalize(text) {
     return text ? text.charAt(0).toUpperCase() + text.slice(1) : '';
@@ -230,14 +284,36 @@
 
     if (!fromRef) { isGenerating = false; showToast('Please enter a "From" tag or SHA'); return; }
 
+    sourceDefaultsFromSettings();
+    var sourceType = document.getElementById('sourceType').value || 'local';
+    var sourceOwner = document.getElementById('sourceOwner').value.trim();
+    var sourceRepo = document.getElementById('sourceRepo').value.trim();
+    var provider = document.getElementById('provider').value;
+    var providerApiKey = document.getElementById('providerApiKey').value.trim();
+    var rememberProvider = !!document.getElementById('rememberProviderKey').checked;
+
+    if (rememberProvider && providerApiKey) {
+      rememberProviderKey(provider, providerApiKey);
+    } else if (!rememberProvider) {
+      rememberProviderKey(provider, '');
+    }
+
+    var source = { type: sourceType };
+    if (sourceOwner) source.owner = sourceOwner;
+    if (sourceRepo) source.repo = sourceRepo;
+
     var body = {
       from: fromRef,
       to: toRef,
-      provider: document.getElementById('provider').value,
+      provider: provider,
       audience: document.getElementById('audience').value,
       tone: document.getElementById('tone').value,
       format: document.getElementById('format').value,
+      source: source,
     };
+    if (providerApiKey && provider !== 'none' && provider !== 'ollama') {
+      body.apiKey = providerApiKey;
+    }
 
     btn.disabled = true;
     btn.classList.add('loading');
@@ -994,6 +1070,8 @@
       document.getElementById('ps-format').value = 'markdown';
       document.getElementById('ps-template-profile').value = '';
       document.getElementById('ps-section-order').value = '';
+      document.getElementById('ps-github-owner').value = '';
+      document.getElementById('ps-github-repo').value = '';
       document.getElementById('ps-publish-targets').value = '';
       return;
     }
@@ -1010,6 +1088,7 @@
             : (s.widget_config_json || {});
         } catch (_e) { widgetConfig = {}; }
         var templateConfig = widgetConfig && typeof widgetConfig === 'object' ? (widgetConfig.template || {}) : {};
+        var githubConfig = widgetConfig && typeof widgetConfig === 'object' ? (widgetConfig.github || {}) : {};
         document.getElementById('ps-source').value = s.default_source || 'local';
         document.getElementById('ps-provider').value = s.default_provider || 'none';
         document.getElementById('ps-model').value = s.default_model || '';
@@ -1026,10 +1105,17 @@
         document.getElementById('ps-template-profile').value = templateConfig.profile || '';
         var sectionOrder = Array.isArray(templateConfig.sectionOrder) ? templateConfig.sectionOrder : [];
         document.getElementById('ps-section-order').value = sectionOrder.join(', ');
+        document.getElementById('ps-github-owner').value = githubConfig.owner || '';
+        document.getElementById('ps-github-repo').value = githubConfig.repo || '';
+        var sourceTypeEl = document.getElementById('sourceType');
+        if (sourceTypeEl) {
+          sourceTypeEl.value = (s.default_source === 'github') ? 'github' : 'local';
+        }
         var publishTargets = Array.isArray(s.publish_targets_json)
           ? s.publish_targets_json
           : (typeof s.publish_targets_json === 'string' ? JSON.parse(s.publish_targets_json) : []);
         document.getElementById('ps-publish-targets').value = publishTargets.length ? JSON.stringify(publishTargets, null, 2) : '';
+        sourceDefaultsFromSettings();
       }
     } catch (e) {}
   }
@@ -1070,6 +1156,10 @@
       categories: cats,
       publishTargets: publishTargets,
       widgetConfig: {
+        github: {
+          owner: document.getElementById('ps-github-owner').value.trim(),
+          repo: document.getElementById('ps-github-repo').value.trim(),
+        },
         template: {
           defaultFormat: document.getElementById('ps-format').value,
           profile: document.getElementById('ps-template-profile').value.trim(),
@@ -1651,6 +1741,19 @@
         return;
       }
 
+      if (target.id === 'clearProviderKey') {
+        var providerEl = document.getElementById('provider');
+        var keyEl = document.getElementById('providerApiKey');
+        var rememberEl = document.getElementById('rememberProviderKey');
+        if (providerEl && keyEl && rememberEl) {
+          rememberProviderKey(providerEl.value, '');
+          keyEl.value = '';
+          rememberEl.checked = false;
+          showToast('Saved provider key cleared');
+        }
+        return;
+      }
+
       // Dash tab buttons (by class)
       btn = target.closest('.dash-tab');
       if (btn && btn.dataset.tab) {
@@ -1666,6 +1769,13 @@
       if (target.id === 'settingsProjectSelect') loadProjectSettings();
       if (target.id === 'changelogProjectSelect') loadChangelogReleases();
       if (target.id === 'widgetAccentColor') updateWidgetSnippet();
+      if (target.id === 'provider') refreshProviderKeyInput();
+      if (target.id === 'rememberProviderKey') {
+        var selectedProvider = document.getElementById('provider').value;
+        var currentKey = document.getElementById('providerApiKey').value.trim();
+        if (target.checked && currentKey) rememberProviderKey(selectedProvider, currentKey);
+        if (!target.checked) rememberProviderKey(selectedProvider, '');
+      }
     });
 
     document.addEventListener('input', function (e) {
@@ -1673,6 +1783,11 @@
       if (target.id === 'dashProSeats') updateProTotal();
       if (target.id === 'widgetHeaderText') updateWidgetSnippet();
       if (target.id === 'widgetTriggerEmoji') updateWidgetSnippet();
+      if (target.id === 'providerApiKey') {
+        var provider = document.getElementById('provider').value;
+        var remember = !!document.getElementById('rememberProviderKey').checked;
+        if (remember) rememberProviderKey(provider, target.value.trim());
+      }
     });
 
     // Form submit delegation
@@ -1683,5 +1798,7 @@
         saveProjectSettings();
       });
     }
+
+    refreshProviderKeyInput();
   });
 })();

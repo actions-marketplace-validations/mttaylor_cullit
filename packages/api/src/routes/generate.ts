@@ -32,13 +32,16 @@ export interface GenerateRequest {
   from: string;
   to?: string;
   provider?: AIProvider;
+  apiKey?: string;
   model?: string;
   audience?: Audience;
   tone?: Tone;
   format?: OutputFormat;
   categories?: string[];
   source?: {
-    type?: 'local' | 'jira' | 'linear' | 'gitlab' | 'bitbucket' | 'multi-repo';
+    type?: 'local' | 'github' | 'jira' | 'linear' | 'gitlab' | 'bitbucket' | 'multi-repo';
+    owner?: string;
+    repo?: string;
     enrichment?: ('jira' | 'linear')[];
   };
   jira?: { domain: string };
@@ -144,12 +147,20 @@ function validateGenerateRequest(body: GenerateRequest, res: ServerResponse): (C
   return {
     ai: {
       provider: body.provider || 'anthropic',
+      ...(typeof body.apiKey === 'string' && body.apiKey.trim()
+        ? { apiKey: body.apiKey.trim() }
+        : {}),
       model: body.model,
       audience: body.audience || 'developer',
       tone: body.tone || 'professional',
       categories: Array.isArray(body.categories) ? body.categories.slice(0, 50) : (body.categories || DEFAULT_CATEGORIES),
     },
-    source: { type: sourceType, enrichment: body.source?.enrichment || [] },
+    source: {
+      type: sourceType,
+      ...(typeof body.source?.owner === 'string' && body.source.owner.trim() ? { owner: body.source.owner.trim() } : {}),
+      ...(typeof body.source?.repo === 'string' && body.source.repo.trim() ? { repo: body.source.repo.trim() } : {}),
+      enrichment: body.source?.enrichment || [],
+    },
     publish: [{ type: 'stdout' }],
     ...(body.jira ? { jira: body.jira } : {}),
     ...(body.linear ? { linear: body.linear } : {}),
@@ -200,7 +211,11 @@ function isGitRepoMissingError(message: string): boolean {
   return /not a git repository|inside a git repository/i.test(message);
 }
 
-function resolveHostedRepo(): { owner: string; repo: string } | null {
+function resolveHostedRepo(sourceHint?: { owner?: string; repo?: string }): { owner: string; repo: string } | null {
+  const hintedOwner = (sourceHint?.owner || '').trim();
+  const hintedRepo = (sourceHint?.repo || '').trim();
+  if (hintedOwner && hintedRepo) return { owner: hintedOwner, repo: hintedRepo };
+
   const combined = process.env['CULLIT_GITHUB_REPOSITORY'] || process.env['GITHUB_REPOSITORY'] || '';
   if (combined.includes('/')) {
     const [owner, repo] = combined.split('/').map(v => v.trim()).filter(Boolean);
@@ -216,8 +231,9 @@ async function runHostedGithubFallback(
   to: string,
   config: CullConfig,
   format: OutputFormat,
+  sourceHint?: { owner?: string; repo?: string },
 ): Promise<Awaited<ReturnType<typeof runPipeline>> | null> {
-  const hostedRepo = resolveHostedRepo();
+  const hostedRepo = resolveHostedRepo(sourceHint);
   if (!hostedRepo) return null;
   const fallbackConfig: CullConfig = {
     ...config,
@@ -289,7 +305,7 @@ export async function handleGenerate(req: IncomingMessage, res: ServerResponse):
       const shouldFallback = isGitRepoMissingError(message) && ((config as CullConfig).source?.type || 'local') === 'local';
       if (!shouldFallback) throw pipelineErr;
 
-      const fallback = await runHostedGithubFallback(body.from, to, config as CullConfig, format);
+      const fallback = await runHostedGithubFallback(body.from, to, config as CullConfig, format, body.source);
       if (!fallback) throw pipelineErr;
       result = fallback;
     }

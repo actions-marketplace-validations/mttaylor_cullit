@@ -1105,6 +1105,13 @@
     <div class="panel">
       <div class="panel-header">&#128269; Source</div>
       <div class="panel-body">
+        <div class="form-group">
+          <label>Source Type</label>
+          <select id="sourceType">
+            <option value="local">Local Git</option>
+            <option value="github">GitHub Compare</option>
+          </select>
+        </div>
         <div class="form-row">
           <div class="form-group">
             <label>From (tag/SHA)</label>
@@ -1113,6 +1120,16 @@
           <div class="form-group">
             <label>To (tag/SHA)</label>
             <input type="text" id="toRef" placeholder="HEAD" value="HEAD">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>GitHub Owner (optional)</label>
+            <input type="text" id="sourceOwner" placeholder="mttaylor">
+          </div>
+          <div class="form-group">
+            <label>GitHub Repo (optional)</label>
+            <input type="text" id="sourceRepo" placeholder="cullit">
           </div>
         </div>
       </div>
@@ -1163,6 +1180,17 @@
             <option value="html-minimal">HTML Minimal</option>
             <option value="html-edgy">HTML Edgy</option>
           </select>
+        </div>
+        <div class="form-group">
+          <label>Provider API Token (optional)</label>
+          <input type="password" id="providerApiKey" placeholder="Enter key for selected provider">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:0.35rem;font-size:0.72rem;color:var(--text-dim)">
+            <label style="display:flex;align-items:center;gap:0.35rem;cursor:pointer">
+              <input type="checkbox" id="rememberProviderKey" style="accent-color:var(--accent)">
+              Remember on this device
+            </label>
+            <button type="button" class="btn-small" id="clearProviderKey" style="font-size:0.68rem;padding:0.22rem 0.45rem;background:transparent;border:1px solid var(--border)">Clear Saved Key</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1344,7 +1372,7 @@
               <div>
                 <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.25rem">Default Source</label>
                 <select id="ps-source" style="width:100%;padding:0.3rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
-                  <option value="local">Local Git</option><option value="jira">Jira</option><option value="linear">Linear</option><option value="gitlab">GitLab</option><option value="bitbucket">Bitbucket</option><option value="multi-repo">Multi-repo</option>
+                  <option value="local">Local Git</option><option value="github">GitHub Compare</option><option value="jira">Jira</option><option value="linear">Linear</option><option value="gitlab">GitLab</option><option value="bitbucket">Bitbucket</option><option value="multi-repo">Multi-repo</option>
                 </select>
               </div>
               <div>
@@ -1386,6 +1414,14 @@
               <div style="grid-column:1 / -1">
                 <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.25rem">Default Section Order (comma-separated)</label>
                 <input id="ps-section-order" type="text" placeholder="breaking, features, improvements, fixes, chores, other" style="width:100%;padding:0.3rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
+              </div>
+              <div>
+                <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.25rem">Default GitHub Owner</label>
+                <input id="ps-github-owner" type="text" placeholder="mttaylor" style="width:100%;padding:0.3rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
+              </div>
+              <div>
+                <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.25rem">Default GitHub Repo</label>
+                <input id="ps-github-repo" type="text" placeholder="cullit" style="width:100%;padding:0.3rem;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
               </div>
               <div style="grid-column:1 / -1">
                 <label style="font-size:0.75rem;color:var(--text-dim);display:block;margin-bottom:0.25rem">Publish Targets JSON (optional endpoint overrides)</label>
