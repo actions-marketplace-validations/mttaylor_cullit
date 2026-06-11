@@ -302,6 +302,12 @@
     if (sourceOwner) source.owner = sourceOwner;
     if (sourceRepo) source.repo = sourceRepo;
 
+    if (sourceType === 'github' && (!sourceOwner || !sourceRepo)) {
+      isGenerating = false;
+      showToast('GitHub source requires both owner and repo');
+      return;
+    }
+
     var body = {
       from: fromRef,
       to: toRef,

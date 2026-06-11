@@ -137,6 +137,14 @@ function validateGenerateRequest(body: GenerateRequest, res: ServerResponse): (C
     json(res, 400, { error: `Invalid format. Must be one of: ${OUTPUT_FORMATS.join(', ')}` }); return null;
   }
   const sourceType = body.source?.type || 'local';
+  if (sourceType === 'github') {
+    const owner = typeof body.source?.owner === 'string' ? body.source.owner.trim() : '';
+    const repo = typeof body.source?.repo === 'string' ? body.source.repo.trim() : '';
+    if (!owner || !repo) {
+      json(res, 400, { error: 'GitHub source requires both source.owner and source.repo.' });
+      return null;
+    }
+  }
   if (sourceType === 'gitlab' || sourceType === 'bitbucket') {
     json(res, 400, { error: `Source type "${sourceType}" is not supported via the hosted API. Use the CLI instead.` }); return null;
   }
@@ -215,15 +223,7 @@ function resolveHostedRepo(sourceHint?: { owner?: string; repo?: string }): { ow
   const hintedOwner = (sourceHint?.owner || '').trim();
   const hintedRepo = (sourceHint?.repo || '').trim();
   if (hintedOwner && hintedRepo) return { owner: hintedOwner, repo: hintedRepo };
-
-  const combined = process.env['CULLIT_GITHUB_REPOSITORY'] || process.env['GITHUB_REPOSITORY'] || '';
-  if (combined.includes('/')) {
-    const [owner, repo] = combined.split('/').map(v => v.trim()).filter(Boolean);
-    if (owner && repo) return { owner, repo };
-  }
-  const owner = (process.env['CULLIT_GITHUB_OWNER'] || process.env['GITHUB_OWNER'] || '').trim();
-  const repo = (process.env['CULLIT_GITHUB_REPO'] || process.env['GITHUB_REPO'] || '').trim();
-  return owner && repo ? { owner, repo } : null;
+  return null;
 }
 
 async function runHostedGithubFallback(
