@@ -74,7 +74,7 @@ Required environment variables:
 | `GITHUB_WEBHOOK_SECRET` | Webhook signature verification secret |
 | `CULLIT_APP_PORT` | Server port (default: 3001) |
 | `CULLIT_AI_PROVIDER` | AI provider: `anthropic`, `openai`, `gemini`, `ollama`, or `none` (default: `none`) |
-| `CULLIT_AI_MODEL` | Model override (e.g. `gpt-4o`, `claude-sonnet-4-20250514`) |
+| `CULLIT_AI_MODEL` | Model override (e.g. `gpt-4o`, `claude-sonnet-4-6`) |
 | `CULLIT_AI_API_KEY` | API key for the chosen AI provider |
 
 ## Open Source Model

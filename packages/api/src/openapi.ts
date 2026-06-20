@@ -1045,7 +1045,7 @@ export const openApiSpec = {
           model: {
             type: 'string',
             description: 'Override the default model for the chosen provider',
-            examples: ['claude-sonnet-4-6-20250514', 'gpt-4o', 'gemini-2.5-flash'],
+            examples: ['claude-sonnet-4-6', 'gpt-4o', 'gemini-2.5-flash'],
           },
           audience: {
             type: 'string',

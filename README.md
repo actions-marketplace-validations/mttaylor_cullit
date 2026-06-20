@@ -94,7 +94,7 @@ Generate release notes from your configured source and provider.
 | `--from` | string | Auto-detect | Start ref (tag, SHA, `HEAD~N`, JQL query, or Linear filter) |
 | `--to` | string | `HEAD` | End ref |
 | `--provider` | string | From config | AI provider: `anthropic`, `openai`, `gemini`, `ollama`, `none` |
-| `--model` | string | Provider default | Override the AI model (e.g., `claude-sonnet-4-6-20250514`) |
+| `--model` | string | Provider default | Override the AI model (e.g., `claude-sonnet-4-6`) |
 | `--audience` | string | `developer` | Target audience: `developer`, `end-user`, `executive` |
 | `--tone` | string | `professional` | Writing tone: `professional`, `casual`, `terse`, `edgy`, `hype`, `snarky` |
 | `--format` | string | `markdown` | Output format: `markdown`, `html`, `html-dark`, `html-minimal`, `html-edgy`, `json` |
