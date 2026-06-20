@@ -1,5 +1,15 @@
 [
   {
+    "version": "v3.3.0",
+    "date": "2026-06-20",
+    "commits": 4,
+    "filesChanged": 22,
+    "providers": [
+      "openai",
+      "template"
+    ]
+  },
+  {
     "version": "v3.2.0",
     "date": "2026-06-11",
     "commits": 5,
