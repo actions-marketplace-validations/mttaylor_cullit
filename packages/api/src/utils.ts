@@ -8,7 +8,6 @@
 import { randomBytes, timingSafeEqual } from 'crypto';
 import type { IncomingMessage, ServerResponse } from 'http';
 import createSanitizer from 'sanitize-html';
-import { PAID_TIERS } from '@cullit/core';
 import { log } from './logger.js';
 
 // --- Types ---
@@ -163,10 +162,6 @@ export async function readJsonBody(req: IncomingMessage, res: CorsResponse): Pro
 export function toStringArray(value: unknown, limit: number): string[] | undefined {
   if (!Array.isArray(value)) return undefined;
   return value.slice(0, limit).filter((v): v is string => typeof v === 'string');
-}
-
-export function isPaidTier(tier: string): boolean {
-  return (PAID_TIERS as readonly string[]).includes(tier);
 }
 
 export function timingSafeCompare(a: string, b: string): boolean {

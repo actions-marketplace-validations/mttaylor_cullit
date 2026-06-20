@@ -419,11 +419,16 @@ jira:
 | `POST` | `/v1/drafts/:id/publish` | Publish draft to changelog |
 | `GET` | `/v1/projects/settings` | List saved project defaults |
 | `PUT` | `/v1/projects/:project/settings` | Save project defaults |
+| `GET` | `/v1/github/installations` | List linked GitHub App installations |
+| `POST` | `/v1/github/disconnect` | Disconnect a GitHub App installation |
+| `GET` | `/v1/org` | Get current organization |
+| `POST` | `/v1/org` | Create an organization (open to any authenticated user) |
+| `PATCH` | `/v1/org/settings` | Update organization settings |
 | `POST` | `/v1/org/invites` | Create org invite by email |
 | `GET` | `/v1/org/invites` | List pending org invites |
 | `DELETE` | `/v1/org/invites/:id` | Revoke pending org invite |
 | `PATCH` | `/v1/org/members/:userId` | Update org member role |
-| `GET` | `/v1/org/usage` | Team usage and seat summary |
+| `GET` | `/v1/org/usage` | Team usage summary |
 | `GET` | `/v1/org/keys` | List team API keys |
 | `PATCH` | `/v1/org/keys/:id` | Update team key label/assignment |
 | `POST` | `/v1/org/keys/:id/send` | Email key to assigned member |

@@ -734,76 +734,47 @@ export const openApiSpec = {
     '/v1/billing/checkout': {
       post: {
         operationId: 'createCheckout',
-        summary: 'Create Stripe checkout session',
-        description: 'Initiates a Stripe Checkout session for Pro or Team plan subscription.',
+        summary: 'Checkout (retired)',
+        description: 'Retired. Cullit is fully open source with no paid tiers. This endpoint returns HTTP 410.',
         tags: ['Billing'],
+        deprecated: true,
         security: [{ cookieAuth: [] }],
-        requestBody: {
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                properties: {
-                  plan: { type: 'string', enum: ['pro', 'team'] },
-                  annual: { type: 'boolean', description: 'Use annual billing (15% discount)' },
-                  seats: { type: 'integer', description: 'Number of seats (team plan only, min 5, max 100)', minimum: 5, maximum: 100 },
-                },
-              },
-            },
-          },
-        },
         responses: {
-          '200': {
-            description: 'Checkout session URL',
-            content: { 'application/json': { schema: { type: 'object', properties: { url: { type: 'string', format: 'uri' } } } } },
-          },
-          '401': { description: 'Not authenticated' },
-          '503': { description: 'Billing not configured' },
+          '410': { description: 'Billing retired — Cullit is fully open source' },
         },
       },
     },
     '/v1/billing/portal': {
       post: {
         operationId: 'createBillingPortal',
-        summary: 'Create Stripe customer portal session',
-        description: 'Returns a URL to the Stripe customer portal for managing subscriptions.',
+        summary: 'Billing portal (retired)',
+        description: 'Retired. Cullit is fully open source with no paid tiers. This endpoint returns HTTP 410.',
         tags: ['Billing'],
+        deprecated: true,
         security: [{ cookieAuth: [] }],
         responses: {
-          '200': {
-            description: 'Portal session URL',
-            content: { 'application/json': { schema: { type: 'object', properties: { url: { type: 'string', format: 'uri' } } } } },
-          },
-          '400': { description: 'No billing account' },
-          '401': { description: 'Not authenticated' },
+          '410': { description: 'Billing retired — Cullit is fully open source' },
         },
       },
     },
     '/v1/billing/subscription': {
       get: {
         operationId: 'getSubscription',
-        summary: 'Get current subscription status',
+        summary: 'Subscription status (open-source compatibility)',
+        description: 'Returns open-source compatibility status. There are no paid subscriptions.',
         tags: ['Billing'],
+        deprecated: true,
         security: [{ cookieAuth: [] }],
         responses: {
           '200': {
-            description: 'Subscription status',
+            description: 'Open-source compatibility status',
             content: {
               'application/json': {
                 schema: {
                   type: 'object',
                   properties: {
-                    subscription: {
-                      type: 'object',
-                      nullable: true,
-                      properties: {
-                        plan: { type: 'string' },
-                        status: { type: 'string' },
-                        currentPeriodEnd: { type: 'string', format: 'date-time' },
-                        cancelAtPeriodEnd: { type: 'boolean' },
-                      },
-                    },
-                    plan: { type: 'string' },
+                    subscription: { type: 'object', nullable: true },
+                    plan: { type: 'string', description: 'Always open-source' },
                   },
                 },
               },

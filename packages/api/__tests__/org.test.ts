@@ -37,12 +37,14 @@ const mockDbCreateOrgInvite = vi.fn();
 const mockDbListOrgInvites = vi.fn();
 const mockDbDeleteOrgInvite = vi.fn();
 const mockDbUpdateOrgMemberRole = vi.fn();
+const mockDbGetOrgCountForOwner = vi.fn().mockResolvedValue(0);
 
 vi.mock('../src/db.js', () => ({
   dbCreateOrgInvite: (...args: unknown[]) => mockDbCreateOrgInvite(...args),
   dbListOrgInvites: (...args: unknown[]) => mockDbListOrgInvites(...args),
   dbDeleteOrgInvite: (...args: unknown[]) => mockDbDeleteOrgInvite(...args),
   dbUpdateOrgMemberRole: (...args: unknown[]) => mockDbUpdateOrgMemberRole(...args),
+  dbGetOrgCountForOwner: (...args: unknown[]) => mockDbGetOrgCountForOwner(...args),
 }));
 
 import {
@@ -230,12 +232,14 @@ describe('Org Routes — Cross-Org Boundaries', () => {
     expect(captured.body.usage).toBeNull();
   });
 
-  it('handleCreateOrg returns 403 for free-tier user', async () => {
+  it('handleCreateOrg allows any authenticated user to create an org (open source)', async () => {
     mockResolveUser.mockResolvedValue(outsider);
     mockGetEffectiveTier.mockReturnValue('free');
+    mockDbGetOrgCountForOwner.mockResolvedValue(0);
+    mockCreateOrg.mockResolvedValue({ id: 'org9', name: 'test org', slug: 'test-org', tier: 'open-source' });
     await handleCreateOrg(mockReq('{"name":"test org"}'), mockRes());
-    expect(captured.status).toBe(403);
-    expect(captured.body.error).toContain('Pro plan required');
+    expect(captured.status).toBe(201);
+    expect(captured.body.org).toBeTruthy();
   });
 
   it('handleCreateOrg returns 409 for user already in an org', async () => {

@@ -6,7 +6,6 @@
   var currentOutput = '';
   var currentView = 'rendered';
   var currentUser = null;
-  var manageSeatCount = null;
   var PROVIDER_KEY_STORE = 'cullit_provider_keys';
 
   function readProviderKeyStore() {
@@ -725,41 +724,6 @@
 
   // --- Billing ---
 
-  var TIER_LIMITS = { free: Infinity, pro: Infinity, team: Infinity, enterprise: Infinity };
-
-  function updateProTotal() {
-    var input = document.getElementById('dashProSeats');
-    var display = document.getElementById('dashProTotal');
-    if (input && display) {
-      var seats = Math.max(1, parseInt(input.value) || 1);
-      display.textContent = '$' + (seats * 9) + '/mo';
-    }
-    var manageSection = document.getElementById('manageSeatsSection');
-    if (manageSection && manageSection.style.display !== 'none' && input) {
-      var seatVal = Math.max(1, parseInt(input.value) || 1);
-      var changed = manageSeatCount != null && seatVal !== manageSeatCount;
-      var updateBtn = document.getElementById('updateSeatsBtn');
-      var proNote = document.getElementById('prorationNote');
-      if (updateBtn) updateBtn.style.display = changed ? '' : 'none';
-      if (proNote) proNote.style.display = changed ? '' : 'none';
-    }
-  }
-
-  function adjustSeats(delta) {
-    var input = document.getElementById('dashProSeats');
-    if (!input) return;
-    var current = parseInt(input.value) || 1;
-    var newVal = Math.max(1, Math.min(100, current + delta));
-    input.value = newVal;
-    updateProTotal();
-    document.getElementById('seatDecrBtn').disabled = newVal <= 1;
-    document.getElementById('seatIncrBtn').disabled = newVal >= 100;
-  }
-
-  async function updateProSeats() {
-    showToast('Seat billing is retired. Support Cullit via GitHub Sponsors.');
-  }
-
   // --- Drafts Management ---
 
   var draftsOffset = 0;
@@ -1332,9 +1296,6 @@
       btn.onclick = function () { window.location.href = 'pricing.html'; };
     });
 
-    var manageSection = document.getElementById('manageSeatsSection');
-    if (manageSection) manageSection.style.display = 'none';
-
     ['Free', 'Pro', 'Team', 'Enterprise'].forEach(function (t) {
       var el = document.getElementById('support' + t);
       if (el) el.style.display = t === 'Free' ? '' : 'none';
@@ -1364,9 +1325,6 @@
       teamKeysPanel.style.display = 'none';
     }
 
-    var seatInput = document.getElementById('dashProSeats');
-    if (seatInput) { seatInput.value = manageSeatCount || 1; updateProTotal(); }
-
     var analyticsPanel = document.getElementById('analyticsQuickLink');
     if (analyticsPanel) {
       analyticsPanel.style.display = '';
@@ -1392,14 +1350,6 @@
         warn.style.display = 'none';
       }
     } catch (e) {}
-  }
-
-  async function upgradePlan(plan) {
-    showToast('Paid upgrades are retired. Cullit is fully open source now.');
-  }
-
-  async function openBillingPortal() {
-    window.location.href = 'pricing.html';
   }
 
   // --- Team Key Management ---
@@ -1439,25 +1389,13 @@
 
       var seatEl = document.getElementById('teamKeySeatCount');
       var activeCount = activeKeys.length;
-      var seatTotal = manageSeatCount || 1;
-      seatEl.textContent = activeCount + ' of ' + seatTotal + ' seats active';
+      seatEl.textContent = activeCount + ' active key' + (activeCount === 1 ? '' : 's');
 
       var seatUtilEl = document.getElementById('seatUtilMsg');
-      if (seatUtilEl) {
-        var unused = seatTotal - activeCount;
-        if (unused > Math.ceil(seatTotal * 0.5)) {
-          seatUtilEl.textContent = 'You\u2019re using ' + activeCount + ' of ' + seatTotal + ' seats. Invite more team members or consider a smaller plan.';
-          seatUtilEl.style.display = '';
-        } else if (activeCount >= seatTotal) {
-          seatUtilEl.textContent = 'All ' + seatTotal + ' seats are in use. Add more seats above to expand your team.';
-          seatUtilEl.style.display = '';
-        } else {
-          seatUtilEl.style.display = 'none';
-        }
-      }
+      if (seatUtilEl) seatUtilEl.style.display = 'none';
 
       if (!keys.length) {
-        list.innerHTML = '<div style="color:var(--text-dim)">No team API keys yet. Keys are provisioned when you subscribe to a Pro plan.</div>';
+        list.innerHTML = '<div style="color:var(--text-dim)">No team API keys yet. Create one to share scoped access with your team.</div>';
         return;
       }
 
@@ -1738,10 +1676,6 @@
           case 'refresh-github': loadGithubInstallations(); break;
           case 'refresh-changelog': loadChangelog(); break;
           case 'copy-widget': copyWidgetSnippet(); break;
-          case 'upgrade-pro': upgradePlan('pro'); break;
-          case 'seat-decr': adjustSeats(-1); break;
-          case 'seat-incr': adjustSeats(1); break;
-          case 'update-seats': updateProSeats(); break;
           case 'analytics-tab': switchDashTab('analytics'); break;
         }
         return;
@@ -1786,7 +1720,6 @@
 
     document.addEventListener('input', function (e) {
       var target = e.target;
-      if (target.id === 'dashProSeats') updateProTotal();
       if (target.id === 'widgetHeaderText') updateWidgetSnippet();
       if (target.id === 'widgetTriggerEmoji') updateWidgetSnippet();
       if (target.id === 'providerApiKey') {

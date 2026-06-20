@@ -6,11 +6,10 @@
 
 import type { IncomingMessage, ServerResponse } from 'http';
 import { randomBytes } from 'crypto';
-import { json, readJsonBody, isPaidTier, requireAuth, requireOrgAdmin, type CorsResponse } from '../utils.js';
+import { json, readJsonBody, requireAuth, requireOrgAdmin, type CorsResponse } from '../utils.js';
 import { log } from '../logger.js';
 import {
   resolveUser, getUser, getOrg, createOrg, addOrgMember, removeOrgMember, getOrgMembers,
-  getEffectiveTier,
 } from '../auth.js';
 import {
   getUsageStats, getMonthlyGenerationCount,
@@ -47,11 +46,6 @@ export async function handleCreateOrg(req: IncomingMessage, res: ServerResponse)
   const user = await requireAuth(resolveUser, req, res as CorsResponse);
   if (!user) return;
   if (user.orgId) { json(res, 409, { error: 'Already a member of an organization' }); return; }
-
-  const tier = getEffectiveTier(user);
-  if (!isPaidTier(tier)) {
-    json(res, 403, { error: 'Pro plan required to create an organization' }); return;
-  }
 
   const body = await readJsonBody(req, res);
   if (!body) return;

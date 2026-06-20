@@ -42,8 +42,8 @@ Organizations / teams.
 | `name` | TEXT | Display name |
 | `slug` | TEXT UNIQUE | URL slug |
 | `owner_id` | TEXT | FK → `users.id` |
-| `tier` | TEXT | `pro` or `enterprise` |
-| `max_seats` | INT | Seat limit (default 10) |
+| `tier` | TEXT | Legacy field (`pro`/`enterprise`), retained for compatibility; not enforced |
+| `max_seats` | INT | Legacy seat limit (default 10); not enforced — org creation and membership are open in OSS mode |
 | `require_separate_approver` | BOOLEAN | Require different user to approve drafts |
 | `created_at` | TIMESTAMPTZ | Creation timestamp |
 
