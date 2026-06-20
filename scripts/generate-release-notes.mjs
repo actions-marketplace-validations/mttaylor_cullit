@@ -6,8 +6,12 @@
  *   node scripts/generate-release-notes.mjs                 # all tags from v1.0.0+
  *   node scripts/generate-release-notes.mjs v1.10.0         # single tag
  *   node scripts/generate-release-notes.mjs --providers anthropic,openai
+ *   node scripts/generate-release-notes.mjs v1.10.0 --allow-partial  # don't block on provider failures
  *
  * Outputs JSON files to site/releases/<version>.json
+ *
+ * By default, if ANY requested provider fails to generate, the script exits
+ * non-zero (blocking). Pass --allow-partial to override and continue anyway.
  *
  * Requires: ANTHROPIC_API_KEY, OPENAI_API_KEY in .env or environment.
  */
@@ -42,11 +46,14 @@ loadEnv();
 const args = process.argv.slice(2);
 let targetTag = null;
 let providers = ['anthropic', 'openai', 'gemini', 'ollama'];
+let allowPartial = false;
 
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--providers' && args[i + 1]) {
     providers = args[i + 1].split(',').map(p => p.trim());
     i++;
+  } else if (args[i] === '--allow-partial') {
+    allowPartial = true;
   } else if (args[i].startsWith('v')) {
     targetTag = args[i];
   }
@@ -111,14 +118,16 @@ function detectOllamaModel() {
 }
 
 const ollamaModel = detectOllamaModel();
-if (providers.includes('ollama') && !ollamaModel) {
-  console.log('⚠ Ollama not available or no local models found — skipping ollama provider\n');
-  providers = providers.filter(p => p !== 'ollama');
+const ollamaUnavailable = providers.includes('ollama') && !ollamaModel;
+if (ollamaUnavailable) {
+  console.log('⚠ Ollama not available or no local models found — will be reported as a failure\n');
 } else if (ollamaModel) {
   console.log(`🦙 Ollama model detected: ${ollamaModel}\n`);
 }
 
 // --- Generate with cullit ---
+// Returns { ok, content, error }. On failure, `error` holds the first
+// meaningful line of stderr so callers can surface a diagnosable reason.
 function generateNotes(from, to, provider, format) {
   try {
     const modelFlag = provider === 'ollama' && ollamaModel ? ` --model ${ollamaModel}` : '';
@@ -137,11 +146,15 @@ function generateNotes(from, to, provider, format) {
       ? lines.slice(dryRunIdx + 1).join('\n').trim()
       : output.trim();
     // Strip trailing "✓ Done in ..." line
-    return content.replace(/\n✓ Done in .+$/m, '').trim();
+    const cleaned = content.replace(/\n✓ Done in .+$/m, '').trim();
+    if (!cleaned) {
+      return { ok: false, content: null, error: 'empty output from generator' };
+    }
+    return { ok: true, content: cleaned, error: null };
   } catch (err) {
     const stderr = err.stderr?.toString() || '';
-    console.error(`  ⚠ ${provider}/${format} failed: ${stderr.split('\n')[0] || err.message}`);
-    return null;
+    const reason = stderr.split('\n').map(l => l.trim()).find(Boolean) || err.message;
+    return { ok: false, content: null, error: reason };
   }
 }
 
@@ -172,6 +185,10 @@ for (const tag of tagsToProcess) {
 
 console.log(`\n🚀 Generating release notes for ${pairs.length} version(s) with providers: ${providers.join(', ')}\n`);
 
+// Collected provider failures across all versions — used to block at the end
+// unless --allow-partial is set.
+const failures = [];
+
 for (const { from, to } of pairs) {
   const outPath = resolve(RELEASES_DIR, `${to}.json`);
 
@@ -196,20 +213,31 @@ for (const { from, to } of pairs) {
       continue;
     }
 
+    // Ollama requested but no local model available — record as a failure
+    // rather than silently skipping, so the run blocks unless overridden.
+    if (provider === 'ollama' && ollamaUnavailable) {
+      console.log(`  ✗ ${provider} (Ollama not available or no local models found)`);
+      failures.push({ version: to, provider, reason: 'Ollama not available or no local models found' });
+      continue;
+    }
+
     process.stdout.write(`  ⏳ ${provider}...`);
 
     const markdown = generateNotes(from, to, provider, 'markdown');
     const html = generateNotes(from, to, provider, 'html');
 
-    if (markdown || html) {
+    // Require BOTH formats to succeed — a half-generated provider is a failure.
+    if (markdown.ok && html.ok) {
       providerResults[provider] = {
-        markdown: markdown || '',
-        html: html || '',
+        markdown: markdown.content,
+        html: html.content,
         generatedAt: new Date().toISOString(),
       };
       console.log(` ✓`);
     } else {
-      console.log(` ✗ (failed)`);
+      const reason = (!markdown.ok ? markdown.error : html.error) || 'unknown error';
+      console.log(` ✗ (${reason})`);
+      failures.push({ version: to, provider, reason });
     }
   }
 
@@ -218,15 +246,17 @@ for (const { from, to } of pairs) {
     process.stdout.write(`  ⏳ template...`);
     const md = generateNotes(from, to, 'none', 'markdown');
     const html = generateNotes(from, to, 'none', 'html');
-    if (md || html) {
+    if (md.ok && html.ok) {
       providerResults.template = {
-        markdown: md || '',
-        html: html || '',
+        markdown: md.content,
+        html: html.content,
         generatedAt: new Date().toISOString(),
       };
       console.log(` ✓`);
     } else {
-      console.log(` ✗`);
+      const reason = (!md.ok ? md.error : html.error) || 'unknown error';
+      console.log(` ✗ (${reason})`);
+      failures.push({ version: to, provider: 'template', reason });
     }
   }
 
@@ -280,3 +310,17 @@ const allReleaseFiles = tags
 
 writeFileSync(indexPath, JSON.stringify(allReleaseFiles, null, 2) + '\n');
 console.log(`✅ Done! ${allReleaseFiles.length} releases indexed at site/releases/index.json`);
+
+// --- Block on any provider failure unless overridden ---
+if (failures.length > 0) {
+  console.error(`\n❌ ${failures.length} provider generation failure(s):`);
+  for (const f of failures) {
+    console.error(`  - ${f.version} / ${f.provider}: ${f.reason}`);
+  }
+  if (allowPartial) {
+    console.error('\n⚠ --allow-partial set — continuing despite failures. Partial results saved.');
+  } else {
+    console.error('\n🛑 Release blocked. Fix the provider(s) above, or re-run with --allow-partial to override.');
+    process.exit(1);
+  }
+}

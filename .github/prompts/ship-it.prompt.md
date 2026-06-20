@@ -14,12 +14,13 @@ Run the complete Cullit release workflow. Determine the version bump type from r
 4. **Build + test**: Run `pnpm build` then `pnpm test`. All tests must pass before proceeding.
 5. **Commit + tag + push**: `git add -A && git commit -m "chore: bump version to vX.Y.Z" && git tag vX.Y.Z && git push origin main --tags`
 6. **Create GitHub release**: Use `gh release create vX.Y.Z` with detailed markdown release notes covering features, fixes, tests, and contributors.
-7. **Generate site release notes**: Run `node scripts/generate-release-notes.mjs vX.Y.Z` to dogfood Cullit and generate `site/releases/vX.Y.Z.json` + update `site/releases/index.json` with all AI providers.
+7. **Generate site release notes**: Run `node scripts/generate-release-notes.mjs vX.Y.Z` to dogfood Cullit and generate `site/releases/vX.Y.Z.json` + update `site/releases/index.json` with all AI providers. This now BLOCKS (exits non-zero) if any provider fails to generate. Investigate and fix the failing provider. Only if a failure is genuinely unfixable (e.g. a provider key is intentionally unavailable) re-run with `--allow-partial` to override.
 8. **Commit + push site changes**: `git add -A && git commit -m "docs: vX.Y.Z release notes, landing page hero badge update" && git push origin main`
 
 ## Notes
 
 - The `site/index.html` hero badge format is: `New in vX.Y.Z: <short summary> →`
 - The generate-release-notes script auto-updates `site/releases/index.json`
+- Provider failures are blocking by default; use `--allow-partial` only as a deliberate override
 - If AI provider keys are missing, at minimum run with `--providers template` as fallback
 - Always verify 644+ tests pass before tagging

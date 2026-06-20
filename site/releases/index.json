@@ -6,7 +6,10 @@
     "filesChanged": 22,
     "providers": [
       "openai",
-      "template"
+      "template",
+      "ollama",
+      "gemini",
+      "anthropic"
     ]
   },
   {
