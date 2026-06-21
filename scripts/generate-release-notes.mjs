@@ -10,8 +10,10 @@
  *
  * Outputs JSON files to site/releases/<version>.json
  *
- * By default, if ANY requested provider fails to generate, the script exits
- * non-zero (blocking). Pass --allow-partial to override and continue anyway.
+ * Transient provider failures (network, rate limits, 5xx, timeouts) are retried
+ * automatically with exponential backoff. If a provider still fails after
+ * retries, the script exits non-zero (blocking). Pass --allow-partial to
+ * override and continue anyway.
  *
  * Requires: ANTHROPIC_API_KEY, OPENAI_API_KEY in .env or environment.
  */
@@ -158,6 +160,33 @@ function generateNotes(from, to, provider, format) {
   }
 }
 
+// Deterministic config errors that will never succeed on retry.
+function isPermanentError(reason) {
+  return /Invalid provider|No API key|Unknown provider|Unsupported AI provider/i.test(reason || '');
+}
+
+// --- Generate with retry ---
+// Retries transient failures (network blips, rate limits, 5xx, timeouts) up to
+// MAX_RETRIES times with exponential backoff. Permanent config errors are not
+// retried. Returns the same { ok, content, error } shape as generateNotes.
+const MAX_RETRIES = 2; // total attempts = MAX_RETRIES + 1
+function sleepSync(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+function generateNotesWithRetry(from, to, provider, format) {
+  let result;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    result = generateNotes(from, to, provider, format);
+    if (result.ok || isPermanentError(result.error)) return result;
+    if (attempt < MAX_RETRIES) {
+      const waitMs = 1500 * Math.pow(2, attempt); // 1.5s, 3s
+      process.stdout.write(` (retry ${attempt + 1}/${MAX_RETRIES} after ${result.error})`);
+      sleepSync(waitMs);
+    }
+  }
+  return result;
+}
+
 // --- Main ---
 mkdirSync(RELEASES_DIR, { recursive: true });
 
@@ -223,8 +252,8 @@ for (const { from, to } of pairs) {
 
     process.stdout.write(`  ⏳ ${provider}...`);
 
-    const markdown = generateNotes(from, to, provider, 'markdown');
-    const html = generateNotes(from, to, provider, 'html');
+    const markdown = generateNotesWithRetry(from, to, provider, 'markdown');
+    const html = generateNotesWithRetry(from, to, provider, 'html');
 
     // Require BOTH formats to succeed — a half-generated provider is a failure.
     if (markdown.ok && html.ok) {
@@ -244,8 +273,8 @@ for (const { from, to } of pairs) {
   // Also generate a template-only version (no AI key needed) as fallback
   if (!providerResults.template?.markdown) {
     process.stdout.write(`  ⏳ template...`);
-    const md = generateNotes(from, to, 'none', 'markdown');
-    const html = generateNotes(from, to, 'none', 'html');
+    const md = generateNotesWithRetry(from, to, 'none', 'markdown');
+    const html = generateNotesWithRetry(from, to, 'none', 'html');
     if (md.ok && html.ok) {
       providerResults.template = {
         markdown: md.content,
