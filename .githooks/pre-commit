@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# Identity guard: only allow commits authored by the repo owner.
+# Prevents accidental commits under the wrong signed-in account.
+# Uses `git var GIT_AUTHOR_IDENT` so it respects config and GIT_AUTHOR_* overrides.
+
+ALLOWED_EMAIL="matttaylor.ce@gmail.com"
+
+author_email=$(git var GIT_AUTHOR_IDENT | sed -n 's/^.*<\(.*\)>.*$/\1/p')
+
+if [ "$author_email" != "$ALLOWED_EMAIL" ]; then
+  echo "pre-commit blocked: author email '$author_email' is not allowed."
+  echo "Expected '$ALLOWED_EMAIL'. Fix with:"
+  echo "  git config --local user.email \"$ALLOWED_EMAIL\""
+  echo "  git config --local user.name  \"mttaylor\""
+  exit 1
+fi
