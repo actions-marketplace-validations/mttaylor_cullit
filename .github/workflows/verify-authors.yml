@@ -1,0 +1,65 @@
+name: Verify commit authors
+
+# Server-side guard: fail the build if any pushed/PR commit is authored by an
+# email outside the allowlist. Make this a required status check in branch
+# protection to block disallowed authors from landing on protected branches.
+# (Personal-account repos cannot use the native `commit_author_email_pattern`
+# ruleset, which requires an organization on GitHub Enterprise Cloud.)
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-authors:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check commit author emails
+        env:
+          # Allowed: repo owner + trusted bots already present in history.
+          ALLOWED_REGEX: '^(matttaylor\.ce@gmail\.com|[0-9]+\+dependabot\[bot\]@users\.noreply\.github\.com|github-actions\[bot\]@users\.noreply\.github\.com)$'
+        run: |
+          set -euo pipefail
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            range="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+          else
+            before="${{ github.event.before }}"
+            head="${{ github.sha }}"
+            # Branch deletion — nothing to check.
+            if echo "$head" | grep -qE '^0+$'; then
+              echo "Branch deletion push; nothing to verify."
+              exit 0
+            fi
+            # New branch (before is all zeros) — check only the tip commit.
+            if echo "$before" | grep -qE '^0+$'; then
+              range="$head~1..$head"
+            else
+              range="$before..$head"
+            fi
+          fi
+
+          echo "Verifying commit authors in range: $range"
+          bad=0
+          while IFS= read -r email; do
+            [ -z "$email" ] && continue
+            if echo "$email" | grep -qE "$ALLOWED_REGEX"; then
+              echo "ok:         $email"
+            else
+              echo "DISALLOWED: $email"
+              bad=1
+            fi
+          done < <(git log --format='%ae' "$range")
+
+          if [ "$bad" -ne 0 ]; then
+            echo "::error::One or more commits have a disallowed author email."
+            exit 1
+          fi
+          echo "All commit authors are allowed."
