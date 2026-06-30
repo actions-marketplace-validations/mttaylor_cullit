@@ -82,7 +82,7 @@ jobs:
           load: true
 
       - name: Scan container image (Trivy)
-        uses: aquasecurity/trivy-action@0.24.1
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: cullit-api:test
           format: table
