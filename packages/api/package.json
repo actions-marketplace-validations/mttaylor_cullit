@@ -20,7 +20,7 @@
     "@cullit/core": "workspace:*",
     "pino": "^10.3.1",
     "postgres": "^3.4.9",
-    "sanitize-html": "^2.17.3"
+    "sanitize-html": "^2.17.5"
   },
   "devDependencies": {
     "@types/sanitize-html": "^2.16.1"
