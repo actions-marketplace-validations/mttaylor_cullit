@@ -44,8 +44,11 @@ export const useDb = !!process.env['DATABASE_URL'];
 
 // --- Config ---
 
-const WORKOS_CLIENT_ID = process.env['WORKOS_CLIENT_ID'] || '';
-const WORKOS_API_KEY = process.env['WORKOS_API_KEY'] || '';
+// Trim env vars to guard against stray whitespace/newlines from copy-paste in
+// deployment dashboards (e.g. a trailing space in WORKOS_CLIENT_ID encodes as
+// "+" in the authorize URL and triggers WorkOS "Invalid client ID").
+const WORKOS_CLIENT_ID = (process.env['WORKOS_CLIENT_ID'] || '').trim();
+const WORKOS_API_KEY = (process.env['WORKOS_API_KEY'] || '').trim();
 const JWT_SECRET = (() => {
   const envSecret = process.env['CULLIT_JWT_SECRET'];
   if (envSecret) {
@@ -62,8 +65,8 @@ const JWT_SECRET = (() => {
   return fallback;
 })();
 const AUTH_STORE_PATH = process.env['CULLIT_AUTH_STORE_PATH'] || './auth-store.json';
-const BASE_URL = process.env['CULLIT_BASE_URL'] || 'http://localhost:3000';
-const DASHBOARD_URL = process.env['CULLIT_DASHBOARD_URL'] || BASE_URL;
+const BASE_URL = (process.env['CULLIT_BASE_URL'] || 'http://localhost:3000').trim();
+const DASHBOARD_URL = (process.env['CULLIT_DASHBOARD_URL'] || BASE_URL).trim();
 const JWT_EXPIRY = 7 * 24 * 60 * 60; // 7 days in seconds
 const SESSION_COOKIE_NAME = 'cullit_session';
 const IS_HTTPS = BASE_URL.startsWith('https');
