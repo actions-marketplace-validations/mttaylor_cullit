@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { AIGenerator } from '../src/generators/ai';
 import type { EnrichedContext, AIConfig } from '@cullit/core';
 
@@ -61,5 +61,59 @@ describe('AIGenerator', () => {
     const gen = new AIGenerator();
     const badConfig = { ...baseConfig, provider: 'doesnotexist' as any };
     await expect(gen.generate(mockContext, badConfig)).rejects.toThrow('Unknown provider');
+  });
+
+  describe('response parsing across providers', () => {
+    const validJson = JSON.stringify({
+      summary: 'A release.',
+      changes: [{ description: 'Add feature', category: 'features', ticketKey: null }],
+    });
+
+    function mockProviderResponse(provider: AIConfig['provider'], text: string) {
+      const payloadByProvider: Record<string, unknown> = {
+        anthropic: { content: [{ text }] },
+        openai: { choices: [{ message: { content: text } }] },
+        gemini: { candidates: [{ content: { parts: [{ text }] } }] },
+        ollama: { message: { content: text } },
+      };
+      return vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => payloadByProvider[provider as string],
+        text: async () => '',
+      } as Response);
+    }
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('parses bare JSON from OpenAI', async () => {
+      mockProviderResponse('openai', validJson);
+      const gen = new AIGenerator();
+      const notes = await gen.generate(mockContext, { ...baseConfig, provider: 'openai', apiKey: 'sk-test' });
+      expect(notes.summary).toBe('A release.');
+      expect(notes.changes).toHaveLength(1);
+    });
+
+    it.each(['anthropic', 'gemini', 'ollama'] as const)(
+      'parses prose-wrapped JSON from %s',
+      async (provider) => {
+        const wrapped = `Sure! Here are the release notes:\n\n${validJson}\n\nLet me know if you need changes.`;
+        mockProviderResponse(provider, wrapped);
+        const gen = new AIGenerator();
+        const notes = await gen.generate(mockContext, { ...baseConfig, provider, apiKey: 'test-key' });
+        expect(notes.summary).toBe('A release.');
+        expect(notes.changes).toHaveLength(1);
+      },
+    );
+
+    it('still throws when no JSON object is present', async () => {
+      mockProviderResponse('anthropic', 'I could not generate release notes.');
+      const gen = new AIGenerator();
+      await expect(
+        gen.generate(mockContext, { ...baseConfig, provider: 'anthropic', apiKey: 'test-key' }),
+      ).rejects.toThrow('Failed to parse AI response as JSON');
+    });
   });
 });
