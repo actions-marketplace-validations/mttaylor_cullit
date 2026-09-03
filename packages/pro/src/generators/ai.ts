@@ -288,7 +288,21 @@ Rules:
     try {
       parsed = JSON.parse(cleaned);
     } catch {
-      throw new Error(`Failed to parse AI response as JSON. Raw response:\n${raw.substring(0, 500)}`);
+      // Some providers (Anthropic, Gemini, Ollama) wrap the JSON object in
+      // prose ("Here are the release notes: { ... }"). OpenAI reliably returns
+      // bare JSON, which is why it worked while the others failed. Fall back to
+      // extracting the outermost JSON object before giving up.
+      const start = cleaned.indexOf('{');
+      const end = cleaned.lastIndexOf('}');
+      if (start !== -1 && end > start) {
+        try {
+          parsed = JSON.parse(cleaned.slice(start, end + 1));
+        } catch {
+          throw new Error(`Failed to parse AI response as JSON. Raw response:\n${raw.substring(0, 500)}`);
+        }
+      } else {
+        throw new Error(`Failed to parse AI response as JSON. Raw response:\n${raw.substring(0, 500)}`);
+      }
     }
 
     const validCategories = new Set(['features', 'fixes', 'breaking', 'improvements', 'chores', 'other']);
